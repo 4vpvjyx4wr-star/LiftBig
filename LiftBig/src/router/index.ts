@@ -19,8 +19,7 @@ const router = createRouter({
         },
         {
           path: 'overview',
-          name: 'overview',
-          component: () => import('@/views/OverviewView.vue'),
+          redirect: { name: 'home' },
         },
         {
           path: 'plans',

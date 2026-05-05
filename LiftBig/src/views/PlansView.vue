@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
+import PlanShuffleModal from '@/components/plans/PlanShuffleModal.vue'
 import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
 import type { WorkoutTemplate } from '@/types/workout'
 import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
@@ -24,6 +25,7 @@ const planList = computed(() => templates.templates.value)
 
 const modalOpen = ref(false)
 const editing = ref<WorkoutTemplate | null>(null)
+const shuffleOpen = ref(false)
 
 function openNew() {
   editing.value = null
@@ -37,6 +39,14 @@ function openEdit(t: WorkoutTemplate) {
 
 function closeModal() {
   modalOpen.value = false
+}
+
+function openShuffle() {
+  shuffleOpen.value = true
+}
+
+function closeShuffle() {
+  shuffleOpen.value = false
 }
 
 function onSave(payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }) {
@@ -94,13 +104,23 @@ function planDurationLabel(t: WorkoutTemplate): string {
           <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
           <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Training Journal</p>
         </div>
-        <RouterLink
-          to="/library"
-          class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
-        >
-          <i class="fa-solid fa-book" aria-hidden="true" />
-          Library
-        </RouterLink>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+            @click="openShuffle"
+          >
+            <i class="fa-solid fa-shuffle" aria-hidden="true" />
+            Shuffle
+          </button>
+          <RouterLink
+            to="/library"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+          >
+            <i class="fa-solid fa-book" aria-hidden="true" />
+            Library
+          </RouterLink>
+        </div>
       </div>
     </header>
 
@@ -183,6 +203,8 @@ function planDurationLabel(t: WorkoutTemplate): string {
       @close="closeModal"
       @save="onSave"
     />
+
+    <PlanShuffleModal :show="shuffleOpen" @close="closeShuffle" @save="onSave" />
 
     <ExerciseDetailSheet
       :open="detailOpen"

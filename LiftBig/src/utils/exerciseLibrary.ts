@@ -18,6 +18,8 @@ export type LibraryExercise = {
   id: string
   name: string
   muscleGroups: MuscleGroup[]
+  /** Free-form labels for search and browsing (e.g. “unilateral”, “compound”). */
+  tags?: string[]
   equipment?: string
   summary: string
   instructions: string[]
@@ -50,6 +52,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     id: 'bench-press',
     name: 'Barbell Bench Press',
     muscleGroups: ['chest', 'triceps', 'shoulders'],
+    tags: ['compound', 'push', 'powerlifting'],
     equipment: 'Barbell',
     summary: 'Horizontal press for chest with barbell on a flat bench.',
     instructions: [
@@ -574,6 +577,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     id: 'leg-raise',
     name: 'Hanging Leg Raise',
     muscleGroups: ['core', 'quads'],
+    tags: ['bodyweight', 'hanging', 'ab training'],
     equipment: 'Bodyweight',
     summary: 'Hang from bar and lift knees or legs.',
     instructions: [
@@ -582,6 +586,426 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower without swinging.',
     ],
     tips: ['Reduce range if you swing excessively.'],
+  }),
+  reg({
+    id: 'arnold-press',
+    name: 'Arnold Press',
+    muscleGroups: ['shoulders', 'triceps'],
+    tags: ['dumbbell', 'overhead', 'rotation'],
+    equipment: 'Dumbbell',
+    summary:
+      'Seated or standing dumbbell press with palms rotating from inward at the bottom to forward at the top for fuller shoulder development.',
+    instructions: [
+      'Start with dumbbells at shoulder height, palms facing you like the bottom of a curl.',
+      'Brace core; press up while rotating palms to face forward.',
+      'Finish with arms overhead, biceps beside ears without shrugging.',
+      'Reverse the rotation on the way down under control.',
+    ],
+    tips: [
+      'Use a moderate weight—rotation adds instability.',
+      'Keep ribs down to avoid excessive lower-back arch.',
+    ],
+  }),
+  reg({
+    id: 'bulgarian-split-squat',
+    name: 'Bulgarian Split Squat',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['unilateral', 'single-leg', 'RFE squat'],
+    equipment: 'Dumbbell',
+    summary:
+      'Rear-foot-elevated split squat that builds single-leg strength and balance while emphasizing quads and glutes.',
+    instructions: [
+      'Place rear foot on bench behind you; front foot far enough forward that knee tracks over ankle.',
+      'Hold dumbbells at sides or one goblet-style.',
+      'Lower until front thigh is near parallel or hip allows.',
+      'Drive through the front mid-foot to stand; switch legs each set or alternate.',
+    ],
+    tips: [
+      'If you feel knee irritation, shorten stride slightly.',
+      'Lean torso slightly forward if you want more glute bias.',
+    ],
+  }),
+  reg({
+    id: 't-bar-row',
+    name: 'T-Bar Row',
+    muscleGroups: ['back', 'biceps', 'forearms'],
+    tags: ['compound', 'pull', 'thick grip'],
+    equipment: 'Barbell',
+    summary:
+      'Neutral-grip row using a landmine or T-bar setup—great for mid-back thickness with a stable torso.',
+    instructions: [
+      'Straddle the bar or use a chest-supported station if available.',
+      'Hinge slightly; grip the handles with neutral wrists.',
+      'Pull elbows back toward hips; squeeze shoulder blades.',
+      'Lower until arms extend without rounding heavily.',
+    ],
+    tips: ['Keep chest tall; avoid jerking with hip extension unless doing a deliberate cheat variation.'],
+  }),
+  reg({
+    id: 'pendlay-row',
+    name: 'Pendlay Row',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['explosive', 'dead-stop', 'powerlifting'],
+    equipment: 'Barbell',
+    summary:
+      'Strict bent-over row where the bar rests on the floor each rep—explosive pull with a flat back.',
+    instructions: [
+      'Barbell on floor each rep; hinge until torso is roughly parallel to floor.',
+      'Grip slightly wider than bench; brace lats and core.',
+      'Pull bar to lower ribs explosively; pause briefly at the torso.',
+      'Lower fully to the floor before the next rep.',
+    ],
+    tips: ['Reset brace each rep; do not touch-and-go if you want strict Pendlay style.'],
+  }),
+  reg({
+    id: 'skull-crusher',
+    name: 'Skull Crusher (Lying Triceps Extension)',
+    muscleGroups: ['triceps'],
+    tags: ['isolation', 'lying', 'elbow extension'],
+    equipment: 'Barbell',
+    summary:
+      'Lying triceps extension lowering an EZ bar or bar toward the forehead or behind the head for long-head emphasis.',
+    instructions: [
+      'Lie on bench; bar over shoulders with narrow-to-medium grip.',
+      'Keep upper arms angled slightly back toward the rack.',
+      'Bend elbows to lower bar toward forehead or hairline.',
+      'Extend to lockout without letting elbows flare wide.',
+    ],
+    tips: [
+      'Use an EZ bar if wrists bother you on a straight bar.',
+      'Stop short of pain at the elbow joint—switch to cables if needed.',
+    ],
+  }),
+  reg({
+    id: 'preacher-curl',
+    name: 'Preacher Curl',
+    muscleGroups: ['biceps', 'forearms'],
+    tags: ['isolation', 'arms', 'strict curl'],
+    equipment: 'Barbell',
+    summary:
+      'Arms braced on a preacher pad to isolate biceps and reduce cheating from the hips or shoulders.',
+    instructions: [
+      'Adjust seat so armpits sit near the top of the pad.',
+      'Grip bar or dumbbells with arms extended along the pad.',
+      'Curl toward shoulders without lifting elbows off the pad.',
+      'Lower slowly to full extension without hyperextending elbows harshly.',
+    ],
+    tips: ['Partial reps at the bottom are OK for pump; full ROM builds strength through length.'],
+  }),
+  reg({
+    id: 'good-morning',
+    name: 'Good Morning',
+    muscleGroups: ['hamstrings', 'glutes', 'back'],
+    tags: ['hinge', 'accessory', 'posterior chain'],
+    equipment: 'Barbell',
+    summary:
+      'Bar-on-back hip hinge that strengthens the posterior chain; treat like a skill lift with light-to-moderate loads.',
+    instructions: [
+      'Bar on upper back as in a squat; feet hip-width.',
+      'Unlock knees slightly; push hips back while keeping spine neutral.',
+      'Hinge until torso is roughly parallel to the floor or hamstrings limit you.',
+      'Drive hips forward to stand tall.',
+    ],
+    tips: [
+      'Master the pattern with a PVC pipe or empty bar before loading heavy.',
+      'If you feel sharp low-back discomfort, reduce load and improve hinge mechanics.',
+    ],
+  }),
+  reg({
+    id: 'nordic-hamstring-curl',
+    name: 'Nordic Hamstring Curl',
+    muscleGroups: ['hamstrings'],
+    tags: ['bodyweight', 'eccentric', 'injury prevention'],
+    equipment: 'Bodyweight',
+    summary:
+      'Kneeling hamstring exercise leaning forward from knees—excellent for eccentric hamstring strength.',
+    instructions: [
+      'Kneel on pad; ankles secured under support or partner holds feet.',
+      'Keep hips extended; lower torso toward floor as slowly as possible.',
+      'Catch with hands if needed; push back up to reset.',
+      'Progress by controlling more of the lowering phase.',
+    ],
+    tips: [
+      'Use a band assist or shorten range early on.',
+      'Quality eccentrics matter more than hitting the floor.',
+    ],
+  }),
+  reg({
+    id: 'chest-dip',
+    name: 'Chest Dip',
+    muscleGroups: ['chest', 'triceps', 'shoulders'],
+    tags: ['bodyweight', 'compound', 'parallel bars'],
+    equipment: 'Bodyweight',
+    summary:
+      'Forward-leaning dip on parallel bars to emphasize chest while still loading triceps and shoulders.',
+    instructions: [
+      'Support on bars with arms straight; shoulders depressed.',
+      'Tilt torso slightly forward; elbows track out to ~45°.',
+      'Lower until stretch across chest without sinking shoulders.',
+      'Press up while maintaining forward lean.',
+    ],
+    tips: [
+      'Stop depth if anterior shoulder feels pinchy.',
+      'Add load with a belt once bodyweight feels easy.',
+    ],
+  }),
+  reg({
+    id: 'farmers-walk',
+    name: "Farmer's Carry",
+    muscleGroups: ['forearms', 'shoulders', 'core'],
+    tags: ['carry', 'conditioning', 'grip'],
+    equipment: 'Dumbbell',
+    summary:
+      'Walk while holding heavy weights at sides—builds grip, traps, and core bracing in a simple package.',
+    instructions: [
+      'Lift dumbbells or handles from the floor with neutral spine.',
+      'Stand tall; ribs down; walk heel-to-toe for set distance or time.',
+      'Avoid shrugging ears to shoulders unless targeting traps intentionally.',
+      'Set weights down with control.',
+    ],
+    tips: [
+      'Progress distance before maxing weight to protect hands and posture.',
+      'Chalk or straps can help if grip is the only limiter.',
+    ],
+  }),
+  reg({
+    id: 'barbell-shrug',
+    name: 'Barbell Shrug',
+    muscleGroups: ['shoulders', 'forearms'],
+    tags: ['traps', 'upper back', 'isolation'],
+    equipment: 'Barbell',
+    summary:
+      'Vertical shrug motion to load upper trapezius; short range but heavy loads when appropriate.',
+    instructions: [
+      'Hold bar at arms length in front or behind body (behind hits traps slightly differently).',
+      'Elevate shoulders straight up toward ears.',
+      'Pause at top; lower with control—avoid rolling shoulders in circles.',
+    ],
+    tips: [
+      'Rolling the shoulders is unnecessary for most goals and can irritate joints.',
+      'Use straps if forearms fail before traps.',
+    ],
+  }),
+  reg({
+    id: 'pallof-press',
+    name: 'Pallof Press',
+    muscleGroups: ['core', 'shoulders'],
+    tags: ['anti-rotation', 'cable', 'abs'],
+    equipment: 'Cable',
+    summary:
+      'Anti-rotation press from a side-facing cable—trains obliques and deep core to resist twisting.',
+    instructions: [
+      'Stand perpendicular to cable stack; grab handle at chest.',
+      'Step away until you feel tension trying to rotate you.',
+      'Brace; extend arms forward without letting torso twist.',
+      'Return hands to chest; repeat; switch sides.',
+    ],
+    tips: [
+      'Exhale as you extend; imagine ribs and pelvis stacked.',
+      'Half-kneeling makes it easier to feel glute and core brace.',
+    ],
+  }),
+  reg({
+    id: 'cable-pull-through',
+    name: 'Cable Pull-Through',
+    muscleGroups: ['glutes', 'hamstrings'],
+    tags: ['hinge', 'glutes', 'beginner friendly'],
+    equipment: 'Cable',
+    summary:
+      'Face away from a low pulley and hinge hips back—great hip hinge pattern with constant tension.',
+    instructions: [
+      'Straddle rope or handle between legs; walk forward for tension.',
+      'Soft knees; push hips back while arms stay relaxed as cables.',
+      'Stand tall by squeezing glutes at lockout.',
+      'Control the forward hinge each rep.',
+    ],
+    tips: [
+      'Keep eyes forward enough to protect neck; movement is from hips.',
+      'Light weight teaches pattern before loading.',
+    ],
+  }),
+  reg({
+    id: 'sumo-deadlift',
+    name: 'Sumo Deadlift',
+    muscleGroups: ['glutes', 'hamstrings', 'back'],
+    tags: ['compound', 'deadlift variant', 'wide stance'],
+    equipment: 'Barbell',
+    summary:
+      'Wide-stance deadlift with vertical torso bias—often suits longer limbs or those who prefer quad and adductor involvement.',
+    instructions: [
+      'Feet wide; toes turned out; grip narrow inside knees.',
+      'Hips closer to bar than conventional; brace before pulling.',
+      'Drive knees out; drag bar up legs to lockout.',
+      'Lower by pushing hips back first.',
+    ],
+    tips: [
+      'Experiment stance width—too wide can limit depth.',
+      'Mix with conventional over training cycles for balanced development.',
+    ],
+  }),
+  reg({
+    id: 'kettlebell-swing',
+    name: 'Kettlebell Swing',
+    muscleGroups: ['glutes', 'hamstrings', 'shoulders'],
+    tags: ['hinge', 'power', 'conditioning'],
+    equipment: 'Kettlebell',
+    summary:
+      'Explosive hip hinge projecting the kettlebell to chest height—posterior chain power with minimal knee bend.',
+    instructions: [
+      'Feet shoulder-width; bell slightly in front.',
+      'Hike bell back between legs with flat wrists.',
+      'Snap hips forward; arms float to about shoulder height (Russian style).',
+      'Let bell fall; absorb with hinge—repeat rhythmically.',
+    ],
+    tips: [
+      'Do not squat the swing; knees stay soft but hips drive.',
+      'Stop set if lower back feels it instead of glutes/hams.',
+    ],
+  }),
+  reg({
+    id: 'inverted-row',
+    name: 'Inverted Row',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['bodyweight', 'horizontal pull', 'scalable'],
+    equipment: 'Bodyweight',
+    summary:
+      'Ring or bar bodyweight row—adjust difficulty by moving feet or torso angle.',
+    instructions: [
+      'Hang under a fixed bar or rings; body straight like a plank.',
+      'Pull chest to bar with elbows tracking toward ribs.',
+      'Lower until arms straight without losing shoulder integrity.',
+    ],
+    tips: [
+      'Elevate feet or wear a vest to progress.',
+      'Pull ribs toward hips to avoid excessive arch.',
+    ],
+  }),
+  reg({
+    id: 'front-squat',
+    name: 'Front Squat',
+    muscleGroups: ['quads', 'core', 'glutes'],
+    tags: ['compound', 'squat', 'oly lifting'],
+    equipment: 'Barbell',
+    summary:
+      'Bar rests on front delts—upright torso squat pattern that demands ankle, thoracic, and core mobility.',
+    instructions: [
+      'Use clean grip or cross-arm shelf depending on wrist comfort.',
+      'Elbows high; brace; squat between hips.',
+      'Drive up keeping torso as vertical as mobility allows.',
+    ],
+    tips: [
+      'Straps around bar can help if wrists limit rack position.',
+      'If elbows drop, the bar may roll—reduce weight until position holds.',
+    ],
+  }),
+  reg({
+    id: 'decline-bench-press',
+    name: 'Decline Barbell Bench Press',
+    muscleGroups: ['chest', 'triceps', 'shoulders'],
+    tags: ['press', 'lower chest', 'spotter'],
+    equipment: 'Barbell',
+    summary:
+      'Decline angle shifts emphasis toward lower pec fibers while reducing some shoulder impingement risk for certain lifters.',
+    instructions: [
+      'Secure legs on decline bench pads; eyes under bar.',
+      'Unrack with stacked wrists; lower to lower chest line.',
+      'Press along same path; lock out without losing leg brace.',
+    ],
+    tips: [
+      'Use safeties or a spotter—bar path can feel awkward first.',
+      'Avoid excessive bounce off the chest.',
+    ],
+  }),
+  reg({
+    id: 'smith-machine-squat',
+    name: 'Smith Machine Squat',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['machine', 'guided', 'squat pattern'],
+    equipment: 'Machine',
+    summary:
+      'Squat on a fixed vertical or slight-angle track—stable for quad emphasis when learning patterns or training to failure safely.',
+    instructions: [
+      'Set safeties at appropriate depth; feet slightly in front of bar path common.',
+      'Unrack; squat keeping knees tracking toes.',
+      'Stand without locking knees aggressively.',
+    ],
+    tips: [
+      'Foot placement changes quad vs glute bias.',
+      'Still brace core—machine guidance does not replace bracing.',
+    ],
+  }),
+  reg({
+    id: 'zercher-squat',
+    name: 'Zercher Squat',
+    muscleGroups: ['quads', 'glutes', 'core'],
+    tags: ['front-loaded', 'squat', 'strongman'],
+    equipment: 'Barbell',
+    summary:
+      'Barbell held in elbow crook—upright torso challenge that smokes upper back and core while squatting.',
+    instructions: [
+      'Bar rests in elbows with hands clasped or overlapped.',
+      'Brace hard; squat keeping elbows level.',
+      'Stand tall without dumping forward.',
+    ],
+    tips: [
+      'Pad the bar or wear long sleeves—pressure on arms is real.',
+      'Start light to own the rack position.',
+    ],
+  }),
+  reg({
+    id: 'seated-dumbbell-shoulder-press',
+    name: 'Seated Dumbbell Shoulder Press',
+    muscleGroups: ['shoulders', 'triceps'],
+    tags: ['overhead', 'seated', 'strict press'],
+    equipment: 'Dumbbell',
+    summary:
+      'Strict vertical press with back support—limits leg drive and isolates shoulder and triceps work.',
+    instructions: [
+      'Back flat on bench with vertical seat or slight incline.',
+      'Dumbbells at shoulder height; palms forward or neutral.',
+      'Press overhead without locking aggressively backward.',
+      'Lower under control to ear level or shoulders.',
+    ],
+    tips: [
+      'Don’t bounce off the bench—keep glutes and upper back planted.',
+      'Neutral grip may feel friendlier on shoulders.',
+    ],
+  }),
+  reg({
+    id: 'reverse-fly-machine',
+    name: 'Reverse Pec Deck / Reverse Fly Machine',
+    muscleGroups: ['shoulders', 'back'],
+    tags: ['rear delts', 'machine', 'isolation'],
+    equipment: 'Machine',
+    summary:
+      'Seated reverse fly on machine—steady resistance for rear delts and external rotation endurance.',
+    instructions: [
+      'Sit facing machine; handles at shoulder height or per settings.',
+      'Arms slightly bent; open arms wide squeezing shoulder blades.',
+      'Pause; return slowly without letting stack slam.',
+    ],
+    tips: [
+      'Keep chin neutral—don’t crane neck forward.',
+      'Light weight and tempo beat ego lifting here.',
+    ],
+  }),
+  reg({
+    id: 'lat-prayer-stretch-cable',
+    name: 'Straight-Arm Pulldown',
+    muscleGroups: ['back'],
+    tags: ['lat isolation', 'cable', 'mind-muscle'],
+    equipment: 'Cable',
+    summary:
+      'Straight-arm pull from high cable isolates lats with minimal biceps—great finisher or technique primer.',
+    instructions: [
+      'Face stack; slight hinge; arms nearly straight with soft elbows.',
+      'Pull handle down and slightly back toward thighs.',
+      'Squeeze lats; return until shoulders feel stretch.',
+    ],
+    tips: [
+      'Think elbows pulling to back pockets.',
+      'Reduce weight if triceps take over.',
+    ],
   }),
 ]
 
@@ -604,6 +1028,7 @@ export function searchLibrary(
       if (ex.name.toLowerCase().includes(needle)) return true
       if (ex.summary.toLowerCase().includes(needle)) return true
       if (ex.equipment?.toLowerCase().includes(needle)) return true
+      if (ex.tags?.some((t) => t.toLowerCase().includes(needle))) return true
       return ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))
     })
     .sort((a, b) => a.name.localeCompare(b.name))

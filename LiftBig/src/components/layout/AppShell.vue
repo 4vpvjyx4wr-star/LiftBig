@@ -61,7 +61,7 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
 </script>
 
 <template>
-  <div class="flex min-h-full flex-col bg-background pb-24">
+  <div class="flex min-h-full flex-col bg-background pb-above-bottom-tabs">
     <Teleport to="body">
       <div
         v-if="menuOpen"
@@ -109,16 +109,6 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
               Plates
             </button>
           </RouterLink>
-          <RouterLink
-            to="/progress"
-            role="menuitem"
-            class="flex items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-            active-class="!text-primary"
-            @click="closeMenu"
-          >
-            <i class="fa-solid fa-chart-line w-5 text-center text-base text-muted" aria-hidden="true" />
-            Progress
-          </RouterLink>
           <button
             type="button"
             role="menuitem"
@@ -139,7 +129,9 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
     <nav
       class="fixed bottom-0 left-0 right-0 z-40 touch-manipulation border-t border-border bg-card/95 backdrop-blur-sm select-none [-webkit-touch-callout:none]"
     >
-      <div class="relative mx-auto flex max-w-lg items-end justify-between gap-0 px-1 pb-safe pt-2">
+      <div
+        class="relative mx-auto flex max-w-lg items-end gap-0 px-1 pb-bottom-nav-safe pt-2.5"
+      >
         <RouterLink v-slot="{ navigate, isActive }" to="/" custom>
           <button
             type="button"
@@ -152,7 +144,7 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
             Home
           </button>
         </RouterLink>
-        <RouterLink v-slot="{ navigate, isActive }" to="/overview" custom>
+        <RouterLink v-slot="{ navigate, isActive }" to="/progress" custom>
           <button
             type="button"
             class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
@@ -160,22 +152,25 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
             :aria-current="isActive ? 'page' : undefined"
             @click="navigate($event)"
           >
-            <i class="fa-solid fa-calendar-days text-base sm:text-lg" aria-hidden="true" />
-            Overview
+            <i class="fa-solid fa-chart-line text-base sm:text-lg" aria-hidden="true" />
+            Progress
           </button>
         </RouterLink>
 
-        <RouterLink v-slot="{ navigate, isActive }" :to="liftHref" custom>
-          <button
-            type="button"
-            class="absolute bottom-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-xs font-black tracking-widest text-foreground shadow-lg ring-4 ring-background outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            :aria-current="isActive ? 'page' : undefined"
-            aria-label="Open workout log"
-            @click="navigate($event)"
-          >
-            LIFT
-          </button>
-        </RouterLink>
+        <!-- Fixed w-14 column: LIFT lives here so the bar layout treats it like a fifth “tab” slot -->
+        <div class="pointer-events-none relative z-10 w-14 shrink-0 self-stretch">
+          <RouterLink v-slot="{ navigate, isActive }" :to="liftHref" custom>
+            <button
+              type="button"
+              class="pointer-events-auto absolute bottom-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-xs font-black tracking-widest text-foreground shadow-lg ring-4 ring-background outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              :aria-current="isActive ? 'page' : undefined"
+              aria-label="Open workout log"
+              @click="navigate($event)"
+            >
+              LIFT
+            </button>
+          </RouterLink>
+        </div>
 
         <RouterLink v-slot="{ navigate, isActive }" to="/plans" custom>
           <button
@@ -216,9 +211,3 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
     />
   </div>
 </template>
-
-<style scoped>
-.pb-safe {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
-}
-</style>

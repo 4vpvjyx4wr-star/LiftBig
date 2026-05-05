@@ -149,7 +149,7 @@ function finish() {
       </div>
     </header>
 
-    <div class="px-4 pb-28 pt-4">
+    <div class="px-4 pb-above-workout-dock pt-4">
       <div v-if="exercises.length === 0" class="py-16 text-center">
         <p class="text-lg font-bold text-foreground">No exercises yet.</p>
         <p class="mt-2 text-sm text-muted">Add one below or assign a plan from Home.</p>
@@ -169,7 +169,7 @@ function finish() {
     </div>
 
     <div
-      class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm"
+      class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 pb-workout-dock-safe pt-3 backdrop-blur-sm"
     >
       <div class="mx-auto flex max-w-lg gap-2">
         <input

@@ -1,8 +1,14 @@
 <script setup lang="ts">
+import { computed, inject } from 'vue'
+import {
+  libraryFavoritesInjectionKey,
+  workoutsInjectionKey,
+} from '@/composables/injectionKeys'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { MUSCLE_GROUP_LABELS } from '@/utils/exerciseLibrary'
+import { hasUserLoggedLibraryExercise } from '@/utils/libraryExerciseTracking'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   exercise: LibraryExercise | null
 }>()
@@ -10,6 +16,18 @@ defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+const workouts = inject(workoutsInjectionKey)!
+const favorites = inject(libraryFavoritesInjectionKey)!
+
+const isLogged = computed(() =>
+  props.exercise ? hasUserLoggedLibraryExercise(workouts.log.value, props.exercise) : false,
+)
+
+function toggleFavorite() {
+  if (!props.exercise) return
+  favorites.toggle(props.exercise.id)
+}
 </script>
 
 <template>
@@ -35,9 +53,35 @@ const emit = defineEmits<{
           Close
         </button>
 
-        <h3 id="exercise-detail-title" class="text-xl font-extrabold text-foreground">
-          {{ exercise.name }}
-        </h3>
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <h3 id="exercise-detail-title" class="text-xl font-extrabold text-foreground">
+            {{ exercise.name }}
+          </h3>
+          <div class="flex shrink-0 items-center gap-2">
+            <span
+              v-if="isLogged"
+              class="inline-flex items-center gap-1 rounded-full border border-green-600/40 bg-green-500/10 px-2.5 py-1 text-[11px] font-bold text-green-500"
+            >
+              <i class="fa-solid fa-circle-check" aria-hidden="true" />
+              Logged
+            </span>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-full border border-border bg-card-inner px-3 py-1.5 text-[11px] font-bold text-foreground hover:border-primary"
+              :class="favorites.isFavorite(exercise.id) ? 'border-amber-500/50' : ''"
+              :aria-pressed="favorites.isFavorite(exercise.id)"
+              @click="toggleFavorite"
+            >
+              <i
+                class="fa-solid fa-star"
+                :class="favorites.isFavorite(exercise.id) ? 'text-amber-400' : 'text-muted'"
+                aria-hidden="true"
+              />
+              {{ favorites.isFavorite(exercise.id) ? 'Favorited' : 'Favorite' }}
+            </button>
+          </div>
+        </div>
+
         <p v-if="exercise.equipment" class="mt-1 text-sm text-muted">{{ exercise.equipment }}</p>
         <p class="mt-3 text-sm leading-relaxed text-foreground">{{ exercise.summary }}</p>
 
@@ -48,6 +92,13 @@ const emit = defineEmits<{
             class="rounded-full border border-border bg-card-inner px-2.5 py-0.5 text-[11px] font-bold text-muted"
           >
             {{ MUSCLE_GROUP_LABELS[g] }}
+          </span>
+          <span
+            v-for="tag in exercise.tags ?? []"
+            :key="tag"
+            class="rounded-full border border-primary/40 bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold text-primary"
+          >
+            {{ tag }}
           </span>
         </div>
 

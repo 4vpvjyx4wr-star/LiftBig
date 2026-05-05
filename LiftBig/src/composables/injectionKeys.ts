@@ -1,4 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
+import type { LibraryFavoritesApi } from '@/composables/useLibraryFavorites'
 import type { SettingsApi } from '@/composables/useSettings'
 import type { Exercise, WorkoutLog, WorkoutTemplate } from '@/types/workout'
 
@@ -21,3 +22,6 @@ export const workoutsInjectionKey: InjectionKey<LocalWorkoutsApi> = Symbol('work
 export const templatesInjectionKey: InjectionKey<TemplatesApi> = Symbol('templates')
 
 export const settingsInjectionKey: InjectionKey<SettingsApi> = Symbol('settings')
+
+export const libraryFavoritesInjectionKey: InjectionKey<LibraryFavoritesApi> =
+  Symbol('libraryFavorites')
