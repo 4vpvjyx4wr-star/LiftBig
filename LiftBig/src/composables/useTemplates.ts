@@ -1,8 +1,8 @@
 import { ref } from 'vue'
 import type { WorkoutTemplate } from '@/types/workout'
 import { DEFAULT_PLANS } from '@/utils/defaultPlans'
-import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
-import { saveJson } from '@/utils/storage'
+import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
 const KEY = LIFTBIG_STORAGE_KEYS.templates
 
@@ -11,26 +11,20 @@ function clonePlans(plans: WorkoutTemplate[]): WorkoutTemplate[] {
 }
 
 function loadTemplatesInitial(): WorkoutTemplate[] {
-  if (typeof localStorage === 'undefined') return clonePlans(DEFAULT_PLANS)
-  const raw = localStorage.getItem(KEY)
-  if (raw === null) {
+  const loaded = loadJsonWithRecovery<unknown>(KEY, null, {
+    legacyKeys: LIFTBIG_LEGACY_STORAGE_KEY_ALIASES.templates,
+  })
+  if (loaded === null) {
     const seed = clonePlans(DEFAULT_PLANS)
     saveJson(KEY, seed)
     return seed
   }
-  try {
-    const parsed = JSON.parse(raw) as WorkoutTemplate[]
-    if (!Array.isArray(parsed)) {
-      const seed = clonePlans(DEFAULT_PLANS)
-      saveJson(KEY, seed)
-      return seed
-    }
-    return parsed
-  } catch {
+  if (!Array.isArray(loaded)) {
     const seed = clonePlans(DEFAULT_PLANS)
     saveJson(KEY, seed)
     return seed
   }
+  return loaded as WorkoutTemplate[]
 }
 
 export function useTemplates() {

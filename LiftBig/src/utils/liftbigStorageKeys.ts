@@ -22,6 +22,19 @@ export const LIFTBIG_STORAGE_KEYS = {
   libraryFavorites: 'liftbig_library_favorites',
 } as const
 
+/**
+ * Legacy key aliases from earlier app builds/platforms.
+ * When found, data is migrated into the canonical key on next load.
+ */
+export const LIFTBIG_LEGACY_STORAGE_KEY_ALIASES: Partial<
+  Record<LiftBigStorageSlot, readonly string[]>
+> = {
+  workouts: Object.freeze(['workouts']),
+  templates: Object.freeze(['templates', 'liftbig_plans']),
+  settings: Object.freeze(['settings']),
+  libraryFavorites: Object.freeze(['liftbig_favorites', 'favorites']),
+}
+
 export type LiftBigStorageSlot = keyof typeof LIFTBIG_STORAGE_KEYS
 
 export type LiftBigRegisteredStorageKey =

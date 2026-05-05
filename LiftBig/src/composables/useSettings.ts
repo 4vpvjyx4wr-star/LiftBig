@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
-import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
-import { loadJson, saveJson } from '@/utils/storage'
+import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 import type { WeightUnit } from '@/utils/units'
 
 const STORAGE_KEY = LIFTBIG_STORAGE_KEYS.settings
@@ -63,7 +63,9 @@ function applyTheme(theme: ThemeId) {
 }
 
 export function useSettings() {
-  const loaded = loadJson<AppSettings>(STORAGE_KEY, DEFAULT_SETTINGS)
+  const loaded = loadJsonWithRecovery<AppSettings>(STORAGE_KEY, DEFAULT_SETTINGS, {
+    legacyKeys: LIFTBIG_LEGACY_STORAGE_KEY_ALIASES.settings,
+  })
   const theme = ref<ThemeId>(loaded.theme ?? DEFAULT_SETTINGS.theme)
   const weightUnit = ref<WeightUnit>(loaded.weightUnit ?? DEFAULT_SETTINGS.weightUnit)
 

@@ -1,13 +1,17 @@
 import { ref, watch } from 'vue'
 import type { Exercise, WorkoutLog } from '@/types/workout'
-import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
-import { loadJson, saveJson } from '@/utils/storage'
+import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
 const KEY = LIFTBIG_STORAGE_KEYS.workouts
 const DEBOUNCE_MS = 400
 
 export function useLocalWorkouts() {
-  const log = ref<WorkoutLog>(loadJson<WorkoutLog>(KEY, {}))
+  const log = ref<WorkoutLog>(
+    loadJsonWithRecovery<WorkoutLog>(KEY, {}, {
+      legacyKeys: LIFTBIG_LEGACY_STORAGE_KEY_ALIASES.workouts,
+    }),
+  )
   let timer: ReturnType<typeof setTimeout> | null = null
 
   function persist() {

@@ -1,6 +1,6 @@
 import { type Ref, ref, watch } from 'vue'
-import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
-import { loadJson, saveJson } from '@/utils/storage'
+import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
 const KEY = LIFTBIG_STORAGE_KEYS.libraryFavorites
 
@@ -10,7 +10,13 @@ function normalizeIds(raw: unknown): string[] {
 }
 
 export function useLibraryFavorites() {
-  const favoriteIds = ref<string[]>(normalizeIds(loadJson<unknown>(KEY, [])))
+  const favoriteIds = ref<string[]>(
+    normalizeIds(
+      loadJsonWithRecovery<unknown>(KEY, [], {
+        legacyKeys: LIFTBIG_LEGACY_STORAGE_KEY_ALIASES.libraryFavorites,
+      }),
+    ),
+  )
 
   function toggle(id: string) {
     const set = new Set(favoriteIds.value)

@@ -7,7 +7,7 @@ import RestTimer from '@/components/workout/RestTimer.vue'
 import { workoutsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise } from '@/types/workout'
 import { formatDisplayDate } from '@/utils/dateKey'
-import type { LibraryExercise } from '@/utils/exerciseLibrary'
+import { searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +22,13 @@ const dateKey = computed(() => {
 const exercises = ref<Exercise[]>([])
 const inputName = ref('')
 const libraryOpen = ref(false)
+const showInlineLibraryMatches = ref(false)
+
+const inlineLibraryMatches = computed(() => {
+  const needle = inputName.value.trim()
+  if (!needle) return []
+  return searchLibrary(needle, 'all').slice(0, 5)
+})
 
 function loadDay() {
   const k = dateKey.value
@@ -74,6 +81,18 @@ function addFromLibrary(ex: LibraryExercise) {
       sets: [{ id: newId(), reps: '', weight: '' }],
     },
   ]
+}
+
+function addFromInlineLibrary(ex: LibraryExercise) {
+  addFromLibrary(ex)
+  inputName.value = ''
+  showInlineLibraryMatches.value = false
+}
+
+function hideInlineLibraryMatchesSoon() {
+  window.setTimeout(() => {
+    showInlineLibraryMatches.value = false
+  }, 120)
 }
 
 function addSet(exerciseId: string) {
@@ -172,13 +191,32 @@ function finish() {
       class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 pb-workout-dock-safe pt-3 backdrop-blur-sm"
     >
       <div class="mx-auto flex max-w-lg gap-2">
-        <input
-          v-model="inputName"
-          type="text"
-          class="min-w-0 flex-1 rounded-lg border border-border bg-card px-3 py-2.5 text-foreground outline-none focus:border-primary"
-          placeholder="Add exercise manually..."
-          @keydown.enter="addExercise"
-        />
+        <div class="relative min-w-0 flex-1">
+          <input
+            v-model="inputName"
+            type="text"
+            class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground outline-none focus:border-primary"
+            placeholder="Add exercise manually..."
+            @focus="showInlineLibraryMatches = true"
+            @blur="hideInlineLibraryMatchesSoon"
+            @keydown.enter="addExercise"
+          />
+          <div
+            v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
+            class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
+          >
+            <button
+              v-for="match in inlineLibraryMatches"
+              :key="match.id"
+              type="button"
+              class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
+              @click="addFromInlineLibrary(match)"
+            >
+              <span class="font-semibold">{{ match.name }}</span>
+              <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
+            </button>
+          </div>
+        </div>
         <button
           type="button"
           class="shrink-0 rounded-lg border border-primary/50 bg-card-inner px-3 py-2.5 text-xs font-bold text-primary sm:px-4"

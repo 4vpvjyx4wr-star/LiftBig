@@ -2,7 +2,7 @@
 import { computed, watch, ref } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
-import type { LibraryExercise } from '@/utils/exerciseLibrary'
+import { searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
 import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
@@ -95,6 +95,33 @@ function addFromLibrary(ex: LibraryExercise) {
   ]
 }
 
+function onExerciseNameInput(index: number, rawName: string) {
+  const ex = exercises.value[index]
+  if (!ex) return
+  updateExercise(index, {
+    ...ex,
+    name: rawName,
+    // If the user manually edits the name, clear stale library linkage.
+    libraryId: undefined,
+  })
+}
+
+function inlineMatchesFor(name: string): LibraryExercise[] {
+  const q = name.trim()
+  if (!q) return []
+  return searchLibrary(q, 'all').slice(0, 4)
+}
+
+function pullInLibraryMatch(index: number, match: LibraryExercise) {
+  const ex = exercises.value[index]
+  if (!ex) return
+  updateExercise(index, {
+    ...ex,
+    name: match.name,
+    libraryId: match.id,
+  })
+}
+
 function removeExercise(index: number) {
   exercises.value = exercises.value.filter((_, i) => i !== index)
 }
@@ -165,11 +192,24 @@ function save() {
               </button>
             </div>
             <input
-              v-model="ex.name"
+              :value="ex.name"
               type="text"
               class="mb-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               placeholder="Exercise name"
+              @input="onExerciseNameInput(ei, ($event.target as HTMLInputElement).value)"
             />
+            <div v-if="inlineMatchesFor(ex.name).length > 0" class="mb-2 rounded-lg border border-border/80">
+              <button
+                v-for="match in inlineMatchesFor(ex.name)"
+                :key="match.id"
+                type="button"
+                class="block w-full border-b border-border/60 px-2.5 py-2 text-left text-xs text-foreground last:border-b-0 hover:bg-card"
+                @click="pullInLibraryMatch(ei, match)"
+              >
+                <span class="font-semibold">{{ match.name }}</span>
+                <span class="ml-1.5 text-muted">({{ match.equipment ?? 'Exercise' }})</span>
+              </button>
+            </div>
             <div class="grid grid-cols-[2fr_1fr_1fr_28px] gap-1 text-[10px] font-bold uppercase text-muted">
               <span>Set</span>
               <span class="text-center">Reps</span>
