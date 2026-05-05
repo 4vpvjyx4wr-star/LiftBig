@@ -23,8 +23,13 @@ body,
   margin: 0;
 }
 
+html {
+  overscroll-behavior-y: none;
+}
+
 body {
   position: relative;
+  overscroll-behavior-y: none;
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
