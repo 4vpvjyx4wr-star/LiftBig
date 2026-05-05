@@ -15,6 +15,16 @@ const liftHref = computed(() => `/workout/${todayKey()}`)
 const settings = inject(settingsInjectionKey)!
 const workouts = inject(workoutsInjectionKey)!
 const settingsOpen = ref(false)
+const menuOpen = ref(false)
+
+function closeMenu() {
+  menuOpen.value = false
+}
+
+function openSettingsFromMenu() {
+  settingsOpen.value = true
+  menuOpen.value = false
+}
 
 function onExportBackup() {
   workouts.flush()
@@ -52,7 +62,61 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
 
 <template>
   <div class="flex min-h-full flex-col bg-background pb-24">
-    <div class="mx-auto w-full max-w-lg flex-1 px-3 pt-3">
+    <Teleport to="body">
+      <div
+        v-if="menuOpen"
+        class="fixed inset-0 z-40 bg-black/50"
+        aria-hidden="true"
+        @click="closeMenu"
+      />
+    </Teleport>
+
+    <div
+      class="pointer-events-none fixed right-3 z-50 flex w-0 justify-end"
+      :style="{ top: 'max(0.75rem, env(safe-area-inset-top, 0px))' }"
+    >
+      <div class="pointer-events-auto flex flex-col items-end">
+        <button
+          type="button"
+          class="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          :aria-expanded="menuOpen"
+          aria-controls="app-shell-menu"
+          aria-label="Open menu"
+          @click="menuOpen = !menuOpen"
+        >
+          <i class="fa-solid fa-bars text-lg" aria-hidden="true" />
+        </button>
+        <div
+          v-if="menuOpen"
+          id="app-shell-menu"
+          class="mt-2 w-[min(100vw-1.5rem,13rem)] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
+          role="menu"
+          @click.stop
+        >
+          <RouterLink
+            to="/plates"
+            role="menuitem"
+            class="flex items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+            active-class="!text-primary"
+            @click="closeMenu"
+          >
+            <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
+            Plates
+          </RouterLink>
+          <button
+            type="button"
+            role="menuitem"
+            class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+            @click="openSettingsFromMenu"
+          >
+            <i class="fa-solid fa-gear w-5 text-center text-base text-muted" aria-hidden="true" />
+            Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mx-auto w-full max-w-lg flex-1 px-3 pt-14">
       <RouterView />
     </div>
 
@@ -93,14 +157,6 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
           Plans
         </RouterLink>
         <RouterLink
-          to="/plates"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          active-class="!text-primary"
-        >
-          <i class="fa-solid fa-weight-hanging text-base sm:text-lg" aria-hidden="true" />
-          Plates
-        </RouterLink>
-        <RouterLink
           to="/library"
           class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
           active-class="!text-primary"
@@ -108,15 +164,6 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
           <i class="fa-solid fa-book text-base sm:text-lg" aria-hidden="true" />
           Library
         </RouterLink>
-        <button
-          type="button"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          aria-label="Open settings"
-          @click="settingsOpen = true"
-        >
-          <i class="fa-solid fa-gear text-base sm:text-lg" aria-hidden="true" />
-          Settings
-        </button>
       </div>
     </nav>
 
