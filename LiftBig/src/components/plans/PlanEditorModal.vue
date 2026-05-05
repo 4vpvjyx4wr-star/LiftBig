@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
+import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
+import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
@@ -17,6 +19,7 @@ const emit = defineEmits<{
 
 const planName = ref('')
 const exercises = ref<TemplateExercise[]>([])
+const libraryOpen = ref(false)
 
 function blankExercise(): TemplateExercise {
   return {
@@ -40,6 +43,7 @@ watch(
   () => props.show,
   (v) => {
     if (v) resetFromProps()
+    else libraryOpen.value = false
   },
 )
 
@@ -67,6 +71,17 @@ function removeSet(exIndex: number, setIndex: number) {
 
 function addExercise() {
   exercises.value = [...exercises.value, blankExercise()]
+}
+
+function addFromLibrary(ex: LibraryExercise) {
+  exercises.value = [
+    ...exercises.value,
+    {
+      ...blankExercise(),
+      name: ex.name,
+      libraryId: ex.id,
+    },
+  ]
 }
 
 function removeExercise(index: number) {
@@ -188,13 +203,22 @@ function save() {
           </div>
         </div>
 
-        <button
-          type="button"
-          class="mt-3 w-full rounded-lg border border-border py-2 text-sm font-bold text-foreground"
-          @click="addExercise"
-        >
-          + Add exercise
-        </button>
+        <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            class="flex-1 rounded-lg border border-border py-2 text-sm font-bold text-foreground"
+            @click="addExercise"
+          >
+            + Add exercise
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg border border-primary/50 bg-card-inner py-2 text-sm font-bold text-primary"
+            @click="libraryOpen = true"
+          >
+            + From library
+          </button>
+        </div>
 
         <div class="mt-4 flex gap-2">
           <button
@@ -214,5 +238,11 @@ function save() {
         </div>
       </div>
     </div>
+
+    <LibraryPickerModal
+      :show="libraryOpen"
+      @close="libraryOpen = false"
+      @pick="addFromLibrary"
+    />
   </Teleport>
 </template>

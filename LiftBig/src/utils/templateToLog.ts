@@ -11,6 +11,7 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
     return {
       id: newId(),
       name: tex.name,
+      libraryId: tex.libraryId,
       isCircuit: tex.isCircuit,
       targetReps: first?.targetReps,
       targetWeight: first?.targetWeight,

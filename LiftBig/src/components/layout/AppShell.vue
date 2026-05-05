@@ -62,6 +62,14 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
           <i class="fa-solid fa-weight-hanging text-base sm:text-lg" aria-hidden="true" />
           Plates
         </RouterLink>
+        <RouterLink
+          to="/library"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+          active-class="!text-primary"
+        >
+          <i class="fa-solid fa-book text-base sm:text-lg" aria-hidden="true" />
+          Library
+        </RouterLink>
         <button
           type="button"
           class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"

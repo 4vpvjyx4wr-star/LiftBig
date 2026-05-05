@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
-import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 import type { WorkoutTemplate } from '@/types/workout'
+import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
 const settings = inject(settingsInjectionKey)!
@@ -60,13 +63,40 @@ function deletePlan(id: string) {
   if (!confirm('Delete this plan?')) return
   templates.setAll(planList.value.filter((t) => t.id !== id))
 }
+
+const detailOpen = ref(false)
+const detailExercise = ref<LibraryExercise | null>(null)
+
+function openLibraryDetail(libraryId: string | undefined) {
+  if (!libraryId) return
+  const entry = getLibraryExercise(libraryId)
+  if (!entry) return
+  detailExercise.value = entry
+  detailOpen.value = true
+}
+
+function closeLibraryDetail() {
+  detailOpen.value = false
+  detailExercise.value = null
+}
 </script>
 
 <template>
   <div>
     <header class="mb-4 border-b border-border pb-3">
-      <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
-      <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Training Journal</p>
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
+          <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Training Journal</p>
+        </div>
+        <RouterLink
+          to="/library"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+        >
+          <i class="fa-solid fa-book" aria-hidden="true" />
+          Library
+        </RouterLink>
+      </div>
     </header>
 
     <div v-if="planList.length === 0" class="py-12 text-center">
@@ -106,10 +136,19 @@ function deletePlan(id: string) {
           <li
             v-for="ex in item.exercises"
             :key="ex.id"
-            class="flex flex-wrap gap-2 text-sm text-foreground"
+            class="flex flex-wrap items-center gap-2 text-sm text-foreground"
           >
             <span class="text-muted">·</span>
             <span class="font-semibold">{{ ex.name }}</span>
+            <button
+              v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+              type="button"
+              class="text-primary hover:text-foreground"
+              aria-label="How to perform this exercise"
+              @click="openLibraryDetail(ex.libraryId)"
+            >
+              <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
+            </button>
             <span class="text-muted">
               {{ ex.sets.length }} × {{ ex.sets[0]?.targetReps || '?' }}
               <template v-if="ex.sets[0]?.targetWeight"> @ {{ formatTemplateWeight(ex.sets[0].targetWeight) }}</template>
@@ -133,6 +172,12 @@ function deletePlan(id: string) {
       :initial="editing"
       @close="closeModal"
       @save="onSave"
+    />
+
+    <ExerciseDetailSheet
+      :open="detailOpen"
+      :exercise="detailExercise"
+      @close="closeLibraryDetail"
     />
   </div>
 </template>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
+import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
+import { getLibraryExercise } from '@/utils/exerciseLibrary'
 import { getSuggestedWeight } from '@/utils/progressiveOverload'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
@@ -69,6 +71,22 @@ const allDone = computed(
   () =>
     completedSets.value === props.exercise.sets.length && props.exercise.sets.length > 0,
 )
+
+const libraryEntry = computed(() => {
+  const id = props.exercise.libraryId
+  if (!id) return null
+  return getLibraryExercise(id) ?? null
+})
+
+const detailOpen = ref(false)
+
+function openLibraryDetail() {
+  if (libraryEntry.value) detailOpen.value = true
+}
+
+function closeLibraryDetail() {
+  detailOpen.value = false
+}
 </script>
 
 <template>
@@ -78,7 +96,18 @@ const allDone = computed(
   >
     <div class="mb-2 flex justify-between gap-2">
       <div class="min-w-0 flex-1">
-        <h4 class="text-base font-bold text-foreground">{{ exercise.name }}</h4>
+        <div class="flex items-center gap-2">
+          <h4 class="text-base font-bold text-foreground">{{ exercise.name }}</h4>
+          <button
+            v-if="libraryEntry"
+            type="button"
+            class="shrink-0 text-primary hover:text-foreground"
+            aria-label="How to perform this exercise"
+            @click="openLibraryDetail"
+          >
+            <i class="fa-solid fa-circle-info text-sm" aria-hidden="true" />
+          </button>
+        </div>
         <p
           v-if="exercise.targetReps && !exercise.isCircuit"
           class="mt-0.5 text-[11px] text-muted"
@@ -161,5 +190,11 @@ const allDone = computed(
         + Add Set
       </button>
     </template>
+
+    <ExerciseDetailSheet
+      :open="detailOpen"
+      :exercise="libraryEntry"
+      @close="closeLibraryDetail"
+    />
   </div>
 </template>

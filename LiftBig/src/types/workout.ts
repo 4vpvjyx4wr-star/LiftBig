@@ -8,6 +8,7 @@ export type SetLog = {
 export type Exercise = {
   id: string
   name: string
+  libraryId?: string
   sets: SetLog[]
   isCircuit?: boolean
   targetReps?: string
@@ -21,6 +22,7 @@ export type TemplateSet = { targetReps: string; targetWeight: string }
 export type TemplateExercise = {
   id: string
   name: string
+  libraryId?: string
   sets: TemplateSet[]
   isCircuit?: boolean
 }

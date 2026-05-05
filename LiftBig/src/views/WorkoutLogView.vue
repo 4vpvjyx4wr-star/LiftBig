@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import ExerciseCard from '@/components/workout/ExerciseCard.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
 import { workoutsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise } from '@/types/workout'
 import { formatDisplayDate } from '@/utils/dateKey'
+import type { LibraryExercise } from '@/utils/exerciseLibrary'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +21,7 @@ const dateKey = computed(() => {
 
 const exercises = ref<Exercise[]>([])
 const inputName = ref('')
+const libraryOpen = ref(false)
 
 function loadDay() {
   const k = dateKey.value
@@ -59,6 +62,18 @@ function addExercise() {
     },
   ]
   inputName.value = ''
+}
+
+function addFromLibrary(ex: LibraryExercise) {
+  exercises.value = [
+    ...exercises.value,
+    {
+      id: newId(),
+      name: ex.name,
+      libraryId: ex.id,
+      sets: [{ id: newId(), reps: '', weight: '' }],
+    },
+  ]
 }
 
 function addSet(exerciseId: string) {
@@ -123,6 +138,13 @@ function finish() {
         <p class="text-xs text-muted">{{ formatDisplayDate(dateKey) }}</p>
       </div>
       <div class="flex flex-col items-end gap-2">
+        <RouterLink
+          to="/library"
+          class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
+          aria-label="Open exercise library"
+        >
+          <i class="fa-solid fa-book text-sm" aria-hidden="true" />
+        </RouterLink>
         <RestTimer />
       </div>
     </header>
@@ -159,6 +181,13 @@ function finish() {
         />
         <button
           type="button"
+          class="shrink-0 rounded-lg border border-primary/50 bg-card-inner px-3 py-2.5 text-xs font-bold text-primary sm:px-4"
+          @click="libraryOpen = true"
+        >
+          Library
+        </button>
+        <button
+          type="button"
           class="shrink-0 rounded-lg bg-blue px-5 py-2.5 font-bold text-foreground"
           @click="addExercise"
         >
@@ -174,5 +203,11 @@ function finish() {
         Finish Workout
       </button>
     </div>
+
+    <LibraryPickerModal
+      :show="libraryOpen"
+      @close="libraryOpen = false"
+      @pick="addFromLibrary"
+    />
   </div>
 </template>

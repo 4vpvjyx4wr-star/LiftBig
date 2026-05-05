@@ -32,6 +32,11 @@ const router = createRouter({
           name: 'plates',
           component: () => import('@/views/PlatesView.vue'),
         },
+        {
+          path: 'library',
+          name: 'library',
+          component: () => import('@/views/LibraryView.vue'),
+        },
       ],
     },
     {
