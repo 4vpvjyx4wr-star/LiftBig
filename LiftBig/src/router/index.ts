@@ -37,6 +37,11 @@ const router = createRouter({
           name: 'library',
           component: () => import('@/views/LibraryView.vue'),
         },
+        {
+          path: 'progress',
+          name: 'progress',
+          component: () => import('@/views/ProgressView.vue'),
+        },
       ],
     },
     {
