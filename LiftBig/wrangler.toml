@@ -1,0 +1,13 @@
+name = "liftbig"
+main = "worker.js"
+compatibility_date = "2025-05-01"
+
+# Cloudflare build root = this directory (…/LiftBig/). Builds the Vue (Vite) app to ./dist.
+[build]
+command = "npm run build"
+
+# Vite outDir; SPA fallback so vue-router history mode works on refresh/direct links.
+[assets]
+directory = "dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

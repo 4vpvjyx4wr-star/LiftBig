@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed, inject } from 'vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { SetLog } from '@/types/workout'
+import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
 defineProps<{
   set: SetLog
@@ -11,6 +14,13 @@ const emit = defineEmits<{
   update: [field: 'reps' | 'weight', value: string]
   delete: []
 }>()
+
+const settings = inject(settingsInjectionKey)!
+const weightUnit = computed(() => settings.weightUnit.value)
+
+function onWeightInput(raw: string) {
+  emit('update', 'weight', displayInputToStoredLbsString(raw, weightUnit.value))
+}
 </script>
 
 <template>
@@ -28,12 +38,12 @@ const emit = defineEmits<{
       @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
     />
     <input
-      :value="set.weight"
+      :value="storedLbsStringToDisplay(set.weight, weightUnit)"
       type="text"
       inputmode="decimal"
       class="flex-1 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
-      placeholder="lbs"
-      @input="emit('update', 'weight', ($event.target as HTMLInputElement).value)"
+      :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+      @input="onWeightInput(($event.target as HTMLInputElement).value)"
     />
     <button type="button" class="w-8 py-1 text-center text-sm text-muted" @click="emit('delete')">
       ✕

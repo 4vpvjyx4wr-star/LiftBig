@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
-import { templatesInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
+import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 import type { WorkoutTemplate } from '@/types/workout'
 
 const templates = inject(templatesInjectionKey)!
+const settings = inject(settingsInjectionKey)!
+const weightUnit = computed(() => settings.weightUnit.value)
+
+function formatTemplateWeight(s: string | undefined): string {
+  if (!s?.trim()) return ''
+  const lbs = parseStoredLbs(s)
+  if (Number.isNaN(lbs)) return s
+  return formatWeightWithUnit(lbs, weightUnit.value, 1)
+}
 
 const planList = computed(() => templates.templates.value)
 
@@ -102,7 +112,7 @@ function deletePlan(id: string) {
             <span class="font-semibold">{{ ex.name }}</span>
             <span class="text-muted">
               {{ ex.sets.length }} × {{ ex.sets[0]?.targetReps || '?' }}
-              <template v-if="ex.sets[0]?.targetWeight"> @ {{ ex.sets[0].targetWeight }}lbs</template>
+              <template v-if="ex.sets[0]?.targetWeight"> @ {{ formatTemplateWeight(ex.sets[0].targetWeight) }}</template>
             </span>
           </li>
         </ul>
@@ -118,6 +128,7 @@ function deletePlan(id: string) {
     </button>
 
     <PlanEditorModal
+      :weight-unit="weightUnit"
       :show="modalOpen"
       :initial="editing"
       @close="closeModal"

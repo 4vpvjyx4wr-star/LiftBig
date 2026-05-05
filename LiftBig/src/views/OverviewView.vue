@@ -3,13 +3,16 @@ import { computed, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import MonthGrid from '@/components/calendar/MonthGrid.vue'
 import MonthNav from '@/components/calendar/MonthNav.vue'
-import { workoutsInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { formatMaxWeightDisplay } from '@/utils/units'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
 
 const router = useRouter()
 const workouts = inject(workoutsInjectionKey)!
+const settings = inject(settingsInjectionKey)!
+const weightUnit = computed(() => settings.weightUnit.value)
 
 const viewYear = ref(new Date().getFullYear())
 const viewMonth = ref(new Date().getMonth())
@@ -152,7 +155,7 @@ function editDay() {
           <template v-else>
             <p class="mt-2 text-xs text-muted">
               {{ modalStats.sets }} sets · {{ modalStats.reps }} total reps (where entered) · max
-              {{ modalStats.maxW || '—' }} lbs
+              {{ formatMaxWeightDisplay(modalStats.maxW, weightUnit) }}
             </p>
             <ul class="mt-4 space-y-2">
               <li

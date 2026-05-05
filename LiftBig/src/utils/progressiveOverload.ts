@@ -1,4 +1,6 @@
 import type { WorkoutLog } from '@/types/workout'
+import type { WeightUnit } from '@/utils/units'
+import { formatDeltaFromLbs } from '@/utils/units'
 
 type SetLogLike = { reps: string; weight: string }
 
@@ -64,6 +66,7 @@ export function getSuggestedWeight(
   targetRepGoal: string,
   currentGoalWeight: number,
   allWorkouts: WorkoutLog,
+  displayUnit: WeightUnit = 'lb',
 ): { suggestedWeight: number; reason: string } {
   try {
     if (!allWorkouts || Object.keys(allWorkouts).length === 0) {
@@ -101,7 +104,7 @@ export function getSuggestedWeight(
     if (allHitMax) {
       return {
         suggestedWeight: lastWeight + increment,
-        reason: `Hit top of range last session — increase by ${increment} lbs`,
+        reason: `Hit top of range last session — increase by ${formatDeltaFromLbs(increment, displayUnit)}`,
       }
     }
 

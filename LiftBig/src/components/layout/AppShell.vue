@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+import SettingsSheet from '@/components/layout/SettingsSheet.vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import { todayKey } from '@/utils/dateKey'
 
 const liftHref = computed(() => `/workout/${todayKey()}`)
+const settings = inject(settingsInjectionKey)!
+const settingsOpen = ref(false)
+const sheetTheme = computed(() => settings.theme.value)
+const sheetWeightUnit = computed(() => settings.weightUnit.value)
 </script>
 
 <template>
@@ -15,21 +21,21 @@ const liftHref = computed(() => `/workout/${todayKey()}`)
     <nav
       class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-sm"
     >
-      <div class="relative mx-auto flex max-w-lg items-end justify-around px-1 pb-safe pt-2">
+      <div class="relative mx-auto flex max-w-lg items-end justify-between gap-0 px-1 pb-safe pt-2">
         <RouterLink
           to="/"
-          class="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-bold tracking-wide text-muted"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
           active-class="!text-primary"
         >
-          <i class="fa-solid fa-house text-lg" aria-hidden="true" />
+          <i class="fa-solid fa-house text-base sm:text-lg" aria-hidden="true" />
           Home
         </RouterLink>
         <RouterLink
           to="/overview"
-          class="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-bold tracking-wide text-muted"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
           active-class="!text-primary"
         >
-          <i class="fa-solid fa-calendar-days text-lg" aria-hidden="true" />
+          <i class="fa-solid fa-calendar-days text-base sm:text-lg" aria-hidden="true" />
           Overview
         </RouterLink>
 
@@ -42,22 +48,40 @@ const liftHref = computed(() => `/workout/${todayKey()}`)
 
         <RouterLink
           to="/plans"
-          class="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-bold tracking-wide text-muted"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
           active-class="!text-primary"
         >
-          <i class="fa-solid fa-clipboard-list text-lg" aria-hidden="true" />
+          <i class="fa-solid fa-clipboard-list text-base sm:text-lg" aria-hidden="true" />
           Plans
         </RouterLink>
         <RouterLink
           to="/plates"
-          class="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-bold tracking-wide text-muted"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
           active-class="!text-primary"
         >
-          <i class="fa-solid fa-weight-hanging text-lg" aria-hidden="true" />
+          <i class="fa-solid fa-weight-hanging text-base sm:text-lg" aria-hidden="true" />
           Plates
         </RouterLink>
+        <button
+          type="button"
+          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+          aria-label="Open settings"
+          @click="settingsOpen = true"
+        >
+          <i class="fa-solid fa-gear text-base sm:text-lg" aria-hidden="true" />
+          Settings
+        </button>
       </div>
     </nav>
+
+    <SettingsSheet
+      :open="settingsOpen"
+      :theme="sheetTheme"
+      :weight-unit="sheetWeightUnit"
+      @close="settingsOpen = false"
+      @update:theme="settings.setTheme"
+      @update:weight-unit="settings.setWeightUnit"
+    />
   </div>
 </template>
 

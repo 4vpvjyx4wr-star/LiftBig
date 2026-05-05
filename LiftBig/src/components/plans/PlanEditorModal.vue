@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { watch, ref } from 'vue'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
+import type { WeightUnit } from '@/utils/units'
+import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
 const props = defineProps<{
   show: boolean
   initial: WorkoutTemplate | null
+  weightUnit: WeightUnit
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +71,14 @@ function addExercise() {
 
 function removeExercise(index: number) {
   exercises.value = exercises.value.filter((_, i) => i !== index)
+}
+
+function onTargetWeightInput(exIndex: number, setIndex: number, raw: string) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  const next = displayInputToStoredLbsString(raw, props.weightUnit)
+  const sets = ex.sets.map((s, i) => (i === setIndex ? { ...s, targetWeight: next } : s))
+  updateExercise(exIndex, { ...ex, sets })
 }
 
 function save() {
@@ -136,7 +147,7 @@ function save() {
             <div class="grid grid-cols-[2fr_1fr_1fr_28px] gap-1 text-[10px] font-bold uppercase text-muted">
               <span>Set</span>
               <span class="text-center">Reps</span>
-              <span class="text-center">lbs</span>
+              <span class="text-center">{{ weightUnit === 'lb' ? 'lb' : 'kg' }}</span>
               <span />
             </div>
             <div
@@ -152,10 +163,11 @@ function save() {
                 class="rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
               />
               <input
-                v-model="set.targetWeight"
+                :value="storedLbsStringToDisplay(set.targetWeight, weightUnit)"
                 type="text"
-                inputmode="numeric"
+                inputmode="decimal"
                 class="rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
+                @input="onTargetWeightInput(ei, si, ($event.target as HTMLInputElement).value)"
               />
               <button
                 type="button"

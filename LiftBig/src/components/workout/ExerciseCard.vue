@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
+import SetRow from '@/components/workout/SetRow.vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
 import { getSuggestedWeight } from '@/utils/progressiveOverload'
-import SetRow from '@/components/workout/SetRow.vue'
+import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const props = defineProps<{
   exercise: Exercise
   workoutLog: WorkoutLog
 }>()
+
+const settings = inject(settingsInjectionKey)!
+const weightUnit = computed(() => settings.weightUnit.value)
+
+function formatStoredLbsForDisplay(s: string | undefined): string {
+  if (!s?.trim()) return ''
+  const lbs = parseStoredLbs(s)
+  if (Number.isNaN(lbs)) return s
+  return formatWeightWithUnit(lbs, weightUnit.value, 1)
+}
 
 const emit = defineEmits<{
   addSet: []
@@ -20,7 +32,14 @@ const emit = defineEmits<{
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
 
 watch(
-  () => [props.exercise.name, props.exercise.targetReps, props.exercise.sets, props.workoutLog] as const,
+  () =>
+    [
+      props.exercise.name,
+      props.exercise.targetReps,
+      props.exercise.sets,
+      props.workoutLog,
+      weightUnit.value,
+    ] as const,
   () => {
     if (props.exercise.isCircuit || !props.exercise.targetReps) {
       suggestion.value = null
@@ -34,6 +53,7 @@ watch(
       props.exercise.targetReps,
       base,
       props.workoutLog,
+      weightUnit.value,
     )
   },
   { deep: true, immediate: true },
@@ -64,7 +84,7 @@ const allDone = computed(
           class="mt-0.5 text-[11px] text-muted"
         >
           Goal: {{ exercise.sets.length }} × {{ exercise.targetReps }}
-          <template v-if="exercise.targetWeight"> @ {{ exercise.targetWeight }} lbs</template>
+          <template v-if="exercise.targetWeight"> @ {{ formatStoredLbsForDisplay(exercise.targetWeight) }}</template>
         </p>
       </div>
       <div class="flex shrink-0 flex-col items-end gap-1">
@@ -89,7 +109,7 @@ const allDone = computed(
       class="mb-2.5 rounded-lg border border-[#16a34a] bg-[#0d2010] p-2"
     >
       <div class="text-[13px] font-bold text-[#4ade80]">
-        Suggested: {{ suggestion.suggestedWeight }} lbs
+        Suggested: {{ formatWeightWithUnit(suggestion.suggestedWeight, weightUnit, 1) }}
       </div>
       <div class="mt-0.5 text-[11px] text-[#86efac]">{{ suggestion.reason }}</div>
     </div>
@@ -112,7 +132,7 @@ const allDone = computed(
         </span>
         <span class="w-11 text-xs text-muted">Set {{ index + 1 }}</span>
         <span class="flex-1 text-[13px] text-foreground">
-          {{ set.reps || 'AMRAP' }} reps @ {{ set.weight || '20' }} lbs
+          {{ set.reps || 'AMRAP' }} reps @ {{ formatStoredLbsForDisplay(set.weight || '20') }}
         </span>
       </button>
     </template>

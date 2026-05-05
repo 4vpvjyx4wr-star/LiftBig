@@ -1,4 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
+import type { SettingsApi } from '@/composables/useSettings'
 import type { Exercise, WorkoutLog, WorkoutTemplate } from '@/types/workout'
 
 export type LocalWorkoutsApi = {
@@ -18,3 +19,5 @@ export type TemplatesApi = {
 
 export const workoutsInjectionKey: InjectionKey<LocalWorkoutsApi> = Symbol('workouts')
 export const templatesInjectionKey: InjectionKey<TemplatesApi> = Symbol('templates')
+
+export const settingsInjectionKey: InjectionKey<SettingsApi> = Symbol('settings')
