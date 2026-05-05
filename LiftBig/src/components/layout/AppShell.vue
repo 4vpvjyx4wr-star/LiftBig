@@ -94,14 +94,20 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
           @click.stop
         >
           <RouterLink
+            v-slot="{ navigate, isActive }"
             to="/plates"
-            role="menuitem"
-            class="flex items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-            active-class="!text-primary"
-            @click="closeMenu"
+            custom
           >
-            <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
-            Plates
+            <button
+              type="button"
+              role="menuitem"
+              class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+              :class="{ '!text-primary': isActive }"
+              @click="closeMenu(); navigate($event)"
+            >
+              <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
+              Plates
+            </button>
           </RouterLink>
           <RouterLink
             to="/progress"
@@ -131,48 +137,69 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
     </div>
 
     <nav
-      class="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-sm"
+      class="fixed bottom-0 left-0 right-0 z-40 touch-manipulation border-t border-border bg-card/95 backdrop-blur-sm select-none [-webkit-touch-callout:none]"
     >
       <div class="relative mx-auto flex max-w-lg items-end justify-between gap-0 px-1 pb-safe pt-2">
-        <RouterLink
-          to="/"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          active-class="!text-primary"
-        >
-          <i class="fa-solid fa-house text-base sm:text-lg" aria-hidden="true" />
-          Home
+        <RouterLink v-slot="{ navigate, isActive }" to="/" custom>
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+            :class="{ '!text-primary': isActive }"
+            :aria-current="isActive ? 'page' : undefined"
+            @click="navigate($event)"
+          >
+            <i class="fa-solid fa-house text-base sm:text-lg" aria-hidden="true" />
+            Home
+          </button>
         </RouterLink>
-        <RouterLink
-          to="/overview"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          active-class="!text-primary"
-        >
-          <i class="fa-solid fa-calendar-days text-base sm:text-lg" aria-hidden="true" />
-          Overview
+        <RouterLink v-slot="{ navigate, isActive }" to="/overview" custom>
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+            :class="{ '!text-primary': isActive }"
+            :aria-current="isActive ? 'page' : undefined"
+            @click="navigate($event)"
+          >
+            <i class="fa-solid fa-calendar-days text-base sm:text-lg" aria-hidden="true" />
+            Overview
+          </button>
         </RouterLink>
 
-        <RouterLink
-          :to="liftHref"
-          class="absolute bottom-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-xs font-black tracking-widest text-foreground shadow-lg ring-4 ring-background"
-        >
-          LIFT
+        <RouterLink v-slot="{ navigate, isActive }" :to="liftHref" custom>
+          <button
+            type="button"
+            class="absolute bottom-6 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary text-xs font-black tracking-widest text-foreground shadow-lg ring-4 ring-background outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            :aria-current="isActive ? 'page' : undefined"
+            aria-label="Open workout log"
+            @click="navigate($event)"
+          >
+            LIFT
+          </button>
         </RouterLink>
 
-        <RouterLink
-          to="/plans"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          active-class="!text-primary"
-        >
-          <i class="fa-solid fa-clipboard-list text-base sm:text-lg" aria-hidden="true" />
-          Plans
+        <RouterLink v-slot="{ navigate, isActive }" to="/plans" custom>
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+            :class="{ '!text-primary': isActive }"
+            :aria-current="isActive ? 'page' : undefined"
+            @click="navigate($event)"
+          >
+            <i class="fa-solid fa-clipboard-list text-base sm:text-lg" aria-hidden="true" />
+            Plans
+          </button>
         </RouterLink>
-        <RouterLink
-          to="/library"
-          class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
-          active-class="!text-primary"
-        >
-          <i class="fa-solid fa-book text-base sm:text-lg" aria-hidden="true" />
-          Library
+        <RouterLink v-slot="{ navigate, isActive }" to="/library" custom>
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[9px] font-bold tracking-wide text-muted sm:text-[10px]"
+            :class="{ '!text-primary': isActive }"
+            :aria-current="isActive ? 'page' : undefined"
+            @click="navigate($event)"
+          >
+            <i class="fa-solid fa-book text-base sm:text-lg" aria-hidden="true" />
+            Library
+          </button>
         </RouterLink>
       </div>
     </nav>
