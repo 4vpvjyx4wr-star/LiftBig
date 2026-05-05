@@ -24,8 +24,8 @@ function onWeightInput(raw: string) {
 </script>
 
 <template>
-  <div class="mb-2 flex items-center gap-2">
-    <div class="flex w-16 flex-col items-center">
+  <div class="mb-2 flex min-w-0 items-center gap-2">
+    <div class="flex w-16 shrink-0 flex-col items-center">
       <span class="text-[11px] font-semibold text-muted">Set {{ index + 1 }}</span>
       <span v-if="targetReps" class="mt-0.5 text-[9px] font-bold text-primary">{{ targetReps }}</span>
     </div>
@@ -33,7 +33,7 @@ function onWeightInput(raw: string) {
       :value="set.reps"
       type="text"
       inputmode="numeric"
-      class="flex-1 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+      class="min-w-0 flex-1 basis-0 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
       placeholder="Reps"
       @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
     />
@@ -41,11 +41,15 @@ function onWeightInput(raw: string) {
       :value="storedLbsStringToDisplay(set.weight, weightUnit)"
       type="text"
       inputmode="decimal"
-      class="flex-1 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+      class="min-w-0 flex-1 basis-0 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
       :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
       @input="onWeightInput(($event.target as HTMLInputElement).value)"
     />
-    <button type="button" class="w-8 py-1 text-center text-sm text-muted" @click="emit('delete')">
+    <button
+      type="button"
+      class="w-8 shrink-0 py-1 text-center text-sm text-muted"
+      @click="emit('delete')"
+    >
       ✕
     </button>
   </div>
