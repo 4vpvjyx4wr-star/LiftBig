@@ -1,9 +1,10 @@
 import { ref } from 'vue'
 import type { WorkoutTemplate } from '@/types/workout'
 import { DEFAULT_PLANS } from '@/utils/defaultPlans'
+import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { saveJson } from '@/utils/storage'
 
-const KEY = 'liftbig_templates'
+const KEY = LIFTBIG_STORAGE_KEYS.templates
 
 function clonePlans(plans: WorkoutTemplate[]): WorkoutTemplate[] {
   return JSON.parse(JSON.stringify(plans)) as WorkoutTemplate[]

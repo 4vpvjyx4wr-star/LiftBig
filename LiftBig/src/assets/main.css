@@ -24,11 +24,57 @@ body,
 }
 
 body {
+  position: relative;
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@keyframes theme-loud-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes theme-aurora-flow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(2%, -1%) scale(1.02);
+    opacity: 0.65;
+  }
+  66% {
+    transform: translate(-1%, 2%) scale(0.98);
+    opacity: 0.55;
+  }
+}
+
+@keyframes theme-disco-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 [data-theme='forest'] {
@@ -71,4 +117,327 @@ body {
   --color-muted: #9f7a82;
   --color-success: #16a34a;
   --color-success-text: #bbf7d0;
+}
+
+/* Loud: maximum contrast + animated acid rainbow wash */
+[data-theme='loud'] {
+  --color-background: #120018;
+  --color-card: #1a0024;
+  --color-card-inner: #14001c;
+  --color-border: #ff00cc;
+  --color-primary: #fffb00;
+  --color-blue: #00f5ff;
+  --color-blue-soft: #7c0099;
+  --color-foreground: #ffffff;
+  --color-muted: #ff6ec7;
+  --color-success: #00ff88;
+  --color-success-text: #ccff00;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+}
+
+[data-theme='loud'] body::before {
+  opacity: 1;
+  background: linear-gradient(
+    90deg,
+    #ff00ff 0%,
+    #ffff00 18%,
+    #00ff00 36%,
+    #00ffff 54%,
+    #ff0088 72%,
+    #ff6600 88%,
+    #ff00ff 100%
+  );
+  background-size: 400% 100%;
+  animation: theme-loud-shift 2.5s ease-in-out infinite;
+  mix-blend-mode: hard-light;
+}
+
+/* Cyberpunk: neon grid + magenta/teal haze */
+[data-theme='cyberpunk'] {
+  --color-background: #050810;
+  --color-card: #0c1220;
+  --color-card-inner: #080c18;
+  --color-border: #00f0ff;
+  --color-primary: #ff2a6d;
+  --color-blue: #05d9e8;
+  --color-blue-soft: #1a1f4a;
+  --color-foreground: #e8f4ff;
+  --color-muted: #6b8fb3;
+  --color-success: #39ff14;
+  --color-success-text: #b4ffc9;
+}
+
+[data-theme='cyberpunk'] body::before {
+  opacity: 1;
+  background-image:
+    linear-gradient(rgba(5, 217, 232, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 42, 109, 0.06) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 42, 109, 0.25), transparent 55%),
+    radial-gradient(ellipse 70% 40% at 80% 100%, rgba(5, 217, 232, 0.2), transparent 50%);
+  background-size:
+    48px 48px,
+    48px 48px,
+    100% 100%,
+    100% 100%;
+}
+
+/* Iron: steel gym floor + dumbbell tile */
+[data-theme='iron'] {
+  --color-background: #0f1115;
+  --color-card: #181b22;
+  --color-card-inner: #12151c;
+  --color-border: #3d4454;
+  --color-primary: #f97316;
+  --color-blue: #64748b;
+  --color-blue-soft: #334155;
+  --color-foreground: #f1f5f9;
+  --color-muted: #8b95a8;
+  --color-success: #22c55e;
+  --color-success-text: #86efac;
+}
+
+[data-theme='iron'] body::before {
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%2364748b' stroke-width='1.2' opacity='0.5'%3E%3Ccircle cx='28' cy='60' r='14'/%3E%3Ccircle cx='92' cy='60' r='14'/%3E%3Cpath d='M28 60h64'/%3E%3C/g%3E%3Ccircle cx='28' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3Ccircle cx='92' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+
+/* Caffeine: coffee lab — bonds + warm roast tones */
+[data-theme='caffeine'] {
+  --color-background: #1c140d;
+  --color-card: #2a1f16;
+  --color-card-inner: #221810;
+  --color-border: #5c4a3a;
+  --color-primary: #d4a574;
+  --color-blue: #8b6914;
+  --color-blue-soft: #4a3f32;
+  --color-foreground: #faf3ea;
+  --color-muted: #a89884;
+  --color-success: #65a30d;
+  --color-success-text: #d9f99d;
+}
+
+[data-theme='caffeine'] body::before {
+  opacity: 0.55;
+  background-image:
+    repeating-linear-gradient(
+      120deg,
+      transparent,
+      transparent 38px,
+      rgba(212, 165, 116, 0.06) 38px,
+      rgba(212, 165, 116, 0.06) 39px
+    ),
+    repeating-linear-gradient(
+      -120deg,
+      transparent,
+      transparent 38px,
+      rgba(139, 105, 20, 0.05) 38px,
+      rgba(139, 105, 20, 0.05) 39px
+    ),
+    radial-gradient(circle at 30% 20%, rgba(212, 165, 116, 0.15), transparent 40%);
+}
+
+/* Aurora: shifting borealis bands */
+[data-theme='aurora'] {
+  --color-background: #061210;
+  --color-card: #0d1f1c;
+  --color-card-inner: #0a1815;
+  --color-border: #1f4d45;
+  --color-primary: #5eead4;
+  --color-blue: #34d399;
+  --color-blue-soft: #134e4a;
+  --color-foreground: #ecfeff;
+  --color-muted: #6b9e94;
+  --color-success: #4ade80;
+  --color-success-text: #bbf7d0;
+}
+
+[data-theme='aurora'] body::before {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(94, 234, 212, 0.35), transparent 55%),
+    radial-gradient(ellipse 100% 60% at 20% 60%, rgba(52, 211, 153, 0.25), transparent 45%),
+    radial-gradient(ellipse 90% 50% at 85% 40%, rgba(167, 139, 250, 0.2), transparent 50%);
+  animation: theme-aurora-flow 18s ease-in-out infinite;
+}
+
+/* Bubblegum: candy dots */
+[data-theme='bubblegum'] {
+  --color-background: #2a0a24;
+  --color-card: #3d1340;
+  --color-card-inner: #321035;
+  --color-border: #ec4899;
+  --color-primary: #f472b6;
+  --color-blue: #e879f9;
+  --color-blue-soft: #86198f;
+  --color-foreground: #fdf4ff;
+  --color-muted: #d8b4e2;
+  --color-success: #4ade80;
+  --color-success-text: #bbf7d0;
+}
+
+[data-theme='bubblegum'] body::before {
+  opacity: 0.4;
+  background-image: radial-gradient(circle, rgba(244, 114, 182, 0.35) 2px, transparent 2.5px);
+  background-size: 28px 28px;
+}
+
+/* Midnight: star specks */
+[data-theme='midnight'] {
+  --color-background: #050816;
+  --color-card: #0f1629;
+  --color-card-inner: #0a1020;
+  --color-border: #2d3f6e;
+  --color-primary: #93c5fd;
+  --color-blue: #3b82f6;
+  --color-blue-soft: #1e3a8a;
+  --color-foreground: #eff6ff;
+  --color-muted: #7c9acd;
+  --color-success: #34d399;
+  --color-success-text: #a7f3d0;
+}
+
+[data-theme='midnight'] body::before {
+  opacity: 0.65;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 70% 30%, rgba(147, 197, 253, 0.95), transparent),
+    radial-gradient(1px 1px at 88% 78%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 45% 90%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 55% 12%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(30, 58, 138, 0.35), transparent 70%);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+}
+
+/* Sandstorm: desert grain */
+[data-theme='sandstorm'] {
+  --color-background: #1c1510;
+  --color-card: #2a2218;
+  --color-card-inner: #231c14;
+  --color-border: #5c4f3d;
+  --color-primary: #fbbf24;
+  --color-blue: #d97706;
+  --color-blue-soft: #78350f;
+  --color-foreground: #fffbeb;
+  --color-muted: #bfa88f;
+  --color-success: #84cc16;
+  --color-success-text: #d9f99d;
+}
+
+[data-theme='sandstorm'] body::before {
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(251, 191, 36, 0.04) 2px, rgba(251, 191, 36, 0.04) 4px),
+    linear-gradient(165deg, rgba(217, 119, 6, 0.12) 0%, transparent 45%);
+}
+
+/* Cherry lime: split punch */
+[data-theme='cherrylime'] {
+  --color-background: #140a12;
+  --color-card: #1f1218;
+  --color-card-inner: #190e14;
+  --color-border: #be185d;
+  --color-primary: #f43f5e;
+  --color-blue: #84cc16;
+  --color-blue-soft: #3f6212;
+  --color-foreground: #fff1f2;
+  --color-muted: #d4a5af;
+  --color-success: #a3e635;
+  --color-success-text: #ecfccb;
+}
+
+[data-theme='cherrylime'] body::before {
+  opacity: 0.45;
+  background: linear-gradient(
+    135deg,
+    rgba(244, 63, 94, 0.25) 0%,
+    rgba(244, 63, 94, 0.08) 42%,
+    rgba(132, 204, 22, 0.08) 58%,
+    rgba(132, 204, 22, 0.22) 100%
+  );
+}
+
+/* Terminal: phosphor green scanlines */
+[data-theme='terminal'] {
+  --color-background: #030705;
+  --color-card: #0a120c;
+  --color-card-inner: #060a08;
+  --color-border: #166534;
+  --color-primary: #4ade80;
+  --color-blue: #22c55e;
+  --color-blue-soft: #14532d;
+  --color-foreground: #dcfce7;
+  --color-muted: #6b9e7a;
+  --color-success: #86efac;
+  --color-success-text: #bbf7d0;
+}
+
+[data-theme='terminal'] body::before {
+  opacity: 0.25;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(74, 222, 128, 0.06) 2px,
+    rgba(74, 222, 128, 0.06) 3px
+  );
+}
+
+/* Disco: mirror-ball sparkles */
+[data-theme='disco'] {
+  --color-background: #12081a;
+  --color-card: #1c1028;
+  --color-card-inner: #160c20;
+  --color-border: #c084fc;
+  --color-primary: #fde047;
+  --color-blue: #e879f9;
+  --color-blue-soft: #6b21a8;
+  --color-foreground: #fefce8;
+  --color-muted: #d8b4fe;
+  --color-success: #34d399;
+  --color-success-text: #a7f3d0;
+}
+
+[data-theme='disco'] body::before {
+  opacity: 1;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(253, 224, 71, 0.5) 0%, transparent 8px),
+    radial-gradient(circle at 75% 55%, rgba(232, 121, 249, 0.45) 0%, transparent 6px),
+    radial-gradient(circle at 50% 80%, rgba(253, 224, 71, 0.35) 0%, transparent 7px),
+    radial-gradient(circle at 90% 15%, rgba(252, 211, 77, 0.4) 0%, transparent 5px),
+    radial-gradient(ellipse at 50% 0%, rgba(192, 132, 252, 0.2), transparent 60%);
+  background-size: 100% 100%;
+  animation: theme-disco-pulse 3s ease-in-out infinite;
+}
+
+/* Ocean: depth bubbles */
+[data-theme='ocean'] {
+  --color-background: #031018;
+  --color-card: #0a1c28;
+  --color-card-inner: #061420;
+  --color-border: #155e75;
+  --color-primary: #22d3ee;
+  --color-blue: #0ea5e9;
+  --color-blue-soft: #164e63;
+  --color-foreground: #ecfeff;
+  --color-muted: #67b8c9;
+  --color-success: #2dd4bf;
+  --color-success-text: #99f6e4;
+}
+
+[data-theme='ocean'] body::before {
+  opacity: 0.5;
+  background-image:
+    radial-gradient(circle at 15% 70%, rgba(34, 211, 238, 0.12) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.1) 0%, transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 35%),
+    linear-gradient(180deg, rgba(3, 16, 24, 0.3) 0%, rgba(14, 165, 233, 0.08) 100%);
 }

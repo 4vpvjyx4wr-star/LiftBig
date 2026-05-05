@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { WorkoutTemplate } from '@/types/workout'
+import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
 
 defineProps<{
   open: boolean
@@ -10,6 +11,10 @@ const emit = defineEmits<{
   close: []
   pick: [template: WorkoutTemplate]
 }>()
+
+function planDurationLabel(t: WorkoutTemplate): string {
+  return formatPlanDurationEstimate(estimatePlanDurationMinutes(t))
+}
 </script>
 
 <template>
@@ -27,7 +32,12 @@ const emit = defineEmits<{
       >
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
         <h3 class="text-center text-lg font-extrabold text-foreground">Choose a Plan</h3>
-        <p class="mb-4 text-center text-xs text-muted">Exercises will be appended to this day.</p>
+        <p class="mb-4 text-center text-xs text-muted">
+          Exercises will be appended to this day.
+          <span class="mt-1 block text-[10px] opacity-90">
+            Times shown: ~1 min per set + ~1 min rest between sets.
+          </span>
+        </p>
         <ul class="space-y-2">
           <li v-for="t in templates" :key="t.id">
             <button
@@ -39,6 +49,7 @@ const emit = defineEmits<{
                 <div class="font-bold text-foreground">{{ t.name }}</div>
                 <div class="text-xs text-muted">
                   {{ t.exercises.length }} exercise{{ t.exercises.length !== 1 ? 's' : '' }}
+                  · {{ planDurationLabel(t) }}
                 </div>
               </div>
               <span class="text-xl text-primary">›</span>

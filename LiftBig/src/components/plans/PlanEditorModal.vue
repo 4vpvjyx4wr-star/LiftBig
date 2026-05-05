@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { computed, watch, ref } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
+import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
 import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
@@ -20,6 +21,16 @@ const emit = defineEmits<{
 const planName = ref('')
 const exercises = ref<TemplateExercise[]>([])
 const libraryOpen = ref(false)
+
+const estimatedDurationLabel = computed(() =>
+  formatPlanDurationEstimate(
+    estimatePlanDurationMinutes({
+      id: 'draft',
+      name: '',
+      exercises: exercises.value,
+    }),
+  ),
+)
 
 function blankExercise(): TemplateExercise {
   return {
@@ -219,6 +230,11 @@ function save() {
             + From library
           </button>
         </div>
+
+        <p class="mt-3 text-center text-[11px] text-muted">
+          Est. {{ estimatedDurationLabel }}
+          <span class="block mt-0.5 font-normal opacity-90">1 min per set + 1 min rest between sets</span>
+        </p>
 
         <div class="mt-4 flex gap-2">
           <button

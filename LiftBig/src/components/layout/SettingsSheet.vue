@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { THEME_OPTIONS, type ThemeId } from '@/composables/useSettings'
 import type { WeightUnit } from '@/utils/units'
 
@@ -12,7 +13,23 @@ const emit = defineEmits<{
   close: []
   'update:theme': [id: ThemeId]
   'update:weightUnit': [u: WeightUnit]
+  exportBackup: []
+  importBackup: [file: File]
 }>()
+
+const importInputRef = ref<HTMLInputElement | null>(null)
+
+function triggerImportPick() {
+  importInputRef.value?.click()
+}
+
+function onImportFileChange(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  emit('importBackup', file)
+}
 </script>
 
 <template>
@@ -35,22 +52,26 @@ const emit = defineEmits<{
 
         <section class="mb-6">
           <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Theme</h3>
-          <div class="flex flex-col gap-2">
-            <button
-              v-for="opt in THEME_OPTIONS"
-              :key="opt.id"
-              type="button"
-              class="flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-colors"
-              :class="
-                theme === opt.id
-                  ? 'border-primary bg-card-inner text-foreground'
-                  : 'border-border bg-card-inner/60 text-muted hover:border-primary/50'
+          <label class="sr-only" for="liftbig-theme-select">Theme</label>
+          <div class="relative">
+            <select
+              id="liftbig-theme-select"
+              class="w-full appearance-none rounded-xl border border-border bg-card-inner py-3 pl-4 pr-10 text-left text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              :value="theme"
+              @change="
+                emit('update:theme', ($event.target as HTMLSelectElement).value as ThemeId)
               "
-              @click="emit('update:theme', opt.id)"
             >
-              {{ opt.label }}
-              <span v-if="theme === opt.id" class="text-primary" aria-hidden="true">✓</span>
-            </button>
+              <option v-for="opt in THEME_OPTIONS" :key="opt.id" :value="opt.id">
+                {{ opt.label }}
+              </option>
+            </select>
+            <span
+              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"
+              aria-hidden="true"
+            >
+              <i class="fa-solid fa-chevron-down text-xs" />
+            </span>
           </div>
         </section>
 
@@ -75,6 +96,42 @@ const emit = defineEmits<{
               @click="emit('update:weightUnit', 'kg')"
             >
               kg
+            </button>
+          </div>
+        </section>
+
+        <section class="mb-6 border-t border-border pt-5">
+          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Backup</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Export saves everything LiftBig keeps under <span class="font-mono text-[10px]">liftbig_*</span> in this
+            browser (today: workouts, plans, settings). Future keys using that prefix are included automatically.
+            Import replaces all of it on this device.
+          </p>
+          <input
+            ref="importInputRef"
+            type="file"
+            accept="application/json,.json"
+            class="sr-only"
+            aria-hidden="true"
+            tabindex="-1"
+            @change="onImportFileChange"
+          />
+          <div class="flex flex-col gap-2">
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground hover:border-primary/50"
+              @click="emit('exportBackup')"
+            >
+              <i class="fa-solid fa-download mr-2" aria-hidden="true" />
+              Export backup…
+            </button>
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground hover:border-primary/50"
+              @click="triggerImportPick"
+            >
+              <i class="fa-solid fa-upload mr-2" aria-hidden="true" />
+              Import backup…
             </button>
           </div>
         </section>

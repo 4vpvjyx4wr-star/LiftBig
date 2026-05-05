@@ -2,12 +2,50 @@
 import { computed, inject, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
-import { settingsInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import { todayKey } from '@/utils/dateKey'
+import {
+  applyLiftBigBackupToStorage,
+  collectLiftBigBackupPayload,
+  downloadLiftBigBackupJson,
+  parseLiftBigBackupJson,
+} from '@/utils/liftbigBackup'
 
 const liftHref = computed(() => `/workout/${todayKey()}`)
 const settings = inject(settingsInjectionKey)!
+const workouts = inject(workoutsInjectionKey)!
 const settingsOpen = ref(false)
+
+function onExportBackup() {
+  workouts.flush()
+  downloadLiftBigBackupJson(collectLiftBigBackupPayload())
+}
+
+async function onImportBackup(file: File) {
+  let text: string
+  try {
+    text = await file.text()
+  } catch {
+    window.alert('Could not read that file.')
+    return
+  }
+
+  const parsed = parseLiftBigBackupJson(text)
+  if (!parsed.ok) {
+    window.alert(parsed.error)
+    return
+  }
+
+  const ok = window.confirm(
+    'Replace all LiftBig data on this device with this backup?\n\nCurrent workouts, plans, and settings will be overwritten.',
+  )
+  if (!ok) return
+
+  workouts.flush()
+  applyLiftBigBackupToStorage(parsed.data)
+  settingsOpen.value = false
+  window.location.reload()
+}
 const sheetTheme = computed(() => settings.theme.value)
 const sheetWeightUnit = computed(() => settings.weightUnit.value)
 </script>
@@ -89,6 +127,8 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
       @close="settingsOpen = false"
       @update:theme="settings.setTheme"
       @update:weight-unit="settings.setWeightUnit"
+      @export-backup="onExportBackup"
+      @import-backup="onImportBackup"
     />
   </div>
 </template>

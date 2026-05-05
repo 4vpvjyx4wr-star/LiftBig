@@ -6,6 +6,7 @@ import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
 import type { WorkoutTemplate } from '@/types/workout'
 import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
@@ -79,6 +80,10 @@ function closeLibraryDetail() {
   detailOpen.value = false
   detailExercise.value = null
 }
+
+function planDurationLabel(t: WorkoutTemplate): string {
+  return formatPlanDurationEstimate(estimatePlanDurationMinutes(t))
+}
 </script>
 
 <template>
@@ -98,6 +103,10 @@ function closeLibraryDetail() {
         </RouterLink>
       </div>
     </header>
+
+    <p class="mb-3 text-[10px] leading-snug text-muted">
+      Time estimates assume ~1 min per working set and ~1 min rest between consecutive sets.
+    </p>
 
     <div v-if="planList.length === 0" class="py-12 text-center">
       <p class="text-lg font-bold text-foreground">No plans yet.</p>
@@ -131,6 +140,7 @@ function closeLibraryDetail() {
         </div>
         <p class="mt-1 text-xs text-muted">
           {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
+          · {{ planDurationLabel(item) }}
         </p>
         <ul class="mt-2 space-y-1 border-t border-border pt-2">
           <li

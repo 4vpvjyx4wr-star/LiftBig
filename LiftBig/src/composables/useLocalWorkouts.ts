@@ -1,8 +1,9 @@
 import { ref, watch } from 'vue'
 import type { Exercise, WorkoutLog } from '@/types/workout'
+import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJson, saveJson } from '@/utils/storage'
 
-const KEY = 'liftbig_workouts'
+const KEY = LIFTBIG_STORAGE_KEYS.workouts
 const DEBOUNCE_MS = 400
 
 export function useLocalWorkouts() {

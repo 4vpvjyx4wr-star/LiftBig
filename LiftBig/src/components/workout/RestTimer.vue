@@ -3,10 +3,14 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 const TIMER_OPTIONS = [30, 60, 90, 120] as const
 
+const MIN_SECONDS = 5
+const MAX_SECONDS = 60 * 30
+
 const duration = ref(60)
 const remaining = ref(60)
 const running = ref(false)
 const pickerOpen = ref(false)
+const customSecondsInput = ref('')
 let intervalId: ReturnType<typeof setInterval> | null = null
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
 const longPressConsumed = ref(false)
@@ -48,12 +52,55 @@ function toggle() {
   running.value = !running.value
 }
 
+function clampSeconds(sec: number): number {
+  return Math.min(MAX_SECONDS, Math.max(MIN_SECONDS, Math.round(sec)))
+}
+
+/** Parses "90", "1:30", "0:45" → seconds, or null if invalid. */
+function parseCustomDuration(raw: string): number | null {
+  const t = raw.trim()
+  if (!t) return null
+  if (t.includes(':')) {
+    const parts = t.split(':').map((p) => p.trim())
+    if (parts.length !== 2) return null
+    const m = Number(parts[0])
+    const s = Number(parts[1])
+    if (
+      !Number.isFinite(m) ||
+      !Number.isFinite(s) ||
+      m < 0 ||
+      s < 0 ||
+      s >= 60 ||
+      !Number.isInteger(m) ||
+      !Number.isInteger(s)
+    ) {
+      return null
+    }
+    return m * 60 + s
+  }
+  const n = Number(t)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.round(n)
+}
+
 function selectDur(d: number) {
-  duration.value = d
-  remaining.value = d
+  const sec = clampSeconds(d)
+  duration.value = sec
+  remaining.value = sec
   running.value = false
+  customSecondsInput.value = String(sec)
   pickerOpen.value = false
 }
+
+function applyCustomDuration() {
+  const parsed = parseCustomDuration(customSecondsInput.value)
+  if (parsed === null) return
+  selectDur(parsed)
+}
+
+watch(pickerOpen, (open) => {
+  if (open) customSecondsInput.value = String(duration.value)
+})
 
 function onPointerDown() {
   longPressConsumed.value = false
@@ -138,6 +185,30 @@ const bubbleClass = computed(() => {
             }}</span>
             <span v-if="duration === d" class="font-extrabold text-primary">✓</span>
           </button>
+          <div class="mt-3 border-t border-border pt-3">
+            <p class="mb-1.5 text-[11px] font-bold text-muted">Custom</p>
+            <p class="mb-2 text-[10px] leading-snug text-muted">
+              Seconds (e.g. 45) or m:ss (e.g. 1:30). {{ MIN_SECONDS }}s–{{ MAX_SECONDS / 60 }} min.
+            </p>
+            <div class="flex gap-2">
+              <input
+                v-model="customSecondsInput"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                class="min-w-0 flex-1 rounded-lg border border-border bg-card px-3 py-2.5 text-[15px] font-bold text-foreground outline-none focus:border-primary"
+                placeholder="e.g. 45 or 2:00"
+                @keydown.enter.prevent="applyCustomDuration"
+              />
+              <button
+                type="button"
+                class="shrink-0 rounded-lg bg-blue px-4 py-2.5 text-sm font-bold text-foreground"
+                @click="applyCustomDuration"
+              >
+                Set
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             class="mt-2 w-full py-2 text-sm text-muted"

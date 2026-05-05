@@ -1,17 +1,34 @@
 import { ref, watch } from 'vue'
+import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJson, saveJson } from '@/utils/storage'
 import type { WeightUnit } from '@/utils/units'
 
-const STORAGE_KEY = 'liftbig_settings'
+const STORAGE_KEY = LIFTBIG_STORAGE_KEYS.settings
 
-export type ThemeId = 'default' | 'forest' | 'violet' | 'sunset'
+export type ThemeId =
+  | 'default'
+  | 'forest'
+  | 'violet'
+  | 'sunset'
+  | 'loud'
+  | 'cyberpunk'
+  | 'iron'
+  | 'caffeine'
+  | 'aurora'
+  | 'bubblegum'
+  | 'midnight'
+  | 'sandstorm'
+  | 'cherrylime'
+  | 'terminal'
+  | 'disco'
+  | 'ocean'
 
 export type AppSettings = {
   theme: ThemeId
   weightUnit: WeightUnit
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'default',
   weightUnit: 'lb',
 }
@@ -21,6 +38,18 @@ export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: 'forest', label: 'Forest' },
   { id: 'violet', label: 'Violet' },
   { id: 'sunset', label: 'Sunset' },
+  { id: 'loud', label: 'Loud' },
+  { id: 'cyberpunk', label: 'Cyberpunk' },
+  { id: 'iron', label: 'Iron & steel (gym floor)' },
+  { id: 'caffeine', label: 'Caffeine molecule' },
+  { id: 'aurora', label: 'Aurora' },
+  { id: 'bubblegum', label: 'Bubblegum' },
+  { id: 'midnight', label: 'Midnight sky' },
+  { id: 'sandstorm', label: 'Sandstorm' },
+  { id: 'cherrylime', label: 'Cherry lime' },
+  { id: 'terminal', label: 'Terminal' },
+  { id: 'disco', label: 'Disco' },
+  { id: 'ocean', label: 'Ocean depths' },
 ]
 
 function applyTheme(theme: ThemeId) {
