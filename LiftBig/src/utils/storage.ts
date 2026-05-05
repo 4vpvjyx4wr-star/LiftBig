@@ -1,3 +1,8 @@
+/**
+ * Browser localStorage: survives closing the tab/window and normal app redeploys on the same site.
+ * Data is per-origin (scheme + host + port); clearing site data or using another browser/device starts fresh.
+ */
+
 const warnedQuota = { value: false }
 
 export function loadJson<T>(key: string, fallback: T): T {

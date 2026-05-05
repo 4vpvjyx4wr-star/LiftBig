@@ -103,9 +103,11 @@ function onImportFileChange(ev: Event) {
         <section class="mb-6 border-t border-border pt-5">
           <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Backup</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
-            Export saves everything LiftBig keeps under <span class="font-mono text-[10px]">liftbig_*</span> in this
-            browser (today: workouts, plans, settings). Future keys using that prefix are included automatically.
-            Import replaces all of it on this device.
+            Your journal is saved in this browser automatically (including after you close it or when the app is
+            updated), using storage under <span class="font-mono text-[10px]">liftbig_*</span>. Export saves everything
+            in that namespace today—workouts, plans, settings, favorites—and future keys using that prefix are included
+            automatically. Import replaces all of it on this device. Clearing site data, private browsing limits, or a
+            different browser won’t see the same data—use export if you might switch devices.
           </p>
           <input
             ref="importInputRef"
