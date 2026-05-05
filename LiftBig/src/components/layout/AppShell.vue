@@ -109,6 +109,16 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
               Plates
             </button>
           </RouterLink>
+          <RouterLink
+            to="/progress"
+            role="menuitem"
+            class="flex items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+            active-class="!text-primary"
+            @click="closeMenu"
+          >
+            <i class="fa-solid fa-chart-line w-5 text-center text-base text-muted" aria-hidden="true" />
+            Progress
+          </RouterLink>
           <button
             type="button"
             role="menuitem"

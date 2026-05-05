@@ -40,7 +40,8 @@ const INCREMENT_MAP: Record<string, number> = {
   'weighted reverse crunches': 2.5,
 }
 
-function getIncrement(exerciseName: string): number {
+/** Typical single-sided jump (lb) when progressing this lift (progressive overload). */
+export function getWeightIncrementLbs(exerciseName: string): number {
   const lower = exerciseName.toLowerCase()
   for (const key of Object.keys(INCREMENT_MAP)) {
     if (lower.includes(key)) return INCREMENT_MAP[key]!
@@ -99,7 +100,7 @@ export function getSuggestedWeight(
 
     const lastWeight =
       parseFloat(completedSets[completedSets.length - 1]!.weight) || currentGoalWeight
-    const increment = getIncrement(exerciseName)
+    const increment = getWeightIncrementLbs(exerciseName)
 
     if (allHitMax) {
       return {
