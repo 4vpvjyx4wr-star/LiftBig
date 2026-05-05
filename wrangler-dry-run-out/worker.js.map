@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../worker.js"],
+  "sourceRoot": ".\\wrangler-dry-run-out",
+  "sourcesContent": ["/**\r\n * Minimal worker: serve static assets (index.html + static/) for Cloudflare Workers.\r\n */\r\nexport default {\r\n  async fetch(request, env) {\r\n    return env.ASSETS.fetch(request);\r\n  },\r\n};\r\n"],
+  "mappings": ";AAGA,IAAO,iBAAQ;AAAA,EACb,MAAM,MAAM,SAAS,KAAK;AACxB,WAAO,IAAI,OAAO,MAAM,OAAO;AAAA,EACjC;AACF;",
+  "names": []
+}

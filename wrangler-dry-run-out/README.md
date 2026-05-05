@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "liftbig" generated at 2026-05-05T01:24:01.891Z.

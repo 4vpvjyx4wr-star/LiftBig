@@ -1,0 +1,14 @@
+name = "liftbig"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Run the Vite app build before wrangler bundles/uploads (paths are relative to this file).
+[build]
+command = "npm run build"
+cwd = "LiftBig"
+
+# Static site: Vite `build-only` output (default outDir `dist`).
+[assets]
+directory = "LiftBig/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
