@@ -169,8 +169,8 @@ function closeLibraryDetail() {
     <template v-else>
       <div class="mb-1 flex min-w-0">
         <span class="w-16 shrink-0" />
-        <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Reps</span>
         <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Weight</span>
+        <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Reps</span>
         <span class="w-8 shrink-0" />
       </div>
       <SetRow

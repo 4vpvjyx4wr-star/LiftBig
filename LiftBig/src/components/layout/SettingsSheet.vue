@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { THEME_OPTIONS, type ThemeId } from '@/composables/useSettings'
 import type { WeightUnit } from '@/utils/units'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   theme: ThemeId
   weightUnit: WeightUnit
@@ -18,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const importInputRef = ref<HTMLInputElement | null>(null)
+const notificationPermission = ref<'unsupported' | NotificationPermission>('unsupported')
 
 function triggerImportPick() {
   importInputRef.value?.click()
@@ -30,6 +31,44 @@ function onImportFileChange(ev: Event) {
   if (!file) return
   emit('importBackup', file)
 }
+
+function refreshNotificationPermission() {
+  if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+    notificationPermission.value = 'unsupported'
+    return
+  }
+  notificationPermission.value = Notification.permission
+}
+
+async function requestNotificationPermission() {
+  if (typeof window === 'undefined' || typeof Notification === 'undefined') return
+  try {
+    notificationPermission.value = await Notification.requestPermission()
+  } catch {
+    refreshNotificationPermission()
+  }
+}
+
+const permissionLabel = computed(() => {
+  switch (notificationPermission.value) {
+    case 'granted':
+      return 'Allowed'
+    case 'denied':
+      return 'Blocked'
+    case 'default':
+      return 'Not enabled'
+    default:
+      return 'Not supported in this browser'
+  }
+})
+
+watch(
+  () => props.open,
+  () => {
+    refreshNotificationPermission()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -98,6 +137,24 @@ function onImportFileChange(ev: Event) {
               kg
             </button>
           </div>
+        </section>
+
+        <section class="mb-6 border-t border-border pt-5">
+          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Timer notifications</h3>
+          <p class="mb-2 text-[11px] leading-snug text-muted">
+            Get a system alert when your rest timer ends: <span class="font-semibold">{{ permissionLabel }}</span>.
+          </p>
+          <button
+            v-if="notificationPermission === 'default'"
+            type="button"
+            class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground hover:border-primary/50"
+            @click="requestNotificationPermission"
+          >
+            Enable timer notifications
+          </button>
+          <p v-else-if="notificationPermission === 'denied'" class="text-[11px] leading-snug text-muted">
+            Notifications are blocked. Enable them in your browser/site settings to get timer alerts.
+          </p>
         </section>
 
         <section class="mb-6 border-t border-border pt-5">

@@ -2,6 +2,7 @@
 import { computed, inject, ref } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
+import RestTimer from '@/components/workout/RestTimer.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import { todayKey } from '@/utils/dateKey'
 import {
@@ -62,6 +63,8 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
 
 <template>
   <div class="flex min-h-full flex-col bg-background pb-above-bottom-tabs">
+    <RestTimer :show-launcher="false" :show-floating="true" />
+
     <Teleport to="body">
       <div
         v-if="menuOpen"
