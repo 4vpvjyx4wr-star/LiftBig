@@ -22,7 +22,7 @@ const showRepsMenu = ref(false)
 const repsOptions = Array.from({ length: 50 }, (_, i) => String(i + 1))
 const weightOptions = computed(() => {
   const out: string[] = []
-  for (let lbs = 0; lbs <= 500; lbs += 2.5) {
+  for (let lbs = 0; lbs <= 500; lbs += 5) {
     const stored = String(lbs)
     out.push(storedLbsStringToDisplay(stored, weightUnit.value))
   }
