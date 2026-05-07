@@ -15,8 +15,13 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
       isCircuit: tex.isCircuit,
       targetReps: first?.targetReps,
       targetWeight: first?.targetWeight,
-      sets: tex.sets.map((s) => {
-        const base = { id: newId(), reps: s.targetReps, weight: s.targetWeight }
+      sets: tex.sets.map((s, index) => {
+        // Only prefill the first working set from the plan; later sets start blank for day-of entry.
+        const base = {
+          id: newId(),
+          reps: index === 0 ? s.targetReps : '',
+          weight: index === 0 ? s.targetWeight : '',
+        }
         return tex.isCircuit ? { ...base, checked: false } : base
       }),
     }
