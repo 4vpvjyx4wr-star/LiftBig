@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import type { Exercise, WorkoutLog } from '@/types/workout'
+import { getDayExercises, getDayNotes, type Exercise, type WorkoutLog } from '@/types/workout'
 import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
@@ -37,19 +37,38 @@ export function useLocalWorkouts() {
   }
 
   function getDay(dateKey: string): Exercise[] {
-    return log.value[dateKey] ?? []
+    return getDayExercises(log.value[dateKey])
+  }
+
+  function getDayNotesForDate(dateKey: string): string {
+    return getDayNotes(log.value[dateKey])
   }
 
   function setDay(dateKey: string, exercises: Exercise[]) {
     const next = { ...log.value }
-    if (exercises.length === 0) delete next[dateKey]
-    else next[dateKey] = exercises
+    const existingNotes = getDayNotes(next[dateKey])
+    if (exercises.length === 0 && !existingNotes.trim()) delete next[dateKey]
+    else next[dateKey] = { exercises, notes: existingNotes }
+    log.value = next
+  }
+
+  function setDayNotes(dateKey: string, notes: string) {
+    const next = { ...log.value }
+    const existingExercises = getDayExercises(next[dateKey])
+    const trimmedNotes = notes.trim()
+    if (existingExercises.length === 0 && !trimmedNotes) {
+      delete next[dateKey]
+      log.value = next
+      return
+    }
+    next[dateKey] = { exercises: existingExercises, notes }
     log.value = next
   }
 
   function appendExercises(dateKey: string, exercises: Exercise[]) {
-    const existing = log.value[dateKey] ?? []
-    log.value = { ...log.value, [dateKey]: [...existing, ...exercises] }
+    const existing = getDayExercises(log.value[dateKey])
+    const notes = getDayNotes(log.value[dateKey])
+    log.value = { ...log.value, [dateKey]: { exercises: [...existing, ...exercises], notes } }
   }
 
   function deleteDay(dateKey: string) {
@@ -63,7 +82,9 @@ export function useLocalWorkouts() {
     log,
     flush,
     getDay,
+    getDayNotesForDate,
     setDay,
+    setDayNotes,
     appendExercises,
     deleteDay,
   }

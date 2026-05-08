@@ -1,4 +1,4 @@
-import type { Exercise, SetLog, WorkoutLog } from '@/types/workout'
+import { getDayExercises, type Exercise, type SetLog, type WorkoutLog } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { parseStoredLbs } from '@/utils/units'
 
@@ -20,7 +20,8 @@ export function hasUserLoggedLibraryExercise(
   log: WorkoutLog,
   libraryExercise: LibraryExercise,
 ): boolean {
-  for (const exercises of Object.values(log)) {
+  for (const dayEntry of Object.values(log)) {
+    const exercises = getDayExercises(dayEntry)
     for (const ex of exercises) {
       if (exerciseMatchesLibrary(ex, libraryExercise)) return true
     }
@@ -59,7 +60,8 @@ export function getLibraryExerciseLogStats(
 ): LibraryExerciseLogStats {
   let maxWeightLbs: number | null = null
 
-  for (const exercises of Object.values(log)) {
+  for (const dayEntry of Object.values(log)) {
+    const exercises = getDayExercises(dayEntry)
     for (const ex of exercises) {
       if (!exerciseMatchesLibrary(ex, libraryExercise)) continue
       for (const set of ex.sets) {
@@ -72,7 +74,7 @@ export function getLibraryExerciseLogStats(
   }
 
   const datesWithExercise = Object.keys(log)
-    .filter((dk) => log[dk]!.some((e) => exerciseMatchesLibrary(e, libraryExercise)))
+    .filter((dk) => getDayExercises(log[dk]).some((e) => exerciseMatchesLibrary(e, libraryExercise)))
     .sort()
     .reverse()
 
@@ -81,7 +83,9 @@ export function getLibraryExerciseLogStats(
   }
 
   const latestKey = datesWithExercise[0]!
-  const latestEx = log[latestKey]!.find((e) => exerciseMatchesLibrary(e, libraryExercise))
+  const latestEx = getDayExercises(log[latestKey]).find((e) =>
+    exerciseMatchesLibrary(e, libraryExercise),
+  )
   if (!latestEx || latestEx.sets.length === 0) {
     return { maxWeightLbs, lastInitialSet: null }
   }

@@ -59,6 +59,8 @@ async function onImportBackup(file: File) {
 }
 const sheetTheme = computed(() => settings.theme.value)
 const sheetWeightUnit = computed(() => settings.weightUnit.value)
+const sheetAverageRestSeconds = computed(() => settings.averageRestSeconds.value)
+const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value)
 </script>
 
 <template>
@@ -222,9 +224,13 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
       :open="settingsOpen"
       :theme="sheetTheme"
       :weight-unit="sheetWeightUnit"
+      :average-rest-seconds="sheetAverageRestSeconds"
+      :average-lift-seconds="sheetAverageLiftSeconds"
       @close="settingsOpen = false"
       @update:theme="settings.setTheme"
       @update:weight-unit="settings.setWeightUnit"
+      @update:average-rest-seconds="settings.setAverageRestSeconds"
+      @update:average-lift-seconds="settings.setAverageLiftSeconds"
       @export-backup="onExportBackup"
       @import-backup="onImportBackup"
     />

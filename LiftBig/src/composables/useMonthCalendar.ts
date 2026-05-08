@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import type { WorkoutLog } from '@/types/workout'
+import { getDayExercises, type WorkoutLog } from '@/types/workout'
 import { MONTHS, WEEKDAYS } from '@/utils/dateKey'
 
 export function useMonthCalendar(viewYear: Ref<number>, viewMonth: Ref<number>) {
@@ -27,7 +27,7 @@ export function useMonthCalendar(viewYear: Ref<number>, viewMonth: Ref<number>) 
     const { keys } = cells.value
     let n = 0
     for (const k of keys) {
-      if (k && (log[k]?.length ?? 0) > 0) n++
+      if (k && getDayExercises(log[k]).length > 0) n++
     }
     return n
   }

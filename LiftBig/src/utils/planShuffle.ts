@@ -1,7 +1,8 @@
 import type { LibraryExercise, MuscleGroup } from '@/utils/exerciseLibrary'
 import { EXERCISE_LIBRARY, MUSCLE_GROUPS, MUSCLE_GROUP_LABELS } from '@/utils/exerciseLibrary'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
-import { estimatePlanDurationMinutes } from '@/utils/planDuration'
+import type { PlanDurationAssumptions } from '@/utils/planDuration'
+import { DEFAULT_PLAN_DURATION_ASSUMPTIONS, estimatePlanDurationMinutes } from '@/utils/planDuration'
 
 export type MovementPattern = 'push' | 'pull' | 'legs'
 
@@ -115,14 +116,18 @@ export type ShuffleParams = {
   targetMinutes: number
   /** Number of unique exercises when mode === 'count' */
   exerciseCount: number
+  durationAssumptions?: PlanDurationAssumptions
 }
 
 function emptyTemplate(id: string, name: string, exercises: TemplateExercise[]): WorkoutTemplate {
   return { id, name, exercises }
 }
 
-function estimateMinutes(template: WorkoutTemplate): number {
-  return estimatePlanDurationMinutes(template)
+function estimateMinutes(
+  template: WorkoutTemplate,
+  assumptions: PlanDurationAssumptions = DEFAULT_PLAN_DURATION_ASSUMPTIONS,
+): number {
+  return estimatePlanDurationMinutes(template, assumptions)
 }
 
 /**
@@ -148,6 +153,7 @@ export function buildShuffledPlan(params: ShuffleParams, random: () => number = 
   }
 
   const target = Math.max(5, Math.floor(params.targetMinutes))
+  const assumptions = params.durationAssumptions ?? DEFAULT_PLAN_DURATION_ASSUMPTIONS
   const exercises: TemplateExercise[] = []
   let i = 0
   for (const ex of shuffled) {
@@ -155,7 +161,7 @@ export function buildShuffledPlan(params: ShuffleParams, random: () => number = 
     const candidate = emptyTemplate(draftId, name, [...exercises, next])
     exercises.push(next)
     i += 1
-    if (estimateMinutes(candidate) >= target) break
+    if (estimateMinutes(candidate, assumptions) >= target) break
   }
 
   return emptyTemplate(draftId, name, exercises)

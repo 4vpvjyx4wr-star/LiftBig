@@ -7,12 +7,16 @@ const props = defineProps<{
   open: boolean
   theme: ThemeId
   weightUnit: WeightUnit
+  averageRestSeconds: number
+  averageLiftSeconds: number
 }>()
 
 const emit = defineEmits<{
   close: []
   'update:theme': [id: ThemeId]
   'update:weightUnit': [u: WeightUnit]
+  'update:averageRestSeconds': [seconds: number]
+  'update:averageLiftSeconds': [seconds: number]
   exportBackup: []
   importBackup: [file: File]
 }>()
@@ -136,6 +140,49 @@ watch(
             >
               kg
             </button>
+          </div>
+        </section>
+
+        <section class="mb-6 border-t border-border pt-5">
+          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Workout time estimates</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            These values are used for plan duration estimates and workout shuffle target duration matching.
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-[11px] font-semibold text-muted">
+              Average rest time (sec)
+              <input
+                type="number"
+                min="5"
+                max="600"
+                step="5"
+                class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                :value="averageRestSeconds"
+                @change="
+                  emit(
+                    'update:averageRestSeconds',
+                    Number(($event.target as HTMLInputElement).value) || 60,
+                  )
+                "
+              />
+            </label>
+            <label class="text-[11px] font-semibold text-muted">
+              Average lift time (sec)
+              <input
+                type="number"
+                min="5"
+                max="600"
+                step="5"
+                class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                :value="averageLiftSeconds"
+                @change="
+                  emit(
+                    'update:averageLiftSeconds',
+                    Number(($event.target as HTMLInputElement).value) || 60,
+                  )
+                "
+              />
+            </label>
           </div>
         </section>
 

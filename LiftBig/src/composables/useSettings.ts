@@ -26,11 +26,23 @@ export type ThemeId =
 export type AppSettings = {
   theme: ThemeId
   weightUnit: WeightUnit
+  averageRestSeconds: number
+  averageLiftSeconds: number
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'default',
   weightUnit: 'lb',
+  averageRestSeconds: 60,
+  averageLiftSeconds: 60,
+}
+
+const MIN_AVERAGE_SECONDS = 5
+const MAX_AVERAGE_SECONDS = 600
+
+function sanitizeAverageSeconds(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(MAX_AVERAGE_SECONDS, Math.max(MIN_AVERAGE_SECONDS, Math.round(value)))
 }
 
 export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
@@ -68,14 +80,39 @@ export function useSettings() {
   })
   const theme = ref<ThemeId>(loaded.theme ?? DEFAULT_SETTINGS.theme)
   const weightUnit = ref<WeightUnit>(loaded.weightUnit ?? DEFAULT_SETTINGS.weightUnit)
+  const averageRestSeconds = ref<number>(
+    sanitizeAverageSeconds(loaded.averageRestSeconds, DEFAULT_SETTINGS.averageRestSeconds),
+  )
+  const averageLiftSeconds = ref<number>(
+    sanitizeAverageSeconds(loaded.averageLiftSeconds, DEFAULT_SETTINGS.averageLiftSeconds),
+  )
 
   function persist() {
-    saveJson(STORAGE_KEY, { theme: theme.value, weightUnit: weightUnit.value })
+    saveJson(STORAGE_KEY, {
+      theme: theme.value,
+      weightUnit: weightUnit.value,
+      averageRestSeconds: sanitizeAverageSeconds(
+        averageRestSeconds.value,
+        DEFAULT_SETTINGS.averageRestSeconds,
+      ),
+      averageLiftSeconds: sanitizeAverageSeconds(
+        averageLiftSeconds.value,
+        DEFAULT_SETTINGS.averageLiftSeconds,
+      ),
+    })
   }
 
   watch(
-    [theme, weightUnit],
+    [theme, weightUnit, averageRestSeconds, averageLiftSeconds],
     () => {
+      averageRestSeconds.value = sanitizeAverageSeconds(
+        averageRestSeconds.value,
+        DEFAULT_SETTINGS.averageRestSeconds,
+      )
+      averageLiftSeconds.value = sanitizeAverageSeconds(
+        averageLiftSeconds.value,
+        DEFAULT_SETTINGS.averageLiftSeconds,
+      )
       persist()
       applyTheme(theme.value)
     },
@@ -87,11 +124,19 @@ export function useSettings() {
   return {
     theme,
     weightUnit,
+    averageRestSeconds,
+    averageLiftSeconds,
     setTheme(id: ThemeId) {
       theme.value = id
     },
     setWeightUnit(u: WeightUnit) {
       weightUnit.value = u
+    },
+    setAverageRestSeconds(value: number) {
+      averageRestSeconds.value = sanitizeAverageSeconds(value, DEFAULT_SETTINGS.averageRestSeconds)
+    },
+    setAverageLiftSeconds(value: number) {
+      averageLiftSeconds.value = sanitizeAverageSeconds(value, DEFAULT_SETTINGS.averageLiftSeconds)
     },
   }
 }

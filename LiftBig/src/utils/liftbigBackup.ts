@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS, THEME_OPTIONS, type AppSettings, type ThemeId } from '@/composables/useSettings'
-import type { WorkoutLog, WorkoutTemplate } from '@/types/workout'
+import { type WorkoutDay, type WorkoutLog, type WorkoutTemplate } from '@/types/workout'
 import type { WeightUnit } from '@/utils/units'
 import {
   applyLiftbigRawStorageSnapshot,
@@ -45,17 +45,36 @@ function isWeightUnit(v: unknown): v is WeightUnit {
   return v === 'lb' || v === 'kg'
 }
 
+function normalizeAverageSeconds(v: unknown, fallback: number): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback
+  return Math.min(600, Math.max(5, Math.round(v)))
+}
+
 function normalizeSettings(raw: unknown): AppSettings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_SETTINGS }
   const o = raw as Record<string, unknown>
   const theme = isThemeId(o.theme) ? o.theme : DEFAULT_SETTINGS.theme
   const weightUnit = isWeightUnit(o.weightUnit) ? o.weightUnit : DEFAULT_SETTINGS.weightUnit
-  return { theme, weightUnit }
+  const averageRestSeconds = normalizeAverageSeconds(
+    o.averageRestSeconds,
+    DEFAULT_SETTINGS.averageRestSeconds,
+  )
+  const averageLiftSeconds = normalizeAverageSeconds(
+    o.averageLiftSeconds,
+    DEFAULT_SETTINGS.averageLiftSeconds,
+  )
+  return { theme, weightUnit, averageRestSeconds, averageLiftSeconds }
 }
 
 function normalizeTemplates(raw: unknown): WorkoutTemplate[] {
-  if (!Array.isArray(raw)) return []
-  return raw.filter(
+  const rawTemplates =
+    Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === 'object' && Array.isArray((raw as { templates?: unknown }).templates)
+        ? ((raw as { templates: unknown[] }).templates ?? [])
+        : []
+
+  return rawTemplates.filter(
     (t): t is WorkoutTemplate =>
       t != null &&
       typeof t === 'object' &&
@@ -68,16 +87,26 @@ function normalizeTemplates(raw: unknown): WorkoutTemplate[] {
 function normalizeWorkouts(raw: unknown): WorkoutLog {
   if (!raw || typeof raw !== 'object') return {}
   const out: WorkoutLog = {}
-  for (const [dateKey, exercises] of Object.entries(raw as Record<string, unknown>)) {
-    if (!Array.isArray(exercises)) continue
-    out[dateKey] = exercises.filter(
+  for (const [dateKey, dayEntry] of Object.entries(raw as Record<string, unknown>)) {
+    const rawExercises = Array.isArray(dayEntry)
+      ? dayEntry
+      : dayEntry && typeof dayEntry === 'object'
+        ? (dayEntry as { exercises?: unknown }).exercises
+        : undefined
+    if (!Array.isArray(rawExercises)) continue
+    const exercises = rawExercises.filter(
       (ex) =>
         ex != null &&
         typeof ex === 'object' &&
         typeof (ex as { id?: unknown }).id === 'string' &&
         typeof (ex as { name?: unknown }).name === 'string' &&
         Array.isArray((ex as { sets?: unknown }).sets),
-    ) as WorkoutLog[string]
+    ) as WorkoutDay['exercises']
+    const notes =
+      dayEntry && typeof dayEntry === 'object' && typeof (dayEntry as { notes?: unknown }).notes === 'string'
+        ? (dayEntry as { notes: string }).notes
+        : undefined
+    out[dateKey] = { exercises, ...(notes !== undefined ? { notes } : {}) }
   }
   return out
 }

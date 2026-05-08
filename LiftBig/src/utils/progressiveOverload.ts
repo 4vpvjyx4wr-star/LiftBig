@@ -1,4 +1,4 @@
-import type { WorkoutLog } from '@/types/workout'
+import { getDayExercises, type WorkoutLog } from '@/types/workout'
 import type { WeightUnit } from '@/utils/units'
 import { formatDeltaFromLbs } from '@/utils/units'
 
@@ -77,7 +77,8 @@ export function getSuggestedWeight(
     const { max: repMax } = parseRepRange(targetRepGoal)
 
     const history: { date: string; sets: SetLogLike[] }[] = []
-    for (const [date, exercises] of Object.entries(allWorkouts)) {
+    for (const [date, dayEntry] of Object.entries(allWorkouts)) {
+      const exercises = getDayExercises(dayEntry)
       const match = exercises.find((ex) => ex.name.toLowerCase() === exerciseName.toLowerCase())
       if (match) history.push({ date, sets: match.sets })
     }

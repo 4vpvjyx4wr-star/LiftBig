@@ -1,21 +1,26 @@
 import type { InjectionKey, Ref } from 'vue'
 import type { LibraryFavoritesApi } from '@/composables/useLibraryFavorites'
 import type { SettingsApi } from '@/composables/useSettings'
-import type { Exercise, WorkoutLog, WorkoutTemplate } from '@/types/workout'
+import type { Exercise, TemplateFolder, WorkoutLog, WorkoutTemplate } from '@/types/workout'
 
 export type LocalWorkoutsApi = {
   log: Ref<WorkoutLog>
   flush: () => void
   getDay: (dateKey: string) => Exercise[]
+  getDayNotesForDate: (dateKey: string) => string
   setDay: (dateKey: string, exercises: Exercise[]) => void
+  setDayNotes: (dateKey: string, notes: string) => void
   appendExercises: (dateKey: string, exercises: Exercise[]) => void
   deleteDay: (dateKey: string) => void
 }
 
 export type TemplatesApi = {
   templates: Ref<WorkoutTemplate[]>
+  folders: Ref<TemplateFolder[]>
   persist: () => void
   setAll: (next: WorkoutTemplate[]) => void
+  setFolders: (next: TemplateFolder[]) => void
+  assignTemplateFolder: (templateId: string, folderId: string | null) => void
 }
 
 export const workoutsInjectionKey: InjectionKey<LocalWorkoutsApi> = Symbol('workouts')

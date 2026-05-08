@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed, watch, ref } from 'vue'
+import { computed, inject, watch, ref } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
 import { searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
-import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimatePlanDurationMinutes,
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
 import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
@@ -17,6 +22,10 @@ const emit = defineEmits<{
   close: []
   save: [payload: { id: string | null; name: string; exercises: TemplateExercise[] }]
 }>()
+const settings = inject(settingsInjectionKey)!
+const durationAssumptions = computed(() =>
+  planDurationAssumptionsFromSeconds(settings.averageLiftSeconds.value, settings.averageRestSeconds.value),
+)
 
 const planName = ref('')
 const exercises = ref<TemplateExercise[]>([])
@@ -28,7 +37,7 @@ const estimatedDurationLabel = computed(() =>
       id: 'draft',
       name: '',
       exercises: exercises.value,
-    }),
+    }, durationAssumptions.value),
   ),
 )
 
@@ -273,7 +282,9 @@ function save() {
 
         <p class="mt-3 text-center text-[11px] text-muted">
           Est. {{ estimatedDurationLabel }}
-          <span class="block mt-0.5 font-normal opacity-90">1 min per set + 1 min rest between sets</span>
+          <span class="block mt-0.5 font-normal opacity-90">
+            Uses settings: {{ settings.averageLiftSeconds.value }}s per set + {{ settings.averageRestSeconds.value }}s rest
+          </span>
         </p>
 
         <div class="mt-4 flex gap-2">

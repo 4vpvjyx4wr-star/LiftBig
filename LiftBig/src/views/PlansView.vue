@@ -4,15 +4,25 @@ import { RouterLink } from 'vue-router'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import PlanShuffleModal from '@/components/plans/PlanShuffleModal.vue'
-import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
-import type { WorkoutTemplate } from '@/types/workout'
+import { settingsInjectionKey, templatesInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
+import { todayKey, toDateKey, isValidDateKey } from '@/utils/dateKey'
 import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
-import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimatePlanDurationMinutes,
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
+import { cloneTemplateToExercises } from '@/utils/templateToLog'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
+const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
+const durationAssumptions = computed(() =>
+  planDurationAssumptionsFromSeconds(settings.averageLiftSeconds.value, settings.averageRestSeconds.value),
+)
 
 function formatTemplateWeight(s: string | undefined): string {
   if (!s?.trim()) return ''
@@ -22,6 +32,8 @@ function formatTemplateWeight(s: string | undefined): string {
 }
 
 const planList = computed(() => templates.templates.value)
+const folders = computed(() => templates.folders.value)
+const newFolderName = ref('')
 
 const modalOpen = ref(false)
 const editing = ref<WorkoutTemplate | null>(null)
@@ -54,9 +66,7 @@ function onSave(payload: { id: string | null; name: string; exercises: import('@
   let next: WorkoutTemplate[]
   if (payload.id) {
     next = list.map((t) =>
-      t.id === payload.id
-        ? { ...t, name: payload.name, exercises: payload.exercises }
-        : t,
+      t.id === payload.id ? { ...t, name: payload.name, exercises: payload.exercises } : t,
     )
   } else {
     const newT: WorkoutTemplate = {
@@ -73,6 +83,251 @@ function onSave(payload: { id: string | null; name: string; exercises: import('@
 function deletePlan(id: string) {
   if (!confirm('Delete this plan?')) return
   templates.setAll(planList.value.filter((t) => t.id !== id))
+}
+
+const draggedTemplateId = ref<string | null>(null)
+const dragOverFolderId = ref<string | null>(null)
+const dragOverUncategorized = ref(false)
+const openFolderMap = ref<Record<string, boolean>>({})
+const folderPurposeDrafts = ref<Record<string, string>>({})
+const folderStartDateDrafts = ref<Record<string, string>>({})
+const folderRestEveryDrafts = ref<Record<string, number>>({})
+
+const uncategorizedPlans = computed(() => planList.value.filter((item) => !item.folderId))
+const folderSections = computed(() =>
+  folders.value.map((folder) => ({
+    folder,
+    plans: planList.value.filter((item) => item.folderId === folder.id),
+  })),
+)
+
+function createFolder() {
+  const name = newFolderName.value.trim()
+  if (!name) return
+  const exists = folders.value.some((folder) => folder.name.toLowerCase() === name.toLowerCase())
+  if (exists) {
+    window.alert('A folder with that name already exists.')
+    return
+  }
+  const folder: TemplateFolder = {
+    id: `folder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    purpose: '',
+  }
+  templates.setFolders([...folders.value, folder])
+  newFolderName.value = ''
+}
+
+function deleteFolder(folderId: string) {
+  if (!window.confirm('Delete this folder? Plans inside will be moved to All Plans.')) return
+  templates.setFolders(folders.value.filter((folder) => folder.id !== folderId))
+  const nextPlans = planList.value.map((item) => (item.folderId === folderId ? { ...item, folderId: null } : item))
+  templates.setAll(nextPlans)
+  const nextOpenMap = { ...openFolderMap.value }
+  delete nextOpenMap[folderId]
+  openFolderMap.value = nextOpenMap
+}
+
+function isFolderOpen(folderId: string): boolean {
+  return openFolderMap.value[folderId] === true
+}
+
+function toggleFolder(folderId: string) {
+  openFolderMap.value = {
+    ...openFolderMap.value,
+    [folderId]: !isFolderOpen(folderId),
+  }
+}
+
+function folderPurposeValue(folderId: string, persistedPurpose: string | undefined): string {
+  const draft = folderPurposeDrafts.value[folderId]
+  if (draft !== undefined) return draft
+  return persistedPurpose ?? ''
+}
+
+function onFolderPurposeInput(folderId: string, value: string) {
+  folderPurposeDrafts.value = {
+    ...folderPurposeDrafts.value,
+    [folderId]: value,
+  }
+}
+
+function saveFolderPurpose(folderId: string) {
+  const nextPurpose = (folderPurposeDrafts.value[folderId] ?? '').trim()
+  templates.setFolders(
+    folders.value.map((folder) => (folder.id === folderId ? { ...folder, purpose: nextPurpose } : folder)),
+  )
+}
+
+function folderStartDateValue(folderId: string): string {
+  return folderStartDateDrafts.value[folderId] ?? todayKey()
+}
+
+function onFolderStartDateInput(folderId: string, value: string) {
+  folderStartDateDrafts.value = {
+    ...folderStartDateDrafts.value,
+    [folderId]: value,
+  }
+}
+
+function openDatePicker(inputEl: HTMLInputElement | null) {
+  if (!inputEl) return
+  const maybe = inputEl as HTMLInputElement & { showPicker?: () => void }
+  if (typeof maybe.showPicker === 'function') {
+    maybe.showPicker()
+    return
+  }
+  inputEl.focus()
+  inputEl.click()
+}
+
+function folderRestEveryValue(folderId: string): number {
+  const raw = folderRestEveryDrafts.value[folderId]
+  if (typeof raw !== 'number' || Number.isNaN(raw)) return 7
+  return Math.min(7, Math.max(0, Math.round(raw)))
+}
+
+function onFolderRestEveryInput(folderId: string, value: string) {
+  const parsed = Number.parseInt(value, 10)
+  const next = Number.isNaN(parsed) ? 7 : Math.min(7, Math.max(0, parsed))
+  folderRestEveryDrafts.value = {
+    ...folderRestEveryDrafts.value,
+    [folderId]: next,
+  }
+}
+
+function addDaysToDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const next = new Date(year!, (month ?? 1) - 1, day)
+  next.setDate(next.getDate() + days)
+  return toDateKey(next)
+}
+
+function isLikelyDuplicatePlanAssignment(dateKey: string, plan: WorkoutTemplate): boolean {
+  const existingNames = new Set(workouts.getDay(dateKey).map((ex) => ex.name.trim().toLowerCase()))
+  const planNames = plan.exercises.map((ex) => ex.name.trim().toLowerCase()).filter(Boolean)
+  if (planNames.length === 0) return false
+  return planNames.every((name) => existingNames.has(name))
+}
+
+function folderPlanSortKey(name: string): [number, number, string] {
+  const weekMatch = /week\s+(\d+)/i.exec(name)
+  const dayMatch = /day\s+(\d+)/i.exec(name)
+  const week = weekMatch ? Number.parseInt(weekMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
+  const day = dayMatch ? Number.parseInt(dayMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
+  return [week, day, name.toLowerCase()]
+}
+
+function scheduledDateForPlanIndex(startDateKey: string, planIndex: number, restEvery: number): string {
+  if (restEvery <= 0) return addDaysToDateKey(startDateKey, planIndex)
+  const restDaysBefore = Math.floor(planIndex / restEvery)
+  return addDaysToDateKey(startDateKey, planIndex + restDaysBefore)
+}
+
+function assignFolderPlansToCalendar(folderId: string) {
+  const folderName = folders.value.find((folder) => folder.id === folderId)?.name ?? 'Folder'
+  const plans = planList.value
+    .filter((item) => item.folderId === folderId)
+    .slice()
+    .sort((a, b) => {
+      const [aw, ad, an] = folderPlanSortKey(a.name)
+      const [bw, bd, bn] = folderPlanSortKey(b.name)
+      if (aw !== bw) return aw - bw
+      if (ad !== bd) return ad - bd
+      return an.localeCompare(bn)
+    })
+
+  if (plans.length === 0) {
+    window.alert('This folder has no plans to assign.')
+    return
+  }
+
+  const startDateKey = folderStartDateValue(folderId)
+  if (!isValidDateKey(startDateKey)) {
+    window.alert('Please choose a valid start date.')
+    return
+  }
+  const restEvery = folderRestEveryValue(folderId)
+
+  const finalConfirm = window.confirm(
+    `Add this folder to your calendar starting ${startDateKey}? This will schedule ${plans.length} plan${plans.length === 1 ? '' : 's'}.`,
+  )
+  if (!finalConfirm) return
+
+  const duplicateHits = plans.filter((plan, idx) =>
+    isLikelyDuplicatePlanAssignment(scheduledDateForPlanIndex(startDateKey, idx, restEvery), plan),
+  )
+  if (duplicateHits.length > 0) {
+    window.alert(
+      'This folder appears to already be assigned for one or more of those dates. Duplicate assignment was cancelled.',
+    )
+    return
+  }
+
+  const hasExistingWorkouts = plans.some(
+    (_, idx) => workouts.getDay(scheduledDateForPlanIndex(startDateKey, idx, restEvery)).length > 0,
+  )
+  if (hasExistingWorkouts) {
+    const proceed = window.confirm(
+      'Some of these dates already have workouts logged. Continue and append these plans anyway?',
+    )
+    if (!proceed) return
+  }
+
+  const crowdedDays = plans
+    .map((_, idx) => {
+      const dateKey = scheduledDateForPlanIndex(startDateKey, idx, restEvery)
+      const existingCount = workouts.getDay(dateKey).length
+      return { dateKey, existingCount }
+    })
+    .filter((entry) => entry.existingCount >= 5)
+
+  for (const day of crowdedDays) {
+    const proceed = window.confirm(
+      `It looks like you already have ${day.existingCount} workouts on this date. Are you sure you want to add more?`,
+    )
+    if (!proceed) return
+  }
+
+  plans.forEach((plan, idx) => {
+    const dateKey = scheduledDateForPlanIndex(startDateKey, idx, restEvery)
+    workouts.appendExercises(dateKey, cloneTemplateToExercises(plan))
+  })
+
+  window.alert(
+    restEvery > 0
+      ? `${folderName} successfully added to calendar. Assigned ${plans.length} plan${plans.length === 1 ? '' : 's'} starting ${startDateKey} with 1 rest day every ${restEvery} workout day${restEvery === 1 ? '' : 's'}.`
+      : `${folderName} successfully added to calendar. Assigned ${plans.length} plan${plans.length === 1 ? '' : 's'} starting ${startDateKey} with no auto-inserted rest days.`,
+  )
+}
+
+function onTemplateDragStart(templateId: string) {
+  draggedTemplateId.value = templateId
+}
+
+function onTemplateDragEnd() {
+  draggedTemplateId.value = null
+  dragOverFolderId.value = null
+  dragOverUncategorized.value = false
+}
+
+function onFolderDragOver(folderId: string) {
+  dragOverFolderId.value = folderId
+  dragOverUncategorized.value = false
+}
+
+function onFolderDrop(folderId: string) {
+  const templateId = draggedTemplateId.value
+  if (!templateId) return
+  templates.assignTemplateFolder(templateId, folderId)
+  onTemplateDragEnd()
+}
+
+function onUncategorizedDrop() {
+  const templateId = draggedTemplateId.value
+  if (!templateId) return
+  templates.assignTemplateFolder(templateId, null)
+  onTemplateDragEnd()
 }
 
 const detailOpen = ref(false)
@@ -92,7 +347,7 @@ function closeLibraryDetail() {
 }
 
 function planDurationLabel(t: WorkoutTemplate): string {
-  return formatPlanDurationEstimate(estimatePlanDurationMinutes(t))
+  return formatPlanDurationEstimate(estimatePlanDurationMinutes(t, durationAssumptions.value))
 }
 </script>
 
@@ -125,68 +380,273 @@ function planDurationLabel(t: WorkoutTemplate): string {
     </header>
 
     <p class="mb-3 text-[10px] leading-snug text-muted">
-      Time estimates assume ~1 min per working set and ~1 min rest between consecutive sets.
+      Time estimates use your Settings values:
+      ~{{ settings.averageLiftSeconds.value }}s per set and ~{{ settings.averageRestSeconds.value }}s rest.
     </p>
+
+    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-xs text-muted">Drag plans into folders to organize split days.</p>
+      <div class="flex items-center gap-2">
+        <input
+          v-model="newFolderName"
+          type="text"
+          class="w-40 rounded-lg border border-border bg-card-inner px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
+          placeholder="Folder name"
+          @keyup.enter="createFolder"
+        />
+        <button
+          type="button"
+          class="rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+          @click="createFolder"
+        >
+          + Folder
+        </button>
+      </div>
+    </div>
 
     <div v-if="planList.length === 0" class="py-12 text-center">
       <p class="text-lg font-bold text-foreground">No plans yet.</p>
       <p class="mt-2 text-sm text-muted">Create a template to reuse across your calendar.</p>
     </div>
 
-    <ul v-else class="space-y-3 pb-24">
-      <li
-        v-for="item in planList"
-        :key="item.id"
-        class="rounded-xl border border-border bg-card p-4"
+    <div v-else class="space-y-3 pb-24">
+      <section
+        v-for="entry in folderSections"
+        :key="entry.folder.id"
+        class="rounded-xl border border-dashed p-3"
+        :class="dragOverFolderId === entry.folder.id ? 'border-primary bg-card-inner/80' : 'border-border bg-card-inner/30'"
+        @dragover.prevent="onFolderDragOver(entry.folder.id)"
+        @dragleave="dragOverFolderId = null"
+        @drop.prevent="onFolderDrop(entry.folder.id)"
       >
-        <div class="flex items-start justify-between gap-2">
-          <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
-          <div class="flex shrink-0 gap-2">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded-lg bg-blue px-3 py-1 text-xs font-bold text-foreground"
-              @click="openEdit(item)"
+              class="inline-flex h-6 w-6 items-center justify-center rounded border border-border text-[10px] text-muted hover:border-primary hover:text-primary"
+              :aria-label="isFolderOpen(entry.folder.id) ? 'Collapse folder' : 'Expand folder'"
+              @click="toggleFolder(entry.folder.id)"
             >
-              Edit
+              <i
+                class="fa-solid"
+                :class="isFolderOpen(entry.folder.id) ? 'fa-chevron-up' : 'fa-chevron-down'"
+                aria-hidden="true"
+              />
             </button>
+            <h2 class="text-sm font-extrabold text-foreground">{{ entry.folder.name }}</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wide text-muted">
+              {{ entry.plans.length }}
+            </span>
             <button
               type="button"
-              class="rounded-lg border border-red-900/50 px-3 py-1 text-xs font-bold text-red-400"
-              @click="deletePlan(item.id)"
+              class="rounded border border-red-900/50 px-2 py-1 text-[10px] font-bold text-red-400"
+              @click="deleteFolder(entry.folder.id)"
             >
-              Delete
+              Delete Folder
             </button>
           </div>
         </div>
-        <p class="mt-1 text-xs text-muted">
-          {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
-          · {{ planDurationLabel(item) }}
+        <p v-if="entry.plans.length === 0" class="text-xs text-muted">
+          Drop a plan here.
         </p>
-        <ul class="mt-2 space-y-1 border-t border-border pt-2">
+        <p v-else-if="!isFolderOpen(entry.folder.id)" class="text-xs text-muted">
+          Click to view plan and explanation.
+        </p>
+        <ul v-else class="space-y-3">
+          <li class="rounded-lg border border-border bg-card-inner/60 p-3">
+            <label class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-muted">
+              Folder purpose / explanation
+            </label>
+            <textarea
+              :value="folderPurposeValue(entry.folder.id, entry.folder.purpose)"
+              rows="3"
+              class="w-full rounded-lg border border-border bg-card px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
+              placeholder="Explain goals, progression, and how this folder should be used."
+              @input="onFolderPurposeInput(entry.folder.id, ($event.target as HTMLTextAreaElement).value)"
+              @blur="saveFolderPurpose(entry.folder.id)"
+            />
+          </li>
+          <li class="rounded-lg border border-border bg-card-inner/40 p-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label class="text-[10px] font-bold uppercase tracking-wide text-muted">Start day</label>
+              <input
+                :value="folderStartDateValue(entry.folder.id)"
+                type="date"
+                class="rounded border border-border bg-card px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                @focus="openDatePicker($event.target as HTMLInputElement)"
+                @input="onFolderStartDateInput(entry.folder.id, ($event.target as HTMLInputElement).value)"
+              />
+              <button
+                type="button"
+                class="rounded border border-border bg-card px-2 py-1 text-xs font-bold text-primary hover:border-primary"
+                aria-label="Open calendar"
+                @click="openDatePicker(($event.currentTarget as HTMLElement).previousElementSibling as HTMLInputElement | null)"
+              >
+                <i class="fa-solid fa-calendar-days" aria-hidden="true" />
+              </button>
+              <div class="min-w-[180px] rounded border border-border bg-card px-2 py-1">
+                <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">
+                  {{
+                    folderRestEveryValue(entry.folder.id) === 0
+                      ? 'No auto rest days'
+                      : `Rest day every ${folderRestEveryValue(entry.folder.id)} workout day${folderRestEveryValue(entry.folder.id) === 1 ? '' : 's'}`
+                  }}
+                </label>
+                <input
+                  :value="folderRestEveryValue(entry.folder.id)"
+                  type="range"
+                  min="0"
+                  max="7"
+                  step="1"
+                  class="mt-1 w-full accent-primary"
+                  @input="onFolderRestEveryInput(entry.folder.id, ($event.target as HTMLInputElement).value)"
+                />
+              </div>
+              <button
+                type="button"
+                class="rounded border border-primary/50 bg-card px-2.5 py-1 text-xs font-bold text-primary hover:border-primary"
+                @click="assignFolderPlansToCalendar(entry.folder.id)"
+              >
+                Add Folder to Calendar
+              </button>
+            </div>
+          </li>
           <li
-            v-for="ex in item.exercises"
-            :key="ex.id"
-            class="flex flex-wrap items-center gap-2 text-sm text-foreground"
+            v-for="item in entry.plans"
+            :key="item.id"
+            draggable="true"
+            class="rounded-xl border border-border bg-card p-4"
+            @dragstart="onTemplateDragStart(item.id)"
+            @dragend="onTemplateDragEnd"
           >
-            <span class="text-muted">·</span>
-            <span class="font-semibold">{{ ex.name }}</span>
-            <button
-              v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
-              type="button"
-              class="text-primary hover:text-foreground"
-              aria-label="How to perform this exercise"
-              @click="openLibraryDetail(ex.libraryId)"
-            >
-              <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
-            </button>
-            <span class="text-muted">
-              {{ ex.sets.length }} × {{ ex.sets[0]?.targetReps || '?' }}
-              <template v-if="ex.sets[0]?.targetWeight"> @ {{ formatTemplateWeight(ex.sets[0].targetWeight) }}</template>
-            </span>
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
+              <div class="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg bg-blue px-3 py-1 text-xs font-bold text-foreground"
+                  @click="openEdit(item)"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg border border-red-900/50 px-3 py-1 text-xs font-bold text-red-400"
+                  @click="deletePlan(item.id)"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <p class="mt-1 text-xs text-muted">
+              {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
+              · {{ planDurationLabel(item) }}
+            </p>
+            <ul class="mt-2 space-y-1 border-t border-border pt-2">
+              <li
+                v-for="ex in item.exercises"
+                :key="ex.id"
+                class="flex flex-wrap items-center gap-2 text-sm text-foreground"
+              >
+                <span class="text-muted">·</span>
+                <span class="font-semibold">{{ ex.name }}</span>
+                <button
+                  v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+                  type="button"
+                  class="text-primary hover:text-foreground"
+                  aria-label="How to perform this exercise"
+                  @click="openLibraryDetail(ex.libraryId)"
+                >
+                  <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
+                </button>
+                <span class="text-muted">
+                  {{ ex.sets.length }} × {{ ex.sets[0]?.targetReps || '?' }}
+                  <template v-if="ex.sets[0]?.targetWeight">
+                    @ {{ formatTemplateWeight(ex.sets[0].targetWeight) }}
+                  </template>
+                </span>
+              </li>
+            </ul>
           </li>
         </ul>
-      </li>
-    </ul>
+      </section>
+
+      <section
+        class="rounded-xl border border-dashed p-3"
+        :class="dragOverUncategorized ? 'border-primary bg-card-inner/80' : 'border-border bg-card-inner/30'"
+        @dragover.prevent="dragOverUncategorized = true"
+        @dragleave="dragOverUncategorized = false"
+        @drop.prevent="onUncategorizedDrop"
+      >
+        <div class="mb-2 flex items-center justify-between">
+          <h2 class="text-sm font-extrabold text-foreground">All Plans</h2>
+          <span class="text-[10px] font-bold uppercase tracking-wide text-muted">
+            {{ uncategorizedPlans.length }}
+          </span>
+        </div>
+        <ul class="space-y-3">
+          <li
+            v-for="item in uncategorizedPlans"
+            :key="item.id"
+            draggable="true"
+            class="rounded-xl border border-border bg-card p-4"
+            @dragstart="onTemplateDragStart(item.id)"
+            @dragend="onTemplateDragEnd"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
+              <div class="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg bg-blue px-3 py-1 text-xs font-bold text-foreground"
+                  @click="openEdit(item)"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg border border-red-900/50 px-3 py-1 text-xs font-bold text-red-400"
+                  @click="deletePlan(item.id)"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <p class="mt-1 text-xs text-muted">
+              {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
+              · {{ planDurationLabel(item) }}
+            </p>
+            <ul class="mt-2 space-y-1 border-t border-border pt-2">
+              <li
+                v-for="ex in item.exercises"
+                :key="ex.id"
+                class="flex flex-wrap items-center gap-2 text-sm text-foreground"
+              >
+                <span class="text-muted">·</span>
+                <span class="font-semibold">{{ ex.name }}</span>
+                <button
+                  v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+                  type="button"
+                  class="text-primary hover:text-foreground"
+                  aria-label="How to perform this exercise"
+                  @click="openLibraryDetail(ex.libraryId)"
+                >
+                  <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
+                </button>
+                <span class="text-muted">
+                  {{ ex.sets.length }} × {{ ex.sets[0]?.targetReps || '?' }}
+                  <template v-if="ex.sets[0]?.targetWeight">
+                    @ {{ formatTemplateWeight(ex.sets[0].targetWeight) }}
+                  </template>
+                </span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+    </div>
 
     <button
       type="button"

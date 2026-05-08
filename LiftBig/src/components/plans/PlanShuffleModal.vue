@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { WorkoutTemplate } from '@/types/workout'
 import {
   LIBRARY_EQUIPMENT_TYPES,
@@ -13,12 +14,17 @@ import {
   type ShuffleFocus,
   type ShuffleMode,
 } from '@/utils/planShuffle'
-import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimatePlanDurationMinutes,
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
 
 const props = defineProps<{
   show: boolean
 }>()
+const settings = inject(settingsInjectionKey)!
 
 const emit = defineEmits<{
   close: []
@@ -42,8 +48,13 @@ const poolSize = computed(() => {
 
 const previewDurationLabel = computed(() => {
   if (!previewPlan.value) return ''
-  return formatPlanDurationEstimate(estimatePlanDurationMinutes(previewPlan.value))
+  return formatPlanDurationEstimate(estimatePlanDurationMinutes(previewPlan.value, durationAssumptions.value))
 })
+const averageRestSeconds = computed(() => settings.averageRestSeconds.value)
+const averageLiftSeconds = computed(() => settings.averageLiftSeconds.value)
+const durationAssumptions = computed(() =>
+  planDurationAssumptionsFromSeconds(averageLiftSeconds.value, averageRestSeconds.value),
+)
 
 function resetForm() {
   selectedEquipment.value = [...LIBRARY_EQUIPMENT_TYPES]
@@ -99,6 +110,7 @@ function runShuffle() {
     mode: mode.value,
     targetMinutes: targetMinutes.value,
     exerciseCount: exerciseCount.value,
+    durationAssumptions: durationAssumptions.value,
   })
   if (plan.exercises.length === 0) {
     matchWarning.value =
@@ -144,6 +156,14 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
   return exerciseMovementPatterns(ex)
     .map((p) => MOVEMENT_PATTERN_LABELS[p])
     .join(' · ')
+}
+
+function onAverageRestSecondsChange(ev: Event) {
+  settings.setAverageRestSeconds(Number((ev.target as HTMLInputElement).value) || 60)
+}
+
+function onAverageLiftSecondsChange(ev: Event) {
+  settings.setAverageLiftSeconds(Number((ev.target as HTMLInputElement).value) || 60)
 }
 </script>
 
@@ -232,8 +252,34 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
               class="mt-1 w-full accent-primary"
             />
             <p class="mt-1 text-[11px] text-muted">
-              Exercises are added until the estimated time (from sets + rest) reaches this target.
+              Exercises are added until the estimated time reaches this target using your lift/rest averages.
             </p>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <label class="text-[11px] font-semibold text-muted">
+                Average rest (sec)
+                <input
+                  type="number"
+                  min="5"
+                  max="600"
+                  step="5"
+                  class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"
+                  :value="averageRestSeconds"
+                  @change="onAverageRestSecondsChange"
+                />
+              </label>
+              <label class="text-[11px] font-semibold text-muted">
+                Average lift (sec)
+                <input
+                  type="number"
+                  min="5"
+                  max="600"
+                  step="5"
+                  class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"
+                  :value="averageLiftSeconds"
+                  @change="onAverageLiftSecondsChange"
+                />
+              </label>
+            </div>
           </div>
 
           <div v-else class="mt-3">

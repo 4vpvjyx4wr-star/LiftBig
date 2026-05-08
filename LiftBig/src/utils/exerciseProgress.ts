@@ -1,4 +1,4 @@
-import type { WorkoutLog } from '@/types/workout'
+import { getDayExercises, type WorkoutLog } from '@/types/workout'
 import { getWeightIncrementLbs } from '@/utils/progressiveOverload'
 import { parseStoredLbs } from '@/utils/units'
 
@@ -65,7 +65,8 @@ function linearRegression(
 
 export function listExerciseNamesFromLog(log: WorkoutLog): string[] {
   const names = new Set<string>()
-  for (const exercises of Object.values(log)) {
+  for (const dayEntry of Object.values(log)) {
+    const exercises = getDayExercises(dayEntry)
     for (const ex of exercises) {
       const n = ex.name.trim()
       if (n) names.add(n)
@@ -76,7 +77,8 @@ export function listExerciseNamesFromLog(log: WorkoutLog): string[] {
 
 export function collectExerciseHistory(log: WorkoutLog, exerciseName: string): SessionPoint[] {
   const out: SessionPoint[] = []
-  for (const [dateKey, exercises] of Object.entries(log)) {
+  for (const [dateKey, dayEntry] of Object.entries(log)) {
+    const exercises = getDayExercises(dayEntry)
     const ex = exercises.find((e) => exerciseNameMatches(e.name, exerciseName))
     if (!ex) continue
     const sets = ex.sets.filter((s) => s.reps.trim() !== '' && s.weight.trim() !== '')
