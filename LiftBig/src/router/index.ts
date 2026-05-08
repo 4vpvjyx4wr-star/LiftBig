@@ -32,6 +32,11 @@ const router = createRouter({
           component: () => import('@/views/PlatesView.vue'),
         },
         {
+          path: 'one-rep-max',
+          name: 'oneRepMax',
+          component: () => import('@/views/OneRepMaxView.vue'),
+        },
+        {
           path: 'library',
           name: 'library',
           component: () => import('@/views/LibraryView.vue'),

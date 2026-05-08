@@ -112,6 +112,22 @@ const sheetWeightUnit = computed(() => settings.weightUnit.value)
               Plates
             </button>
           </RouterLink>
+          <RouterLink
+            v-slot="{ navigate, isActive }"
+            to="/one-rep-max"
+            custom
+          >
+            <button
+              type="button"
+              role="menuitem"
+              class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+              :class="{ '!text-primary': isActive }"
+              @click="closeMenu(); navigate($event)"
+            >
+              <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
+              1RM
+            </button>
+          </RouterLink>
           <button
             type="button"
             role="menuitem"
