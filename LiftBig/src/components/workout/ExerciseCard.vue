@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
@@ -39,6 +39,36 @@ const emit = defineEmits<{
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
 /** Once per exercise instance; avoids overwriting after user edits or double-filling weight/reps. */
 const predictionApplied = ref(false)
+
+function isBlankLogField(v: unknown): boolean {
+  return String(v ?? '').trim() === ''
+}
+
+function tryApplyFirstSetPrefill() {
+  if (props.exercise.isCircuit || !props.exercise.targetReps || predictionApplied.value) return
+  const first = props.exercise.sets[0]
+  if (!first || !isBlankLogField(first.reps) || !isBlankLogField(first.weight)) return
+  if (!suggestion.value) return
+
+  const sw = suggestion.value.suggestedWeight
+  const repsStr = getDefaultLogRepsForTarget(props.exercise.targetReps)
+
+  let weightStr: string | undefined
+  if (Number.isFinite(sw) && sw > 0) {
+    weightStr = displayInputToStoredLbsString(String(sw), 'lb')
+  }
+
+  const shouldFillWeight = weightStr !== undefined && weightStr !== ''
+  const shouldFillReps = repsStr !== ''
+
+  if (!shouldFillWeight && !shouldFillReps) return
+
+  predictionApplied.value = true
+  const patch: { weight?: string; reps?: string } = {}
+  if (shouldFillWeight) patch.weight = weightStr
+  if (shouldFillReps) patch.reps = repsStr
+  emit('prefillFirstSet', first.id, patch)
+}
 
 watch(
   () =>
@@ -86,33 +116,15 @@ watch(
       suggestion.value?.suggestedWeight,
       suggestion.value?.reason,
     ] as const,
-  () => {
-    if (props.exercise.isCircuit || !props.exercise.targetReps || predictionApplied.value) return
-    const first = props.exercise.sets[0]
-    if (!first || first.reps !== '' || first.weight !== '') return
-    if (!suggestion.value) return
-
-    const sw = suggestion.value.suggestedWeight
-    const repsStr = getDefaultLogRepsForTarget(props.exercise.targetReps)
-
-    let weightStr: string | undefined
-    if (Number.isFinite(sw) && sw > 0) {
-      weightStr = displayInputToStoredLbsString(String(sw), 'lb')
-    }
-
-    const shouldFillWeight = weightStr !== undefined && weightStr !== ''
-    const shouldFillReps = repsStr !== ''
-
-    if (!shouldFillWeight && !shouldFillReps) return
-
-    predictionApplied.value = true
-    const patch: { weight?: string; reps?: string } = {}
-    if (shouldFillWeight) patch.weight = weightStr
-    if (shouldFillReps) patch.reps = repsStr
-    emit('prefillFirstSet', first.id, patch)
-  },
-  { flush: 'post' },
+  tryApplyFirstSetPrefill,
+  { immediate: true },
 )
+
+onMounted(() => {
+  nextTick(() => {
+    tryApplyFirstSetPrefill()
+  })
+})
 
 const completedSets = computed(() =>
   props.exercise.sets.filter((s) =>
