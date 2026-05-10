@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getDayExercises, type WorkoutLog } from '@/types/workout'
+import type { WorkoutLog } from '@/types/workout'
 
 const props = defineProps<{
   cellKeys: (string | null)[]
@@ -14,7 +14,7 @@ const emit = defineEmits<{
 }>()
 
 function hasWork(key: string) {
-  return getDayExercises(props.log[key]).length > 0
+  return (props.log[key]?.length ?? 0) > 0
 }
 </script>
 

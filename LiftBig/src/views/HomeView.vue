@@ -131,37 +131,10 @@ function onPickDay(key: string) {
     </div>
 
     <section class="mt-4 rounded-xl border border-border bg-card p-4">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
-        <div class="flex flex-wrap gap-2">
-          <RouterLink
-            :to="`/workout/${selectedDate}`"
-            class="inline-flex items-center justify-center rounded-lg bg-blue px-4 py-2 text-center text-sm font-bold text-foreground"
-          >
-            {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
-          </RouterLink>
-          <button
-            type="button"
-            class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-2 text-sm font-bold text-red-400"
-            :disabled="exerciseCount === 0"
-            @click="deleteDay"
-          >
-            Delete day
-          </button>
-        </div>
-      </div>
+      <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
 
       <template v-if="exerciseCount === 0">
         <p class="mt-2 text-sm text-muted">No workout logged for this day.</p>
-        <button
-          v-if="templateList.length > 0"
-          type="button"
-          class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card py-3 text-sm font-bold text-foreground"
-          @click="planSheetOpen = true"
-        >
-          <i class="fa-solid fa-clipboard-list text-muted" aria-hidden="true" />
-          Assign a Plan to This Day
-        </button>
       </template>
       <template v-else>
         <p class="mt-2 text-xs text-muted">
@@ -180,7 +153,33 @@ function onPickDay(key: string) {
         </ul>
       </template>
 
+      <div class="mt-4 flex flex-wrap gap-2">
+        <RouterLink
+          :to="`/workout/${selectedDate}`"
+          class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue px-4 py-3 text-center text-sm font-bold text-foreground min-[400px]:flex-none"
+        >
+          {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
+        </RouterLink>
+        <button
+          type="button"
+          class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-3 text-sm font-bold text-red-400"
+          :disabled="exerciseCount === 0"
+          @click="deleteDay"
+        >
+          Delete day
+        </button>
+      </div>
     </section>
+
+    <button
+      v-if="templateList.length > 0"
+      type="button"
+      class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card py-3 text-sm font-bold text-foreground"
+      @click="planSheetOpen = true"
+    >
+      <i class="fa-solid fa-clipboard-list text-muted" aria-hidden="true" />
+      Assign a Plan to This Day
+    </button>
 
     <AssignPlanSheet
       :open="planSheetOpen"

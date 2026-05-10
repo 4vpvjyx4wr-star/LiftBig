@@ -15,23 +15,7 @@ export type Exercise = {
   targetWeight?: string
 }
 
-export type WorkoutDay = {
-  exercises: Exercise[]
-  notes?: string
-}
-
-export type WorkoutLog = Record<string, WorkoutDay | Exercise[]>
-
-export function getDayExercises(entry: WorkoutLog[string] | undefined): Exercise[] {
-  if (!entry) return []
-  if (Array.isArray(entry)) return entry
-  return entry.exercises
-}
-
-export function getDayNotes(entry: WorkoutLog[string] | undefined): string {
-  if (!entry || Array.isArray(entry)) return ''
-  return entry.notes ?? ''
-}
+export type WorkoutLog = Record<string, Exercise[]>
 
 export type TemplateSet = { targetReps: string; targetWeight: string }
 
@@ -48,11 +32,4 @@ export type WorkoutTemplate = {
   name: string
   exercises: TemplateExercise[]
   isCircuit?: boolean
-  folderId?: string | null
-}
-
-export type TemplateFolder = {
-  id: string
-  name: string
-  purpose?: string
 }

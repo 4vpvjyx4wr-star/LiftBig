@@ -17,4 +17,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    host: true,
+    port: 5173,
+    // Dev-only: avoid 403 when the IDE/proxy uses an unexpected Host header (some embedded browsers).
+    allowedHosts: true,
+  },
 })
