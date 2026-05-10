@@ -4,6 +4,8 @@ import {
   CALISTHENICS_FULL_BODY_FOLDER,
   CALISTHENICS_FULL_BODY_PLANS,
   DEFAULT_PLANS,
+  JOEY_SUMMER_FOLDER,
+  JOEY_SUMMER_PLAN_IDS,
   SBD_STRENGTH_FOLDER,
   SBD_STRENGTH_PLANS,
 } from '@/utils/defaultPlans'
@@ -25,19 +27,6 @@ type TemplatesState = {
   folders: TemplateFolder[]
 }
 
-const FOLDER_PURPOSE_DEFAULTS: Record<string, string> = {
-  "Joey's Summer PPL/Core/Circuit":
-    'My summer plan to build upper chest/delts/lats for my #hotgirlsummer',
-}
-
-function applyFolderPurposeDefaults(folders: TemplateFolder[]): TemplateFolder[] {
-  return folders.map((folder) => {
-    const defaultPurpose = FOLDER_PURPOSE_DEFAULTS[folder.name]
-    if (!defaultPurpose) return folder
-    return { ...folder, purpose: defaultPurpose }
-  })
-}
-
 function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   const hasFolder = state.folders.some((folder) => folder.id === SBD_STRENGTH_FOLDER.id)
   const withSbdFolder = hasFolder
@@ -48,7 +37,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...state.folders, ...cloneFolders([SBD_STRENGTH_FOLDER])]
   const hasCalisFolder = withSbdFolder.some((folder) => folder.id === CALISTHENICS_FULL_BODY_FOLDER.id)
-  const seededFolders = hasCalisFolder
+  const withCalisFolders = hasCalisFolder
     ? withSbdFolder.map((folder) =>
         folder.id === CALISTHENICS_FULL_BODY_FOLDER.id
           ? {
@@ -59,14 +48,27 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
           : folder,
       )
     : [...withSbdFolder, ...cloneFolders([CALISTHENICS_FULL_BODY_FOLDER])]
-  const folders = applyFolderPurposeDefaults(seededFolders)
+  const hasJoeyFolder = withCalisFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
+  const folders = hasJoeyFolder
+    ? withCalisFolders.map((folder) =>
+        folder.id === JOEY_SUMMER_FOLDER.id
+          ? { ...folder, name: JOEY_SUMMER_FOLDER.name, purpose: JOEY_SUMMER_FOLDER.purpose }
+          : folder,
+      )
+    : [...withCalisFolders, ...cloneFolders([JOEY_SUMMER_FOLDER])]
 
-  const existingIds = new Set(state.templates.map((template) => template.id))
+  const joeyPlanIdSet = new Set(JOEY_SUMMER_PLAN_IDS)
+  let templates = state.templates.map((template) =>
+    joeyPlanIdSet.has(template.id) && template.folderId == null
+      ? { ...template, folderId: JOEY_SUMMER_FOLDER.id }
+      : template,
+  )
+
+  const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
   const missingPlans = [...missingSbdPlans, ...missingCalisPlans]
-  const templates =
-    missingPlans.length > 0 ? [...state.templates, ...clonePlans(missingPlans)] : state.templates
+  templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
 
   return { templates, folders }
 }

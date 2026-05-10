@@ -23,6 +23,24 @@ function te(
   }
 }
 
+/** Starter split bundled for new installs; seeded via `useTemplates` alongside other program folders. */
+export const JOEY_SUMMER_FOLDER: TemplateFolder = {
+  id: 'folder-joey-summer-ppl',
+  name: "Joey's Summer PPL/Core/Circuit",
+  purpose:
+    'My summer plan to build upper chest/delts/lats for my #hotgirlsummer',
+}
+
+/** Plans from `DEFAULT_PLANS` that belong in `JOEY_SUMMER_FOLDER` for installs and migration. */
+export const JOEY_SUMMER_PLAN_IDS: readonly string[] = [
+  'plan-push',
+  'plan-pull',
+  'plan-legs',
+  'plan-core-conditioning',
+  'plan-arms-core',
+  'plan-circuit',
+]
+
 export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-back-legs',
@@ -68,6 +86,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-circuit',
     name: 'Circuit Day',
+    folderId: JOEY_SUMMER_FOLDER.id,
     isCircuit: true,
     exercises: [
       te('plan-circuit', 'goblet-squat', 'DB Goblet Squat', 3, '12-15', '20', true, 'goblet-squat'),
@@ -97,6 +116,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-legs',
     name: 'Legs',
+    folderId: JOEY_SUMMER_FOLDER.id,
     exercises: [
       te('plan-legs', 'leg-press-squat', 'Leg Press / Squat', 4, '6-10', '275', false, 'leg-press'),
       te('plan-legs', 'rdl', 'RDL', 4, '8-12', '135', false, 'romanian-deadlift'),
@@ -109,6 +129,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-push',
     name: 'Push',
+    folderId: JOEY_SUMMER_FOLDER.id,
     exercises: [
       te('plan-push', 'bench', 'Barbell Bench Press', 4, '6-10', '135', false, 'bench-press'),
       te('plan-push', 'incline-db', 'Incline DB Press', 3, '8-12', '55', false, 'incline-dumbbell-press'),
@@ -121,6 +142,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-pull',
     name: 'Pull',
+    folderId: JOEY_SUMMER_FOLDER.id,
     exercises: [
       te('plan-pull', 'pull-up', 'Pull-Up', 4, 'AMRAP', '0', false, 'pull-up'),
       te('plan-pull', 'chest-row', 'Chest Supported Row', 3, '8-12', '35', false, 'chest-supported-row'),
@@ -165,6 +187,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-arms-core',
     name: 'Arms & Core',
+    folderId: JOEY_SUMMER_FOLDER.id,
     exercises: [
       te('plan-arms-core', 'bb-curl', 'Barbell Curl', 3, '10-12', '65', false, 'barbell-curl'),
       te('plan-arms-core', 'hammer', 'Hammer Curl', 3, '10-12', '25', false, 'hammer-curl'),
@@ -178,6 +201,7 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
   {
     id: 'plan-core-conditioning',
     name: 'Core & Conditioning',
+    folderId: JOEY_SUMMER_FOLDER.id,
     exercises: [
       te('plan-core-conditioning', 'cable-crunch', 'Cable Crunch', 3, '15-20', '90', false, 'cable-crunch'),
       te('plan-core-conditioning', 'leg-raise', 'Hanging Leg Raise', 3, '10-15', '0', false, 'leg-raise'),

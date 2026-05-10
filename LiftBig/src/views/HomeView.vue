@@ -208,11 +208,6 @@ function onPickDay(key: string) {
       </div>
     </section>
 
-    <AssignPlanSheet
-      :open="planSheetOpen"
-      :templates="templateList"
-      @close="planSheetOpen = false"
-      @pick="onAssignPlan"
-    />
+    <AssignPlanSheet :open="planSheetOpen" @close="planSheetOpen = false" @pick="onAssignPlan" />
   </div>
 </template>
