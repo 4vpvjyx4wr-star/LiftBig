@@ -15,7 +15,21 @@ export type Exercise = {
   targetWeight?: string
 }
 
-export type WorkoutLog = Record<string, Exercise[]>
+/** Single-day payload (with optional notes), or legacy flat exercise list */
+export type WorkoutDay = {
+  exercises: Exercise[]
+  notes?: string
+}
+
+export type WorkoutLogDay = Exercise[] | WorkoutDay
+
+export type WorkoutLog = Record<string, WorkoutLogDay>
+
+export function getDayExercises(dayEntry: WorkoutLogDay | undefined): Exercise[] {
+  if (dayEntry == null) return []
+  if (Array.isArray(dayEntry)) return dayEntry
+  return Array.isArray(dayEntry.exercises) ? dayEntry.exercises : []
+}
 
 export type TemplateSet = { targetReps: string; targetWeight: string }
 

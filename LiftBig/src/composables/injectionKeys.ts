@@ -7,7 +7,9 @@ export type LocalWorkoutsApi = {
   log: Ref<WorkoutLog>
   flush: () => void
   getDay: (dateKey: string) => Exercise[]
+  getDayNotesForDate: (dateKey: string) => string
   setDay: (dateKey: string, exercises: Exercise[]) => void
+  setDayNotes: (dateKey: string, notes: string) => void
   appendExercises: (dateKey: string, exercises: Exercise[]) => void
   deleteDay: (dateKey: string) => void
 }
