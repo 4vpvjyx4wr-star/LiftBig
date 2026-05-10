@@ -4,13 +4,15 @@ import { RouterLink } from 'vue-router'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import PlanShuffleModal from '@/components/plans/PlanShuffleModal.vue'
-import { settingsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
+import SchedulePlanCalendarSheet from '@/components/plans/SchedulePlanCalendarSheet.vue'
+import { settingsInjectionKey, templatesInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import type { WorkoutTemplate } from '@/types/workout'
 import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
+const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 
@@ -26,6 +28,8 @@ const planList = computed(() => templates.templates.value)
 const modalOpen = ref(false)
 const editing = ref<WorkoutTemplate | null>(null)
 const shuffleOpen = ref(false)
+const scheduleOpen = ref(false)
+const scheduleTemplate = ref<WorkoutTemplate | null>(null)
 
 function openNew() {
   editing.value = null
@@ -47,6 +51,26 @@ function openShuffle() {
 
 function closeShuffle() {
   shuffleOpen.value = false
+}
+
+function openScheduleToCalendar(t: WorkoutTemplate) {
+  scheduleTemplate.value = t
+  scheduleOpen.value = true
+}
+
+function closeScheduleSheet() {
+  scheduleOpen.value = false
+  scheduleTemplate.value = null
+}
+
+function onScheduleApply(payload: { startDateKey: string; restDaysPerWeek: number }) {
+  if (!scheduleTemplate.value) return
+  workouts.applyPlanWithWeeklyRest(
+    payload.startDateKey,
+    scheduleTemplate.value,
+    payload.restDaysPerWeek,
+  )
+  closeScheduleSheet()
 }
 
 function onSave(payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }) {
@@ -141,7 +165,14 @@ function planDurationLabel(t: WorkoutTemplate): string {
       >
         <div class="flex items-start justify-between gap-2">
           <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
-          <div class="flex shrink-0 gap-2">
+          <div class="flex shrink-0 flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-border px-3 py-1 text-xs font-bold text-teal-200 hover:border-teal-700"
+              @click="openScheduleToCalendar(item)"
+            >
+              Calendar
+            </button>
             <button
               type="button"
               class="rounded-lg bg-blue px-3 py-1 text-xs font-bold text-foreground"
@@ -205,6 +236,13 @@ function planDurationLabel(t: WorkoutTemplate): string {
     />
 
     <PlanShuffleModal :show="shuffleOpen" @close="closeShuffle" @save="onSave" />
+
+    <SchedulePlanCalendarSheet
+      :open="scheduleOpen"
+      :template="scheduleTemplate"
+      @close="closeScheduleSheet"
+      @apply="onScheduleApply"
+    />
 
     <ExerciseDetailSheet
       :open="detailOpen"

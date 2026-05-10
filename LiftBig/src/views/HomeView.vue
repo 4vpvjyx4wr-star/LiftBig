@@ -10,8 +10,7 @@ import {
   templatesInjectionKey,
 } from '@/composables/injectionKeys'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
-import type { Exercise } from '@/types/workout'
-import { cloneTemplateToExercises } from '@/utils/templateToLog'
+import type { Exercise, WorkoutTemplate } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
 import { formatMaxWeightDisplay } from '@/utils/units'
 
@@ -25,7 +24,8 @@ const viewYear = ref(new Date().getFullYear())
 const viewMonth = ref(new Date().getMonth())
 const selectedDate = ref(today)
 
-const { monthLabel, cells, trainedDaysInMonth } = useMonthCalendar(viewYear, viewMonth)
+const { monthLabel, cells, trainedDaysInMonth, loggedRestDaysInMonth, consistencyDaysInMonth } =
+  useMonthCalendar(viewYear, viewMonth)
 
 const cellKeys = computed(() => cells.value.keys)
 const daysInMonth = computed(() => cells.value.daysInMonth)
@@ -54,10 +54,15 @@ const dayExercises = computed(() => workouts.getDay(selectedDate.value))
 const exerciseCount = computed(() => dayExercises.value.length)
 
 const trained = computed(() => trainedDaysInMonth(workoutLogPlain.value))
-const restDays = computed(() => daysInMonth.value - trained.value)
+const loggedRest = computed(() => loggedRestDaysInMonth(workoutLogPlain.value))
+const consistencyDays = computed(() => consistencyDaysInMonth(workoutLogPlain.value))
 const consistency = computed(() =>
-  trained.value > 0 ? Math.round((trained.value / daysInMonth.value) * 100) : 0,
+  consistencyDays.value > 0
+    ? Math.round((consistencyDays.value / daysInMonth.value) * 100)
+    : 0,
 )
+
+const selectedIsRest = computed(() => workouts.isRestDay(selectedDate.value))
 
 function dayStats(exercises: Exercise[]) {
   let sets = 0
@@ -78,14 +83,27 @@ function dayStats(exercises: Exercise[]) {
 const selectedDayStats = computed(() => dayStats(dayExercises.value))
 
 function deleteDay() {
-  if (!confirm('Delete all exercises for this day?')) return
+  const msg = selectedIsRest.value
+    ? 'Remove this rest day from the calendar?'
+    : 'Delete all exercises for this day?'
+  if (!confirm(msg)) return
   workouts.deleteDay(selectedDate.value)
 }
 
-function onAssignPlan(t: import('@/types/workout').WorkoutTemplate) {
-  const added = cloneTemplateToExercises(t)
-  workouts.appendExercises(selectedDate.value, added)
+function onAssignPlan(payload: { template: WorkoutTemplate; restDaysPerWeek: number }) {
+  workouts.applyPlanWithWeeklyRest(selectedDate.value, payload.template, payload.restDaysPerWeek)
   planSheetOpen.value = false
+}
+
+function toggleRestDay() {
+  if (selectedIsRest.value) {
+    workouts.deleteDay(selectedDate.value)
+    return
+  }
+  if (exerciseCount.value > 0) {
+    if (!confirm('Replace this day’s logged workout with a rest day?')) return
+  }
+  workouts.markRestDay(selectedDate.value)
 }
 
 function onPickDay(key: string) {
@@ -109,7 +127,7 @@ function onPickDay(key: string) {
       </div>
       <div class="w-px bg-border" />
       <div class="flex flex-1 flex-col items-center py-3">
-        <span class="text-2xl font-black text-foreground">{{ restDays }}</span>
+        <span class="text-2xl font-black text-foreground">{{ loggedRest }}</span>
         <span class="text-[10px] font-bold tracking-wider text-muted">REST</span>
       </div>
       <div class="w-px bg-border" />
@@ -133,7 +151,10 @@ function onPickDay(key: string) {
     <section class="mt-4 rounded-xl border border-border bg-card p-4">
       <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
 
-      <template v-if="exerciseCount === 0">
+      <template v-if="selectedIsRest">
+        <p class="mt-2 text-sm font-semibold text-teal-300/90">Rest day — counts toward your consistency score.</p>
+      </template>
+      <template v-else-if="exerciseCount === 0">
         <p class="mt-2 text-sm text-muted">No workout logged for this day.</p>
       </template>
       <template v-else>
@@ -162,24 +183,30 @@ function onPickDay(key: string) {
         </RouterLink>
         <button
           type="button"
+          class="rounded-lg border border-teal-800/60 bg-teal-950/35 px-4 py-3 text-sm font-bold text-teal-200"
+          @click="toggleRestDay"
+        >
+          {{ selectedIsRest ? 'Clear rest day' : 'Rest day' }}
+        </button>
+        <button
+          type="button"
           class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-3 text-sm font-bold text-red-400"
-          :disabled="exerciseCount === 0"
+          :disabled="exerciseCount === 0 && !selectedIsRest"
           @click="deleteDay"
         >
           Delete day
         </button>
+        <button
+          v-if="templateList.length > 0"
+          type="button"
+          class="flex w-full min-[400px]:w-auto min-[400px]:flex-1 items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card-inner px-4 py-3 text-sm font-bold text-foreground"
+          @click="planSheetOpen = true"
+        >
+          <i class="fa-solid fa-clipboard-list text-muted" aria-hidden="true" />
+          Assign a plan to this day
+        </button>
       </div>
     </section>
-
-    <button
-      v-if="templateList.length > 0"
-      type="button"
-      class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card py-3 text-sm font-bold text-foreground"
-      @click="planSheetOpen = true"
-    >
-      <i class="fa-solid fa-clipboard-list text-muted" aria-hidden="true" />
-      Assign a Plan to This Day
-    </button>
 
     <AssignPlanSheet
       :open="planSheetOpen"

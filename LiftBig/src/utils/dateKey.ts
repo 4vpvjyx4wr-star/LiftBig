@@ -48,3 +48,24 @@ export function formatDisplayDate(dateKey: string): string {
   const d = parts[2]!
   return `${MONTHS[m - 1]} ${d}, ${y}`
 }
+
+export function parseDateKey(dateKey: string): Date {
+  const parts = dateKey.split('-').map(Number)
+  const y = parts[0]!
+  const m = parts[1]!
+  const d = parts[2]!
+  return new Date(y, m - 1, d)
+}
+
+export function addDaysToDateKey(dateKey: string, deltaDays: number): string {
+  const d = parseDateKey(dateKey)
+  d.setDate(d.getDate() + deltaDays)
+  return toDateKey(d)
+}
+
+/** Last calendar day of the month containing `dateKey` (local). */
+export function endOfMonthKeyFor(dateKey: string): string {
+  const d = parseDateKey(dateKey)
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  return toDateKey(last)
+}

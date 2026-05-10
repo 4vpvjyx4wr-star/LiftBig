@@ -12,6 +12,13 @@ export type LocalWorkoutsApi = {
   setDayNotes: (dateKey: string, notes: string) => void
   appendExercises: (dateKey: string, exercises: Exercise[]) => void
   deleteDay: (dateKey: string) => void
+  isRestDay: (dateKey: string) => boolean
+  markRestDay: (dateKey: string) => void
+  applyPlanWithWeeklyRest: (
+    startDateKey: string,
+    template: WorkoutTemplate,
+    restDaysPerWeek: number,
+  ) => void
 }
 
 export type TemplatesApi = {

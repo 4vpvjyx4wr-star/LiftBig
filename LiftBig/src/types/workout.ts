@@ -19,6 +19,8 @@ export type Exercise = {
 export type WorkoutDay = {
   exercises: Exercise[]
   notes?: string
+  /** Logged rest day: counts toward consistency; no exercises */
+  isRestDay?: boolean
 }
 
 export type WorkoutLogDay = Exercise[] | WorkoutDay
@@ -29,6 +31,12 @@ export function getDayExercises(dayEntry: WorkoutLogDay | undefined): Exercise[]
   if (dayEntry == null) return []
   if (Array.isArray(dayEntry)) return dayEntry
   return Array.isArray(dayEntry.exercises) ? dayEntry.exercises : []
+}
+
+export function isRestDayEntry(dayEntry: WorkoutLogDay | undefined): boolean {
+  if (dayEntry == null) return false
+  if (Array.isArray(dayEntry)) return false
+  return dayEntry.isRestDay === true
 }
 
 export type TemplateSet = { targetReps: string; targetWeight: string }
@@ -46,4 +54,11 @@ export type WorkoutTemplate = {
   name: string
   exercises: TemplateExercise[]
   isCircuit?: boolean
+  folderId?: string | null
+}
+
+export type TemplateFolder = {
+  id: string
+  name: string
+  purpose?: string
 }

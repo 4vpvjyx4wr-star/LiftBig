@@ -1,5 +1,5 @@
 import { computed, type Ref } from 'vue'
-import { getDayExercises, type WorkoutLog } from '@/types/workout'
+import { getDayExercises, isRestDayEntry, type WorkoutLog } from '@/types/workout'
 import { MONTHS, WEEKDAYS } from '@/utils/dateKey'
 
 export function useMonthCalendar(viewYear: Ref<number>, viewMonth: Ref<number>) {
@@ -32,10 +32,33 @@ export function useMonthCalendar(viewYear: Ref<number>, viewMonth: Ref<number>) 
     return n
   }
 
+  function loggedRestDaysInMonth(log: WorkoutLog): number {
+    const { keys } = cells.value
+    let n = 0
+    for (const k of keys) {
+      if (k && isRestDayEntry(log[k])) n++
+    }
+    return n
+  }
+
+  /** Days that count toward consistency: workout logged or explicit rest day */
+  function consistencyDaysInMonth(log: WorkoutLog): number {
+    const { keys } = cells.value
+    let n = 0
+    for (const k of keys) {
+      if (!k) continue
+      const entry = log[k]
+      if (getDayExercises(entry).length > 0 || isRestDayEntry(entry)) n++
+    }
+    return n
+  }
+
   return {
     weekdays: WEEKDAYS,
     monthLabel,
     cells,
     trainedDaysInMonth,
+    loggedRestDaysInMonth,
+    consistencyDaysInMonth,
   }
 }

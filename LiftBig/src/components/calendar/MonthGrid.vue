@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getDayExercises, type WorkoutLog } from '@/types/workout'
+import { getDayExercises, isRestDayEntry, type WorkoutLog } from '@/types/workout'
 
 const props = defineProps<{
   cellKeys: (string | null)[]
@@ -15,6 +15,16 @@ const emit = defineEmits<{
 
 function hasWork(key: string) {
   return getDayExercises(props.log[key]).length > 0
+}
+
+function isRest(key: string) {
+  return isRestDayEntry(props.log[key])
+}
+
+function cellTone(key: string): 'work' | 'rest' | 'empty' {
+  if (hasWork(key)) return 'work'
+  if (isRest(key)) return 'rest'
+  return 'empty'
 }
 </script>
 
@@ -34,7 +44,11 @@ function hasWork(key: string) {
         type="button"
         class="relative flex aspect-square items-center justify-center rounded-lg border text-sm font-bold transition-colors"
         :class="[
-          hasWork(key) ? 'border-border bg-card-inner text-foreground' : 'border-transparent text-muted',
+          cellTone(key) === 'work'
+            ? 'border-border bg-card-inner text-foreground'
+            : cellTone(key) === 'rest'
+              ? 'border-teal-800/45 bg-teal-950/25 text-teal-100'
+              : 'border-transparent text-muted',
           highlightSelection && selectedKey === key
             ? 'border-primary bg-primary/20 text-primary'
             : '',
@@ -48,6 +62,11 @@ function hasWork(key: string) {
         <span
           v-if="hasWork(key)"
           class="absolute bottom-1 h-1 w-1 rounded-full bg-primary"
+          aria-hidden="true"
+        />
+        <span
+          v-else-if="isRest(key)"
+          class="absolute bottom-1 h-1 w-1 rounded-full bg-teal-400"
           aria-hidden="true"
         />
       </button>
