@@ -149,7 +149,32 @@ function onPickDay(key: string) {
     </div>
 
     <section class="mt-4 rounded-xl border border-border bg-card p-4">
-      <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
+        <div class="flex flex-wrap gap-2 sm:justify-end">
+          <RouterLink
+            :to="`/workout/${selectedDate}`"
+            class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue px-4 py-2.5 text-center text-sm font-bold text-foreground min-[400px]:flex-none sm:min-w-[7rem]"
+          >
+            {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
+          </RouterLink>
+          <button
+            type="button"
+            class="rounded-lg border border-teal-800/60 bg-teal-950/35 px-4 py-2.5 text-sm font-bold text-teal-200"
+            @click="toggleRestDay"
+          >
+            {{ selectedIsRest ? 'Clear rest day' : 'Rest day' }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-2.5 text-sm font-bold text-red-400"
+            :disabled="exerciseCount === 0 && !selectedIsRest"
+            @click="deleteDay"
+          >
+            Delete day
+          </button>
+        </div>
+      </div>
 
       <template v-if="selectedIsRest">
         <p class="mt-2 text-sm font-semibold text-teal-300/90">Rest day — counts toward your consistency score.</p>
@@ -175,27 +200,6 @@ function onPickDay(key: string) {
       </template>
 
       <div class="mt-4 flex flex-wrap gap-2">
-        <RouterLink
-          :to="`/workout/${selectedDate}`"
-          class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue px-4 py-3 text-center text-sm font-bold text-foreground min-[400px]:flex-none"
-        >
-          {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
-        </RouterLink>
-        <button
-          type="button"
-          class="rounded-lg border border-teal-800/60 bg-teal-950/35 px-4 py-3 text-sm font-bold text-teal-200"
-          @click="toggleRestDay"
-        >
-          {{ selectedIsRest ? 'Clear rest day' : 'Rest day' }}
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-3 text-sm font-bold text-red-400"
-          :disabled="exerciseCount === 0 && !selectedIsRest"
-          @click="deleteDay"
-        >
-          Delete day
-        </button>
         <button
           v-if="templateList.length > 0"
           type="button"
