@@ -384,6 +384,16 @@ function closeLibraryDetail() {
 function planDurationLabel(t: WorkoutTemplate): string {
   return formatPlanDurationEstimate(estimatePlanDurationMinutes(t, durationAssumptions.value))
 }
+
+function onPlansLiftSecondsChange(ev: Event) {
+  const raw = Number((ev.target as HTMLInputElement).value)
+  settings.setAverageLiftSeconds(Number.isFinite(raw) ? raw : 60)
+}
+
+function onPlansRestSecondsChange(ev: Event) {
+  const raw = Number((ev.target as HTMLInputElement).value)
+  settings.setAverageRestSeconds(Number.isFinite(raw) ? raw : 60)
+}
 </script>
 
 <template>
@@ -414,28 +424,69 @@ function planDurationLabel(t: WorkoutTemplate): string {
       </div>
     </header>
 
-    <p class="mb-3 text-[10px] leading-snug text-muted">
-      Time estimates use your Settings values:
-      ~{{ settings.averageLiftSeconds.value }}s per set and ~{{ settings.averageRestSeconds.value }}s rest.
-    </p>
+    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <p class="text-[10px] leading-snug text-muted">
+        Time estimates use your Settings values:
+        ~{{ settings.averageLiftSeconds.value }}s per set and ~{{ settings.averageRestSeconds.value }}s rest.
+      </p>
+      <div class="flex flex-wrap items-center gap-3 sm:shrink-0">
+        <label class="flex items-center gap-1.5 text-[10px] font-semibold text-muted">
+          <span class="whitespace-nowrap">Lift / set</span>
+          <input
+            type="number"
+            min="5"
+            max="600"
+            step="5"
+            class="w-[4.25rem] rounded-lg border border-border bg-card-inner px-2 py-1.5 text-xs tabular-nums text-foreground outline-none focus:border-primary"
+            :value="settings.averageLiftSeconds.value"
+            aria-label="Seconds per set for time estimates"
+            @change="onPlansLiftSecondsChange"
+          />
+          <span class="tabular-nums">s</span>
+        </label>
+        <label class="flex items-center gap-1.5 text-[10px] font-semibold text-muted">
+          <span class="whitespace-nowrap">Rest</span>
+          <input
+            type="number"
+            min="5"
+            max="600"
+            step="5"
+            class="w-[4.25rem] rounded-lg border border-border bg-card-inner px-2 py-1.5 text-xs tabular-nums text-foreground outline-none focus:border-primary"
+            :value="settings.averageRestSeconds.value"
+            aria-label="Average rest seconds for time estimates"
+            @change="onPlansRestSecondsChange"
+          />
+          <span class="tabular-nums">s</span>
+        </label>
+      </div>
+    </div>
 
-    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-xs text-muted">Drag plans into folders to organize split days.</p>
-      <div class="flex items-center gap-2">
-        <input
-          v-model="newFolderName"
-          type="text"
-          class="w-40 rounded-lg border border-border bg-card-inner px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
-          placeholder="Folder name"
-          @keyup.enter="createFolder"
-        />
-        <button
-          type="button"
-          class="rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
-          @click="createFolder"
-        >
-          + Folder
-        </button>
+    <div class="mb-3 flex flex-col gap-2">
+      <button
+        type="button"
+        class="inline-flex w-fit items-center rounded-full bg-primary px-6 py-3 text-sm font-extrabold tracking-wide text-foreground shadow-lg"
+        @click="openNew"
+      >
+        + New Plan
+      </button>
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs text-muted">Drag plans into folders to organize split days.</p>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="newFolderName"
+            type="text"
+            class="w-40 rounded-lg border border-border bg-card-inner px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
+            placeholder="Folder name"
+            @keyup.enter="createFolder"
+          />
+          <button
+            type="button"
+            class="rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+            @click="createFolder"
+          >
+            + Folder
+          </button>
+        </div>
       </div>
     </div>
 
@@ -444,7 +495,7 @@ function planDurationLabel(t: WorkoutTemplate): string {
       <p class="mt-2 text-sm text-muted">Create a template to reuse across your calendar.</p>
     </div>
 
-    <div v-else class="space-y-3 pb-24">
+    <div v-else class="space-y-3">
       <section
         v-for="entry in folderSections"
         :key="entry.folder.id"
@@ -513,14 +564,6 @@ function planDurationLabel(t: WorkoutTemplate): string {
                 @focus="openDatePicker($event.target as HTMLInputElement)"
                 @input="onFolderStartDateInput(entry.folder.id, ($event.target as HTMLInputElement).value)"
               />
-              <button
-                type="button"
-                class="rounded border border-border bg-card px-2 py-1 text-xs font-bold text-primary hover:border-primary"
-                aria-label="Open calendar"
-                @click="openDatePicker(($event.currentTarget as HTMLElement).previousElementSibling as HTMLInputElement | null)"
-              >
-                <i class="fa-solid fa-calendar-days" aria-hidden="true" />
-              </button>
               <div class="min-w-[180px] rounded border border-border bg-card px-2 py-1">
                 <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">
                   {{
@@ -696,14 +739,6 @@ function planDurationLabel(t: WorkoutTemplate): string {
         </ul>
       </section>
     </div>
-
-    <button
-      type="button"
-      class="fixed bottom-24 left-1/2 z-30 flex -translate-x-1/2 items-center rounded-full bg-primary px-6 py-3 text-sm font-extrabold tracking-wide text-foreground shadow-lg max-sm:left-1/2 max-sm:max-w-[calc(100%-2rem)]"
-      @click="openNew"
-    >
-      + New Plan
-    </button>
 
     <PlanEditorModal
       :weight-unit="weightUnit"
