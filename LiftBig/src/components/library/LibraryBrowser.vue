@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   libraryFavoritesInjectionKey,
   settingsInjectionKey,
@@ -102,6 +102,46 @@ const emptyHint = computed(() => {
   }
   return null
 })
+
+/** Horizontal chip strip: vertical wheel → scroll (desktop / fine pointer only). Touch swipe unchanged. */
+const muscleGroupStripRef = ref<HTMLElement | null>(null)
+
+function normalizeWheelDeltaY(el: HTMLElement, e: WheelEvent): number {
+  switch (e.deltaMode) {
+    case WheelEvent.DOM_DELTA_LINE:
+      return e.deltaY * 16
+    case WheelEvent.DOM_DELTA_PAGE:
+      return e.deltaY * el.clientWidth
+    default:
+      return e.deltaY
+  }
+}
+
+function onMuscleGroupStripWheel(e: WheelEvent) {
+  if (!window.matchMedia('(pointer: fine)').matches) return
+
+  const el = muscleGroupStripRef.value
+  if (!el || el.scrollWidth <= el.clientWidth + 1) return
+
+  const dy = normalizeWheelDeltaY(el, e)
+  const maxScroll = el.scrollWidth - el.clientWidth
+  const next = Math.min(maxScroll, Math.max(0, el.scrollLeft + dy))
+
+  if (next === el.scrollLeft) return
+
+  e.preventDefault()
+  el.scrollLeft = next
+}
+
+onMounted(() => {
+  const el = muscleGroupStripRef.value
+  if (!el) return
+  el.addEventListener('wheel', onMuscleGroupStripWheel, { passive: false })
+})
+
+onBeforeUnmount(() => {
+  muscleGroupStripRef.value?.removeEventListener('wheel', onMuscleGroupStripWheel)
+})
 </script>
 
 <template>
@@ -116,7 +156,10 @@ const emptyHint = computed(() => {
       autocomplete="off"
     />
 
-    <div class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      ref="muscleGroupStripRef"
+      class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       <button
         type="button"
         class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
