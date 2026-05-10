@@ -19,13 +19,24 @@
 html,
 body,
 #app {
-  height: 100%;
   margin: 0;
 }
 
+/*
+ * Use dynamic viewport height so layout matches the visible screen when mobile browser
+ * chrome shows or hides; plain height:100% can leave fixed bottom UI appearing to jump.
+ */
 html {
+  height: 100%;
+  min-height: 100dvh;
   overscroll-behavior-y: none;
   scrollbar-width: none; /* Firefox */
+}
+
+body,
+#app {
+  min-height: 100%;
+  min-height: 100dvh;
 }
 
 html::-webkit-scrollbar {

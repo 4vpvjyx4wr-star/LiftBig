@@ -28,11 +28,16 @@ function setScope(s: 'all' | 'favorites' | 'logged') {
 <template>
   <div>
     <header class="mb-4 border-b border-border pb-3">
-      <RouterLink to="/plans" class="mb-2 inline-block text-xs font-bold text-muted hover:text-primary">
-        ← Plans
-      </RouterLink>
-      <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
-      <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Exercise library</p>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p class="text-lg font-bold tracking-[0.2em] text-muted sm:text-xl">Exercise library</p>
+        <RouterLink
+          to="/plans"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
+        >
+          <i class="fa-solid fa-clipboard-list" aria-hidden="true" />
+          Plans
+        </RouterLink>
+      </div>
     </header>
 
     <p class="mb-3 text-sm text-muted">

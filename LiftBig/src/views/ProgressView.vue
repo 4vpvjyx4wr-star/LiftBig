@@ -83,7 +83,7 @@ function fmtLbs(lbs: number): string {
         </span>
         <select
           v-model="selectedExercise"
-          class="w-full rounded-xl border border-border bg-card px-3 py-3 text-[15px] font-bold text-foreground outline-none focus:border-primary"
+          class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
         >
           <option v-for="name in exerciseNames" :key="name" :value="name">
             {{ name }}

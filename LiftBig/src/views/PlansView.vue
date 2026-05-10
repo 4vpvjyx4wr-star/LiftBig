@@ -413,11 +413,10 @@ function onPlansRestSecondsChange(ev: Event) {
 <template>
   <div>
     <header class="mb-4 border-b border-border pb-3">
-      <div class="flex items-start justify-between gap-2">
-        <div>
-          <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
-          <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Training Journal</p>
-        </div>
+      <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <p class="min-w-0 text-lg font-bold tracking-[0.2em] text-muted sm:text-xl">
+          Workout plans
+        </p>
         <div class="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"

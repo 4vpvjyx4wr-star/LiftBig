@@ -113,12 +113,9 @@ function onPickDay(key: string) {
 
 <template>
   <div>
-    <header class="mb-4 border-b border-border pb-3">
-      <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
-      <p class="text-[10px] font-bold tracking-[0.2em] text-muted">Training Journal</p>
-    </header>
-
-    <MonthNav :label="monthLabel" @prev="changeMonth(-1)" @next="changeMonth(1)" />
+    <div class="mb-4">
+      <MonthNav :label="monthLabel" @prev="changeMonth(-1)" @next="changeMonth(1)" />
+    </div>
 
     <div class="mb-3 flex rounded-xl border border-border bg-card">
       <div class="flex flex-1 flex-col items-center py-3">

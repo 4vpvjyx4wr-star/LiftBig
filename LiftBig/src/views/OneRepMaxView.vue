@@ -56,7 +56,6 @@ const canShowResults = computed(
 <template>
   <div class="pb-8">
     <header class="mb-4 border-b border-border pb-3">
-      <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
       <p class="text-[10px] font-bold tracking-[0.2em] text-muted">One Rep Max</p>
     </header>
 
