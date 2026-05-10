@@ -4,11 +4,13 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import ExerciseCard from '@/components/workout/ExerciseCard.vue'
+import SwapExerciseModal from '@/components/workout/SwapExerciseModal.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise } from '@/types/workout'
+import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
-import { searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { searchLibrary } from '@/utils/exerciseLibrary'
 import {
   applyLiftBigBackupToStorage,
   collectLiftBigBackupPayload,
@@ -31,6 +33,7 @@ const exercises = ref<Exercise[]>([])
 const notes = ref('')
 const inputName = ref('')
 const libraryOpen = ref(false)
+const swapModalExerciseId = ref<string | null>(null)
 const showInlineLibraryMatches = ref(false)
 const menuOpen = ref(false)
 const settingsOpen = ref(false)
@@ -131,6 +134,24 @@ function updateSet(exerciseId: string, setId: string, field: 'reps' | 'weight', 
   })
 }
 
+/** Apply weight + reps together so the first-set prediction does not trip per-field guards. */
+function prefillFirstSet(
+  exerciseId: string,
+  setId: string,
+  patch: { weight?: string; reps?: string },
+) {
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    return {
+      ...ex,
+      sets: ex.sets.map((s) => {
+        if (s.id !== setId) return s
+        return { ...s, ...patch }
+      }),
+    }
+  })
+}
+
 function toggleCircuitSet(exerciseId: string, setId: string) {
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== exerciseId) return ex
@@ -149,6 +170,25 @@ function deleteSet(exerciseId: string, setId: string) {
 
 function deleteExercise(exerciseId: string) {
   exercises.value = exercises.value.filter((ex) => ex.id !== exerciseId)
+}
+
+const swapModalExercise = computed(() => {
+  const id = swapModalExerciseId.value
+  if (!id) return null
+  return exercises.value.find((ex) => ex.id === id) ?? null
+})
+
+function openSwapExercise(exerciseId: string) {
+  swapModalExerciseId.value = exerciseId
+}
+
+function applySwapExerciseReplacement(lib: LibraryExercise) {
+  const id = swapModalExerciseId.value
+  if (!id) return
+  exercises.value = exercises.value.map((ex) =>
+    ex.id === id ? { ...ex, name: lib.name, libraryId: lib.id } : ex,
+  )
+  swapModalExerciseId.value = null
 }
 
 function finish() {
@@ -219,9 +259,9 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     </Teleport>
 
     <header
-      class="sticky top-0 z-30 grid grid-cols-3 items-start gap-2 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm"
+      class="sticky top-0 z-30 flex items-start justify-between gap-2 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm"
     >
-      <div>
+      <div class="min-w-0">
         <RouterLink to="/" class="mb-2 inline-block text-xs font-bold text-muted hover:text-primary">
           ← Home
         </RouterLink>
@@ -229,71 +269,73 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
         <p class="text-xs text-muted">{{ formatDisplayDate(dateKey) }}</p>
       </div>
 
-      <div class="flex justify-center pt-1">
-        <RestTimer />
-      </div>
+      <div class="flex items-start gap-2">
+        <div class="pt-1">
+          <RestTimer :show-floating="false" compact />
+        </div>
 
-      <div class="flex flex-col items-end gap-2">
-        <div class="relative">
-          <button
-            type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground"
-            :aria-expanded="menuOpen"
-            aria-controls="workout-menu"
-            aria-label="Open menu"
-            @click="menuOpen = !menuOpen"
-          >
-            <i class="fa-solid fa-bars text-sm" aria-hidden="true" />
-          </button>
-          <div
-            v-if="menuOpen"
-            id="workout-menu"
-            class="absolute right-0 z-50 mt-2 w-[13rem] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
-            role="menu"
-            @click.stop
-          >
-            <RouterLink v-slot="{ navigate, isActive }" to="/plates" custom>
-              <button
-                type="button"
-                role="menuitem"
-                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-                :class="{ '!text-primary': isActive }"
-                @click="closeMenu(); navigate($event)"
-              >
-                <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
-                Plates
-              </button>
-            </RouterLink>
-            <RouterLink v-slot="{ navigate, isActive }" to="/one-rep-max" custom>
-              <button
-                type="button"
-                role="menuitem"
-                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-                :class="{ '!text-primary': isActive }"
-                @click="closeMenu(); navigate($event)"
-              >
-                <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
-                1RM
-              </button>
-            </RouterLink>
+        <div class="flex flex-col items-end gap-2">
+          <div class="relative">
             <button
               type="button"
-              role="menuitem"
-              class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-              @click="openSettingsFromMenu"
+              class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-foreground"
+              :aria-expanded="menuOpen"
+              aria-controls="workout-menu"
+              aria-label="Open menu"
+              @click="menuOpen = !menuOpen"
             >
-              <i class="fa-solid fa-gear w-5 text-center text-base text-muted" aria-hidden="true" />
-              Settings
+              <i class="fa-solid fa-bars text-sm" aria-hidden="true" />
             </button>
+            <div
+              v-if="menuOpen"
+              id="workout-menu"
+              class="absolute right-0 z-50 mt-2 w-[13rem] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
+              role="menu"
+              @click.stop
+            >
+              <RouterLink v-slot="{ navigate, isActive }" to="/plates" custom>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
+                  Plates
+                </button>
+              </RouterLink>
+              <RouterLink v-slot="{ navigate, isActive }" to="/one-rep-max" custom>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
+                  1RM
+                </button>
+              </RouterLink>
+              <button
+                type="button"
+                role="menuitem"
+                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                @click="openSettingsFromMenu"
+              >
+                <i class="fa-solid fa-gear w-5 text-center text-base text-muted" aria-hidden="true" />
+                Settings
+              </button>
+            </div>
           </div>
+          <RouterLink
+            to="/library"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
+            aria-label="Open exercise library"
+          >
+            <i class="fa-solid fa-book text-sm" aria-hidden="true" />
+          </RouterLink>
         </div>
-        <RouterLink
-          to="/library"
-          class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted hover:border-primary hover:text-primary"
-          aria-label="Open exercise library"
-        >
-          <i class="fa-solid fa-book text-sm" aria-hidden="true" />
-        </RouterLink>
       </div>
     </header>
 
@@ -319,8 +361,10 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
         :workout-log="workoutLogPlain"
         @add-set="addSet(ex.id)"
         @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
+        @prefill-first-set="(setId, patch) => prefillFirstSet(ex.id, setId, patch)"
         @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
         @delete-set="(setId) => deleteSet(ex.id, setId)"
+        @swap-exercise="openSwapExercise(ex.id)"
         @delete-exercise="deleteExercise(ex.id)"
       />
 
@@ -385,6 +429,13 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       :show="libraryOpen"
       @close="libraryOpen = false"
       @pick="addFromLibrary"
+    />
+
+    <SwapExerciseModal
+      :show="swapModalExercise != null"
+      :exercise="swapModalExercise"
+      @close="swapModalExerciseId = null"
+      @pick="applySwapExerciseReplacement"
     />
 
     <SettingsSheet

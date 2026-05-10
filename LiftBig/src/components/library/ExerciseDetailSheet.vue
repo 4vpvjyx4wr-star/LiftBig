@@ -109,6 +109,16 @@ function toggleFavorite() {
           </li>
         </ol>
 
+        <template v-if="exercise.cues?.length">
+          <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Form cues</h4>
+          <ul class="mt-2 space-y-2 text-sm text-foreground">
+            <li v-for="(cue, i) in exercise.cues" :key="i" class="flex gap-2 leading-relaxed">
+              <span class="shrink-0 text-primary" aria-hidden="true">→</span>
+              <span>{{ cue }}</span>
+            </li>
+          </ul>
+        </template>
+
         <template v-if="exercise.tips?.length">
           <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Tips</h4>
           <ul class="mt-2 space-y-2 text-sm text-foreground">

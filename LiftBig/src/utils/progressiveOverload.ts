@@ -62,6 +62,16 @@ export function parseRepRange(repGoal: string): { min: number; max: number } {
   return { min: 0, max: 9999 }
 }
 
+/** Rep count to prefill for set logging: top of programmed range; empty for AMRAP or invalid. */
+export function getDefaultLogRepsForTarget(targetReps: string): string {
+  const t = targetReps.trim()
+  if (!t) return ''
+  if (isAMRAP(t)) return ''
+  const { max } = parseRepRange(t)
+  if (max <= 0 || max >= 9999) return ''
+  return String(max)
+}
+
 export function getSuggestedWeight(
   exerciseName: string,
   targetRepGoal: string,

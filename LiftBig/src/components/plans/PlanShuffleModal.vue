@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import type { WorkoutTemplate } from '@/types/workout'
 import {
   LIBRARY_EQUIPMENT_TYPES,
@@ -13,8 +13,13 @@ import {
   type ShuffleFocus,
   type ShuffleMode,
 } from '@/utils/planShuffle'
-import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimatePlanDurationMinutes,
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 
 const props = defineProps<{
   show: boolean
@@ -25,11 +30,23 @@ const emit = defineEmits<{
   save: [payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }]
 }>()
 
+const settings = inject(settingsInjectionKey)!
+
+const MIN_PACE_SECONDS = 5
+const MAX_PACE_SECONDS = 600
+
+function clampPace(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(MAX_PACE_SECONDS, Math.max(MIN_PACE_SECONDS, Math.round(value)))
+}
+
 const selectedEquipment = ref<string[]>([...LIBRARY_EQUIPMENT_TYPES])
 const selectedFocus = ref<ShuffleFocus[]>([])
 const mode = ref<ShuffleMode>('duration')
 const targetMinutes = ref(45)
 const exerciseCount = ref(6)
+const secondsPerSet = ref(settings.averageLiftSeconds.value)
+const secondsPerRest = ref(settings.averageRestSeconds.value)
 const previewPlan = ref<WorkoutTemplate | null>(null)
 const saveName = ref('')
 const matchWarning = ref<string | null>(null)
@@ -40,9 +57,18 @@ const poolSize = computed(() => {
   return filterLibraryForShuffle(selectedEquipment.value, selectedFocus.value).length
 })
 
+const durationAssumptions = computed(() =>
+  planDurationAssumptionsFromSeconds(
+    clampPace(secondsPerSet.value, settings.averageLiftSeconds.value),
+    clampPace(secondsPerRest.value, settings.averageRestSeconds.value),
+  ),
+)
+
 const previewDurationLabel = computed(() => {
   if (!previewPlan.value) return ''
-  return formatPlanDurationEstimate(estimatePlanDurationMinutes(previewPlan.value))
+  return formatPlanDurationEstimate(
+    estimatePlanDurationMinutes(previewPlan.value, durationAssumptions.value),
+  )
 })
 
 function resetForm() {
@@ -51,6 +77,8 @@ function resetForm() {
   mode.value = 'duration'
   targetMinutes.value = 45
   exerciseCount.value = 6
+  secondsPerSet.value = settings.averageLiftSeconds.value
+  secondsPerRest.value = settings.averageRestSeconds.value
   previewPlan.value = null
   saveName.value = ''
   matchWarning.value = null
@@ -93,12 +121,15 @@ function equipmentActive(eq: string): boolean {
 
 function runShuffle() {
   matchWarning.value = null
+  secondsPerSet.value = clampPace(secondsPerSet.value, settings.averageLiftSeconds.value)
+  secondsPerRest.value = clampPace(secondsPerRest.value, settings.averageRestSeconds.value)
   const plan = buildShuffledPlan({
     selectedEquipment: selectedEquipment.value,
     selectedFocus: selectedFocus.value,
     mode: mode.value,
     targetMinutes: targetMinutes.value,
     exerciseCount: exerciseCount.value,
+    durationAssumptions: durationAssumptions.value,
   })
   if (plan.exercises.length === 0) {
     matchWarning.value =
@@ -222,15 +253,45 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
           </div>
 
           <div v-if="mode === 'duration'" class="mt-3">
-            <label class="text-xs font-bold text-muted">Minutes (~{{ targetMinutes }})</label>
-            <input
-              v-model.number="targetMinutes"
-              type="range"
-              min="15"
-              max="120"
-              step="5"
-              class="mt-1 w-full accent-primary"
-            />
+            <div class="flex flex-wrap items-end gap-3">
+              <div class="min-w-[8rem] flex-1">
+                <label class="text-xs font-bold text-muted">Minutes (~{{ targetMinutes }})</label>
+                <input
+                  v-model.number="targetMinutes"
+                  type="range"
+                  min="15"
+                  max="120"
+                  step="5"
+                  class="mt-1 w-full accent-primary"
+                />
+              </div>
+              <div class="flex shrink-0 items-end gap-2">
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-muted">
+                  Sec / set
+                  <input
+                    v-model.number="secondsPerSet"
+                    type="number"
+                    :min="MIN_PACE_SECONDS"
+                    :max="MAX_PACE_SECONDS"
+                    step="5"
+                    inputmode="numeric"
+                    class="mt-1 w-20 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-sm font-semibold text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+                <label class="block text-[11px] font-bold uppercase tracking-wide text-muted">
+                  Sec / rest
+                  <input
+                    v-model.number="secondsPerRest"
+                    type="number"
+                    :min="MIN_PACE_SECONDS"
+                    :max="MAX_PACE_SECONDS"
+                    step="5"
+                    inputmode="numeric"
+                    class="mt-1 w-20 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-sm font-semibold text-foreground outline-none focus:border-primary"
+                  />
+                </label>
+              </div>
+            </div>
             <p class="mt-1 text-[11px] text-muted">
               Exercises are added until the estimated time (from sets + rest) reaches this target.
             </p>

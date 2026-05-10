@@ -24,6 +24,8 @@ export type LibraryExercise = {
   summary: string
   instructions: string[]
   tips?: string[]
+  /** Short coaching checkpoints users can scan before each set (posture, rhythm, safety). */
+  cues?: string[]
 }
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
@@ -66,6 +68,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Do not bounce the bar off the chest.',
       'Keep a slight arch in the upper back, not the lower back off the bench.',
     ],
+    cues: [
+      'Pinch shoulder blades together and keep them on the bench.',
+      'Bar touches lower chest; elbows stay ~45° from your torso.',
+      'Drive feet into the floor; wrists stacked over forearms.',
+    ],
   }),
   reg({
     id: 'incline-dumbbell-press',
@@ -80,6 +87,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Press up and slightly together without clanking the weights.',
     ],
     tips: ['Avoid excessive arch; keep ribs down and glutes on the pad.'],
+    cues: [
+      'Shoulders stay “back and down” on the pad.',
+      'Dumbbells track over elbows—no loose shoulders at the bottom.',
+      'Press slightly inward at the top without clanking plates.',
+    ],
   }),
   reg({
     id: 'flat-dumbbell-press',
@@ -93,6 +105,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control, elbows ~45° from sides.',
     ],
     tips: ['Use a weight you can control for the full range without flaring elbows to 90°.'],
+    cues: [
+      'Feet planted; ribs slightly down.',
+      'Elbows ~45°; control the stretch at the bottom.',
+      'Same path up and down—no bouncing off the chest.',
+    ],
   }),
   reg({
     id: 'pull-up',
@@ -107,6 +124,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control to full hang.',
     ],
     tips: ['Avoid excessive kipping unless training specifically for it.'],
+    cues: [
+      'Set shoulders by pulling shoulder blades “into back pockets” first.',
+      'Drive elbows down and slightly back—think sternum to bar.',
+      'Lower until arms are long without relaxing into a dead hang.',
+    ],
   }),
   reg({
     id: 'lat-pulldown',
@@ -121,6 +143,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the return until arms are nearly straight.',
     ],
     tips: ['Do not pull behind the neck; keep movement in front.'],
+    cues: [
+      'Thighs pinned under the pad; ribs tall.',
+      'Pull the bar to upper chest, not behind the neck.',
+      'Elbows trace down toward your sides each rep.',
+    ],
   }),
   reg({
     id: 'barbell-row',
@@ -135,6 +162,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control without rounding the lower back.',
     ],
     tips: ['Maintain neutral spine; use straps only if grip limits working sets.'],
+    cues: [
+      'Neck long; gaze a few feet ahead—no craned neck.',
+      'Pull elbows toward hips; pause when the bar touches your torso.',
+      'Hinge stays fixed—don’t stand up to cheat the rep.',
+    ],
   }),
   reg({
     id: 'dumbbell-row',
@@ -148,6 +180,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze lat at top; lower with control.',
     ],
     tips: ['Keep neck neutral; avoid jerking the weight.'],
+    cues: [
+      'Support the torso; let the arm hang straight before each pull.',
+      'Elbow tracks toward the hip—minimize torso rotation.',
+      'Lower with control until the shoulder is fully lengthened.',
+    ],
   }),
   reg({
     id: 'chest-supported-row',
@@ -161,6 +198,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze mid-back at the top; lower slowly.',
     ],
     tips: ['Great for reducing lower-back fatigue from bent-over rows.'],
+    cues: [
+      'Chest stays lifted off the bench—no sinking between shoulder blades.',
+      'Pull with elbows, not hands; squeeze mid-back at the top.',
+      'Stop before shoulders dump forward at the bottom.',
+    ],
   }),
   reg({
     id: 'seated-cable-row',
@@ -174,6 +216,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze shoulder blades; return until arms extend with tension.',
     ],
     tips: ['Keep chest proud; avoid rounding forward at end range.'],
+    cues: [
+      'Sit tall; slight bend in knees; feet flat.',
+      'Hands lead the pull—finish with elbows behind the torso.',
+      'Return until you feel a stretch, not a sloppy forward slump.',
+    ],
   }),
   reg({
     id: 'face-pull',
@@ -188,6 +235,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the stack on the way forward.',
     ],
     tips: ['Light-to-moderate weight; quality of rotation matters more than load.'],
+    cues: [
+      'Elbows higher than wrists through the pull.',
+      'Separate the rope at the end—thumbs toward temples.',
+      'Control the stack; no jerking the neck forward.',
+    ],
   }),
   reg({
     id: 'overhead-press',
@@ -202,6 +254,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower to shoulders with control.',
     ],
     tips: ['Avoid excessive lower-back arch; squeeze glutes and ribs down.'],
+    cues: [
+      'Glutes and quads tight before you press.',
+      'Bar travels close to the face, then head moves “through the window.”',
+      'Finish with biceps beside ears—no aggressive rib flare.',
+    ],
   }),
   reg({
     id: 'lateral-raise',
@@ -215,6 +272,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control; stop short of full rest between reps if desired.',
     ],
     tips: ['Avoid swinging or using momentum from the legs.'],
+    cues: [
+      'Soft elbows fixed—hands lead but elbows don’t bend more mid-rep.',
+      'Raise to shoulder height; pinkies slightly high (“pour water”).',
+      'Pause at the top; three-count lowers beat heavier sloppy reps.',
+    ],
   }),
   reg({
     id: 'rear-delt-fly',
@@ -228,6 +290,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Pause briefly; return without rounding the spine.',
     ],
     tips: ['Use lighter weight; focus on scapular retraction.'],
+    cues: [
+      'Neutral spine; gaze toward floor a few feet ahead.',
+      'Initiate from rear delts—no shrugging toward ears.',
+      'Stop if you feel pinching; reduce range or load.',
+    ],
   }),
   reg({
     id: 'tricep-pushdown',
@@ -241,6 +308,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze triceps; return to ~90° elbow bend under control.',
     ],
     tips: ['Do not let elbows drift forward or shoulders roll forward.'],
+    cues: [
+      'Elbows pinned to your sides or slightly in front of hips.',
+      'Only the forearm moves—upper arm stays vertical.',
+      'Full lockout without thrusting the hips forward.',
+    ],
   }),
   reg({
     id: 'overhead-tricep-extension',
@@ -254,6 +326,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Extend back to lockout without flaring ribs.',
     ],
     tips: ['Keep elbows pointing up, not drifting forward.'],
+    cues: [
+      'Ribs down; biceps beside ears at the start.',
+      'Upper arms vertical—don’t let elbows flare wide.',
+      'Reach full extension without dumping the chest forward.',
+    ],
   }),
   reg({
     id: 'barbell-curl',
@@ -267,6 +344,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower slowly to full elbow extension.',
     ],
     tips: ['Avoid leaning back to move the weight.'],
+    cues: [
+      'Stand tall; elbows stay at your sides.',
+      'Supinate smoothly; no hip thrust at the sticking point.',
+      'Lower until elbows straight without resting tension.',
+    ],
   }),
   reg({
     id: 'hammer-curl',
@@ -280,6 +362,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control.',
     ],
     tips: ['Alternate arms or both together depending on preference.'],
+    cues: [
+      'Palms face each other throughout.',
+      'Keep wrists neutral—don’t curl with the neck.',
+      'Stop short of shoulder shrug at the top.',
+    ],
   }),
   reg({
     id: 'incline-cable-curl',
@@ -294,6 +381,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with full control.',
     ],
     tips: ['Lighter weight than standing curls; stretch at bottom is normal.'],
+    cues: [
+      'Back flat on the pad; shoulders packed.',
+      'Elbows stay behind the line of the ears—no drifting forward.',
+      'Squeeze biceps; don’t yank the stack with the low back.',
+    ],
   }),
   reg({
     id: 'cable-curl',
@@ -307,6 +399,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the eccentric; keep elbows fixed.',
     ],
     tips: ['Step back slightly for a better line of pull.'],
+    cues: [
+      'Stack shoulders over hips; elbows at your sides.',
+      'Only forearms move; keep triceps “on” the whole set.',
+      'End each rep with full extension, not partial ROM.',
+    ],
   }),
   reg({
     id: 'squat',
@@ -321,6 +418,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drive up through mid-foot, chest tall.',
     ],
     tips: ['Knees track over toes; avoid collapsing inward.'],
+    cues: [
+      'Big breath, brace, then break at hips and knees together.',
+      'Knees follow toes; heels stay down if mobility allows.',
+      'Chest stays stacked over hips—no “good morning” out of the hole.',
+    ],
   }),
   reg({
     id: 'leg-press',
@@ -334,6 +436,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Press platform up without locking knees aggressively.',
     ],
     tips: ['Foot placement shifts emphasis: higher = more glutes/hams; lower = more quads.'],
+    cues: [
+      'Low back and hips stay glued to the pad.',
+      'Press through mid-foot; don’t lock knees violently.',
+      'Depth you can control—no butt bouncing off the seat.',
+    ],
   }),
   reg({
     id: 'leg-extension',
@@ -347,6 +454,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control; avoid excessive torso swing.',
     ],
     tips: ['Moderate weight; control the negative to protect knees.'],
+    cues: [
+      'Set pad so the axis lines up with your knee joint.',
+      'Squeeze quads to extend; don’t snap into lockout.',
+      'Hands light on the handles—no white-knuckle pulling.',
+    ],
   }),
   reg({
     id: 'dumbbell-romanian-deadlift',
@@ -361,6 +473,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drive hips forward to stand.',
     ],
     tips: ['Keep dumbbells close to legs; neutral neck.'],
+    cues: [
+      'Soft knees; hips reach back like closing a car door.',
+      'Weights skim the legs—don’t drift forward.',
+      'Stop when hamstrings talk or back rounds—never chase depth.',
+    ],
   }),
   reg({
     id: 'romanian-deadlift',
@@ -375,6 +492,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drive hips forward to stand tall.',
     ],
     tips: ['Bar stays close to legs; neck neutral.'],
+    cues: [
+      'Soft knees stay parked; hips reach back like closing a car door.',
+      'Bar skims thighs—lats keep the bar glued to your legs.',
+      'Stand tall by extending hips; stop if your low back rounds.',
+    ],
   }),
   reg({
     id: 'deadlift',
@@ -389,6 +511,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Hinge down with control.',
     ],
     tips: ['Neutral spine throughout; do not jerk off the floor.'],
+    cues: [
+      'Mid-foot under bar; pull slack out; brace before you break the floor.',
+      'Push the floor away; hips and chest rise together.',
+      'Lock out tall with glutes; lower by hinging hips back first.',
+    ],
   }),
   reg({
     id: 'hamstring-curl',
@@ -402,6 +529,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze; return slowly.',
     ],
     tips: ['Avoid lifting hips off the bench on lying curls.'],
+    cues: [
+      'Hips stay down on lying curls; ankles dorsiflex smoothly.',
+      'Squeeze hamstrings at peak contraction.',
+      'Two-second negatives beat rushing the stack.',
+    ],
   }),
   reg({
     id: 'calf-raise',
@@ -415,6 +547,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Pause; lower past parallel for a stretch if safe.',
     ],
     tips: ['Straight-leg bias gastroc; bent-knee can bias soleus.'],
+    cues: [
+      'Stand tall—don’t lean forward through the toes.',
+      'Pause one second at the top squeeze.',
+      'Full stretch at bottom without bouncing.',
+    ],
   }),
   reg({
     id: 'walking-lunge',
@@ -428,6 +565,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Push through front foot to step into next lunge.',
     ],
     tips: ['Short steps over-stress knee; stride for hip comfort.'],
+    cues: [
+      'Torso stays tall; rib cage over pelvis.',
+      'Front knee tracks over mid-foot, not past the toe line.',
+      'Control the back knee—light tap, not a crash.',
+    ],
   }),
   reg({
     id: 'goblet-squat',
@@ -441,6 +583,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drive up keeping chest up.',
     ],
     tips: ['Great for learning squat depth and torso position.'],
+    cues: [
+      'Elbows trace along ribs—use them to wedge knees out.',
+      'Chest stays tall; weight sits over mid-foot.',
+      'Drive evenly through both feet out of the hole.',
+    ],
   }),
   reg({
     id: 'push-up',
@@ -454,6 +601,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Press back up maintaining plank.',
     ],
     tips: ['Scale on knees or incline if needed.'],
+    cues: [
+      'Plank from ears to heels—squeeze glutes.',
+      'Elbows ~45°; chest meets the floor first.',
+      'Press away like pushing the floor apart.',
+    ],
   }),
   reg({
     id: 'cable-crunch',
@@ -467,6 +619,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Pause; control the return.',
     ],
     tips: ['Hips stay mostly still; movement is thoracic flexion.'],
+    cues: [
+      'Knees under hips; glue hips to the stack—only your spine curls.',
+      'Hands anchor the rope; ribs move toward pelvis, not arms pulling.',
+      'Exhale hard at the bottom; inhale on the way up.',
+    ],
   }),
   reg({
     id: 'cable-woodchop',
@@ -480,6 +637,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the stack; brace core.',
     ],
     tips: ['Pivot feet slightly as needed for a full range.'],
+    cues: [
+      'Brace obliques before you move the handle.',
+      'Rotate from hips and chest together—arms are an extension.',
+      'Follow the cable with control both directions.',
+    ],
   }),
   reg({
     id: 'machine-fly',
@@ -493,6 +655,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze chest; return with stretch under control.',
     ],
     tips: ['Do not overstretch at the back position if shoulder feels pinchy.'],
+    cues: [
+      'Seat height sets shoulder safety—handles level with mid-chest.',
+      'Fixed elbow bend; hug the arc, don’t press.',
+      'Stop before shoulders roll forward at the stretch.',
+    ],
   }),
   reg({
     id: 'cable-fly',
@@ -506,6 +673,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the stretch back without shrugging.',
     ],
     tips: ['Think hugging a tree, not pressing.'],
+    cues: [
+      'Slight forward lean from ankles—stack joints.',
+      'Hands meet in front of sternum, not the chin.',
+      'Stretch wide without losing rib position.',
+    ],
   }),
   reg({
     id: 'incline-machine-press',
@@ -519,6 +691,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Full extension without locking aggressively; control return.',
     ],
     tips: ['Keep head and shoulders on pad.'],
+    cues: [
+      'Handles line up with upper chest when seated.',
+      'Press evenly—don’t let one shoulder lead.',
+      'Stop short of locking elbows backward.',
+    ],
   }),
   reg({
     id: 'hip-thrust',
@@ -533,6 +710,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control.',
     ],
     tips: ['Do not hyperextend the lower back at the top.'],
+    cues: [
+      'Chin tucked; eyes forward—neck long.',
+      'Drive through heels; knees track over toes.',
+      'Top position is glutes, not lumbar hyperextension.',
+    ],
   }),
   reg({
     id: 'plank',
@@ -546,6 +728,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Hold without hips sagging or piking.',
     ],
     tips: ['Quality over duration.'],
+    cues: [
+      'Forearms or palms active—push floor away.',
+      'Glutes on; belt line parallel to floor.',
+      'Quiet breathing—small sips, no collapsing hips.',
+    ],
   }),
   reg({
     id: 'ab-machine-crunch',
@@ -559,6 +746,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the return; avoid pulling with arms only.',
     ],
     tips: ['Exhale on the crunch portion.'],
+    cues: [
+      'Seat and pads set so you flex the spine, not pull with arms.',
+      'Short range, crisp contraction.',
+      'Smooth return—no slamming the stack.',
+    ],
   }),
   reg({
     id: 'reverse-crunch',
@@ -572,6 +764,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower with control.',
     ],
     tips: ['Small range; focus on posterior pelvic tilt.'],
+    cues: [
+      'Posterior pelvic tilt before you lift feet.',
+      'Low back stays pressed down if possible.',
+      'Legs move from abs, not momentum from thighs.',
+    ],
   }),
   reg({
     id: 'leg-raise',
@@ -586,6 +783,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower without swinging.',
     ],
     tips: ['Reduce range if you swing excessively.'],
+    cues: [
+      'Active hang—shoulders plugged into sockets.',
+      'Exhale as knees rise; control the negative.',
+      'Stop before body swings into extension.',
+    ],
   }),
   reg({
     id: 'arnold-press',
@@ -604,6 +806,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Use a moderate weight—rotation adds instability.',
       'Keep ribs down to avoid excessive lower-back arch.',
+    ],
+    cues: [
+      'Palms face you at the bottom; rotate as you clear the forehead.',
+      'Wrists stacked; elbows under hands at the turnaround.',
+      'Finish overhead without shrugging into ears.',
     ],
   }),
   reg({
@@ -624,6 +831,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'If you feel knee irritation, shorten stride slightly.',
       'Lean torso slightly forward if you want more glute bias.',
     ],
+    cues: [
+      'Front foot planted; rear foot is a kickstand, not load-bearing.',
+      'Knee tracks over shoelaces on the front leg.',
+      'Torso angle stays steady—no bouncing out of the bottom.',
+    ],
   }),
   reg({
     id: 't-bar-row',
@@ -640,6 +852,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower until arms extend without rounding heavily.',
     ],
     tips: ['Keep chest tall; avoid jerking with hip extension unless doing a deliberate cheat variation.'],
+    cues: [
+      'Brace before each pull; shoulders stay higher than hips.',
+      'Pull elbows to pockets; squeeze blades at the top.',
+      'Reset flat back every rep off the floor or pins.',
+    ],
   }),
   reg({
     id: 'pendlay-row',
@@ -656,6 +873,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower fully to the floor before the next rep.',
     ],
     tips: ['Reset brace each rep; do not touch-and-go if you want strict Pendlay style.'],
+    cues: [
+      'Torso parallel each rep; bar starts dead on the floor.',
+      'Explosive pull, quiet eccentric.',
+      'No thoracic rounding to “reach” the bar.',
+    ],
   }),
   reg({
     id: 'skull-crusher',
@@ -675,6 +897,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Use an EZ bar if wrists bother you on a straight bar.',
       'Stop short of pain at the elbow joint—switch to cables if needed.',
     ],
+    cues: [
+      'Upper arms angled slightly back toward the rack.',
+      'Elbows stay narrow—don’t let them wing out.',
+      'Lower under control to the same spot every rep.',
+    ],
   }),
   reg({
     id: 'preacher-curl',
@@ -691,6 +918,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Lower slowly to full extension without hyperextending elbows harshly.',
     ],
     tips: ['Partial reps at the bottom are OK for pump; full ROM builds strength through length.'],
+    cues: [
+      'Armpits on the pad; triceps stay touching.',
+      'Only curl through the elbow joint.',
+      'Pause at extension—don’t hyperextend harshly.',
+    ],
   }),
   reg({
     id: 'good-morning',
@@ -709,6 +941,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Master the pattern with a PVC pipe or empty bar before loading heavy.',
       'If you feel sharp low-back discomfort, reduce load and improve hinge mechanics.',
+    ],
+    cues: [
+      'Bar seated high on traps like a squat.',
+      'Unlock knees slightly; hinge only at hips.',
+      'Feel hamstrings load before you reverse.',
     ],
   }),
   reg({
@@ -729,6 +966,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Use a band assist or shorten range early on.',
       'Quality eccentrics matter more than hitting the floor.',
     ],
+    cues: [
+      'Hips extended; body is one line from knees to shoulders.',
+      'Lower slowly—aim for five-plus seconds before progressing.',
+      'Hands catch only when needed; push back up with hamstrings.',
+    ],
   }),
   reg({
     id: 'chest-dip',
@@ -747,6 +989,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Stop depth if anterior shoulder feels pinchy.',
       'Add load with a belt once bodyweight feels easy.',
+    ],
+    cues: [
+      'Depress shoulders away from ears before bending elbows.',
+      'Forward lean from hips; elbows drift back slightly.',
+      'Press out of the bottom without losing shoulder position.',
     ],
   }),
   reg({
@@ -767,6 +1014,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Progress distance before maxing weight to protect hands and posture.',
       'Chalk or straps can help if grip is the only limiter.',
     ],
+    cues: [
+      'Stand tall like there’s a string through the crown of your head.',
+      'Short, quick steps; don’t let weights drift forward.',
+      'Breathe behind the brace—no collapsing ribs.',
+    ],
   }),
   reg({
     id: 'barbell-shrug',
@@ -784,6 +1036,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Rolling the shoulders is unnecessary for most goals and can irritate joints.',
       'Use straps if forearms fail before traps.',
+    ],
+    cues: [
+      'Shrug straight up—ears toward shoulders, not forward.',
+      'One-second pause at the top.',
+      'Control the lower; don’t drop the shoulders.',
     ],
   }),
   reg({
@@ -804,6 +1061,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Exhale as you extend; imagine ribs and pelvis stacked.',
       'Half-kneeling makes it easier to feel glute and core brace.',
     ],
+    cues: [
+      'Hands start at sternum; shoulders square to the front.',
+      'Press the handle away without hips turning.',
+      'Return hands to chest before losing tension.',
+    ],
   }),
   reg({
     id: 'cable-pull-through',
@@ -822,6 +1084,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Keep eyes forward enough to protect neck; movement is from hips.',
       'Light weight teaches pattern before loading.',
+    ],
+    cues: [
+      'Soft knees; arms are hooks—don’t row the rope.',
+      'Hinge until hamstrings load; stand tall with glutes.',
+      'Bell stays close as it travels between legs.',
     ],
   }),
   reg({
@@ -842,6 +1109,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Experiment stance width—too wide can limit depth.',
       'Mix with conventional over training cycles for balanced development.',
     ],
+    cues: [
+      'Drive knees out over toes; shins stay more vertical.',
+      'Grip narrow inside knees; lats on before you pull.',
+      'Lock hips and knees together at the top—no hyper-extended back.',
+    ],
   }),
   reg({
     id: 'kettlebell-swing',
@@ -861,6 +1133,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Do not squat the swing; knees stay soft but hips drive.',
       'Stop set if lower back feels it instead of glutes/hams.',
     ],
+    cues: [
+      'Root feet; hike bell back with flat wrists.',
+      'Snap hips to standing—arms float, don’t muscle the bell up.',
+      'Bell floats to chest height for Russian swings.',
+    ],
   }),
   reg({
     id: 'inverted-row',
@@ -878,6 +1155,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Elevate feet or wear a vest to progress.',
       'Pull ribs toward hips to avoid excessive arch.',
+    ],
+    cues: [
+      'Body straight like a moving plank.',
+      'Pull chest to bar—squeeze shoulder blades at the top.',
+      'Lower until arms straight without sinking shoulders.',
     ],
   }),
   reg({
@@ -897,6 +1179,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Straps around bar can help if wrists limit rack position.',
       'If elbows drop, the bar may roll—reduce weight until position holds.',
     ],
+    cues: [
+      'Elbows high; bar sits on delts, not hands.',
+      'Brace before each rep; knees steady.',
+      'Drive up keeping torso as upright as mobility allows.',
+    ],
   }),
   reg({
     id: 'decline-bench-press',
@@ -914,6 +1201,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Use safeties or a spotter—bar path can feel awkward first.',
       'Avoid excessive bounce off the chest.',
+    ],
+    cues: [
+      'Legs locked into pads before unracking.',
+      'Bar tracks lower chest line on this angle.',
+      'Control touch; drive feet through the bench.',
     ],
   }),
   reg({
@@ -933,6 +1225,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Foot placement changes quad vs glute bias.',
       'Still brace core—machine guidance does not replace bracing.',
     ],
+    cues: [
+      'Feet slightly forward of hips if the bar tracks vertically.',
+      'Sit between hips; knees track toes.',
+      'Use safeties at a depth you own.',
+    ],
   }),
   reg({
     id: 'zercher-squat',
@@ -950,6 +1247,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Pad the bar or wear long sleeves—pressure on arms is real.',
       'Start light to own the rack position.',
+    ],
+    cues: [
+      'Elbows level under the bar; torso stacked.',
+      'Brace hard—this front load punishes soft cores.',
+      'Squat between hips without dumping the elbows.',
     ],
   }),
   reg({
@@ -970,6 +1272,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Don’t bounce off the bench—keep glutes and upper back planted.',
       'Neutral grip may feel friendlier on shoulders.',
     ],
+    cues: [
+      'Back flush on pad; feet rooted.',
+      'Press up and slightly in—biceps beside ears.',
+      'Lower to shoulders without flaring ribs.',
+    ],
   }),
   reg({
     id: 'reverse-fly-machine',
@@ -987,6 +1294,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Keep chin neutral—don’t crane neck forward.',
       'Light weight and tempo beat ego lifting here.',
+    ],
+    cues: [
+      'Chest on pad; slight elbow bend fixed.',
+      'Open wide from rear delts—no upper trap shrug.',
+      'Pause at peak contraction.',
     ],
   }),
   reg({
@@ -1006,6 +1318,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Think elbows pulling to back pockets.',
       'Reduce weight if triceps take over.',
     ],
+    cues: [
+      'Slight hip hinge; arms nearly straight to start.',
+      'Pull with straight-arm lats—minimal elbow bend.',
+      'Finish with hands by thighs, shoulders down.',
+    ],
   }),
   reg({
     id: 'pike-push-up',
@@ -1020,6 +1337,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Press back up while keeping hips elevated and core braced.',
     ],
     tips: ['Elevate feet to increase difficulty and shoulder demand.'],
+    cues: [
+      'Hips high; head moves in front of hands, not straight down.',
+      'Elbows track back—think “shoulders over hands.”',
+      'Keep abs braced to protect the low back.',
+    ],
   }),
   reg({
     id: 'bodyweight-squat',
@@ -1034,6 +1356,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drive through mid-foot to stand tall with full control.',
     ],
     tips: ['Use a controlled tempo and full range that keeps your heels planted.'],
+    cues: [
+      'Feet about shoulder width; toes slight turnout.',
+      'Sit between hips; knees track over mid-foot.',
+      'Stand tall without thrusting hips forward at lockout.',
+    ],
   }),
   reg({
     id: 'glute-bridge',
@@ -1048,6 +1375,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Pause at the top, then lower hips under control.',
     ],
     tips: ['Avoid arching your lower back; think ribs down and glutes squeezed.'],
+    cues: [
+      'Drive through heels; dig shoulder blades into the floor.',
+      'Top line is knees–hips–shoulders with glutes prime movers.',
+      'Lower under control—don’t collapse.',
+    ],
   }),
   reg({
     id: 'burpee',
@@ -1062,6 +1394,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Stand and jump vertically before repeating.',
     ],
     tips: ['Step back and up instead of jumping if impact tolerance is limited.'],
+    cues: [
+      'Hands under shoulders; land softly into plank.',
+      'Chest leads up from plank—stay stiff.',
+      'Jump finishes tall with soft knees if you include it.',
+    ],
   }),
   reg({
     id: 'mountain-climber',
@@ -1076,6 +1413,11 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Keep hips level and core tight throughout.',
     ],
     tips: ['Move smoothly before adding speed; do not let hips bounce high.'],
+    cues: [
+      'Hands stacked under shoulders.',
+      'Drive knees toward sternum while hips stay low.',
+      'Quiet upper body—movement is from hips.',
+    ],
   }),
   reg({
     id: 'hollow-body-hold',
@@ -1090,11 +1432,57 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Hold position while breathing shallowly and maintaining lower-back contact.',
     ],
     tips: ['Bend knees or lower arms if you cannot keep lower back flat.'],
+    cues: [
+      'Lower back glued down before you lift limbs.',
+      'Reach long through fingertips and toes.',
+      'Shallow breathing; ribs stay connected to pelvis.',
+    ],
   }),
 ]
 
 export function getLibraryExercise(id: string): LibraryExercise | undefined {
   return byId.get(id)
+}
+
+const byNormalizedName = new Map<string, LibraryExercise>()
+for (const ex of EXERCISE_LIBRARY) {
+  const key = ex.name.trim().toLowerCase()
+  if (!byNormalizedName.has(key)) byNormalizedName.set(key, ex)
+}
+
+/**
+ * Best-effort lookup for plan/log entries that have only a manually-typed name
+ * (no `libraryId`). Case-insensitive, ignores surrounding whitespace.
+ */
+export function findLibraryExerciseByName(name: string | undefined): LibraryExercise | undefined {
+  if (!name) return undefined
+  return byNormalizedName.get(name.trim().toLowerCase())
+}
+
+/**
+ * Library exercises that share at least one muscle group with the given exercise,
+ * excluding the exercise itself. Sorted by number of overlapping muscle groups (desc),
+ * then name. Used for “swap to a comparable movement” in the workout log.
+ */
+export function getComparableLibraryExercises(exercise: {
+  libraryId?: string
+  name: string
+}): LibraryExercise[] {
+  const base =
+    (exercise.libraryId && getLibraryExercise(exercise.libraryId)) ||
+    findLibraryExerciseByName(exercise.name)
+  if (!base) return []
+  const baseGroups = new Set(base.muscleGroups)
+  return EXERCISE_LIBRARY.filter((ex) => {
+    if (ex.id === base.id) return false
+    return ex.muscleGroups.some((g) => baseGroups.has(g))
+  }).sort((a, b) => {
+    const overlap = (ex: LibraryExercise) =>
+      ex.muscleGroups.filter((g) => baseGroups.has(g)).length
+    const d = overlap(b) - overlap(a)
+    if (d !== 0) return d
+    return a.name.localeCompare(b.name)
+  })
 }
 
 export function searchLibrary(
@@ -1113,6 +1501,7 @@ export function searchLibrary(
       if (ex.summary.toLowerCase().includes(needle)) return true
       if (ex.equipment?.toLowerCase().includes(needle)) return true
       if (ex.tags?.some((t) => t.toLowerCase().includes(needle))) return true
+      if (ex.cues?.some((c) => c.toLowerCase().includes(needle))) return true
       return ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))
     })
     .sort((a, b) => a.name.localeCompare(b.name))

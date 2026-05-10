@@ -73,6 +73,13 @@ watch(
   },
   { immediate: true },
 )
+
+function pickRandomTheme() {
+  const candidates = THEME_OPTIONS.filter((o) => o.id !== props.theme)
+  const pool = candidates.length > 0 ? candidates : THEME_OPTIONS
+  const pick = pool[Math.floor(Math.random() * pool.length)]!
+  emit('update:theme', pick.id)
+}
 </script>
 
 <template>
@@ -116,6 +123,14 @@ watch(
               <i class="fa-solid fa-chevron-down text-xs" />
             </span>
           </div>
+          <button
+            type="button"
+            class="mt-2 w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground hover:border-primary/50"
+            @click="pickRandomTheme"
+          >
+            <i class="fa-solid fa-shuffle mr-2" aria-hidden="true" />
+            Random theme
+          </button>
         </section>
 
         <section class="mb-4">

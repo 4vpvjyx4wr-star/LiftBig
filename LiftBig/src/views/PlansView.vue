@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
@@ -8,7 +8,11 @@ import SchedulePlanCalendarSheet from '@/components/plans/SchedulePlanCalendarSh
 import { settingsInjectionKey, templatesInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
 import { addDaysToDateKey, isValidDateKey, todayKey } from '@/utils/dateKey'
-import { getLibraryExercise, type LibraryExercise } from '@/utils/exerciseLibrary'
+import {
+  findLibraryExerciseByName,
+  getLibraryExercise,
+  type LibraryExercise,
+} from '@/utils/exerciseLibrary'
 import {
   estimatePlanDurationMinutes,
   formatPlanDurationEstimate,
@@ -262,6 +266,129 @@ function onUncategorizedDrop() {
   onTemplateDragEnd()
 }
 
+// --- Mobile tap-and-hold drag for plan names ---
+const TOUCH_LONG_PRESS_MS = 450
+const TOUCH_MOVE_TOLERANCE_PX = 8
+
+const isTouchDragActive = ref(false)
+let touchLongPressTimer: ReturnType<typeof setTimeout> | null = null
+let touchLongPressStart: { x: number; y: number } | null = null
+
+function clearTouchLongPressTimer() {
+  if (touchLongPressTimer != null) {
+    clearTimeout(touchLongPressTimer)
+    touchLongPressTimer = null
+  }
+}
+
+function onPlanNameTouchStart(templateId: string, ev: TouchEvent) {
+  if (ev.touches.length !== 1) return
+  const t = ev.touches[0]!
+  touchLongPressStart = { x: t.clientX, y: t.clientY }
+  clearTouchLongPressTimer()
+  touchLongPressTimer = setTimeout(() => {
+    activateTouchDrag(templateId)
+  }, TOUCH_LONG_PRESS_MS)
+}
+
+function onPlanNameTouchMove(ev: TouchEvent) {
+  if (isTouchDragActive.value) return
+  if (!touchLongPressStart || ev.touches.length !== 1) return
+  const t = ev.touches[0]!
+  const dx = Math.abs(t.clientX - touchLongPressStart.x)
+  const dy = Math.abs(t.clientY - touchLongPressStart.y)
+  if (dx > TOUCH_MOVE_TOLERANCE_PX || dy > TOUCH_MOVE_TOLERANCE_PX) {
+    clearTouchLongPressTimer()
+    touchLongPressStart = null
+  }
+}
+
+function onPlanNameTouchEnd() {
+  if (isTouchDragActive.value) return
+  clearTouchLongPressTimer()
+  touchLongPressStart = null
+}
+
+function activateTouchDrag(templateId: string) {
+  touchLongPressTimer = null
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate(15)
+    } catch {
+      // Ignore vibration failures (unsupported environment, etc.).
+    }
+  }
+  draggedTemplateId.value = templateId
+  isTouchDragActive.value = true
+  document.addEventListener('touchmove', onTouchDragMove, { passive: false })
+  document.addEventListener('touchend', onTouchDragEnd)
+  document.addEventListener('touchcancel', onTouchDragCancel)
+}
+
+function pickDropTargetAt(clientX: number, clientY: number) {
+  const el = document.elementFromPoint(clientX, clientY)
+  if (!el) return null
+  const target = (el as HTMLElement).closest('[data-drop-target]')
+  if (!target) return null
+  return {
+    kind: target.getAttribute('data-drop-target'),
+    folderId: target.getAttribute('data-folder-id'),
+  }
+}
+
+function onTouchDragMove(ev: TouchEvent) {
+  if (!isTouchDragActive.value) return
+  ev.preventDefault()
+  if (ev.touches.length !== 1) return
+  const t = ev.touches[0]!
+  const target = pickDropTargetAt(t.clientX, t.clientY)
+  if (!target) {
+    dragOverFolderId.value = null
+    dragOverUncategorized.value = false
+    return
+  }
+  if (target.kind === 'folder' && target.folderId) {
+    dragOverFolderId.value = target.folderId
+    dragOverUncategorized.value = false
+  } else if (target.kind === 'uncategorized') {
+    dragOverFolderId.value = null
+    dragOverUncategorized.value = true
+  }
+}
+
+function onTouchDragEnd() {
+  if (!isTouchDragActive.value) return
+  const templateId = draggedTemplateId.value
+  if (templateId) {
+    if (dragOverFolderId.value) {
+      templates.assignTemplateFolder(templateId, dragOverFolderId.value)
+    } else if (dragOverUncategorized.value) {
+      templates.assignTemplateFolder(templateId, null)
+    }
+  }
+  finishTouchDrag()
+}
+
+function onTouchDragCancel() {
+  finishTouchDrag()
+}
+
+function finishTouchDrag() {
+  isTouchDragActive.value = false
+  draggedTemplateId.value = null
+  dragOverFolderId.value = null
+  dragOverUncategorized.value = false
+  touchLongPressStart = null
+  clearTouchLongPressTimer()
+  document.removeEventListener('touchmove', onTouchDragMove)
+  document.removeEventListener('touchend', onTouchDragEnd)
+  document.removeEventListener('touchcancel', onTouchDragCancel)
+}
+
+onUnmounted(() => {
+  finishTouchDrag()
+})
+
 function scheduledDateForPlanIndex(startDateKey: string, planIndex: number, restEvery: number): string {
   if (restEvery <= 0) return addDaysToDateKey(startDateKey, planIndex)
   return addDaysToDateKey(startDateKey, planIndex + Math.floor(planIndex / restEvery))
@@ -382,9 +509,19 @@ function assignFolderPlansToCalendar(folderId: string) {
 const detailOpen = ref(false)
 const detailExercise = ref<LibraryExercise | null>(null)
 
-function openLibraryDetail(libraryId: string | undefined) {
-  if (!libraryId) return
-  const entry = getLibraryExercise(libraryId)
+function resolveLibraryEntry(ex: {
+  libraryId?: string
+  name?: string
+}): LibraryExercise | null {
+  if (ex.libraryId) {
+    const byId = getLibraryExercise(ex.libraryId)
+    if (byId) return byId
+  }
+  return findLibraryExerciseByName(ex.name) ?? null
+}
+
+function openLibraryDetailFor(ex: { libraryId?: string; name?: string }) {
+  const entry = resolveLibraryEntry(ex)
   if (!entry) return
   detailExercise.value = entry
   detailOpen.value = true
@@ -437,11 +574,14 @@ function onPlansRestSecondsChange(ev: Event) {
       </div>
     </header>
 
-    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <p class="text-[10px] leading-snug text-muted">
-        Time estimates use your Settings values:
-        ~{{ settings.averageLiftSeconds.value }}s per set and ~{{ settings.averageRestSeconds.value }}s rest.
-      </p>
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <button
+        type="button"
+        class="inline-flex w-fit items-center rounded-full bg-primary px-6 py-3 text-sm font-extrabold tracking-wide text-foreground shadow-lg"
+        @click="openNew"
+      >
+        + New Plan
+      </button>
       <div class="flex flex-wrap items-center gap-3 sm:shrink-0">
         <label class="flex items-center gap-1.5 text-[10px] font-semibold text-muted">
           <span class="whitespace-nowrap">Lift / set</span>
@@ -474,44 +614,32 @@ function onPlansRestSecondsChange(ev: Event) {
       </div>
     </div>
 
-    <div class="mb-3 flex flex-col gap-2">
-      <button
-        type="button"
-        class="inline-flex w-fit items-center rounded-full bg-primary px-6 py-3 text-sm font-extrabold tracking-wide text-foreground shadow-lg"
-        @click="openNew"
-      >
-        + New Plan
-      </button>
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p class="text-xs text-muted">Drag plans into folders to organize split days.</p>
-        <div class="flex items-center gap-2">
-          <input
-            v-model="newFolderName"
-            type="text"
-            class="w-40 rounded-lg border border-border bg-card-inner px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
-            placeholder="Folder name"
-            @keyup.enter="createFolder"
-          />
-          <button
-            type="button"
-            class="rounded-lg border border-border px-3 py-2 text-xs font-bold text-primary hover:border-primary"
-            @click="createFolder"
-          >
-            + Folder
-          </button>
-        </div>
+    <section class="mb-3 space-y-3">
+      <div>
+        <h2 class="text-lg font-extrabold text-foreground sm:text-xl">Folders</h2>
+        <p class="mt-1 text-xs text-muted">Drag plans into folders to organize split days.</p>
       </div>
-    </div>
-
-    <div v-if="planList.length === 0" class="py-12 text-center">
-      <p class="text-lg font-bold text-foreground">No plans yet.</p>
-      <p class="mt-2 text-sm text-muted">Create a template to reuse across your calendar.</p>
-    </div>
-
-    <div v-else class="space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          v-model="newFolderName"
+          type="text"
+          class="w-40 rounded-lg border border-border bg-card-inner px-2.5 py-2 text-xs text-foreground outline-none focus:border-primary"
+          placeholder="New folder name"
+          @keyup.enter="createFolder"
+        />
+        <button
+          type="button"
+          class="inline-flex w-fit items-center rounded-full bg-primary px-6 py-3 text-sm font-extrabold tracking-wide text-foreground shadow-lg"
+          @click="createFolder"
+        >
+          + New Folder
+        </button>
+      </div>
       <section
         v-for="entry in folderSections"
         :key="entry.folder.id"
+        data-drop-target="folder"
+        :data-folder-id="entry.folder.id"
         class="rounded-xl border border-dashed p-3"
         :class="dragOverFolderId === entry.folder.id ? 'border-primary bg-card-inner/80' : 'border-border bg-card-inner/30'"
         @dragover.prevent="onFolderDragOver(entry.folder.id)"
@@ -608,12 +736,26 @@ function onPlansRestSecondsChange(ev: Event) {
             v-for="item in entry.plans"
             :key="item.id"
             draggable="true"
-            class="rounded-xl border border-border bg-card p-4"
+            class="rounded-xl border border-border bg-card p-4 transition-opacity"
+            :class="
+              isTouchDragActive && draggedTemplateId === item.id
+                ? 'opacity-60 ring-2 ring-primary'
+                : ''
+            "
             @dragstart="onTemplateDragStart(item.id)"
             @dragend="onTemplateDragEnd"
           >
             <div class="flex items-start justify-between gap-2">
-              <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
+              <h3
+                class="cursor-grab select-none text-lg font-extrabold text-foreground active:cursor-grabbing"
+                :title="'Tap and hold to move into a folder'"
+                @touchstart.passive="onPlanNameTouchStart(item.id, $event)"
+                @touchmove="onPlanNameTouchMove($event)"
+                @touchend="onPlanNameTouchEnd"
+                @touchcancel="onPlanNameTouchEnd"
+              >
+                {{ item.name }}
+              </h3>
               <div class="flex shrink-0 flex-wrap justify-end gap-2">
                 <button
                   type="button"
@@ -651,11 +793,11 @@ function onPlansRestSecondsChange(ev: Event) {
                 <span class="text-muted">·</span>
                 <span class="font-semibold">{{ ex.name }}</span>
                 <button
-                  v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+                  v-if="resolveLibraryEntry(ex)"
                   type="button"
                   class="text-primary hover:text-foreground"
                   aria-label="How to perform this exercise"
-                  @click="openLibraryDetail(ex.libraryId)"
+                  @click="openLibraryDetailFor(ex)"
                 >
                   <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
                 </button>
@@ -670,8 +812,16 @@ function onPlansRestSecondsChange(ev: Event) {
           </li>
         </ul>
       </section>
+    </section>
 
+    <div v-if="planList.length === 0" class="py-12 text-center">
+      <p class="text-lg font-bold text-foreground">No plans yet.</p>
+      <p class="mt-2 text-sm text-muted">Create a template to reuse across your calendar.</p>
+    </div>
+
+    <div v-else class="space-y-3">
       <section
+        data-drop-target="uncategorized"
         class="rounded-xl border border-dashed p-3"
         :class="dragOverUncategorized ? 'border-primary bg-card-inner/80' : 'border-border bg-card-inner/30'"
         @dragover.prevent="dragOverUncategorized = true"
@@ -702,12 +852,26 @@ function onPlansRestSecondsChange(ev: Event) {
             v-for="item in allPlansSectionFiltered"
             :key="item.id"
             draggable="true"
-            class="rounded-xl border border-border bg-card p-4"
+            class="rounded-xl border border-border bg-card p-4 transition-opacity"
+            :class="
+              isTouchDragActive && draggedTemplateId === item.id
+                ? 'opacity-60 ring-2 ring-primary'
+                : ''
+            "
             @dragstart="onTemplateDragStart(item.id)"
             @dragend="onTemplateDragEnd"
           >
             <div class="flex items-start justify-between gap-2">
-              <h3 class="text-lg font-extrabold text-foreground">{{ item.name }}</h3>
+              <h3
+                class="cursor-grab select-none text-lg font-extrabold text-foreground active:cursor-grabbing"
+                :title="'Tap and hold to move into a folder'"
+                @touchstart.passive="onPlanNameTouchStart(item.id, $event)"
+                @touchmove="onPlanNameTouchMove($event)"
+                @touchend="onPlanNameTouchEnd"
+                @touchcancel="onPlanNameTouchEnd"
+              >
+                {{ item.name }}
+              </h3>
               <div class="flex shrink-0 flex-wrap justify-end gap-2">
                 <button
                   type="button"
@@ -745,11 +909,11 @@ function onPlansRestSecondsChange(ev: Event) {
                 <span class="text-muted">·</span>
                 <span class="font-semibold">{{ ex.name }}</span>
                 <button
-                  v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+                  v-if="resolveLibraryEntry(ex)"
                   type="button"
                   class="text-primary hover:text-foreground"
                   aria-label="How to perform this exercise"
-                  @click="openLibraryDetail(ex.libraryId)"
+                  @click="openLibraryDetailFor(ex)"
                 >
                   <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
                 </button>

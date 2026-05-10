@@ -5,8 +5,11 @@ import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
-import { getSuggestedWeight } from '@/utils/progressiveOverload'
-import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
+import {
+  getDefaultLogRepsForTarget,
+  getSuggestedWeight,
+} from '@/utils/progressiveOverload'
+import { displayInputToStoredLbsString, formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const props = defineProps<{
   exercise: Exercise
@@ -26,12 +29,16 @@ function formatStoredLbsForDisplay(s: string | undefined): string {
 const emit = defineEmits<{
   addSet: []
   updateSet: [setId: string, field: 'reps' | 'weight', value: string]
+  prefillFirstSet: [setId: string, patch: { weight?: string; reps?: string }]
   toggleCircuitSet: [setId: string]
   deleteSet: [setId: string]
+  swapExercise: []
   deleteExercise: []
 }>()
 
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
+/** Once per exercise instance; avoids overwriting after user edits or double-filling weight/reps. */
+const predictionApplied = ref(false)
 
 watch(
   () =>
@@ -59,6 +66,52 @@ watch(
     )
   },
   { deep: true, immediate: true },
+)
+
+watch(
+  () => [props.exercise.name, props.exercise.sets[0]?.id] as const,
+  () => {
+    predictionApplied.value = false
+  },
+)
+
+watch(
+  () =>
+    [
+      props.exercise.isCircuit,
+      props.exercise.targetReps,
+      props.exercise.sets[0]?.id,
+      props.exercise.sets[0]?.reps,
+      props.exercise.sets[0]?.weight,
+      suggestion.value?.suggestedWeight,
+      suggestion.value?.reason,
+    ] as const,
+  () => {
+    if (props.exercise.isCircuit || !props.exercise.targetReps || predictionApplied.value) return
+    const first = props.exercise.sets[0]
+    if (!first || first.reps !== '' || first.weight !== '') return
+    if (!suggestion.value) return
+
+    const sw = suggestion.value.suggestedWeight
+    const repsStr = getDefaultLogRepsForTarget(props.exercise.targetReps)
+
+    let weightStr: string | undefined
+    if (Number.isFinite(sw) && sw > 0) {
+      weightStr = displayInputToStoredLbsString(String(sw), 'lb')
+    }
+
+    const shouldFillWeight = weightStr !== undefined && weightStr !== ''
+    const shouldFillReps = repsStr !== ''
+
+    if (!shouldFillWeight && !shouldFillReps) return
+
+    predictionApplied.value = true
+    const patch: { weight?: string; reps?: string } = {}
+    if (shouldFillWeight) patch.weight = weightStr
+    if (shouldFillReps) patch.reps = repsStr
+    emit('prefillFirstSet', first.id, patch)
+  },
+  { flush: 'post' },
 )
 
 const completedSets = computed(() =>
@@ -123,6 +176,13 @@ function closeLibraryDetail() {
         >
           {{ allDone ? 'Complete' : `${completedSets}/${exercise.sets.length} sets` }}
         </span>
+        <button
+          type="button"
+          class="text-xs font-semibold text-primary hover:text-foreground"
+          @click="emit('swapExercise')"
+        >
+          Swap
+        </button>
         <button
           type="button"
           class="text-xs font-semibold text-red-400"

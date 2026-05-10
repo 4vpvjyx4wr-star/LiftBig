@@ -1,5 +1,8 @@
 import { ref, watch } from 'vue'
-import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import {
+  LIFTBIG_LEGACY_STORAGE_KEY_ALIASES,
+  LIFTBIG_STORAGE_KEYS,
+} from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 import type { WeightUnit } from '@/utils/units'
 
@@ -22,6 +25,21 @@ export type ThemeId =
   | 'terminal'
   | 'disco'
   | 'ocean'
+  | 'voltage'
+  | 'dragonfruit'
+  | 'glacier'
+  | 'lavaflow'
+  | 'nebula'
+  | 'toxic'
+  | 'sapphire'
+  | 'mango'
+  | 'prism'
+  | 'blacklight'
+  | 'mintchip'
+  | 'ember'
+  | 'tidal'
+  | 'royal'
+  | 'cottoncandy'
 
 export type AppSettings = {
   theme: ThemeId
@@ -62,6 +80,21 @@ export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: 'terminal', label: 'Terminal' },
   { id: 'disco', label: 'Disco' },
   { id: 'ocean', label: 'Ocean depths' },
+  { id: 'voltage', label: 'Voltage Surge' },
+  { id: 'dragonfruit', label: 'Dragonfruit Punch' },
+  { id: 'glacier', label: 'Glacier Glow' },
+  { id: 'lavaflow', label: 'Lava Flow' },
+  { id: 'nebula', label: 'Cosmic Nebula' },
+  { id: 'toxic', label: 'Toxic Limeade' },
+  { id: 'sapphire', label: 'Sapphire Storm' },
+  { id: 'mango', label: 'Mango Tango' },
+  { id: 'prism', label: 'Prism Pop' },
+  { id: 'blacklight', label: 'Blacklight Blitz' },
+  { id: 'mintchip', label: 'Mint Chip' },
+  { id: 'ember', label: 'Ember Arcade' },
+  { id: 'tidal', label: 'Tidal Wave' },
+  { id: 'royal', label: 'Royal Crush' },
+  { id: 'cottoncandy', label: 'Cotton Candy Sky' },
 ]
 
 function applyTheme(theme: ThemeId) {

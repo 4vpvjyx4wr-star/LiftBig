@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { onUnmounted } from 'vue'
+import { computed, onUnmounted } from 'vue'
 import { useRestTimerState } from '@/composables/useRestTimerState'
 
 const props = withDefaults(
   defineProps<{
     showLauncher?: boolean
+    showActiveLauncher?: boolean
     showFloating?: boolean
+    compact?: boolean
   }>(),
   {
     showLauncher: true,
+    showActiveLauncher: false,
     showFloating: true,
+    compact: false,
   },
 )
 
@@ -33,8 +37,29 @@ const {
   onPointerUp,
   onClick,
   reset,
-  clearTick,
 } = useRestTimerState()
+
+const showInlineLauncher = computed(
+  () => props.showLauncher || (props.showActiveLauncher && isFloatingActive.value),
+)
+
+const launcherClass = computed(() =>
+  props.compact
+    ? 'min-w-[5.75rem] rounded-xl border-[1.5px] px-3 py-1.5 text-center select-none'
+    : 'min-w-[130px] rounded-2xl border-[1.5px] px-5 py-3 text-center select-none',
+)
+
+const timeClass = computed(() =>
+  props.compact
+    ? 'text-xl font-extrabold tracking-widest text-foreground'
+    : 'text-3xl font-extrabold tracking-widest text-foreground',
+)
+
+const labelClass = computed(() =>
+  props.compact
+    ? 'mt-0.5 text-[9px] font-bold leading-none text-muted'
+    : 'mt-0.5 text-[10px] font-bold text-muted',
+)
 
 function cancelCurrentTimer() {
   reset()
@@ -43,25 +68,23 @@ function cancelCurrentTimer() {
 
 onUnmounted(() => {
   onPointerUp()
-  if (!props.showFloating) clearTick()
 })
 </script>
 
 <template>
-  <div v-if="showLauncher">
+  <div v-if="showInlineLauncher">
     <button
       type="button"
-      class="min-w-[130px] rounded-2xl border-[1.5px] px-5 py-3 text-center select-none"
-      :class="bubbleClass"
+      :class="[launcherClass, bubbleClass]"
       @pointerdown="onPointerDown"
       @pointerup="onPointerUp"
       @pointerleave="onPointerUp"
       @click="onClick"
     >
-      <div class="text-3xl font-extrabold tracking-widest text-foreground">
+      <div :class="timeClass">
         {{ mins }}:{{ secs }}
       </div>
-      <div class="mt-0.5 text-[10px] font-bold text-muted">
+      <div :class="labelClass">
         <template v-if="isFinished">Done - tap to reset</template>
         <template v-else-if="running">Tap to pause</template>
         <template v-else-if="isPartial">Resume</template>

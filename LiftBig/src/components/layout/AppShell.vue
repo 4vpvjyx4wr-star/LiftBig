@@ -67,8 +67,6 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
 
 <template>
   <div class="flex min-h-full flex-col bg-background pb-above-bottom-tabs">
-    <RestTimer :show-launcher="false" :show-floating="true" />
-
     <Teleport to="body">
       <div
         v-if="menuOpen"
@@ -94,65 +92,73 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
             Training Journal
           </p>
         </div>
-        <div class="relative shrink-0">
-          <button
-            type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            :aria-expanded="menuOpen"
-            aria-controls="app-shell-menu"
-            aria-label="Open menu"
-            @click="menuOpen = !menuOpen"
-          >
-            <i class="fa-solid fa-bars text-lg" aria-hidden="true" />
-          </button>
-          <div
-            v-if="menuOpen"
-            id="app-shell-menu"
-            class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),13rem)] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
-            role="menu"
-            @click.stop
-          >
-            <RouterLink
-              v-slot="{ navigate, isActive }"
-              to="/plates"
-              custom
-            >
-              <button
-                type="button"
-                role="menuitem"
-                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-                :class="{ '!text-primary': isActive }"
-                @click="closeMenu(); navigate($event)"
-              >
-                <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
-                Plates
-              </button>
-            </RouterLink>
-            <RouterLink
-              v-slot="{ navigate, isActive }"
-              to="/one-rep-max"
-              custom
-            >
-              <button
-                type="button"
-                role="menuitem"
-                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-                :class="{ '!text-primary': isActive }"
-                @click="closeMenu(); navigate($event)"
-              >
-                <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
-                1RM
-              </button>
-            </RouterLink>
+        <div class="flex shrink-0 items-start gap-2">
+          <RestTimer
+            :show-launcher="false"
+            :show-active-launcher="true"
+            :show-floating="false"
+            compact
+          />
+          <div class="relative">
             <button
               type="button"
-              role="menuitem"
-              class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
-              @click="openSettingsFromMenu"
+              class="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              :aria-expanded="menuOpen"
+              aria-controls="app-shell-menu"
+              aria-label="Open menu"
+              @click="menuOpen = !menuOpen"
             >
-              <i class="fa-solid fa-gear w-5 text-center text-base text-muted" aria-hidden="true" />
-              Settings
+              <i class="fa-solid fa-bars text-lg" aria-hidden="true" />
             </button>
+            <div
+              v-if="menuOpen"
+              id="app-shell-menu"
+              class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),13rem)] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
+              role="menu"
+              @click.stop
+            >
+              <RouterLink
+                v-slot="{ navigate, isActive }"
+                to="/plates"
+                custom
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-weight-hanging w-5 text-center text-base text-muted" aria-hidden="true" />
+                  Plate Calculator
+                </button>
+              </RouterLink>
+              <RouterLink
+                v-slot="{ navigate, isActive }"
+                to="/one-rep-max"
+                custom
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
+                  1RM
+                </button>
+              </RouterLink>
+              <button
+                type="button"
+                role="menuitem"
+                class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                @click="openSettingsFromMenu"
+              >
+                <i class="fa-solid fa-gear w-5 text-center text-base text-muted" aria-hidden="true" />
+                Settings
+              </button>
+            </div>
           </div>
         </div>
       </header>
