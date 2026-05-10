@@ -116,7 +116,21 @@ const folderPurposeDrafts = ref<Record<string, string>>({})
 const folderStartDateDrafts = ref<Record<string, string>>({})
 const folderRestEveryDrafts = ref<Record<string, number>>({})
 
-const uncategorizedPlans = computed(() => planList.value.filter((item) => !item.folderId))
+/** Full catalog: every template stays listed here; folders are additional grouped views. */
+const allPlansSectionList = computed(() =>
+  planList.value.slice().sort((a, b) => a.name.localeCompare(b.name)),
+)
+
+const allPlansSearchQuery = ref('')
+
+const allPlansSectionFiltered = computed(() => {
+  const q = allPlansSearchQuery.value.trim().toLowerCase()
+  if (!q) return allPlansSectionList.value
+  return allPlansSectionList.value.filter((template) => {
+    if (template.name.toLowerCase().includes(q)) return true
+    return template.exercises.some((ex) => ex.name.toLowerCase().includes(q))
+  })
+})
 const folderSections = computed(() =>
   folders.value.map((folder) => ({
     folder,
@@ -142,7 +156,7 @@ function createFolder() {
 }
 
 function deleteFolder(folderId: string) {
-  if (!window.confirm('Delete this folder? Plans inside will be moved to All Plans.')) return
+  if (!window.confirm('Delete this folder? Plans inside will leave the folder (they stay in All Plans).')) return
   templates.setFolders(folders.value.filter((folder) => folder.id !== folderId))
   const nextPlans = planList.value.map((item) => (item.folderId === folderId ? { ...item, folderId: null } : item))
   templates.setAll(nextPlans)
@@ -665,15 +679,28 @@ function onPlansRestSecondsChange(ev: Event) {
         @dragleave="dragOverUncategorized = false"
         @drop.prevent="onUncategorizedDrop"
       >
-        <div class="mb-2 flex items-center justify-between">
+        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 class="text-sm font-extrabold text-foreground">All Plans</h2>
           <span class="text-[10px] font-bold uppercase tracking-wide text-muted">
-            {{ uncategorizedPlans.length }}
+            {{ allPlansSectionFiltered.length
+            }}<template v-if="allPlansSearchQuery.trim()"> / {{ allPlansSectionList.length }}</template>
           </span>
         </div>
-        <ul class="space-y-3">
+        <label class="sr-only" for="all-plans-search">Search all plans</label>
+        <input
+          id="all-plans-search"
+          v-model="allPlansSearchQuery"
+          type="search"
+          class="mb-3 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+          placeholder="Search plans by name or exercise…"
+          autocomplete="off"
+        />
+        <p v-if="allPlansSectionFiltered.length === 0" class="py-2 text-xs text-muted">
+          No plans match your search.
+        </p>
+        <ul v-else class="space-y-3">
           <li
-            v-for="item in uncategorizedPlans"
+            v-for="item in allPlansSectionFiltered"
             :key="item.id"
             draggable="true"
             class="rounded-xl border border-border bg-card p-4"

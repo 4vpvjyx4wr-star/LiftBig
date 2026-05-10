@@ -74,11 +74,9 @@ const folderSections = computed(() =>
   })),
 )
 
-const uncategorizedPlans = computed(() =>
-  filteredTemplates.value
-    .filter((item) => !item.folderId)
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name)),
+/** Every matching plan appears here even when also listed under a folder. */
+const allPlansPickerList = computed(() =>
+  filteredTemplates.value.slice().sort((a, b) => a.name.localeCompare(b.name)),
 )
 
 function folderPlanSortKey(name: string): [number, number, string] {
@@ -292,18 +290,15 @@ watch(
             </ul>
           </section>
 
-          <section
-            v-if="uncategorizedPlans.length > 0"
-            class="rounded-xl border border-dashed border-border bg-card-inner/30 p-3"
-          >
+          <section class="rounded-xl border border-dashed border-border bg-card-inner/30 p-3">
             <div class="mb-2 flex items-center justify-between gap-2">
               <h2 class="text-sm font-extrabold text-foreground">All Plans</h2>
               <span class="text-[10px] font-bold uppercase tracking-wide text-muted">
-                {{ uncategorizedPlans.length }}
+                {{ allPlansPickerList.length }}
               </span>
             </div>
             <ul class="space-y-2">
-              <li v-for="t in uncategorizedPlans" :key="t.id">
+              <li v-for="t in allPlansPickerList" :key="t.id">
                 <button
                   type="button"
                   class="w-full rounded-xl border border-border bg-card-inner px-3 py-3 text-left hover:border-primary"
