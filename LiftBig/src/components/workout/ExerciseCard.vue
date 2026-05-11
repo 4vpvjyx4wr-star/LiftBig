@@ -5,11 +5,13 @@ import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
+import { getSuggestedWeight } from '@/utils/progressiveOverload'
 import {
-  getDefaultLogRepsForTarget,
-  getSuggestedWeight,
-} from '@/utils/progressiveOverload'
-import { displayInputToStoredLbsString, formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
+  displayInputToStoredLbsString,
+  formatWeightWithUnit,
+  parseStoredLbs,
+  storedLbsStringToDisplay,
+} from '@/utils/units'
 
 const props = defineProps<{
   exercise: Exercise
@@ -26,6 +28,19 @@ function formatStoredLbsForDisplay(s: string | undefined): string {
   return formatWeightWithUnit(lbs, weightUnit.value, 1)
 }
 
+/** Same wording as plan-assigned exercises: "Goal: N × reps" with optional "@ weight". */
+const goalSummaryLine = computed(() => {
+  if (props.exercise.isCircuit) return ''
+  weightUnit.value
+  const n = props.exercise.sets.length
+  const reps = (props.exercise.targetReps ?? '').trim()
+  const w = (props.exercise.targetWeight ?? '').trim()
+  if (!reps && !w) return ''
+  const mid = reps ? `${n} × ${reps}` : `${n} sets`
+  const tail = w ? ` @ ${formatStoredLbsForDisplay(props.exercise.targetWeight)}` : ''
+  return `Goal: ${mid}${tail}`
+})
+
 const emit = defineEmits<{
   addSet: []
   updateSet: [setId: string, field: 'reps' | 'weight', value: string]
@@ -34,10 +49,11 @@ const emit = defineEmits<{
   deleteSet: [setId: string]
   swapExercise: []
   deleteExercise: []
+  updateGoals: [patch: Partial<{ targetReps: string; targetWeight: string }>]
 }>()
 
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
-/** Once per exercise instance; avoids overwriting after user edits or double-filling weight/reps. */
+/** Once per exercise instance; avoids overwriting after user edits or double-filling weight. */
 const predictionApplied = ref(false)
 
 function isBlankLogField(v: unknown): boolean {
@@ -45,29 +61,19 @@ function isBlankLogField(v: unknown): boolean {
 }
 
 function tryApplyFirstSetPrefill() {
-  if (props.exercise.isCircuit || !props.exercise.targetReps || predictionApplied.value) return
+  if (props.exercise.isCircuit || predictionApplied.value) return
   const first = props.exercise.sets[0]
-  if (!first || !isBlankLogField(first.reps) || !isBlankLogField(first.weight)) return
+  if (!first || !isBlankLogField(first.weight)) return
   if (!suggestion.value) return
 
   const sw = suggestion.value.suggestedWeight
-  const repsStr = getDefaultLogRepsForTarget(props.exercise.targetReps)
+  if (!Number.isFinite(sw) || sw <= 0) return
 
-  let weightStr: string | undefined
-  if (Number.isFinite(sw) && sw > 0) {
-    weightStr = displayInputToStoredLbsString(String(sw), 'lb')
-  }
-
-  const shouldFillWeight = weightStr !== undefined && weightStr !== ''
-  const shouldFillReps = repsStr !== ''
-
-  if (!shouldFillWeight && !shouldFillReps) return
+  const weightStr = displayInputToStoredLbsString(String(sw), 'lb')
+  if (!weightStr) return
 
   predictionApplied.value = true
-  const patch: { weight?: string; reps?: string } = {}
-  if (shouldFillWeight) patch.weight = weightStr
-  if (shouldFillReps) patch.reps = repsStr
-  emit('prefillFirstSet', first.id, patch)
+  emit('prefillFirstSet', first.id, { weight: weightStr })
 }
 
 watch(
@@ -75,25 +81,39 @@ watch(
     [
       props.exercise.name,
       props.exercise.targetReps,
+      props.exercise.targetWeight,
       props.exercise.sets,
       props.workoutLog,
       weightUnit.value,
     ] as const,
   () => {
-    if (props.exercise.isCircuit || !props.exercise.targetReps) {
+    if (props.exercise.isCircuit) {
+      suggestion.value = null
+      return
+    }
+    const reps = (props.exercise.targetReps ?? '').trim()
+    const tw = (props.exercise.targetWeight ?? '').trim()
+    if (!reps && !tw) {
       suggestion.value = null
       return
     }
     const base = parseFloat(
       props.exercise.sets[0]?.weight || props.exercise.targetWeight || '0',
     )
-    suggestion.value = getSuggestedWeight(
-      props.exercise.name,
-      props.exercise.targetReps,
-      base,
-      props.workoutLog,
-      weightUnit.value,
-    )
+    if (reps) {
+      suggestion.value = getSuggestedWeight(
+        props.exercise.name,
+        reps,
+        base,
+        props.workoutLog,
+        weightUnit.value,
+      )
+    } else {
+      suggestion.value =
+        Number.isFinite(base) && base > 0
+          ? { suggestedWeight: base, reason: 'No history yet' }
+          : null
+    }
   },
   { deep: true, immediate: true },
 )
@@ -110,8 +130,8 @@ watch(
     [
       props.exercise.isCircuit,
       props.exercise.targetReps,
+      props.exercise.targetWeight,
       props.exercise.sets[0]?.id,
-      props.exercise.sets[0]?.reps,
       props.exercise.sets[0]?.weight,
       suggestion.value?.suggestedWeight,
       suggestion.value?.reason,
@@ -144,6 +164,7 @@ const libraryEntry = computed(() => {
 })
 
 const detailOpen = ref(false)
+const goalsEditorOpen = ref(false)
 
 function openLibraryDetail() {
   if (libraryEntry.value) detailOpen.value = true
@@ -162,7 +183,12 @@ function closeLibraryDetail() {
     <div class="mb-2 flex justify-between gap-2">
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
-          <h4 class="text-base font-bold text-foreground">{{ exercise.name }}</h4>
+          <h4
+            class="exercise-reorder-handle cursor-grab select-none text-base font-bold text-foreground active:cursor-grabbing touch-manipulation"
+            title="Hold, then drag to reorder"
+          >
+            {{ exercise.name }}
+          </h4>
           <button
             v-if="libraryEntry"
             type="button"
@@ -173,13 +199,23 @@ function closeLibraryDetail() {
             <i class="fa-solid fa-circle-info text-sm" aria-hidden="true" />
           </button>
         </div>
-        <p
-          v-if="exercise.targetReps && !exercise.isCircuit"
-          class="mt-0.5 text-[11px] text-muted"
+        <div
+          v-if="!exercise.isCircuit"
+          class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"
         >
-          Goal: {{ exercise.sets.length }} × {{ exercise.targetReps }}
-          <template v-if="exercise.targetWeight"> @ {{ formatStoredLbsForDisplay(exercise.targetWeight) }}</template>
-        </p>
+          <button
+            type="button"
+            class="shrink-0 text-xs font-semibold text-muted hover:text-primary"
+            :aria-expanded="goalsEditorOpen"
+            :aria-controls="`exercise-goals-editor-${exercise.id}`"
+            @click="goalsEditorOpen = !goalsEditorOpen"
+          >
+            {{ goalsEditorOpen ? 'Hide goals' : 'Set goals' }}
+          </button>
+          <p v-if="goalSummaryLine" class="min-w-0 flex-1 text-[11px] leading-snug text-muted">
+            {{ goalSummaryLine }}
+          </p>
+        </div>
       </div>
       <div class="flex shrink-0 flex-col items-end gap-1">
         <span
@@ -202,6 +238,35 @@ function closeLibraryDetail() {
         >
           Remove
         </button>
+      </div>
+    </div>
+
+    <div
+      v-if="goalsEditorOpen && !exercise.isCircuit"
+      :id="`exercise-goals-editor-${exercise.id}`"
+      class="mb-2 grid grid-cols-2 gap-2"
+    >
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+        <input
+          :value="exercise.targetReps ?? ''"
+          type="text"
+          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+          placeholder="e.g. 8–12"
+          inputmode="text"
+          @input="emit('updateGoals', { targetReps: ($event.target as HTMLInputElement).value })"
+        />
+      </div>
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+        <input
+          :value="storedLbsStringToDisplay(exercise.targetWeight ?? '', weightUnit)"
+          type="text"
+          inputmode="decimal"
+          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+          :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+          @input="emit('updateGoals', { targetWeight: ($event.target as HTMLInputElement).value })"
+        />
       </div>
     </div>
 

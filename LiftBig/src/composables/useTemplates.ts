@@ -49,7 +49,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...withSbdFolder, ...cloneFolders([CALISTHENICS_FULL_BODY_FOLDER])]
   const hasJoeyFolder = withCalisFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
-  const folders = hasJoeyFolder
+  let folders = hasJoeyFolder
     ? withCalisFolders.map((folder) =>
         folder.id === JOEY_SUMMER_FOLDER.id
           ? { ...folder, name: JOEY_SUMMER_FOLDER.name, purpose: JOEY_SUMMER_FOLDER.purpose }
@@ -64,10 +64,24 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       : template,
   )
 
+  // Deduplicate: some older saved states can contain multiple "Joey's Summer PPL/Core/Circuit"
+  // folders (same name, different ids). Remap all Joey plans to the canonical folder id.
+  const joeyFolderIdsByName = folders.filter((f) => f.name === JOEY_SUMMER_FOLDER.name).map((f) => f.id)
+  const duplicateJoeyFolderIds = joeyFolderIdsByName.filter((id) => id !== JOEY_SUMMER_FOLDER.id)
+  if (duplicateJoeyFolderIds.length > 0) {
+    templates = templates.map((t) =>
+      joeyPlanIdSet.has(t.id) && t.folderId != null && duplicateJoeyFolderIds.includes(t.folderId)
+        ? { ...t, folderId: JOEY_SUMMER_FOLDER.id }
+        : t,
+    )
+    folders = folders.filter((f) => !duplicateJoeyFolderIds.includes(f.id))
+  }
+
   const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
-  const missingPlans = [...missingSbdPlans, ...missingCalisPlans]
+  const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingPlans = [...missingSbdPlans, ...missingCalisPlans, ...missingDefaultPlans]
   templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
 
   return { templates, folders }
@@ -88,7 +102,9 @@ function loadTemplatesInitial(): TemplatesState {
 
   // Backward compatibility: old shape was WorkoutTemplate[].
   if (Array.isArray(loaded)) {
-    return ensureProgramSeeds({ templates: loaded as WorkoutTemplate[], folders: [] })
+    const merged = ensureProgramSeeds({ templates: loaded as WorkoutTemplate[], folders: [] })
+    saveJson(KEY, merged)
+    return merged
   }
 
   if (loaded && typeof loaded === 'object') {
@@ -96,7 +112,11 @@ function loadTemplatesInitial(): TemplatesState {
     const templates = Array.isArray(obj.templates) ? (obj.templates as WorkoutTemplate[]) : []
     const folders = Array.isArray(obj.folders) ? (obj.folders as TemplateFolder[]) : []
 
-    if (templates.length > 0) return ensureProgramSeeds({ templates, folders })
+    if (templates.length > 0) {
+      const merged = ensureProgramSeeds({ templates, folders })
+      saveJson(KEY, merged)
+      return merged
+    }
   }
 
   saveJson(KEY, emptyState)

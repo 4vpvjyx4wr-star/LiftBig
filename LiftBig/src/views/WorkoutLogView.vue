@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Sortable from 'sortablejs'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
@@ -11,6 +12,7 @@ import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
 import { searchLibrary } from '@/utils/exerciseLibrary'
+import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 import {
   applyLiftBigBackupToStorage,
   collectLiftBigBackupPayload,
@@ -37,6 +39,20 @@ const swapModalExerciseId = ref<string | null>(null)
 const showInlineLibraryMatches = ref(false)
 const menuOpen = ref(false)
 const settingsOpen = ref(false)
+/** Optional targets applied to the next manually / library-added exercise (stored lb string for weight). */
+const goalRepsDraft = ref('')
+const goalWeightStoredLbs = ref('')
+
+const weightUnit = computed(() => settings.weightUnit.value)
+
+function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> {
+  const out: Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> = {}
+  const reps = goalRepsDraft.value.trim()
+  const w = goalWeightStoredLbs.value.trim()
+  if (reps) out.targetReps = reps
+  if (w) out.targetWeight = w
+  return out
+}
 
 const inlineLibraryMatches = computed(() => {
   const needle = inputName.value.trim()
@@ -71,6 +87,57 @@ watch(notes, (value) => {
 
 const workoutLogPlain = computed(() => workouts.log.value)
 
+const exerciseListEl = ref<HTMLElement | null>(null)
+let exerciseSortable: Sortable | null = null
+
+function destroyExerciseSortable() {
+  exerciseSortable?.destroy()
+  exerciseSortable = null
+}
+
+function bindExerciseSortable() {
+  destroyExerciseSortable()
+  const el = exerciseListEl.value
+  if (!el || exercises.value.length < 2) return
+
+  exerciseSortable = Sortable.create(el, {
+    animation: 180,
+    handle: '.exercise-reorder-handle',
+    delay: 500,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    ghostClass: 'exercise-sortable-ghost',
+    chosenClass: 'exercise-sortable-chosen',
+    onEnd(evt: Sortable.SortableEvent) {
+      const oi = evt.oldIndex
+      const ni = evt.newIndex
+      if (oi == null || ni == null || oi === ni) return
+      const next = [...exercises.value]
+      const [moved] = next.splice(oi, 1)
+      if (!moved) return
+      next.splice(ni, 0, moved)
+      exercises.value = next
+    },
+  })
+}
+
+onMounted(() => {
+  nextTick(bindExerciseSortable)
+})
+
+watch(dateKey, () => {
+  nextTick(bindExerciseSortable)
+})
+
+watch(
+  () => exercises.value.length,
+  () => {
+    nextTick(bindExerciseSortable)
+  },
+)
+
+onBeforeUnmount(destroyExerciseSortable)
+
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 }
@@ -86,6 +153,7 @@ function addExercise() {
     {
       id: newId(),
       name: trimmed,
+      ...optionalGoalsFromDock(),
       sets: [{ id: newId(), reps: '', weight: '' }],
     },
   ]
@@ -99,6 +167,7 @@ function addFromLibrary(ex: LibraryExercise) {
       id: newId(),
       name: ex.name,
       libraryId: ex.id,
+      ...optionalGoalsFromDock(),
       sets: [{ id: newId(), reps: '', weight: '' }],
     },
   ]
@@ -170,6 +239,27 @@ function deleteSet(exerciseId: string, setId: string) {
 
 function deleteExercise(exerciseId: string) {
   exercises.value = exercises.value.filter((ex) => ex.id !== exerciseId)
+}
+
+function updateExerciseGoals(
+  exerciseId: string,
+  patch: Partial<{ targetReps: string; targetWeight: string }>,
+) {
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    const next: Exercise = { ...ex }
+    if (patch.targetReps !== undefined) {
+      const t = patch.targetReps.trim()
+      next.targetReps = t ? t : undefined
+    }
+    if (patch.targetWeight !== undefined) {
+      const t = patch.targetWeight.trim()
+      next.targetWeight = t
+        ? displayInputToStoredLbsString(t, settings.weightUnit.value)
+        : undefined
+    }
+    return next
+  })
 }
 
 const swapModalExercise = computed(() => {
@@ -262,8 +352,12 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       class="sticky top-0 z-30 flex items-start justify-between gap-2 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm"
     >
       <div class="min-w-0">
-        <RouterLink to="/" class="mb-2 inline-block text-xs font-bold text-muted hover:text-primary">
-          ← Home
+        <RouterLink
+          to="/"
+          class="mb-2 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-primary"
+        >
+          <i class="fa-solid fa-house text-sm" aria-hidden="true" />
+          Home
         </RouterLink>
         <h1 class="text-3xl font-black tracking-[0.2em] text-primary">LIFTBIG</h1>
         <p class="text-xs text-muted">{{ formatDisplayDate(dateKey) }}</p>
@@ -354,19 +448,22 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
         <p class="mt-2 text-sm text-muted">Add one below or assign a plan from Home.</p>
       </div>
 
-      <ExerciseCard
-        v-for="ex in exercises"
-        :key="ex.id"
-        :exercise="ex"
-        :workout-log="workoutLogPlain"
-        @add-set="addSet(ex.id)"
-        @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
-        @prefill-first-set="(setId, patch) => prefillFirstSet(ex.id, setId, patch)"
-        @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
-        @delete-set="(setId) => deleteSet(ex.id, setId)"
-        @swap-exercise="openSwapExercise(ex.id)"
-        @delete-exercise="deleteExercise(ex.id)"
-      />
+      <div v-if="exercises.length > 0" ref="exerciseListEl">
+        <ExerciseCard
+          v-for="ex in exercises"
+          :key="ex.id"
+          :exercise="ex"
+          :workout-log="workoutLogPlain"
+          @add-set="addSet(ex.id)"
+          @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
+          @prefill-first-set="(setId, patch) => prefillFirstSet(ex.id, setId, patch)"
+          @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
+          @delete-set="(setId) => deleteSet(ex.id, setId)"
+          @swap-exercise="openSwapExercise(ex.id)"
+          @delete-exercise="deleteExercise(ex.id)"
+          @update-goals="(patch) => updateExerciseGoals(ex.id, patch)"
+        />
+      </div>
 
       <button
         v-if="exercises.length > 0"
@@ -381,47 +478,79 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     <div
       class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 pb-workout-dock-safe pt-3 backdrop-blur-sm"
     >
-      <div class="mx-auto flex max-w-lg gap-2">
-        <div class="relative min-w-0 flex-1">
-          <input
-            v-model="inputName"
-            type="text"
-            class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground outline-none focus:border-primary"
-            placeholder="Add exercise manually..."
-            @focus="showInlineLibraryMatches = true"
-            @blur="hideInlineLibraryMatchesSoon"
-            @keydown.enter="addExercise"
-          />
-          <div
-            v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
-            class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
-          >
-            <button
-              v-for="match in inlineLibraryMatches"
-              :key="match.id"
-              type="button"
-              class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
-              @click="addFromInlineLibrary(match)"
+      <div class="mx-auto flex max-w-lg gap-2 px-4 sm:px-0">
+        <div class="flex min-w-0 flex-1 flex-col gap-2">
+          <div class="relative min-w-0">
+            <input
+              v-model="inputName"
+              type="text"
+              class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground outline-none focus:border-primary"
+              placeholder="Add exercise manually..."
+              @focus="showInlineLibraryMatches = true"
+              @blur="hideInlineLibraryMatchesSoon"
+              @keydown.enter="addExercise"
+            />
+            <div
+              v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
+              class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
             >
-              <span class="font-semibold">{{ match.name }}</span>
-              <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
-            </button>
+              <button
+                v-for="match in inlineLibraryMatches"
+                :key="match.id"
+                type="button"
+                class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
+                @click="addFromInlineLibrary(match)"
+              >
+                <span class="font-semibold">{{ match.name }}</span>
+                <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="grid min-w-0 grid-cols-2 gap-2">
+            <div class="min-w-0">
+              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+              <input
+                v-model="goalRepsDraft"
+                type="text"
+                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                placeholder="e.g. 8–12"
+                inputmode="text"
+              />
+            </div>
+            <div class="min-w-0">
+              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+              <input
+                :value="storedLbsStringToDisplay(goalWeightStoredLbs, weightUnit)"
+                type="text"
+                inputmode="decimal"
+                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+                @input="
+                  goalWeightStoredLbs = displayInputToStoredLbsString(
+                    ($event.target as HTMLInputElement).value,
+                    weightUnit,
+                  )
+                "
+              />
+            </div>
           </div>
         </div>
-        <button
-          type="button"
-          class="shrink-0 rounded-lg border border-primary/50 bg-card-inner px-3 py-2.5 text-xs font-bold text-primary sm:px-4"
-          @click="libraryOpen = true"
-        >
-          Library
-        </button>
-        <button
-          type="button"
-          class="shrink-0 rounded-lg bg-blue px-5 py-2.5 font-bold text-foreground"
-          @click="addExercise"
-        >
-          Add
-        </button>
+        <div class="flex shrink-0 flex-col gap-2 self-start">
+          <button
+            type="button"
+            class="w-full shrink-0 rounded-lg bg-blue px-5 py-2.5 font-bold text-foreground"
+            @click="addExercise"
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            class="w-full shrink-0 rounded-lg border border-primary/50 bg-card-inner px-5 py-2.5 font-bold text-primary"
+            @click="libraryOpen = true"
+          >
+            Library
+          </button>
+        </div>
       </div>
     </div>
 

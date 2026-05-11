@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { computed, watch, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
-import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimatePlanDurationMinutes,
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
 import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
+
+const settings = inject(settingsInjectionKey)!
 
 const props = defineProps<{
   show: boolean
@@ -21,26 +28,56 @@ const emit = defineEmits<{
 const planName = ref('')
 const exercises = ref<TemplateExercise[]>([])
 const libraryOpen = ref(false)
+const goalsEditorOpen = ref<Record<string, boolean>>({})
+
+/** Draft minutes for this modal’s time estimate only (initialized from settings when opened). */
+const draftLiftMinutes = ref(1)
+const draftRestMinutes = ref(1)
+
+const durationAssumptions = computed(() => {
+  const lift = Number(draftLiftMinutes.value)
+  const rest = Number(draftRestMinutes.value)
+  return {
+    minutesPerSet: Math.max(1 / 120, Number.isFinite(lift) && lift > 0 ? lift : 1),
+    minutesRestBetweenSets: Math.max(1 / 120, Number.isFinite(rest) && rest > 0 ? rest : 1),
+  }
+})
 
 const estimatedDurationLabel = computed(() =>
   formatPlanDurationEstimate(
-    estimatePlanDurationMinutes({
-      id: 'draft',
-      name: '',
-      exercises: exercises.value,
-    }),
+    estimatePlanDurationMinutes(
+      {
+        id: 'draft',
+        name: '',
+        exercises: exercises.value,
+      },
+      durationAssumptions.value,
+    ),
   ),
 )
+
+function resetDurationDraftFromSettings() {
+  const a = planDurationAssumptionsFromSeconds(
+    settings.averageLiftSeconds.value,
+    settings.averageRestSeconds.value,
+  )
+  draftLiftMinutes.value = Math.round(a.minutesPerSet * 100) / 100
+  draftRestMinutes.value = Math.round(a.minutesRestBetweenSets * 100) / 100
+}
 
 function blankExercise(): TemplateExercise {
   return {
     id: `new-ex-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     name: '',
     sets: [{ targetReps: '', targetWeight: '' }],
+    targetReps: '',
+    targetWeight: '',
   }
 }
 
 function resetFromProps() {
+  goalsEditorOpen.value = {}
+  resetDurationDraftFromSettings()
   if (props.initial) {
     planName.value = props.initial.name
     exercises.value = JSON.parse(JSON.stringify(props.initial.exercises)) as TemplateExercise[]
@@ -96,6 +133,11 @@ function addFromLibrary(ex: LibraryExercise) {
 }
 
 function removeExercise(index: number) {
+  const removed = exercises.value[index]
+  if (removed) {
+    const { [removed.id]: _, ...rest } = goalsEditorOpen.value
+    goalsEditorOpen.value = rest
+  }
   exercises.value = exercises.value.filter((_, i) => i !== index)
 }
 
@@ -105,6 +147,31 @@ function onTargetWeightInput(exIndex: number, setIndex: number, raw: string) {
   const next = displayInputToStoredLbsString(raw, props.weightUnit)
   const sets = ex.sets.map((s, i) => (i === setIndex ? { ...s, targetWeight: next } : s))
   updateExercise(exIndex, { ...ex, sets })
+}
+
+function toggleGoalsEditor(exId: string) {
+  goalsEditorOpen.value = {
+    ...goalsEditorOpen.value,
+    [exId]: !goalsEditorOpen.value[exId],
+  }
+}
+
+function goalSummaryLine(ex: TemplateExercise): string {
+  if (ex.isCircuit) return ''
+  const n = ex.sets.length
+  const reps = (ex.targetReps ?? '').trim()
+  const w = (ex.targetWeight ?? '').trim()
+  if (!reps && !w) return ''
+  const mid = reps ? `${n} × ${reps}` : `${n} sets`
+  const tail = w ? ` @ ${storedLbsStringToDisplay(w, props.weightUnit)}` : ''
+  return `Goal: ${mid}${tail}`
+}
+
+function onGoalWeightInput(exIndex: number, raw: string) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  const next = displayInputToStoredLbsString(raw, props.weightUnit)
+  updateExercise(exIndex, { ...ex, targetWeight: next })
 }
 
 function save() {
@@ -170,8 +237,54 @@ function save() {
               class="mb-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               placeholder="Exercise name"
             />
-            <div class="grid grid-cols-[2fr_1fr_1fr_28px] gap-1 text-[10px] font-bold uppercase text-muted">
-              <span>Set</span>
+            <template v-if="!ex.isCircuit">
+              <div class="mb-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <button
+                  type="button"
+                  class="shrink-0 text-xs font-semibold text-muted hover:text-primary"
+                  :aria-expanded="!!goalsEditorOpen[ex.id]"
+                  :aria-controls="`plan-editor-goals-${ex.id}`"
+                  @click="toggleGoalsEditor(ex.id)"
+                >
+                  {{ goalsEditorOpen[ex.id] ? 'Hide goals' : 'Set goals' }}
+                </button>
+                <p v-if="goalSummaryLine(ex)" class="min-w-0 flex-1 text-[11px] leading-snug text-muted">
+                  {{ goalSummaryLine(ex) }}
+                </p>
+              </div>
+              <div
+                v-if="goalsEditorOpen[ex.id]"
+                :id="`plan-editor-goals-${ex.id}`"
+                class="mb-3 grid grid-cols-2 gap-2"
+              >
+                <div>
+                  <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+                  <input
+                    :value="ex.targetReps ?? ''"
+                    type="text"
+                    class="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                    placeholder="e.g. 8–12"
+                    inputmode="text"
+                    @input="updateExercise(ei, { ...ex, targetReps: ($event.target as HTMLInputElement).value })"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+                  <input
+                    :value="storedLbsStringToDisplay(ex.targetWeight ?? '', weightUnit)"
+                    type="text"
+                    inputmode="decimal"
+                    class="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+                    :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+                    @input="onGoalWeightInput(ei, ($event.target as HTMLInputElement).value)"
+                  />
+                </div>
+              </div>
+            </template>
+            <div
+              class="grid grid-cols-[2.25rem_1fr_1fr_1.75rem] items-center gap-x-1 text-[10px] font-bold uppercase text-muted"
+            >
+              <span class="text-center">Set</span>
               <span class="text-center">Reps</span>
               <span class="text-center">{{ weightUnit === 'lb' ? 'lb' : 'kg' }}</span>
               <span />
@@ -179,25 +292,25 @@ function save() {
             <div
               v-for="(set, si) in ex.sets"
               :key="si"
-              class="mt-1 grid grid-cols-[2fr_1fr_1fr_28px] gap-1"
+              class="mt-1 grid grid-cols-[2.25rem_1fr_1fr_1.75rem] items-center gap-x-1"
             >
-              <span class="flex items-center text-xs text-muted">{{ si + 1 }}</span>
+              <span class="text-center text-xs tabular-nums text-muted">{{ si + 1 }}</span>
               <input
                 v-model="set.targetReps"
                 type="text"
                 inputmode="numeric"
-                class="rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
+                class="min-w-0 w-full rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
               />
               <input
                 :value="storedLbsStringToDisplay(set.targetWeight, weightUnit)"
                 type="text"
                 inputmode="decimal"
-                class="rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
+                class="min-w-0 w-full rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
                 @input="onTargetWeightInput(ei, si, ($event.target as HTMLInputElement).value)"
               />
               <button
                 type="button"
-                class="text-muted"
+                class="flex justify-center text-muted"
                 :disabled="ex.sets.length <= 1"
                 @click="removeSet(ei, si)"
               >
@@ -233,7 +346,28 @@ function save() {
 
         <p class="mt-3 text-center text-[11px] text-muted">
           Est. {{ estimatedDurationLabel }}
-          <span class="block mt-0.5 font-normal opacity-90">1 min per set + 1 min rest between sets</span>
+        </p>
+        <p class="mt-1.5 flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-center text-[11px] text-muted">
+          <input
+            v-model.number="draftLiftMinutes"
+            type="number"
+            step="0.25"
+            min="0.25"
+            max="45"
+            aria-label="Minutes per set for time estimate"
+            class="w-[3.35rem] rounded border border-border bg-card-inner px-1 py-0.5 text-center text-[11px] font-bold tabular-nums text-foreground outline-none focus:border-primary"
+          />
+          <span>min per set ·</span>
+          <input
+            v-model.number="draftRestMinutes"
+            type="number"
+            step="0.25"
+            min="0.25"
+            max="45"
+            aria-label="Minutes rest between sets for time estimate"
+            class="w-[3.35rem] rounded border border-border bg-card-inner px-1 py-0.5 text-center text-[11px] font-bold tabular-nums text-foreground outline-none focus:border-primary"
+          />
+          <span>min rest between sets</span>
         </p>
 
         <div class="mt-4 flex gap-2">

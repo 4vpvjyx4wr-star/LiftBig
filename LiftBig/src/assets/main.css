@@ -58,6 +58,31 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+/* Workout log: exercise cards reordered via Sortable (long-press handle on name) */
+.exercise-sortable-ghost {
+  opacity: 0.4;
+}
+.exercise-sortable-chosen {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-radius: 0.75rem;
+}
+
+/* Plans view: reorder folders / plans (long-press name on touch) */
+.plan-sortable-ghost {
+  opacity: 0.4;
+}
+.plan-sortable-chosen {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-radius: 0.75rem;
+}
+.folder-sortable-ghost {
+  opacity: 0.45;
+}
+.folder-sortable-chosen {
+  box-shadow: 0 0 0 2px var(--color-primary);
+  border-radius: 0.75rem;
+}
+
 /* Nested scroll areas (sheets, lists): hide track without disabling scroll */
 * {
   scrollbar-width: none;

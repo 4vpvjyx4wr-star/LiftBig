@@ -47,6 +47,9 @@ export type TemplateExercise = {
   libraryId?: string
   sets: TemplateSet[]
   isCircuit?: boolean
+  /** Optional targets for the workout log (same idea as live “Set goals”). */
+  targetReps?: string
+  targetWeight?: string
 }
 
 export type WorkoutTemplate = {

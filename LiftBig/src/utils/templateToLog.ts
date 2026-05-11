@@ -8,13 +8,15 @@ function newId(): string {
 export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] {
   return template.exercises.map((tex: TemplateExercise) => {
     const first = tex.sets[0]
+    const repsGoal = (tex.targetReps ?? '').trim() || first?.targetReps
+    const weightGoal = (tex.targetWeight ?? '').trim() || first?.targetWeight
     return {
       id: newId(),
       name: tex.name,
       libraryId: tex.libraryId,
       isCircuit: tex.isCircuit,
-      targetReps: first?.targetReps,
-      targetWeight: first?.targetWeight,
+      targetReps: repsGoal,
+      targetWeight: weightGoal,
       sets: tex.sets.map(() => {
         // Plan assignment creates empty working sets so users enter all reps/weight manually.
         const base = {

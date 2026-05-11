@@ -388,6 +388,23 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'incline-dumbbell-curl',
+    name: 'Incline Dumbbell Curl',
+    muscleGroups: ['biceps'],
+    equipment: 'Dumbbell',
+    summary: 'Curl on an incline bench with dumbbells for long-head stretch and strict elbows.',
+    instructions: [
+      'Set bench ~45°; sit with dumbbells at sides, arms hanging straight down.',
+      'Curl with palms up (or neutral) without letting elbows drift forward of the shoulder line.',
+      'Squeeze at the top; lower until arms are nearly straight with control.',
+    ],
+    tips: ['Use lighter loads than standing curls; long ROM makes cheating obvious.'],
+    cues: [
+      'Back and shoulders stay on the pad.',
+      'Only forearms move; elbows stay “pinned” in space behind you.',
+    ],
+  }),
+  reg({
     id: 'cable-curl',
     name: 'Cable Curl',
     muscleGroups: ['biceps'],

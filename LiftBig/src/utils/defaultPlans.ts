@@ -39,6 +39,10 @@ export const JOEY_SUMMER_PLAN_IDS: readonly string[] = [
   'plan-core-conditioning',
   'plan-arms-core',
   'plan-circuit',
+  'plan-heavy-push-delts-abs',
+  'plan-quick-legs-delts',
+  'plan-upper-chest-arms-abs',
+  'plan-quick-pump-day',
 ]
 
 export const DEFAULT_PLANS: WorkoutTemplate[] = [
@@ -208,6 +212,62 @@ export const DEFAULT_PLANS: WorkoutTemplate[] = [
       te('plan-core-conditioning', 'rev-crunch', 'Reverse Crunch', 3, '12-15', '0', false, 'reverse-crunch'),
       te('plan-core-conditioning', 'woodchop', 'Cable Woodchop', 3, '10-12', '35', false, 'cable-woodchop'),
       te('plan-core-conditioning', 'push-up', 'Push-Up', 3, 'AMRAP', '0', false, 'push-up'),
+    ],
+  },
+  {
+    id: 'plan-heavy-push-delts-abs',
+    name: 'Heavy Push/Delts/Abs',
+    folderId: JOEY_SUMMER_FOLDER.id,
+    exercises: [
+      te('plan-heavy-push-delts-abs', 'incline-db-press', 'Incline DB Press', 4, '6-10', '65', false, 'incline-dumbbell-press'),
+      te('plan-heavy-push-delts-abs', 'cable-lateral-raise', 'Cable Lateral Raise', 4, '12-15', '15', false, 'lateral-raise'),
+      te('plan-heavy-push-delts-abs', 'incline-machine-press', 'Incline Machine Press', 3, '8-12', '95', false, 'incline-machine-press'),
+      te('plan-heavy-push-delts-abs', 'rear-delt-fly', 'Rear Delt Fly', 3, '12-15', '20', false, 'rear-delt-fly'),
+      te('plan-heavy-push-delts-abs', 'low-high-cable-fly', 'Low-to-High Cable Fly', 3, '12-15', '20', false, 'cable-fly'),
+      te('plan-heavy-push-delts-abs', 'leaning-db-lateral', 'Leaning DB Lateral Raise', 3, '15-20', '20', false, 'lateral-raise'),
+      te('plan-heavy-push-delts-abs', 'weighted-cable-crunch', 'Weighted Cable Crunch', 3, '10-12', '90', false, 'cable-crunch'),
+      te('plan-heavy-push-delts-abs', 'hanging-leg-raise', 'Hanging Leg Raise', 3, '10-15', '0', false, 'leg-raise'),
+    ],
+  },
+  {
+    id: 'plan-quick-legs-delts',
+    name: 'Quick Legs + Delts',
+    folderId: JOEY_SUMMER_FOLDER.id,
+    exercises: [
+      te('plan-quick-legs-delts', 'leg-press', 'Leg Press', 4, '8-10', '275', false, 'leg-press'),
+      te('plan-quick-legs-delts', 'standing-calf-raise', 'Standing Calf Raise', 4, '12-20', '225', false, 'calf-raise'),
+      te('plan-quick-legs-delts', 'rdl', 'Romanian Deadlift', 3, '8-12', '135', false, 'romanian-deadlift'),
+      te('plan-quick-legs-delts', 'cable-crunch', 'Cable Crunch', 3, '12-15', '85', false, 'cable-crunch'),
+      te('plan-quick-legs-delts', 'leg-extension', 'Leg Extension', 3, '12-15', '140', false, 'leg-extension'),
+      te('plan-quick-legs-delts', 'cable-lateral-raise', 'Cable Lateral Raise', 3, '15-20', '15', false, 'lateral-raise'),
+    ],
+  },
+  {
+    id: 'plan-upper-chest-arms-abs',
+    name: 'Upper Chest/Arms/Abs',
+    folderId: JOEY_SUMMER_FOLDER.id,
+    exercises: [
+      te('plan-upper-chest-arms-abs', 'incline-db-press', 'Incline DB Press', 4, '8-12', '55', false, 'incline-dumbbell-press'),
+      te('plan-upper-chest-arms-abs', 'db-lateral-raise', 'DB Lateral Raise', 4, '15-20', '20', false, 'lateral-raise'),
+      te('plan-upper-chest-arms-abs', 'flat-db-press', 'Flat DB Press', 3, '8-12', '45', false, 'flat-dumbbell-press'),
+      te('plan-upper-chest-arms-abs', 'incline-db-curl', 'Incline DB Curl', 3, '10-12', '25', false, 'incline-dumbbell-curl'),
+      te('plan-upper-chest-arms-abs', 'oh-cable-tri', 'Overhead Cable Tricep Extension', 3, '10-12', '55', false, 'overhead-tricep-extension'),
+      te('plan-upper-chest-arms-abs', 'rear-delt-fly', 'Rear Delt Fly', 3, '12-15', '20', false, 'rear-delt-fly'),
+      te('plan-upper-chest-arms-abs', 'decline-rev-crunch', 'Decline Reverse Crunch', 3, '12-15', '0', false, 'reverse-crunch'),
+      te('plan-upper-chest-arms-abs', 'cable-woodchop', 'Cable Woodchop', 3, '10-15', '35', false, 'cable-woodchop'),
+    ],
+  },
+  {
+    id: 'plan-quick-pump-day',
+    name: 'Quick Pump Day',
+    folderId: JOEY_SUMMER_FOLDER.id,
+    isCircuit: true,
+    exercises: [
+      te('plan-quick-pump-day', 'push-ups', 'Push-Ups', 3, 'AMRAP (1-2 RIR)', '0', true, 'push-up'),
+      te('plan-quick-pump-day', 'db-lateral-raise', 'DB Lateral Raise', 3, '15-20', '20', true, 'lateral-raise'),
+      te('plan-quick-pump-day', 'cable-curl', 'Cable Curl', 3, '10-12', '30', true, 'cable-curl'),
+      te('plan-quick-pump-day', 'rope-pushdown', 'Rope Pushdown', 3, '10-12', '65', true, 'tricep-pushdown'),
+      te('plan-quick-pump-day', 'plank', 'Plank', 3, '45-60 sec', '0', true, 'plank'),
     ],
   },
 ]

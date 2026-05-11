@@ -35,6 +35,12 @@ const visibleRepsOptions = computed(() => {
   return repsOptions.filter((opt) => opt.includes(q))
 })
 
+/** Shown when reps is empty — goal text only, not a logged value. */
+const repsPlaceholder = computed(() => {
+  const g = props.targetReps?.trim()
+  return g ? g : 'Reps'
+})
+
 const visibleWeightOptions = computed(() => {
   const currentDisplay = storedLbsStringToDisplay(props.set.weight, weightUnit.value).trim()
   if (!currentDisplay) return weightOptions.value
@@ -114,7 +120,7 @@ function selectRepsOption(raw: string) {
         type="text"
         inputmode="numeric"
         class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
-        placeholder="Reps"
+        :placeholder="repsPlaceholder"
         @focus="onRepsFocus"
         @blur="hideRepsMenuSoon"
         @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
