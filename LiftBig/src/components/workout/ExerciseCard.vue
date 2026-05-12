@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
@@ -50,18 +50,75 @@ const emit = defineEmits<{
   swapExercise: []
   deleteExercise: []
   updateGoals: [patch: Partial<{ targetReps: string; targetWeight: string }>]
+  updateNotes: [notes: string]
 }>()
 
+const NOTES_DEBOUNCE_MS = 550
+
+type ExercisePanel = 'sets' | 'notes'
+const activePanel = ref<ExercisePanel>('sets')
+
+const notesDraft = ref(props.exercise.notes ?? '')
+let notesDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  () => props.exercise.id,
+  () => {
+    if (notesDebounceTimer) {
+      clearTimeout(notesDebounceTimer)
+      notesDebounceTimer = null
+    }
+    notesDraft.value = props.exercise.notes ?? ''
+    activePanel.value = 'sets'
+  },
+  { immediate: true },
+)
+
+function exerciseNotesEqual(stored: string | undefined, draft: string): boolean {
+  return (stored ?? '') === draft
+}
+
+function commitNotesIfChanged() {
+  if (exerciseNotesEqual(props.exercise.notes, notesDraft.value)) return
+  emit('updateNotes', notesDraft.value)
+}
+
+function scheduleNotesCommit() {
+  if (notesDebounceTimer) clearTimeout(notesDebounceTimer)
+  notesDebounceTimer = setTimeout(() => {
+    notesDebounceTimer = null
+    commitNotesIfChanged()
+  }, NOTES_DEBOUNCE_MS)
+}
+
+function flushNotesCommit() {
+  if (notesDebounceTimer) {
+    clearTimeout(notesDebounceTimer)
+    notesDebounceTimer = null
+  }
+  commitNotesIfChanged()
+}
+
+onBeforeUnmount(() => {
+  flushNotesCommit()
+})
+
+watch(activePanel, (next, prev) => {
+  if (prev === 'notes' && next !== 'notes') {
+    flushNotesCommit()
+  }
+})
+
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
-/** Once per exercise instance; avoids overwriting after user edits or double-filling weight. */
-const predictionApplied = ref(false)
+/** After the user changes the first set's logged weight, never auto-fill that field from suggestions. */
+const userEditedFirstSetWeight = ref(false)
 
 function isBlankLogField(v: unknown): boolean {
   return String(v ?? '').trim() === ''
 }
 
 function tryApplyFirstSetPrefill() {
-  if (props.exercise.isCircuit || predictionApplied.value) return
+  if (props.exercise.isCircuit || userEditedFirstSetWeight.value) return
   const first = props.exercise.sets[0]
   if (!first || !isBlankLogField(first.weight)) return
   if (!suggestion.value) return
@@ -72,8 +129,14 @@ function tryApplyFirstSetPrefill() {
   const weightStr = displayInputToStoredLbsString(String(sw), 'lb')
   if (!weightStr) return
 
-  predictionApplied.value = true
   emit('prefillFirstSet', first.id, { weight: weightStr })
+}
+
+function onSetRowUpdate(setId: string, index: number, field: 'reps' | 'weight', value: string) {
+  if (index === 0 && field === 'weight') {
+    userEditedFirstSetWeight.value = true
+  }
+  emit('updateSet', setId, field, value)
 }
 
 watch(
@@ -119,9 +182,9 @@ watch(
 )
 
 watch(
-  () => [props.exercise.name, props.exercise.sets[0]?.id] as const,
+  () => [props.exercise.id, props.exercise.name, props.exercise.sets[0]?.id] as const,
   () => {
-    predictionApplied.value = false
+    userEditedFirstSetWeight.value = false
   },
 )
 
@@ -242,6 +305,55 @@ function closeLibraryDetail() {
     </div>
 
     <div
+      class="mb-2 flex gap-1 rounded-lg border border-border bg-card-inner p-0.5"
+      role="tablist"
+      aria-label="Exercise sections"
+    >
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activePanel === 'sets'"
+        class="min-h-[2.25rem] flex-1 rounded-md px-2 text-xs font-bold transition-colors"
+        :class="
+          activePanel === 'sets'
+            ? 'bg-card text-foreground shadow-sm'
+            : 'text-muted hover:text-foreground'
+        "
+        @click="activePanel = 'sets'"
+      >
+        Sets
+      </button>
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activePanel === 'notes'"
+        class="min-h-[2.25rem] flex-1 rounded-md px-2 text-xs font-bold transition-colors"
+        :class="
+          activePanel === 'notes'
+            ? 'bg-card text-foreground shadow-sm'
+            : 'text-muted hover:text-foreground'
+        "
+        @click="activePanel = 'notes'"
+      >
+        Notes
+      </button>
+    </div>
+
+    <div v-show="activePanel === 'notes'" class="mb-2">
+      <label class="sr-only" :for="`exercise-notes-${exercise.id}`">Notes for this exercise</label>
+      <textarea
+        :id="`exercise-notes-${exercise.id}`"
+        v-model="notesDraft"
+        rows="4"
+        class="w-full resize-y rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+        placeholder="Session notes for this exercise (saved automatically)…"
+        @input="scheduleNotesCommit"
+        @blur="flushNotesCommit"
+      />
+    </div>
+
+    <div v-show="activePanel === 'sets'">
+    <div
       v-if="goalsEditorOpen && !exercise.isCircuit"
       :id="`exercise-goals-editor-${exercise.id}`"
       class="mb-2 grid grid-cols-2 gap-2"
@@ -316,7 +428,10 @@ function closeLibraryDetail() {
         :set="set"
         :index="index"
         :target-reps="exercise.targetReps"
-        @update="(f, v) => emit('updateSet', set.id, f, v)"
+        :target-weight-stored="index === 0 ? exercise.targetWeight : undefined"
+        :prior-set-weight-stored="index > 0 ? exercise.sets[index - 1]?.weight : undefined"
+        :prior-set-reps="index > 0 ? exercise.sets[index - 1]?.reps : undefined"
+        @update="(f, v) => onSetRowUpdate(set.id, index, f, v)"
         @delete="emit('deleteSet', set.id)"
       />
       <button
@@ -327,6 +442,7 @@ function closeLibraryDetail() {
         + Add Set
       </button>
     </template>
+    </div>
 
     <ExerciseDetailSheet
       :open="detailOpen"

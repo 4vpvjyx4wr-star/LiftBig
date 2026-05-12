@@ -79,6 +79,26 @@ export function getDefaultLogRepsForTarget(targetReps: string): string {
   return String(max)
 }
 
+const REP_PICKER_MAX = 50
+
+/** Rep quick-pick list: 50 down to 1. */
+export const REP_QUICK_PICK_DESCENDING: readonly string[] = Array.from(
+  { length: REP_PICKER_MAX },
+  (_, i) => String(REP_PICKER_MAX - i),
+)
+
+/**
+ * Programmed rep-range ceiling for scrolling the picker (1–50), or null when there is no finite target
+ * (no goal, AMRAP, unparsable).
+ */
+export function finiteGoalRepMaxForScroll(targetReps: string | undefined): number | null {
+  const g = (targetReps ?? '').trim()
+  if (!g) return null
+  const { max } = parseRepRange(g)
+  if (max <= 0 || max >= 9999) return null
+  return Math.min(REP_PICKER_MAX, max)
+}
+
 export function getSuggestedWeight(
   exerciseName: string,
   targetRepGoal: string,

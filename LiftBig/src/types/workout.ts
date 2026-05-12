@@ -13,6 +13,8 @@ export type Exercise = {
   isCircuit?: boolean
   targetReps?: string
   targetWeight?: string
+  /** Session notes for this exercise on the logged day (stored in the workout log). */
+  notes?: string
 }
 
 /** Single-day payload (with optional notes), or legacy flat exercise list */

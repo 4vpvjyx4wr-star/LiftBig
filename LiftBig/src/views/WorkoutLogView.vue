@@ -32,7 +32,12 @@ const dateKey = computed(() => {
 })
 
 const exercises = ref<Exercise[]>([])
-const notes = ref('')
+/** Draft for the workout-level notes box; debounced into storage (per day). */
+const workoutNotesDraft = ref('')
+let workoutNotesBoundDate = ''
+let workoutNotesTimer: ReturnType<typeof setTimeout> | null = null
+const WORKOUT_NOTES_DEBOUNCE_MS = 550
+
 const inputName = ref('')
 const libraryOpen = ref(false)
 const swapModalExerciseId = ref<string | null>(null)
@@ -60,11 +65,35 @@ const inlineLibraryMatches = computed(() => {
   return searchLibrary(needle, 'all').slice(0, 5)
 })
 
+function flushWorkoutNotesForDate(dateKeyToSave: string) {
+  if (workoutNotesTimer) {
+    clearTimeout(workoutNotesTimer)
+    workoutNotesTimer = null
+  }
+  if (!dateKeyToSave) return
+  workouts.setDayNotes(dateKeyToSave, workoutNotesDraft.value)
+}
+
+function scheduleWorkoutNotesPersist() {
+  const k = dateKey.value
+  if (!k) return
+  workoutNotesBoundDate = k
+  if (workoutNotesTimer) clearTimeout(workoutNotesTimer)
+  workoutNotesTimer = setTimeout(() => {
+    workoutNotesTimer = null
+    workouts.setDayNotes(k, workoutNotesDraft.value)
+  }, WORKOUT_NOTES_DEBOUNCE_MS)
+}
+
 function loadDay() {
   const k = dateKey.value
   if (!k) return
+  if (workoutNotesBoundDate && workoutNotesBoundDate !== k) {
+    flushWorkoutNotesForDate(workoutNotesBoundDate)
+  }
   exercises.value = JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]
-  notes.value = workouts.getDayNotesForDate(k)
+  workoutNotesDraft.value = workouts.getDayNotesForDate(k)
+  workoutNotesBoundDate = k
 }
 
 watch(dateKey, loadDay, { immediate: true })
@@ -78,12 +107,6 @@ watch(
   },
   { deep: true },
 )
-
-watch(notes, (value) => {
-  const k = dateKey.value
-  if (!k) return
-  workouts.setDayNotes(k, value)
-})
 
 const workoutLogPlain = computed(() => workouts.log.value)
 
@@ -136,7 +159,10 @@ watch(
   },
 )
 
-onBeforeUnmount(destroyExerciseSortable)
+onBeforeUnmount(() => {
+  flushWorkoutNotesForDate(workoutNotesBoundDate)
+  destroyExerciseSortable()
+})
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -258,6 +284,16 @@ function updateExerciseGoals(
         ? displayInputToStoredLbsString(t, settings.weightUnit.value)
         : undefined
     }
+    return next
+  })
+}
+
+function updateExerciseNotes(exerciseId: string, notes: string) {
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    const next: Exercise = { ...ex }
+    if (!notes) delete next.notes
+    else next.notes = notes
     return next
   })
 }
@@ -437,9 +473,11 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       <section class="mb-3.5 rounded-xl border border-border bg-card p-3.5">
         <h2 class="text-sm font-bold uppercase tracking-wide text-muted">Notes</h2>
         <textarea
-          v-model="notes"
+          v-model="workoutNotesDraft"
           class="mt-2 min-h-24 w-full resize-y rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-          placeholder="Add notes for this workout..."
+          placeholder="Add notes for this workout (saved automatically)…"
+          @input="scheduleWorkoutNotesPersist"
+          @blur="flushWorkoutNotesForDate(workoutNotesBoundDate)"
         />
       </section>
 
@@ -462,6 +500,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
           @swap-exercise="openSwapExercise(ex.id)"
           @delete-exercise="deleteExercise(ex.id)"
           @update-goals="(patch) => updateExerciseGoals(ex.id, patch)"
+          @update-notes="(n) => updateExerciseNotes(ex.id, n)"
         />
       </div>
 
