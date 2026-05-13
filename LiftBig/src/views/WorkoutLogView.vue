@@ -229,24 +229,6 @@ function updateSet(exerciseId: string, setId: string, field: 'reps' | 'weight', 
   })
 }
 
-/** Apply weight + reps together so the first-set prediction does not trip per-field guards. */
-function prefillFirstSet(
-  exerciseId: string,
-  setId: string,
-  patch: { weight?: string; reps?: string },
-) {
-  exercises.value = exercises.value.map((ex) => {
-    if (ex.id !== exerciseId) return ex
-    return {
-      ...ex,
-      sets: ex.sets.map((s) => {
-        if (s.id !== setId) return s
-        return { ...s, ...patch }
-      }),
-    }
-  })
-}
-
 function toggleCircuitSet(exerciseId: string, setId: string) {
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== exerciseId) return ex
@@ -494,7 +476,6 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
           :workout-log="workoutLogPlain"
           @add-set="addSet(ex.id)"
           @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
-          @prefill-first-set="(setId, patch) => prefillFirstSet(ex.id, setId, patch)"
           @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
           @delete-set="(setId) => deleteSet(ex.id, setId)"
           @swap-exercise="openSwapExercise(ex.id)"

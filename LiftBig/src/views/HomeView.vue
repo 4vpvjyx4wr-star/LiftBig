@@ -3,6 +3,9 @@ import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import MonthGrid from '@/components/calendar/MonthGrid.vue'
 import MonthNav from '@/components/calendar/MonthNav.vue'
+import MoveDaySheet from '@/components/calendar/MoveDaySheet.vue'
+import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
+import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import AssignPlanSheet from '@/components/plans/AssignPlanSheet.vue'
 import {
   settingsInjectionKey,
@@ -12,7 +15,19 @@ import {
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise, WorkoutTemplate } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
-import { formatMaxWeightDisplay } from '@/utils/units'
+import {
+  displayInputToStoredLbsString,
+  formatMaxWeightDisplay,
+  formatWeightWithUnit,
+  parseStoredLbs,
+  storedLbsStringToDisplay,
+} from '@/utils/units'
+import {
+  formatPlanDurationEstimate,
+  planDurationAssumptionsFromSeconds,
+} from '@/utils/planDuration'
+import { getLibraryExercise, searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { getSuggestedWeight } from '@/utils/progressiveOverload'
 
 const workouts = inject(workoutsInjectionKey)!
 const templates = inject(templatesInjectionKey)!
@@ -52,6 +67,8 @@ const templateList = computed(() => templates.templates.value)
 
 const dayExercises = computed(() => workouts.getDay(selectedDate.value))
 const exerciseCount = computed(() => dayExercises.value.length)
+const dayPlanName = computed(() => workouts.getPlanName(selectedDate.value))
+const dayPlanFolderName = computed(() => workouts.getPlanFolderName(selectedDate.value))
 
 const trained = computed(() => trainedDaysInMonth(workoutLogPlain.value))
 const loggedRest = computed(() => loggedRestDaysInMonth(workoutLogPlain.value))
@@ -82,6 +99,18 @@ function dayStats(exercises: Exercise[]) {
 
 const selectedDayStats = computed(() => dayStats(dayExercises.value))
 
+const selectedDayDuration = computed(() => {
+  const totalSets = selectedDayStats.value.sets
+  if (totalSets <= 0) return ''
+  const assumptions = planDurationAssumptionsFromSeconds(
+    settings.averageLiftSeconds.value,
+    settings.averageRestSeconds.value,
+  )
+  const minutes =
+    totalSets * assumptions.minutesPerSet + (totalSets - 1) * assumptions.minutesRestBetweenSets
+  return formatPlanDurationEstimate(minutes)
+})
+
 function deleteDay() {
   const msg = selectedIsRest.value
     ? 'Remove this rest day from the calendar?'
@@ -90,9 +119,169 @@ function deleteDay() {
   workouts.deleteDay(selectedDate.value)
 }
 
-function onAssignPlan(payload: { template: WorkoutTemplate; restDaysPerWeek: number }) {
-  workouts.applyPlanWithWeeklyRest(selectedDate.value, payload.template, payload.restDaysPerWeek)
+function onAssignPlan(payload: { template: WorkoutTemplate; restDaysPerWeek: number; folderName?: string }) {
+  workouts.applyPlanWithWeeklyRest(selectedDate.value, payload.template, payload.restDaysPerWeek, payload.folderName)
   planSheetOpen.value = false
+}
+
+const moveSheetOpen = ref(false)
+const detailOpen = ref(false)
+const detailExercise = ref<LibraryExercise | null>(null)
+
+function openLibraryDetail(libraryId: string | undefined) {
+  if (!libraryId) return
+  const entry = getLibraryExercise(libraryId)
+  if (!entry) return
+  detailExercise.value = entry
+  detailOpen.value = true
+}
+
+function closeLibraryDetail() {
+  detailOpen.value = false
+  detailExercise.value = null
+}
+
+function onMoveDone(targetDate: string, action: 'move' | 'swap') {
+  if (action === 'swap') {
+    workouts.swapDays(selectedDate.value, targetDate)
+  } else {
+    workouts.moveDay(selectedDate.value, targetDate)
+  }
+  moveSheetOpen.value = false
+  selectedDate.value = targetDate
+}
+
+function exerciseGoalLabel(ex: Exercise): string {
+  const parts: string[] = []
+  const setCount = ex.sets.length
+  parts.push(`${setCount} set${setCount !== 1 ? 's' : ''}`)
+
+  if (ex.targetReps) {
+    parts.push(`× ${ex.targetReps}`)
+  }
+
+  if (ex.targetWeight) {
+    const lbs = parseStoredLbs(ex.targetWeight)
+    if (!Number.isNaN(lbs)) {
+      const { suggestedWeight } = getSuggestedWeight(
+        ex.name,
+        ex.targetReps ?? '',
+        lbs,
+        workouts.log.value,
+        weightUnit.value,
+      )
+      parts.push(`@ ${formatWeightWithUnit(suggestedWeight, weightUnit.value, 1)}`)
+    }
+  }
+
+  return parts.join(' ')
+}
+
+function removeExercise(exerciseId: string, exerciseName: string) {
+  if (!confirm(`Remove "${exerciseName}" from this day?`)) return
+  const updated = dayExercises.value.filter((ex) => ex.id !== exerciseId)
+  workouts.setDay(selectedDate.value, updated)
+}
+
+const editingGoalsId = ref<string | null>(null)
+const editGoalRepsDraft = ref('')
+const editGoalWeightDraft = ref('')
+
+function openGoalEditor(ex: Exercise) {
+  editingGoalsId.value = ex.id
+  editGoalRepsDraft.value = ex.targetReps ?? ''
+  editGoalWeightDraft.value = ex.targetWeight
+    ? storedLbsStringToDisplay(ex.targetWeight, weightUnit.value)
+    : ''
+}
+
+function saveGoalEdits() {
+  const id = editingGoalsId.value
+  if (!id) return
+  const updated = dayExercises.value.map((ex) => {
+    if (ex.id !== id) return ex
+    const next = { ...ex }
+    const reps = editGoalRepsDraft.value.trim()
+    next.targetReps = reps || undefined
+    const w = editGoalWeightDraft.value.trim()
+    next.targetWeight = w ? displayInputToStoredLbsString(w, weightUnit.value) : undefined
+    return next
+  })
+  workouts.setDay(selectedDate.value, updated)
+  editingGoalsId.value = null
+}
+
+function cancelGoalEdits() {
+  editingGoalsId.value = null
+}
+
+const addPanelOpen = ref(false)
+const addInputName = ref('')
+const addGoalReps = ref('')
+const addGoalWeightStoredLbs = ref('')
+const showInlineMatches = ref(false)
+const libraryPickerOpen = ref(false)
+
+const inlineLibraryMatches = computed(() => {
+  const needle = addInputName.value.trim()
+  if (!needle) return []
+  return searchLibrary(needle, 'all').slice(0, 5)
+})
+
+function newId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+function addExerciseGoals(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> {
+  const out: Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> = {}
+  const reps = addGoalReps.value.trim()
+  const w = addGoalWeightStoredLbs.value.trim()
+  if (reps) out.targetReps = reps
+  if (w) out.targetWeight = w
+  return out
+}
+
+function addManualExercise() {
+  const trimmed = addInputName.value.trim()
+  if (!trimmed) return
+  const ex: Exercise = {
+    id: newId(),
+    name: trimmed,
+    ...addExerciseGoals(),
+    sets: [{ id: newId(), reps: '', weight: '' }],
+  }
+  workouts.appendExercises(selectedDate.value, [ex])
+  addInputName.value = ''
+}
+
+function addFromLibrary(lib: LibraryExercise) {
+  const ex: Exercise = {
+    id: newId(),
+    name: lib.name,
+    libraryId: lib.id,
+    ...addExerciseGoals(),
+    sets: [{ id: newId(), reps: '', weight: '' }],
+  }
+  workouts.appendExercises(selectedDate.value, [ex])
+}
+
+function addFromInlineMatch(lib: LibraryExercise) {
+  addFromLibrary(lib)
+  addInputName.value = ''
+  showInlineMatches.value = false
+}
+
+function hideInlineMatchesSoon() {
+  window.setTimeout(() => {
+    showInlineMatches.value = false
+  }, 120)
+}
+
+function openAddPanel() {
+  addInputName.value = ''
+  addGoalReps.value = ''
+  addGoalWeightStoredLbs.value = ''
+  addPanelOpen.value = true
 }
 
 function toggleRestDay() {
@@ -145,32 +334,38 @@ function onPickDay(key: string) {
       />
     </div>
 
-    <section class="mt-4 rounded-xl border border-border bg-card p-4">
-      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-        <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
-        <div class="flex flex-wrap gap-2 sm:justify-end">
-          <RouterLink
-            :to="`/workout/${selectedDate}`"
-            class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue px-4 py-2.5 text-center text-sm font-bold text-foreground min-[400px]:flex-none sm:min-w-[7rem]"
-          >
-            {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
-          </RouterLink>
-          <button
-            type="button"
-            class="rounded-lg border border-teal-800/60 bg-teal-950/35 px-4 py-2.5 text-sm font-bold text-teal-200"
-            @click="toggleRestDay"
-          >
-            {{ selectedIsRest ? 'Clear rest day' : 'Rest day' }}
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-red-900/50 bg-card-inner px-4 py-2.5 text-sm font-bold text-red-400"
-            :disabled="exerciseCount === 0 && !selectedIsRest"
-            @click="deleteDay"
-          >
-            Delete day
-          </button>
-        </div>
+    <section class="relative mt-4 rounded-xl border border-border bg-card p-4">
+      <button
+        type="button"
+        class="absolute right-3 top-3 rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-foreground disabled:opacity-40"
+        :disabled="exerciseCount === 0"
+        @click="moveSheetOpen = true"
+      >
+        <i class="fa-solid fa-right-left mr-1 text-[10px] text-muted" aria-hidden="true" />Move / Swap
+      </button>
+      <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
+      <div class="mt-2 flex gap-2">
+        <RouterLink
+          :to="`/workout/${selectedDate}`"
+          class="inline-flex flex-1 items-center justify-center rounded-lg bg-blue px-4 py-2.5 text-center text-sm font-bold text-foreground"
+        >
+          {{ exerciseCount === 0 ? 'Log workout' : 'Open log' }}
+        </RouterLink>
+        <button
+          type="button"
+          class="flex-1 rounded-lg border border-teal-800/60 bg-teal-950/35 px-4 py-2.5 text-sm font-bold text-teal-200"
+          @click="toggleRestDay"
+        >
+          {{ selectedIsRest ? 'Clear rest day' : 'Rest day' }}
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-lg border border-red-900/50 bg-card-inner px-4 py-2.5 text-sm font-bold text-red-400"
+          :disabled="exerciseCount === 0 && !selectedIsRest"
+          @click="deleteDay"
+        >
+          Delete day
+        </button>
       </div>
 
       <template v-if="selectedIsRest">
@@ -180,20 +375,191 @@ function onPickDay(key: string) {
         <p class="mt-2 text-sm text-muted">No workout logged for this day.</p>
       </template>
       <template v-else>
+        <p v-if="dayPlanName" class="mt-3">
+          <span class="text-base font-extrabold text-foreground">{{ dayPlanName }}</span>
+          <span v-if="dayPlanFolderName" class="ml-1.5 text-xs text-muted">({{ dayPlanFolderName }})</span>
+        </p>
         <p class="mt-2 text-xs text-muted">
-          {{ selectedDayStats.sets }} sets · {{ selectedDayStats.reps }} total reps (where entered) ·
+          {{ selectedDayDuration }} · {{ selectedDayStats.sets }} sets · {{ selectedDayStats.reps }} total reps (where entered) ·
           max {{ formatMaxWeightDisplay(selectedDayStats.maxW, weightUnit) }}
         </p>
         <ul class="mt-3 space-y-2">
           <li
             v-for="ex in dayExercises"
             :key="ex.id"
-            class="rounded-lg border border-border bg-card-inner px-3 py-2"
+            class="flex items-center gap-2 rounded-lg border border-border bg-card-inner px-3 py-2"
           >
-            <div class="font-bold text-foreground">{{ ex.name }}</div>
-            <div class="text-xs text-muted">{{ ex.sets.length }} sets</div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <RouterLink
+                  :to="`/workout/${selectedDate}`"
+                  class="font-bold text-foreground hover:text-primary"
+                >
+                  {{ ex.name }}
+                </RouterLink>
+                <button
+                  v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
+                  type="button"
+                  class="text-primary hover:text-foreground"
+                  aria-label="How to perform this exercise"
+                  @click="openLibraryDetail(ex.libraryId)"
+                >
+                  <i class="fa-solid fa-circle-info text-xs" aria-hidden="true" />
+                </button>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-muted">{{ exerciseGoalLabel(ex) }}</span>
+                <button
+                  type="button"
+                  class="text-muted hover:text-primary"
+                  aria-label="Edit goals"
+                  @click="editingGoalsId === ex.id ? cancelGoalEdits() : openGoalEditor(ex)"
+                >
+                  <i class="fa-solid fa-pen text-[10px]" aria-hidden="true" />
+                </button>
+              </div>
+              <div
+                v-if="editingGoalsId === ex.id"
+                class="mt-2 rounded-lg border border-border bg-card p-2.5"
+              >
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+                    <input
+                      v-model="editGoalRepsDraft"
+                      type="text"
+                      class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                      placeholder="e.g. 8–12"
+                      inputmode="text"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+                    <input
+                      v-model="editGoalWeightDraft"
+                      type="text"
+                      inputmode="decimal"
+                      class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                      :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+                    />
+                  </div>
+                </div>
+                <div class="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    class="flex-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-foreground"
+                    @click="saveGoalEdits"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    class="flex-1 rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-muted"
+                    @click="cancelGoalEdits"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-red-400 hover:bg-red-900/30"
+              aria-label="Remove exercise"
+              @click="removeExercise(ex.id, ex.name)"
+            >
+              <i class="fa-solid fa-xmark text-sm" aria-hidden="true" />
+            </button>
           </li>
         </ul>
+        <div v-if="addPanelOpen" class="mt-3 rounded-lg border border-border bg-card-inner p-3">
+          <div class="relative">
+            <input
+              v-model="addInputName"
+              type="text"
+              class="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
+              placeholder="Exercise name..."
+              @focus="showInlineMatches = true"
+              @blur="hideInlineMatchesSoon"
+              @keydown.enter="addManualExercise"
+            />
+            <div
+              v-if="showInlineMatches && inlineLibraryMatches.length > 0"
+              class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
+            >
+              <button
+                v-for="match in inlineLibraryMatches"
+                :key="match.id"
+                type="button"
+                class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
+                @click="addFromInlineMatch(match)"
+              >
+                <span class="font-semibold">{{ match.name }}</span>
+                <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+              <input
+                v-model="addGoalReps"
+                type="text"
+                class="mt-0.5 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                placeholder="e.g. 8–12"
+                inputmode="text"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+              <input
+                :value="storedLbsStringToDisplay(addGoalWeightStoredLbs, weightUnit)"
+                type="text"
+                inputmode="decimal"
+                class="mt-0.5 w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+                @input="
+                  addGoalWeightStoredLbs = displayInputToStoredLbsString(
+                    ($event.target as HTMLInputElement).value,
+                    weightUnit,
+                  )
+                "
+              />
+            </div>
+          </div>
+          <div class="mt-2 flex gap-2">
+            <button
+              type="button"
+              class="flex-1 rounded-lg bg-blue px-4 py-2.5 text-sm font-bold text-foreground"
+              @click="addManualExercise"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              class="flex-1 rounded-lg border border-primary/50 bg-card px-4 py-2.5 text-sm font-bold text-primary"
+              @click="libraryPickerOpen = true"
+            >
+              Library
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-bold text-muted"
+              @click="addPanelOpen = false"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+        <button
+          v-else
+          type="button"
+          class="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card-inner px-4 py-2.5 text-sm font-bold text-foreground"
+          @click="openAddPanel"
+        >
+          <i class="fa-solid fa-plus text-xs text-muted" aria-hidden="true" />
+          Add exercise
+        </button>
       </template>
 
       <div class="mt-4 flex flex-wrap gap-2">
@@ -210,5 +576,17 @@ function onPickDay(key: string) {
     </section>
 
     <AssignPlanSheet :open="planSheetOpen" @close="planSheetOpen = false" @pick="onAssignPlan" />
+    <MoveDaySheet
+      :open="moveSheetOpen"
+      :source-date="selectedDate"
+      @close="moveSheetOpen = false"
+      @done="onMoveDone"
+    />
+    <ExerciseDetailSheet :open="detailOpen" :exercise="detailExercise" @close="closeLibraryDetail" />
+    <LibraryPickerModal
+      :show="libraryPickerOpen"
+      @close="libraryPickerOpen = false"
+      @pick="addFromLibrary"
+    />
   </div>
 </template>

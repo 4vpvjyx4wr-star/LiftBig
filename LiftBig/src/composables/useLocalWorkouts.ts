@@ -1,6 +1,8 @@
 import { ref, watch } from 'vue'
 import {
   getDayExercises,
+  getDayPlanFolderName,
+  getDayPlanName,
   isRestDayEntry,
   type Exercise,
   type WorkoutDay,
@@ -132,15 +134,33 @@ export function useLocalWorkouts() {
     flush()
   }
 
+  function getPlanName(dateKey: string): string | undefined {
+    return getDayPlanName(log.value[dateKey])
+  }
+
+  function getPlanFolderName(dateKey: string): string | undefined {
+    return getDayPlanFolderName(log.value[dateKey])
+  }
+
   /** Apply template starting at `startDateKey`. If `restDaysPerWeek` is 0, only that day gets the plan. Otherwise each 7-day block through month end gets training days filled and rest slots marked (empty days only). */
   function applyPlanWithWeeklyRest(
     startDateKey: string,
     template: WorkoutTemplate,
     restDaysPerWeek: number,
+    folderName?: string,
   ) {
     const r = Math.min(6, Math.max(0, Math.round(restDaysPerWeek)))
     if (r === 0) {
-      appendExercises(startDateKey, cloneTemplateToExercises(template))
+      const existing = getDayExercises(log.value[startDateKey])
+      const preservedNotes = dayNotes(log.value[startDateKey])
+      const added = cloneTemplateToExercises(template)
+      const entry: WorkoutDay = {
+        exercises: [...existing, ...added],
+        planName: template.name,
+      }
+      if (folderName) entry.planFolderName = folderName
+      if (preservedNotes !== undefined) entry.notes = preservedNotes
+      log.value = { ...log.value, [startDateKey]: entry }
       flush()
       return
     }
@@ -160,10 +180,13 @@ export function useLocalWorkouts() {
         const preservedNotes = dayNotes(entry)
         if (pos < trainingSlots) {
           const added = cloneTemplateToExercises(template)
-          next[current] =
-            preservedNotes !== undefined
-              ? { exercises: added, notes: preservedNotes }
-              : added
+          const dayEntry: WorkoutDay = {
+            exercises: added,
+            planName: template.name,
+          }
+          if (folderName) dayEntry.planFolderName = folderName
+          if (preservedNotes !== undefined) dayEntry.notes = preservedNotes
+          next[current] = dayEntry
         } else {
           next[current] =
             preservedNotes !== undefined
@@ -179,6 +202,28 @@ export function useLocalWorkouts() {
     flush()
   }
 
+  function moveDay(fromKey: string, toKey: string) {
+    const next = { ...log.value }
+    const fromEntry = next[fromKey]
+    if (fromEntry === undefined) return
+    next[toKey] = fromEntry
+    delete next[fromKey]
+    log.value = next
+    flush()
+  }
+
+  function swapDays(keyA: string, keyB: string) {
+    const next = { ...log.value }
+    const entryA = next[keyA]
+    const entryB = next[keyB]
+    if (entryA !== undefined) next[keyB] = entryA
+    else delete next[keyB]
+    if (entryB !== undefined) next[keyA] = entryB
+    else delete next[keyA]
+    log.value = next
+    flush()
+  }
+
   return {
     log,
     flush,
@@ -190,6 +235,10 @@ export function useLocalWorkouts() {
     deleteDay,
     isRestDay,
     markRestDay,
+    getPlanName,
+    getPlanFolderName,
     applyPlanWithWeeklyRest,
+    moveDay,
+    swapDays,
   }
 }

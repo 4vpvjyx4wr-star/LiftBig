@@ -23,6 +23,10 @@ export type WorkoutDay = {
   notes?: string
   /** Logged rest day: counts toward consistency; no exercises */
   isRestDay?: boolean
+  /** Name of the plan/template that was assigned to this day. */
+  planName?: string
+  /** Name of the folder the plan belonged to when assigned. */
+  planFolderName?: string
 }
 
 export type WorkoutLogDay = Exercise[] | WorkoutDay
@@ -33,6 +37,18 @@ export function getDayExercises(dayEntry: WorkoutLogDay | undefined): Exercise[]
   if (dayEntry == null) return []
   if (Array.isArray(dayEntry)) return dayEntry
   return Array.isArray(dayEntry.exercises) ? dayEntry.exercises : []
+}
+
+export function getDayPlanName(dayEntry: WorkoutLogDay | undefined): string | undefined {
+  if (dayEntry == null) return undefined
+  if (Array.isArray(dayEntry)) return undefined
+  return dayEntry.planName
+}
+
+export function getDayPlanFolderName(dayEntry: WorkoutLogDay | undefined): string | undefined {
+  if (dayEntry == null) return undefined
+  if (Array.isArray(dayEntry)) return undefined
+  return dayEntry.planFolderName
 }
 
 export function isRestDayEntry(dayEntry: WorkoutLogDay | undefined): boolean {

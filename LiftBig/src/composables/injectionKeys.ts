@@ -14,11 +14,16 @@ export type LocalWorkoutsApi = {
   deleteDay: (dateKey: string) => void
   isRestDay: (dateKey: string) => boolean
   markRestDay: (dateKey: string) => void
+  getPlanName: (dateKey: string) => string | undefined
+  getPlanFolderName: (dateKey: string) => string | undefined
   applyPlanWithWeeklyRest: (
     startDateKey: string,
     template: WorkoutTemplate,
     restDaysPerWeek: number,
+    folderName?: string,
   ) => void
+  moveDay: (fromKey: string, toKey: string) => void
+  swapDays: (keyA: string, keyB: string) => void
 }
 
 export type TemplatesApi = {

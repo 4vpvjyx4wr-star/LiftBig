@@ -1502,6 +1502,38 @@ export function getComparableLibraryExercises(exercise: {
   })
 }
 
+const SEARCH_TAG_ALIASES: Record<string, MuscleGroup[]> = {
+  legs: ['quads', 'hamstrings', 'glutes', 'calves'],
+  leg: ['quads', 'hamstrings', 'glutes', 'calves'],
+  'lower body': ['quads', 'hamstrings', 'glutes', 'calves'],
+  lower: ['quads', 'hamstrings', 'glutes', 'calves'],
+  arms: ['biceps', 'triceps', 'forearms'],
+  arm: ['biceps', 'triceps', 'forearms'],
+  'upper body': ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
+  upper: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
+  push: ['chest', 'shoulders', 'triceps'],
+  pull: ['back', 'biceps', 'forearms'],
+  abs: ['core'],
+  'posterior chain': ['hamstrings', 'glutes', 'back'],
+  hinge: ['hamstrings', 'glutes', 'back'],
+  pressing: ['chest', 'shoulders', 'triceps'],
+  press: ['chest', 'shoulders', 'triceps'],
+  rowing: ['back', 'biceps'],
+  curls: ['biceps', 'forearms'],
+  curl: ['biceps', 'forearms'],
+  extension: ['triceps', 'quads'],
+}
+
+function resolveAliasGroups(needle: string): Set<MuscleGroup> {
+  const groups = new Set<MuscleGroup>()
+  for (const [alias, mapped] of Object.entries(SEARCH_TAG_ALIASES)) {
+    if (needle.includes(alias) || alias.includes(needle)) {
+      for (const g of mapped) groups.add(g)
+    }
+  }
+  return groups
+}
+
 export function searchLibrary(
   q: string,
   group: MuscleGroup | 'all',
@@ -1512,6 +1544,7 @@ export function searchLibrary(
     list = list.filter((ex) => ex.muscleGroups.includes(group))
   }
   if (!needle) return [...list].sort((a, b) => a.name.localeCompare(b.name))
+  const aliasGroups = resolveAliasGroups(needle)
   return list
     .filter((ex) => {
       if (ex.name.toLowerCase().includes(needle)) return true
@@ -1519,7 +1552,9 @@ export function searchLibrary(
       if (ex.equipment?.toLowerCase().includes(needle)) return true
       if (ex.tags?.some((t) => t.toLowerCase().includes(needle))) return true
       if (ex.cues?.some((c) => c.toLowerCase().includes(needle))) return true
-      return ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))
+      if (ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))) return true
+      if (aliasGroups.size > 0 && ex.muscleGroups.some((g) => aliasGroups.has(g))) return true
+      return false
     })
     .sort((a, b) => a.name.localeCompare(b.name))
 }

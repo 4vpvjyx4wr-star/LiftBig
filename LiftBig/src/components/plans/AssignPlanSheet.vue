@@ -17,7 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  pick: [payload: { template: WorkoutTemplate; restDaysPerWeek: number }]
+  pick: [payload: { template: WorkoutTemplate; restDaysPerWeek: number; folderName?: string }]
 }>()
 
 const templatesApi = inject(templatesInjectionKey)!
@@ -113,7 +113,8 @@ function planDurationLabel(t: WorkoutTemplate): string {
 }
 
 function choose(t: WorkoutTemplate) {
-  emit('pick', { template: t, restDaysPerWeek: restDaysPerWeek.value })
+  const folder = t.folderId ? folders.value.find((f) => f.id === t.folderId) : undefined
+  emit('pick', { template: t, restDaysPerWeek: restDaysPerWeek.value, folderName: folder?.name })
 }
 
 watch(

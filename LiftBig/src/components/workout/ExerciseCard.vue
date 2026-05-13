@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
@@ -7,7 +7,6 @@ import type { Exercise, WorkoutLog } from '@/types/workout'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
 import { getSuggestedWeight } from '@/utils/progressiveOverload'
 import {
-  displayInputToStoredLbsString,
   formatWeightWithUnit,
   parseStoredLbs,
   storedLbsStringToDisplay,
@@ -44,7 +43,6 @@ const goalSummaryLine = computed(() => {
 const emit = defineEmits<{
   addSet: []
   updateSet: [setId: string, field: 'reps' | 'weight', value: string]
-  prefillFirstSet: [setId: string, patch: { weight?: string; reps?: string }]
   toggleCircuitSet: [setId: string]
   deleteSet: [setId: string]
   swapExercise: []
@@ -110,32 +108,8 @@ watch(activePanel, (next, prev) => {
 })
 
 const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
-/** After the user changes the first set's logged weight, never auto-fill that field from suggestions. */
-const userEditedFirstSetWeight = ref(false)
-
-function isBlankLogField(v: unknown): boolean {
-  return String(v ?? '').trim() === ''
-}
-
-function tryApplyFirstSetPrefill() {
-  if (props.exercise.isCircuit || userEditedFirstSetWeight.value) return
-  const first = props.exercise.sets[0]
-  if (!first || !isBlankLogField(first.weight)) return
-  if (!suggestion.value) return
-
-  const sw = suggestion.value.suggestedWeight
-  if (!Number.isFinite(sw) || sw <= 0) return
-
-  const weightStr = displayInputToStoredLbsString(String(sw), 'lb')
-  if (!weightStr) return
-
-  emit('prefillFirstSet', first.id, { weight: weightStr })
-}
 
 function onSetRowUpdate(setId: string, index: number, field: 'reps' | 'weight', value: string) {
-  if (index === 0 && field === 'weight') {
-    userEditedFirstSetWeight.value = true
-  }
   emit('updateSet', setId, field, value)
 }
 
@@ -180,34 +154,6 @@ watch(
   },
   { deep: true, immediate: true },
 )
-
-watch(
-  () => [props.exercise.id, props.exercise.name, props.exercise.sets[0]?.id] as const,
-  () => {
-    userEditedFirstSetWeight.value = false
-  },
-)
-
-watch(
-  () =>
-    [
-      props.exercise.isCircuit,
-      props.exercise.targetReps,
-      props.exercise.targetWeight,
-      props.exercise.sets[0]?.id,
-      props.exercise.sets[0]?.weight,
-      suggestion.value?.suggestedWeight,
-      suggestion.value?.reason,
-    ] as const,
-  tryApplyFirstSetPrefill,
-  { immediate: true },
-)
-
-onMounted(() => {
-  nextTick(() => {
-    tryApplyFirstSetPrefill()
-  })
-})
 
 const completedSets = computed(() =>
   props.exercise.sets.filter((s) =>
@@ -264,20 +210,22 @@ function closeLibraryDetail() {
         </div>
         <div
           v-if="!exercise.isCircuit"
-          class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"
+          class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
         >
-          <button
-            type="button"
-            class="shrink-0 text-xs font-semibold text-muted hover:text-primary"
-            :aria-expanded="goalsEditorOpen"
-            :aria-controls="`exercise-goals-editor-${exercise.id}`"
-            @click="goalsEditorOpen = !goalsEditorOpen"
-          >
-            {{ goalsEditorOpen ? 'Hide goals' : 'Set goals' }}
-          </button>
-          <p v-if="goalSummaryLine" class="min-w-0 flex-1 text-[11px] leading-snug text-muted">
+          <p v-if="goalSummaryLine" class="min-w-0 text-[11px] leading-snug text-muted">
             {{ goalSummaryLine }}
           </p>
+          <span v-else class="text-[11px] text-muted">No goals set</span>
+          <button
+            type="button"
+            class="shrink-0 text-muted hover:text-primary"
+            :aria-expanded="goalsEditorOpen"
+            :aria-controls="`exercise-goals-editor-${exercise.id}`"
+            aria-label="Edit goals"
+            @click="goalsEditorOpen = !goalsEditorOpen"
+          >
+            <i class="fa-solid fa-pen text-[10px]" aria-hidden="true" />
+          </button>
         </div>
       </div>
       <div class="flex shrink-0 flex-col items-end gap-1">

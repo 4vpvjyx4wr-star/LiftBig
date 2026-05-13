@@ -139,44 +139,44 @@ body::before {
 }
 
 [data-theme='forest'] {
-  --color-background: #07140f;
-  --color-card: #0f241c;
-  --color-card-inner: #0a1a14;
-  --color-border: #1a3d2e;
-  --color-primary: #34d399;
-  --color-blue: #0d9488;
-  --color-blue-soft: #134e4a;
-  --color-foreground: #ecfdf5;
-  --color-muted: #5b7a6e;
-  --color-success: #22c55e;
+  --color-background: #04120b;
+  --color-card: #0a2018;
+  --color-card-inner: #071810;
+  --color-border: #22c55e;
+  --color-primary: #4ade80;
+  --color-blue: #14b8a6;
+  --color-blue-soft: #115e59;
+  --color-foreground: #f0fdf4;
+  --color-muted: #4d8b6a;
+  --color-success: #34d399;
   --color-success-text: #86efac;
 }
 
 [data-theme='violet'] {
-  --color-background: #0c0618;
-  --color-card: #160d28;
-  --color-card-inner: #120822;
-  --color-border: #2d1f4a;
-  --color-primary: #a78bfa;
-  --color-blue: #6366f1;
-  --color-blue-soft: #312e81;
+  --color-background: #0a0416;
+  --color-card: #150c2c;
+  --color-card-inner: #100720;
+  --color-border: #7c3aed;
+  --color-primary: #c084fc;
+  --color-blue: #818cf8;
+  --color-blue-soft: #3730a3;
   --color-foreground: #f5f3ff;
-  --color-muted: #7c6a9e;
-  --color-success: #22c55e;
+  --color-muted: #9b85c8;
+  --color-success: #34d399;
   --color-success-text: #a7f3d0;
 }
 
 [data-theme='sunset'] {
-  --color-background: #14080a;
-  --color-card: #221015;
-  --color-card-inner: #1a0c10;
-  --color-border: #3d1f28;
-  --color-primary: #fb7185;
-  --color-blue: #e11d48;
-  --color-blue-soft: #881337;
+  --color-background: #14060a;
+  --color-card: #260e16;
+  --color-card-inner: #1c0a10;
+  --color-border: #f43f5e;
+  --color-primary: #ff6b8a;
+  --color-blue: #fb923c;
+  --color-blue-soft: #9a3412;
   --color-foreground: #fff1f2;
-  --color-muted: #9f7a82;
-  --color-success: #16a34a;
+  --color-muted: #d4748a;
+  --color-success: #22c55e;
   --color-success-text: #bbf7d0;
 }
 
@@ -242,7 +242,7 @@ body::before {
     100% 100%;
 }
 
-/* Iron: steel gym floor + dumbbell tile */
+/* Iron: steel + dumbbell tile */
 [data-theme='iron'] {
   --color-background: #0f1115;
   --color-card: #181b22;
@@ -265,16 +265,16 @@ body::before {
 
 /* Caffeine: coffee lab — bonds + warm roast tones */
 [data-theme='caffeine'] {
-  --color-background: #1c140d;
-  --color-card: #2a1f16;
-  --color-card-inner: #221810;
-  --color-border: #5c4a3a;
-  --color-primary: #d4a574;
-  --color-blue: #8b6914;
-  --color-blue-soft: #4a3f32;
-  --color-foreground: #faf3ea;
-  --color-muted: #a89884;
-  --color-success: #65a30d;
+  --color-background: #1a1008;
+  --color-card: #2c1c0e;
+  --color-card-inner: #24160a;
+  --color-border: #d97706;
+  --color-primary: #f59e0b;
+  --color-blue: #b45309;
+  --color-blue-soft: #6b3a10;
+  --color-foreground: #fefce8;
+  --color-muted: #c4a060;
+  --color-success: #84cc16;
   --color-success-text: #d9f99d;
 }
 
@@ -324,15 +324,15 @@ body::before {
 
 /* Bubblegum: candy dots */
 [data-theme='bubblegum'] {
-  --color-background: #2a0a24;
-  --color-card: #3d1340;
-  --color-card-inner: #321035;
-  --color-border: #ec4899;
-  --color-primary: #f472b6;
-  --color-blue: #e879f9;
-  --color-blue-soft: #86198f;
-  --color-foreground: #fdf4ff;
-  --color-muted: #d8b4e2;
+  --color-background: #200820;
+  --color-card: #3a1040;
+  --color-card-inner: #2e0c34;
+  --color-border: #f472b6;
+  --color-primary: #ff6eb4;
+  --color-blue: #f0abfc;
+  --color-blue-soft: #a21caf;
+  --color-foreground: #fdf2f8;
+  --color-muted: #e08ec4;
   --color-success: #4ade80;
   --color-success-text: #bbf7d0;
 }
@@ -345,15 +345,15 @@ body::before {
 
 /* Midnight: star specks */
 [data-theme='midnight'] {
-  --color-background: #050816;
-  --color-card: #0f1629;
-  --color-card-inner: #0a1020;
-  --color-border: #2d3f6e;
-  --color-primary: #93c5fd;
-  --color-blue: #3b82f6;
-  --color-blue-soft: #1e3a8a;
+  --color-background: #030612;
+  --color-card: #0c1428;
+  --color-card-inner: #080e1e;
+  --color-border: #3b82f6;
+  --color-primary: #a5c8ff;
+  --color-blue: #60a5fa;
+  --color-blue-soft: #1e40af;
   --color-foreground: #eff6ff;
-  --color-muted: #7c9acd;
+  --color-muted: #7da0d8;
   --color-success: #34d399;
   --color-success-text: #a7f3d0;
 }
@@ -380,16 +380,16 @@ body::before {
 
 /* Sandstorm: desert grain */
 [data-theme='sandstorm'] {
-  --color-background: #1c1510;
-  --color-card: #2a2218;
-  --color-card-inner: #231c14;
-  --color-border: #5c4f3d;
+  --color-background: #18120a;
+  --color-card: #281e12;
+  --color-card-inner: #20180e;
+  --color-border: #f59e0b;
   --color-primary: #fbbf24;
-  --color-blue: #d97706;
-  --color-blue-soft: #78350f;
+  --color-blue: #f97316;
+  --color-blue-soft: #92400e;
   --color-foreground: #fffbeb;
-  --color-muted: #bfa88f;
-  --color-success: #84cc16;
+  --color-muted: #d4a95e;
+  --color-success: #a3e635;
   --color-success-text: #d9f99d;
 }
 
@@ -413,36 +413,37 @@ body::before {
   --color-card-inner: #190e14;
   --color-border: #be185d;
   --color-primary: #f43f5e;
-  --color-blue: #84cc16;
+  --color-blue: #a3e635;
   --color-blue-soft: #3f6212;
   --color-foreground: #fff1f2;
-  --color-muted: #d4a5af;
+  --color-muted: #c49aa8;
   --color-success: #a3e635;
   --color-success-text: #ecfccb;
 }
 
 [data-theme='cherrylime'] body::before {
-  opacity: 0.45;
+  opacity: 0.5;
   background: linear-gradient(
     135deg,
-    rgba(244, 63, 94, 0.25) 0%,
-    rgba(244, 63, 94, 0.08) 42%,
-    rgba(132, 204, 22, 0.08) 58%,
-    rgba(132, 204, 22, 0.22) 100%
-  );
+    rgba(244, 63, 94, 0.28) 0%,
+    rgba(244, 63, 94, 0.12) 40%,
+    rgba(132, 204, 22, 0.10) 55%,
+    rgba(163, 230, 53, 0.24) 100%
+  ),
+  radial-gradient(ellipse at 82% 72%, rgba(132, 204, 22, 0.15), transparent 40%);
 }
 
 /* Terminal: phosphor green scanlines */
 [data-theme='terminal'] {
-  --color-background: #030705;
-  --color-card: #0a120c;
-  --color-card-inner: #060a08;
-  --color-border: #166534;
+  --color-background: #020604;
+  --color-card: #081008;
+  --color-card-inner: #050a06;
+  --color-border: #22c55e;
   --color-primary: #4ade80;
-  --color-blue: #22c55e;
-  --color-blue-soft: #14532d;
+  --color-blue: #34d399;
+  --color-blue-soft: #166534;
   --color-foreground: #dcfce7;
-  --color-muted: #6b9e7a;
+  --color-muted: #5cb87a;
   --color-success: #86efac;
   --color-success-text: #bbf7d0;
 }
@@ -487,15 +488,15 @@ body::before {
 
 /* Ocean: depth bubbles */
 [data-theme='ocean'] {
-  --color-background: #031018;
-  --color-card: #0a1c28;
-  --color-card-inner: #061420;
-  --color-border: #155e75;
+  --color-background: #020e16;
+  --color-card: #081a28;
+  --color-card-inner: #05121e;
+  --color-border: #06b6d4;
   --color-primary: #22d3ee;
-  --color-blue: #0ea5e9;
-  --color-blue-soft: #164e63;
+  --color-blue: #38bdf8;
+  --color-blue-soft: #0c4a6e;
   --color-foreground: #ecfeff;
-  --color-muted: #67b8c9;
+  --color-muted: #5ec4d8;
   --color-success: #2dd4bf;
   --color-success-text: #99f6e4;
 }
@@ -784,6 +785,101 @@ body::before {
     linear-gradient(145deg, rgba(240, 171, 252, 0.18), rgba(18, 7, 25, 0.08));
 }
 
+/* Blood Moon: ominous crimson eclipse */
+[data-theme='bloodmoon'] {
+  --color-background: #0e0204;
+  --color-card: #1c080c;
+  --color-card-inner: #140508;
+  --color-border: #dc2626;
+  --color-primary: #ef4444;
+  --color-blue: #f97316;
+  --color-blue-soft: #7c2d12;
+  --color-foreground: #fef2f2;
+  --color-muted: #d4606a;
+  --color-success: #fbbf24;
+  --color-success-text: #fef9c3;
+  --theme-wave:
+    radial-gradient(ellipse 90% 70% at 50% -10%, rgba(239, 68, 68, 0.4), transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(220, 38, 38, 0.2), transparent 42%),
+    linear-gradient(180deg, rgba(127, 29, 29, 0.18), rgba(14, 2, 4, 0.06));
+}
+
+/* Solar Flare: white-hot energy corona on deep space */
+[data-theme='solarflare'] {
+  --color-background: #0a0804;
+  --color-card: #181208;
+  --color-card-inner: #120e06;
+  --color-border: #fbbf24;
+  --color-primary: #fde68a;
+  --color-blue: #f97316;
+  --color-blue-soft: #92400e;
+  --color-foreground: #fffbeb;
+  --color-muted: #d4b452;
+  --color-success: #f59e0b;
+  --color-success-text: #fef3c7;
+  --theme-wave:
+    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(253, 230, 138, 0.35), transparent 50%),
+    radial-gradient(ellipse 100% 80% at 50% 40%, rgba(251, 191, 36, 0.2), transparent 55%),
+    radial-gradient(ellipse at 80% 75%, rgba(249, 115, 22, 0.18), transparent 40%);
+}
+
+/* Retrowave: 80s synth sunset with hot pink and electric blue */
+[data-theme='retrowave'] {
+  --color-background: #0c0418;
+  --color-card: #18082e;
+  --color-card-inner: #120624;
+  --color-border: #ff2a92;
+  --color-primary: #ff6ec7;
+  --color-blue: #00d4ff;
+  --color-blue-soft: #0e4d8a;
+  --color-foreground: #fff0f9;
+  --color-muted: #d880b4;
+  --color-success: #4ade80;
+  --color-success-text: #bbf7d0;
+  --theme-wave:
+    linear-gradient(180deg, rgba(255, 42, 146, 0.28) 0%, rgba(0, 212, 255, 0.08) 50%, rgba(12, 4, 24, 0.02) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 36px, rgba(255, 110, 199, 0.05) 36px, rgba(255, 110, 199, 0.05) 37px),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 42, 146, 0.22), transparent 60%);
+}
+
+/* Jungle: tropical canopy with vivid greens and golden accents */
+[data-theme='jungle'] {
+  --color-background: #060e04;
+  --color-card: #0e1c08;
+  --color-card-inner: #0a1406;
+  --color-border: #84cc16;
+  --color-primary: #a3e635;
+  --color-blue: #fbbf24;
+  --color-blue-soft: #5a6f12;
+  --color-foreground: #f7fee7;
+  --color-muted: #7daa4a;
+  --color-success: #22c55e;
+  --color-success-text: #bbf7d0;
+  --theme-wave:
+    radial-gradient(ellipse at 15% 25%, rgba(163, 230, 53, 0.28), transparent 40%),
+    radial-gradient(ellipse at 80% 70%, rgba(251, 191, 36, 0.2), transparent 38%),
+    linear-gradient(160deg, rgba(132, 204, 22, 0.16), rgba(6, 14, 4, 0.06));
+}
+
+/* Titanium: cool chrome with electric blue highlights */
+[data-theme='titanium'] {
+  --color-background: #08090e;
+  --color-card: #12141c;
+  --color-card-inner: #0e1016;
+  --color-border: #64748b;
+  --color-primary: #94a3b8;
+  --color-blue: #38bdf8;
+  --color-blue-soft: #1e3a5f;
+  --color-foreground: #f1f5f9;
+  --color-muted: #8494a8;
+  --color-success: #22d3ee;
+  --color-success-text: #a5f3fc;
+  --theme-wave:
+    radial-gradient(ellipse at 30% 15%, rgba(148, 163, 184, 0.2), transparent 40%),
+    radial-gradient(ellipse at 75% 70%, rgba(56, 189, 248, 0.16), transparent 38%),
+    linear-gradient(140deg, rgba(100, 116, 139, 0.14), rgba(8, 9, 14, 0.06));
+}
+
 [data-theme='voltage'] body::before,
 [data-theme='dragonfruit'] body::before,
 [data-theme='glacier'] body::before,
@@ -798,7 +894,12 @@ body::before {
 [data-theme='ember'] body::before,
 [data-theme='tidal'] body::before,
 [data-theme='royal'] body::before,
-[data-theme='cottoncandy'] body::before {
+[data-theme='cottoncandy'] body::before,
+[data-theme='bloodmoon'] body::before,
+[data-theme='solarflare'] body::before,
+[data-theme='retrowave'] body::before,
+[data-theme='jungle'] body::before,
+[data-theme='titanium'] body::before {
   opacity: 1;
   background: var(--theme-wave);
   background-size: 180% 180%;

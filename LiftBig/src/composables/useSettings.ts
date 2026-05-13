@@ -40,6 +40,11 @@ export type ThemeId =
   | 'tidal'
   | 'royal'
   | 'cottoncandy'
+  | 'bloodmoon'
+  | 'solarflare'
+  | 'retrowave'
+  | 'jungle'
+  | 'titanium'
 
 export type AppSettings = {
   theme: ThemeId
@@ -70,7 +75,7 @@ export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: 'sunset', label: 'Sunset' },
   { id: 'loud', label: 'Loud' },
   { id: 'cyberpunk', label: 'Cyberpunk' },
-  { id: 'iron', label: 'Iron & steel (gym floor)' },
+  { id: 'iron', label: 'Iron & Steel' },
   { id: 'caffeine', label: 'Caffeine molecule' },
   { id: 'aurora', label: 'Aurora' },
   { id: 'bubblegum', label: 'Bubblegum' },
@@ -95,6 +100,11 @@ export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
   { id: 'tidal', label: 'Tidal Wave' },
   { id: 'royal', label: 'Royal Crush' },
   { id: 'cottoncandy', label: 'Cotton Candy Sky' },
+  { id: 'bloodmoon', label: 'Blood Moon' },
+  { id: 'solarflare', label: 'Solar Flare' },
+  { id: 'retrowave', label: 'Retrowave' },
+  { id: 'jungle', label: 'Jungle Fever' },
+  { id: 'titanium', label: 'Titanium' },
 ]
 
 function applyTheme(theme: ThemeId) {

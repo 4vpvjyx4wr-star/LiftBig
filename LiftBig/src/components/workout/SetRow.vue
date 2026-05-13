@@ -170,6 +170,17 @@ const repsPlaceholder = computed(() => {
   return g ? g : 'Reps'
 })
 
+/** Goal weight pinned row (first set only): shown at the top of the picker. */
+const goalWeightRow = computed(() => {
+  if (props.index !== 0) return null
+  const g = (props.targetWeightStored ?? '').trim()
+  if (!g) return null
+  const snapped = snapToPickerStoredLbs(g)
+  if (!snapped) return null
+  const unit = weightUnit.value
+  return { storedKey: snapped, display: storedLbsStringToDisplay(snapped, unit) }
+})
+
 /** 500, 495, … 0 lb — same order for every set; scroll pins goal / prior / typed row at top. */
 const visibleWeightRows = computed(() => {
   const unit = weightUnit.value
@@ -298,6 +309,16 @@ function selectRepsOption(raw: string) {
         ref="weightMenuRef"
         class="absolute left-0 right-0 top-full z-30 mt-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-card shadow-lg"
       >
+        <button
+          v-if="goalWeightRow"
+          type="button"
+          class="block w-full border-b border-border px-2 py-1.5 text-center text-sm font-bold text-primary hover:bg-card-inner"
+          @touchstart.passive="cancelWeightMenuHide"
+          @mousedown.prevent="cancelWeightMenuHide"
+          @click.prevent.stop="selectWeightOption(goalWeightRow.display)"
+        >
+          {{ goalWeightRow.display }}
+        </button>
         <button
           v-for="row in visibleWeightRows"
           :key="`w-${set.id}-${row.storedKey}`"
