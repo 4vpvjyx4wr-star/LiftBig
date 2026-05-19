@@ -5,7 +5,7 @@ import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
 import { getLibraryExercise } from '@/utils/exerciseLibrary'
-import { getSuggestedWeight } from '@/utils/progressiveOverload'
+import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 import {
   formatWeightWithUnit,
   parseStoredLbs,
@@ -15,6 +15,8 @@ import {
 const props = defineProps<{
   exercise: Exercise
   workoutLog: WorkoutLog
+  /** Exclude this day from history when predicting (current session). */
+  sessionDateKey?: string
 }>()
 
 const settings = inject(settingsInjectionKey)!
@@ -107,7 +109,11 @@ watch(activePanel, (next, prev) => {
   }
 })
 
-const suggestion = ref<{ suggestedWeight: number; reason: string } | null>(null)
+const suggestion = ref<{
+  suggestedReps: string
+  suggestedWeight: number
+  reason: string
+} | null>(null)
 
 function onSetRowUpdate(setId: string, index: number, field: 'reps' | 'weight', value: string) {
   emit('updateSet', setId, field, value)
@@ -121,6 +127,7 @@ watch(
       props.exercise.targetWeight,
       props.exercise.sets,
       props.workoutLog,
+      props.sessionDateKey,
       weightUnit.value,
     ] as const,
   () => {
@@ -130,26 +137,29 @@ watch(
     }
     const reps = (props.exercise.targetReps ?? '').trim()
     const tw = (props.exercise.targetWeight ?? '').trim()
-    if (!reps && !tw) {
-      suggestion.value = null
+    const storedW = tw ? parseStoredLbs(tw) : NaN
+    const pred = predictWorkoutGoals(props.exercise.name, props.workoutLog, {
+      currentTargetReps: reps || undefined,
+      excludeDateKey: props.sessionDateKey,
+      displayUnit: weightUnit.value,
+      lockRepGoal: !!reps,
+      ignoreStoredGoalWeight: true,
+    })
+    if (!pred.hasHistory) {
+      suggestion.value =
+        Number.isFinite(storedW) && storedW > 0
+          ? {
+              suggestedReps: reps || pred.suggestedReps,
+              suggestedWeight: storedW,
+              reason: pred.reason,
+            }
+          : null
       return
     }
-    const base = parseFloat(
-      props.exercise.sets[0]?.weight || props.exercise.targetWeight || '0',
-    )
-    if (reps) {
-      suggestion.value = getSuggestedWeight(
-        props.exercise.name,
-        reps,
-        base,
-        props.workoutLog,
-        weightUnit.value,
-      )
-    } else {
-      suggestion.value =
-        Number.isFinite(base) && base > 0
-          ? { suggestedWeight: base, reason: 'No history yet' }
-          : null
+    suggestion.value = {
+      suggestedReps: pred.suggestedReps,
+      suggestedWeight: pred.suggestedWeightLbs,
+      reason: pred.reason,
     }
   },
   { deep: true, immediate: true },
@@ -335,7 +345,9 @@ function closeLibraryDetail() {
       class="mb-2.5 rounded-lg border border-[#16a34a] bg-[#0d2010] p-2"
     >
       <div class="text-[13px] font-bold text-[#4ade80]">
-        Suggested: {{ formatWeightWithUnit(suggestion.suggestedWeight, weightUnit, 1) }}
+        Predicted goal:
+        {{ exercise.sets.length }} × {{ suggestion.suggestedReps }}
+        @ {{ formatWeightWithUnit(suggestion.suggestedWeight, weightUnit, 1) }}
       </div>
       <div class="mt-0.5 text-[11px] text-[#86efac]">{{ suggestion.reason }}</div>
     </div>

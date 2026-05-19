@@ -12,6 +12,7 @@ import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
 import { searchLibrary } from '@/utils/exerciseLibrary'
+import { applyPredictedGoalsToExercises } from '@/utils/progressiveOverload'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 import {
   applyLiftBigBackupToStorage,
@@ -49,6 +50,7 @@ const goalRepsDraft = ref('')
 const goalWeightStoredLbs = ref('')
 
 const weightUnit = computed(() => settings.weightUnit.value)
+const planCoachingNotes = computed(() => workouts.getPlanNotes(dateKey.value))
 
 function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> {
   const out: Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> = {}
@@ -91,7 +93,9 @@ function loadDay() {
   if (workoutNotesBoundDate && workoutNotesBoundDate !== k) {
     flushWorkoutNotesForDate(workoutNotesBoundDate)
   }
-  exercises.value = JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]
+  const loaded = JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]
+  applyPredictedGoalsToExercises(loaded, workouts.log.value, k)
+  exercises.value = loaded
   workoutNotesDraft.value = workouts.getDayNotesForDate(k)
   workoutNotesBoundDate = k
 }
@@ -452,6 +456,15 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     </header>
 
     <div class="px-4 pb-above-workout-dock pt-4">
+      <section
+        v-if="planCoachingNotes"
+        class="mb-3.5 rounded-xl border border-primary/30 bg-card-inner/60 p-3.5"
+      >
+        <h2 class="text-sm font-bold uppercase tracking-wide text-primary">Plan coaching</h2>
+        <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground">
+          {{ planCoachingNotes }}
+        </p>
+      </section>
       <section class="mb-3.5 rounded-xl border border-border bg-card p-3.5">
         <h2 class="text-sm font-bold uppercase tracking-wide text-muted">Notes</h2>
         <textarea
@@ -474,6 +487,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
           :key="ex.id"
           :exercise="ex"
           :workout-log="workoutLogPlain"
+          :session-date-key="dateKey"
           @add-set="addSet(ex.id)"
           @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
           @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"

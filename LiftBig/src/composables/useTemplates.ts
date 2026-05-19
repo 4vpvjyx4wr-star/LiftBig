@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
+import { BUNS_AND_THIGHS_FOLDER, BUNS_AND_THIGHS_PLANS } from '@/utils/bunsAndThighsPlans'
 import {
   CALISTHENICS_FULL_BODY_FOLDER,
   CALISTHENICS_FULL_BODY_PLANS,
@@ -48,14 +49,27 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
           : folder,
       )
     : [...withSbdFolder, ...cloneFolders([CALISTHENICS_FULL_BODY_FOLDER])]
-  const hasJoeyFolder = withCalisFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
-  let folders = hasJoeyFolder
+  const hasBunsFolder = withCalisFolders.some((folder) => folder.id === BUNS_AND_THIGHS_FOLDER.id)
+  const withBunsFolders = hasBunsFolder
     ? withCalisFolders.map((folder) =>
+        folder.id === BUNS_AND_THIGHS_FOLDER.id
+          ? {
+              ...folder,
+              name: BUNS_AND_THIGHS_FOLDER.name,
+              purpose: BUNS_AND_THIGHS_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...withCalisFolders, ...cloneFolders([BUNS_AND_THIGHS_FOLDER])]
+
+  const hasJoeyFolder = withBunsFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
+  let folders = hasJoeyFolder
+    ? withBunsFolders.map((folder) =>
         folder.id === JOEY_SUMMER_FOLDER.id
           ? { ...folder, name: JOEY_SUMMER_FOLDER.name, purpose: JOEY_SUMMER_FOLDER.purpose }
           : folder,
       )
-    : [...withCalisFolders, ...cloneFolders([JOEY_SUMMER_FOLDER])]
+    : [...withBunsFolders, ...cloneFolders([JOEY_SUMMER_FOLDER])]
 
   const joeyPlanIdSet = new Set(JOEY_SUMMER_PLAN_IDS)
   let templates = state.templates.map((template) =>
@@ -80,8 +94,9 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingBunsPlans = BUNS_AND_THIGHS_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
-  const missingPlans = [...missingSbdPlans, ...missingCalisPlans, ...missingDefaultPlans]
+  const missingPlans = [...missingSbdPlans, ...missingCalisPlans, ...missingBunsPlans, ...missingDefaultPlans]
   templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
 
   return { templates, folders }

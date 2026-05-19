@@ -3,6 +3,7 @@ import {
   getDayExercises,
   getDayPlanFolderName,
   getDayPlanName,
+  getDayPlanNotes,
   isRestDayEntry,
   type Exercise,
   type WorkoutDay,
@@ -11,7 +12,8 @@ import {
 } from '@/types/workout'
 import { addDaysToDateKey, endOfMonthKeyFor } from '@/utils/dateKey'
 import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
-import { cloneTemplateToExercises } from '@/utils/templateToLog'
+import { applyPredictedGoalsToExercises } from '@/utils/progressiveOverload'
+import { cloneExercisesForCopy, cloneTemplateToExercises } from '@/utils/templateToLog'
 import { loadJson, saveJson } from '@/utils/storage'
 
 const KEY = LIFTBIG_STORAGE_KEYS.workouts
@@ -142,6 +144,25 @@ export function useLocalWorkouts() {
     return getDayPlanFolderName(log.value[dateKey])
   }
 
+  function getPlanNotes(dateKey: string): string | undefined {
+    return getDayPlanNotes(log.value[dateKey])
+  }
+
+  /** Assign a plan template to a calendar day (merges exercises; sets plan name, folder, and coaching notes). */
+  function assignPlanToDate(dateKey: string, template: WorkoutTemplate, folderName?: string) {
+    const existing = getDayExercises(log.value[dateKey])
+    const preservedNotes = dayNotes(log.value[dateKey])
+    const entry: WorkoutDay = {
+      exercises: [...existing, ...cloneTemplateToExercises(template)],
+      planName: template.name,
+    }
+    if (folderName) entry.planFolderName = folderName
+    if (template.notes?.trim()) entry.planNotes = template.notes.trim()
+    if (preservedNotes !== undefined) entry.notes = preservedNotes
+    log.value = { ...log.value, [dateKey]: entry }
+    flush()
+  }
+
   /** Apply template starting at `startDateKey`. If `restDaysPerWeek` is 0, only that day gets the plan. Otherwise each 7-day block through month end gets training days filled and rest slots marked (empty days only). */
   function applyPlanWithWeeklyRest(
     startDateKey: string,
@@ -159,6 +180,7 @@ export function useLocalWorkouts() {
         planName: template.name,
       }
       if (folderName) entry.planFolderName = folderName
+      if (template.notes?.trim()) entry.planNotes = template.notes.trim()
       if (preservedNotes !== undefined) entry.notes = preservedNotes
       log.value = { ...log.value, [startDateKey]: entry }
       flush()
@@ -185,6 +207,7 @@ export function useLocalWorkouts() {
             planName: template.name,
           }
           if (folderName) dayEntry.planFolderName = folderName
+          if (template.notes?.trim()) dayEntry.planNotes = template.notes.trim()
           if (preservedNotes !== undefined) dayEntry.notes = preservedNotes
           next[current] = dayEntry
         } else {
@@ -224,6 +247,25 @@ export function useLocalWorkouts() {
     flush()
   }
 
+  /** Copy exercises (goals + set structure, empty working sets) from one day onto another. Source day is unchanged. */
+  function copyExercisesToDay(fromKey: string, toKey: string) {
+    const source = getDayExercises(log.value[fromKey])
+    if (source.length === 0) return
+    const cloned = cloneExercisesForCopy(source)
+    applyPredictedGoalsToExercises(cloned, log.value, toKey, { refreshFromHistory: true })
+    const next = { ...log.value }
+    const existing = getDayExercises(next[toKey])
+    const preservedNotes = dayNotes(next[toKey])
+    const merged = [...existing, ...cloned]
+    if (preservedNotes !== undefined) {
+      next[toKey] = { exercises: merged, notes: preservedNotes }
+    } else {
+      next[toKey] = merged
+    }
+    log.value = next
+    flush()
+  }
+
   return {
     log,
     flush,
@@ -237,8 +279,11 @@ export function useLocalWorkouts() {
     markRestDay,
     getPlanName,
     getPlanFolderName,
+    getPlanNotes,
+    assignPlanToDate,
     applyPlanWithWeeklyRest,
     moveDay,
     swapDays,
+    copyExercisesToDay,
   }
 }

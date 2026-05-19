@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import MonthGrid from '@/components/calendar/MonthGrid.vue'
 import MonthNav from '@/components/calendar/MonthNav.vue'
+import CopyDaySheet from '@/components/calendar/CopyDaySheet.vue'
 import MoveDaySheet from '@/components/calendar/MoveDaySheet.vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
@@ -27,7 +28,7 @@ import {
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
 import { getLibraryExercise, searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
-import { getSuggestedWeight } from '@/utils/progressiveOverload'
+import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 
 const workouts = inject(workoutsInjectionKey)!
 const templates = inject(templatesInjectionKey)!
@@ -69,6 +70,7 @@ const dayExercises = computed(() => workouts.getDay(selectedDate.value))
 const exerciseCount = computed(() => dayExercises.value.length)
 const dayPlanName = computed(() => workouts.getPlanName(selectedDate.value))
 const dayPlanFolderName = computed(() => workouts.getPlanFolderName(selectedDate.value))
+const dayPlanNotes = computed(() => workouts.getPlanNotes(selectedDate.value))
 
 const trained = computed(() => trainedDaysInMonth(workoutLogPlain.value))
 const loggedRest = computed(() => loggedRestDaysInMonth(workoutLogPlain.value))
@@ -125,6 +127,7 @@ function onAssignPlan(payload: { template: WorkoutTemplate; restDaysPerWeek: num
 }
 
 const moveSheetOpen = ref(false)
+const copySheetOpen = ref(false)
 const detailOpen = ref(false)
 const detailExercise = ref<LibraryExercise | null>(null)
 
@@ -151,27 +154,35 @@ function onMoveDone(targetDate: string, action: 'move' | 'swap') {
   selectedDate.value = targetDate
 }
 
+function onCopyDone(targetDate: string) {
+  workouts.copyExercisesToDay(selectedDate.value, targetDate)
+  copySheetOpen.value = false
+  selectedDate.value = targetDate
+}
+
 function exerciseGoalLabel(ex: Exercise): string {
   const parts: string[] = []
   const setCount = ex.sets.length
   parts.push(`${setCount} set${setCount !== 1 ? 's' : ''}`)
 
-  if (ex.targetReps) {
-    parts.push(`× ${ex.targetReps}`)
-  }
+  const lbs = ex.targetWeight ? parseStoredLbs(ex.targetWeight) : NaN
+  const hasRepGoal = !!(ex.targetReps ?? '').trim()
+  const pred = predictWorkoutGoals(ex.name, workouts.log.value, {
+    currentTargetReps: ex.targetReps,
+    excludeDateKey: selectedDate.value,
+    displayUnit: weightUnit.value,
+    lockRepGoal: hasRepGoal,
+    ignoreStoredGoalWeight: true,
+  })
 
-  if (ex.targetWeight) {
-    const lbs = parseStoredLbs(ex.targetWeight)
-    if (!Number.isNaN(lbs)) {
-      const { suggestedWeight } = getSuggestedWeight(
-        ex.name,
-        ex.targetReps ?? '',
-        lbs,
-        workouts.log.value,
-        weightUnit.value,
-      )
-      parts.push(`@ ${formatWeightWithUnit(suggestedWeight, weightUnit.value, 1)}`)
-    }
+  const repsLabel = pred.hasHistory ? pred.suggestedReps : ex.targetReps
+  if (repsLabel) {
+    parts.push(`× ${repsLabel}`)
+  }
+  if (pred.hasHistory && pred.suggestedWeightLbs > 0) {
+    parts.push(`@ ${formatWeightWithUnit(pred.suggestedWeightLbs, weightUnit.value, 1)}`)
+  } else if (ex.targetWeight && !Number.isNaN(lbs)) {
+    parts.push(`@ ${formatWeightWithUnit(lbs, weightUnit.value, 1)}`)
   }
 
   return parts.join(' ')
@@ -335,15 +346,25 @@ function onPickDay(key: string) {
     </div>
 
     <section class="relative mt-4 rounded-xl border border-border bg-card p-4">
-      <button
-        type="button"
-        class="absolute right-3 top-3 rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-foreground disabled:opacity-40"
-        :disabled="exerciseCount === 0"
-        @click="moveSheetOpen = true"
-      >
-        <i class="fa-solid fa-right-left mr-1 text-[10px] text-muted" aria-hidden="true" />Move / Swap
-      </button>
-      <h3 class="text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
+      <div class="absolute right-3 top-3 flex gap-1.5">
+        <button
+          type="button"
+          class="rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-foreground disabled:opacity-40"
+          :disabled="exerciseCount === 0"
+          @click="copySheetOpen = true"
+        >
+          <i class="fa-solid fa-copy mr-1 text-[10px] text-muted" aria-hidden="true" />Copy
+        </button>
+        <button
+          type="button"
+          class="rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-foreground disabled:opacity-40"
+          :disabled="exerciseCount === 0"
+          @click="moveSheetOpen = true"
+        >
+          <i class="fa-solid fa-right-left mr-1 text-[10px] text-muted" aria-hidden="true" />Move / Swap
+        </button>
+      </div>
+      <h3 class="pr-36 text-lg font-bold text-foreground">{{ formatDisplayDate(selectedDate) }}</h3>
       <div class="mt-2 flex gap-2">
         <RouterLink
           :to="`/workout/${selectedDate}`"
@@ -378,6 +399,12 @@ function onPickDay(key: string) {
         <p v-if="dayPlanName" class="mt-3">
           <span class="text-base font-extrabold text-foreground">{{ dayPlanName }}</span>
           <span v-if="dayPlanFolderName" class="ml-1.5 text-xs text-muted">({{ dayPlanFolderName }})</span>
+        </p>
+        <p
+          v-if="dayPlanNotes"
+          class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card-inner/60 px-2.5 py-2 text-xs leading-relaxed text-foreground"
+        >
+          {{ dayPlanNotes }}
         </p>
         <p class="mt-2 text-xs text-muted">
           {{ selectedDayDuration }} · {{ selectedDayStats.sets }} sets · {{ selectedDayStats.reps }} total reps (where entered) ·
@@ -576,6 +603,12 @@ function onPickDay(key: string) {
     </section>
 
     <AssignPlanSheet :open="planSheetOpen" @close="planSheetOpen = false" @pick="onAssignPlan" />
+    <CopyDaySheet
+      :open="copySheetOpen"
+      :source-date="selectedDate"
+      @close="copySheetOpen = false"
+      @done="onCopyDone"
+    />
     <MoveDaySheet
       :open="moveSheetOpen"
       :source-date="selectedDate"

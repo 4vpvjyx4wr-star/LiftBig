@@ -27,6 +27,8 @@ export type WorkoutDay = {
   planName?: string
   /** Name of the folder the plan belonged to when assigned. */
   planFolderName?: string
+  /** Coaching notes from the assigned plan template (week focus, activity, etc.). */
+  planNotes?: string
 }
 
 export type WorkoutLogDay = Exercise[] | WorkoutDay
@@ -49,6 +51,12 @@ export function getDayPlanFolderName(dayEntry: WorkoutLogDay | undefined): strin
   if (dayEntry == null) return undefined
   if (Array.isArray(dayEntry)) return undefined
   return dayEntry.planFolderName
+}
+
+export function getDayPlanNotes(dayEntry: WorkoutLogDay | undefined): string | undefined {
+  if (dayEntry == null) return undefined
+  if (Array.isArray(dayEntry)) return undefined
+  return dayEntry.planNotes
 }
 
 export function isRestDayEntry(dayEntry: WorkoutLogDay | undefined): boolean {
@@ -76,6 +84,8 @@ export type WorkoutTemplate = {
   exercises: TemplateExercise[]
   isCircuit?: boolean
   folderId?: string | null
+  /** Week focus, activity description, and other coaching shown when viewing or assigning the plan. */
+  notes?: string
 }
 
 export type TemplateFolder = {

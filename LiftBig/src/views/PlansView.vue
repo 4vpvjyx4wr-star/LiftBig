@@ -19,7 +19,6 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
-import { cloneTemplateToExercises } from '@/utils/templateToLog'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
@@ -668,7 +667,7 @@ function assignFolderPlansToCalendar(folderId: string) {
   }
 
   for (const slot of workoutAssignments) {
-    workouts.appendExercises(slot.dateKey, cloneTemplateToExercises(slot.plan))
+    workouts.assignPlanToDate(slot.dateKey, slot.plan, folderName)
   }
 
   window.alert(
@@ -913,6 +912,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
                 · {{ planDurationLabel(item) }}
               </p>
+              <p
+                v-if="item.notes?.trim()"
+                class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card-inner/60 px-2.5 py-2 text-xs leading-relaxed text-foreground"
+              >
+                {{ item.notes }}
+              </p>
               <ul class="mt-2 space-y-1 border-t border-border pt-2">
                 <li
                   v-for="ex in item.exercises"
@@ -1135,6 +1140,12 @@ function onPlansRestSecondsChange(ev: Event) {
               <p class="mt-1 text-xs text-muted">
                 {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
                 · {{ planDurationLabel(item) }}
+              </p>
+              <p
+                v-if="item.notes?.trim()"
+                class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card-inner/60 px-2.5 py-2 text-xs leading-relaxed text-foreground"
+              >
+                {{ item.notes }}
               </p>
               <ul class="mt-2 space-y-1 border-t border-border pt-2">
                 <li
