@@ -261,6 +261,12 @@ watch(
                     </div>
                     <span class="shrink-0 text-xl text-primary">›</span>
                   </div>
+                  <p
+                    v-if="t.notes?.trim()"
+                    class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card px-2 py-1.5 text-xs leading-relaxed text-foreground"
+                  >
+                    {{ t.notes }}
+                  </p>
                   <ul class="mt-2 space-y-1 border-t border-border pt-2">
                     <li
                       v-for="ex in t.exercises"
@@ -315,6 +321,12 @@ watch(
                     </div>
                     <span class="shrink-0 text-xl text-primary">›</span>
                   </div>
+                  <p
+                    v-if="t.notes?.trim()"
+                    class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card px-2 py-1.5 text-xs leading-relaxed text-foreground"
+                  >
+                    {{ t.notes }}
+                  </p>
                   <ul class="mt-2 space-y-1 border-t border-border pt-2">
                     <li
                       v-for="ex in t.exercises"

@@ -5,11 +5,16 @@ import {
   CALISTHENICS_FULL_BODY_FOLDER,
   CALISTHENICS_FULL_BODY_PLANS,
   DEFAULT_PLANS,
-  JOEY_SUMMER_FOLDER,
-  JOEY_SUMMER_PLAN_IDS,
   SBD_STRENGTH_FOLDER,
   SBD_STRENGTH_PLANS,
 } from '@/utils/defaultPlans'
+import {
+  JOEY_CUT_SPLIT_FOLDER,
+  JOEY_CUT_SPLIT_PLANS,
+  JOEY_SUMMER_LEGACY_PLAN_IDS,
+  LEGACY_JOEY_SUMMER_FOLDER_ID,
+  LEGACY_JOEY_SUMMER_FOLDER_NAME,
+} from '@/utils/joeySummerCutSplitPlans'
 import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
@@ -62,42 +67,60 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...withCalisFolders, ...cloneFolders([BUNS_AND_THIGHS_FOLDER])]
 
-  const hasJoeyFolder = withBunsFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
-  let folders = hasJoeyFolder
-    ? withBunsFolders.map((folder) =>
-        folder.id === JOEY_SUMMER_FOLDER.id
-          ? { ...folder, name: JOEY_SUMMER_FOLDER.name, purpose: JOEY_SUMMER_FOLDER.purpose }
+  const legacyJoeyFolderIds = new Set(
+    withBunsFolders
+      .filter(
+        (f) => f.id === LEGACY_JOEY_SUMMER_FOLDER_ID || f.name === LEGACY_JOEY_SUMMER_FOLDER_NAME,
+      )
+      .map((f) => f.id),
+  )
+  let templates = state.templates.map((template) => {
+    const legacyJoeyPlan = JOEY_SUMMER_LEGACY_PLAN_IDS.includes(template.id)
+    const inLegacyFolder =
+      template.folderId != null && legacyJoeyFolderIds.has(template.folderId)
+    if (legacyJoeyPlan || inLegacyFolder) {
+      return { ...template, folderId: null }
+    }
+    return template
+  })
+  let folders = withBunsFolders.filter((f) => !legacyJoeyFolderIds.has(f.id))
+
+  const hasCutSplitFolder = folders.some((folder) => folder.id === JOEY_CUT_SPLIT_FOLDER.id)
+  folders = hasCutSplitFolder
+    ? folders.map((folder) =>
+        folder.id === JOEY_CUT_SPLIT_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_CUT_SPLIT_FOLDER.name,
+              purpose: JOEY_CUT_SPLIT_FOLDER.purpose,
+            }
           : folder,
       )
-    : [...withBunsFolders, ...cloneFolders([JOEY_SUMMER_FOLDER])]
-
-  const joeyPlanIdSet = new Set(JOEY_SUMMER_PLAN_IDS)
-  let templates = state.templates.map((template) =>
-    joeyPlanIdSet.has(template.id) && template.folderId == null
-      ? { ...template, folderId: JOEY_SUMMER_FOLDER.id }
-      : template,
-  )
-
-  // Deduplicate: some older saved states can contain multiple "Joey's Summer PPL/Core/Circuit"
-  // folders (same name, different ids). Remap all Joey plans to the canonical folder id.
-  const joeyFolderIdsByName = folders.filter((f) => f.name === JOEY_SUMMER_FOLDER.name).map((f) => f.id)
-  const duplicateJoeyFolderIds = joeyFolderIdsByName.filter((id) => id !== JOEY_SUMMER_FOLDER.id)
-  if (duplicateJoeyFolderIds.length > 0) {
-    templates = templates.map((t) =>
-      joeyPlanIdSet.has(t.id) && t.folderId != null && duplicateJoeyFolderIds.includes(t.folderId)
-        ? { ...t, folderId: JOEY_SUMMER_FOLDER.id }
-        : t,
-    )
-    folders = folders.filter((f) => !duplicateJoeyFolderIds.includes(f.id))
-  }
+    : [...folders, ...cloneFolders([JOEY_CUT_SPLIT_FOLDER])]
 
   const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
   const missingBunsPlans = BUNS_AND_THIGHS_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingCutSplitPlans = JOEY_CUT_SPLIT_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
-  const missingPlans = [...missingSbdPlans, ...missingCalisPlans, ...missingBunsPlans, ...missingDefaultPlans]
+  const missingPlans = [
+    ...missingSbdPlans,
+    ...missingCalisPlans,
+    ...missingBunsPlans,
+    ...missingCutSplitPlans,
+    ...missingDefaultPlans,
+  ]
   templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
+
+  const seededById = new Map([
+    ...BUNS_AND_THIGHS_PLANS.map((plan) => [plan.id, plan] as const),
+    ...JOEY_CUT_SPLIT_PLANS.map((plan) => [plan.id, plan] as const),
+  ])
+  templates = templates.map((template) => {
+    const seed = seededById.get(template.id)
+    return seed ? (clonePlans([seed])[0] ?? template) : template
+  })
 
   return { templates, folders }
 }
