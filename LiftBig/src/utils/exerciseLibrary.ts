@@ -538,6 +538,50 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'seated-leg-curl',
+    name: 'Seated Leg Curl',
+    muscleGroups: ['hamstrings'],
+    tags: ['machine', 'isolation'],
+    equipment: 'Machine',
+    summary: 'Seated knee flexion isolating hamstrings with hips flexed—great paired with leg extensions.',
+    instructions: [
+      'Adjust the back pad and leg pad so knees align with the machine axis.',
+      'Curl heels under the seat toward glutes; hips stay planted.',
+      'Squeeze hamstrings at peak; return slowly without letting the stack slam.',
+    ],
+    tips: [
+      'Point toes slightly up (dorsiflex) to reduce calf takeover.',
+      'Pair with leg extensions in supersets for efficient leg work.',
+    ],
+    cues: [
+      'Hips glued to the seat—no rocking.',
+      'Smooth curl; pause at peak contraction.',
+      'Two-second negative on every rep.',
+    ],
+  }),
+  reg({
+    id: 'machine-chest-press',
+    name: 'Machine Chest Press',
+    muscleGroups: ['chest', 'shoulders', 'triceps'],
+    tags: ['machine', 'press'],
+    equipment: 'Machine',
+    summary: 'Stable horizontal press on a chest machine—useful for volume after heavy shoulder work.',
+    instructions: [
+      'Set seat so handles align with mid-chest; feet flat and back on pad.',
+      'Press forward without locking elbows aggressively backward.',
+      'Lower under control to a comfortable stretch without shoulder pinch.',
+    ],
+    tips: [
+      'Keep shoulders down and back on the pad throughout.',
+      'Use after shoulder pressing when barbell/dumbbell stability is fatigued.',
+    ],
+    cues: [
+      'Scapulae set before the first rep.',
+      'Press in a slight arc—don’t shrug at lockout.',
+      'Touch smooth, not bounce, at the bottom.',
+    ],
+  }),
+  reg({
     id: 'hamstring-curl',
     name: 'Hamstring Curl',
     muscleGroups: ['hamstrings'],
@@ -729,6 +773,50 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'cable-lateral-raise',
+    name: 'Cable Lateral Raise',
+    muscleGroups: ['shoulders'],
+    tags: ['cable', 'medial delt', 'isolation'],
+    equipment: 'Cable',
+    summary: 'Constant-tension lateral raise from a low or mid pulley for medial delts.',
+    instructions: [
+      'Stand beside the stack with the cable crossing lightly in front of your body, or use a single low pulley at your side.',
+      'With a slight elbow bend, raise your arm out to the side to shoulder height.',
+      'Pause; lower under control without letting the stack pull your shoulder forward.',
+    ],
+    tips: [
+      'Stay lighter than dumbbells—cables keep tension at the bottom.',
+      'Keep the non-working hand on your hip or the rack for balance.',
+    ],
+    cues: [
+      'Elbows soft; lead with the elbow, not the hand.',
+      'Raise to shoulder height—no trap shrug at the top.',
+      'Three-count lowering; stack stays quiet between reps.',
+    ],
+  }),
+  reg({
+    id: 'lean-away-cable-lateral-raise',
+    name: 'Lean-Away Cable Lateral Raise',
+    muscleGroups: ['shoulders'],
+    tags: ['cable', 'medial delt', 'isolation', 'unilateral'],
+    equipment: 'Cable',
+    summary: 'Single-arm lateral raise leaning away from the stack for a longer medial-delt arc.',
+    instructions: [
+      'Grab the rack or post with your off hand; lean away so the working arm hangs with cable tension at the bottom.',
+      'Raise the handle out to the side to shoulder height with a soft elbow bend.',
+      'Pause; lower slowly without losing tension at the bottom.',
+    ],
+    tips: [
+      'The lean increases range—use less weight than standing cable laterals.',
+      'Keep ribs down; don’t side-bend to cheat the rep.',
+    ],
+    cues: [
+      'Lean creates tension at the bottom—no dead hang between reps.',
+      'Pinkies slightly high at the top.',
+      'Shoulders down; traps stay quiet.',
+    ],
+  }),
+  reg({
     id: 'leaning-dumbbell-lateral-raise',
     name: 'Leaning Dumbbell Lateral Raise',
     muscleGroups: ['shoulders'],
@@ -815,6 +903,50 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Soft elbows fixed—open from the rear delts, not the lats.',
       'Pause at peak squeeze; scapulae retract.',
       'Stop before traps take over the movement.',
+    ],
+  }),
+  reg({
+    id: 'neutral-grip-lat-pulldown',
+    name: 'Neutral Grip Lat Pulldown',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['cable', 'lat', 'vertical pull'],
+    equipment: 'Cable',
+    summary: 'Lat pulldown with parallel handles—friendly on shoulders while building lat width.',
+    instructions: [
+      'Use a neutral (parallel) attachment on a high pulley; sit with thighs secured.',
+      'Pull elbows down and slightly back toward your ribs without excessive lean.',
+      'Squeeze lats at the bottom; return until arms are extended with shoulders set.',
+    ],
+    tips: [
+      'Think elbows to back pockets, not hands to chest.',
+      'A slight forward torso angle can help feel the lats—avoid swinging.',
+    ],
+    cues: [
+      'Chest tall; ribs down before you pull.',
+      'Drive elbows down—minimal wrist curl.',
+      'Full stretch at the top without shrugging.',
+    ],
+  }),
+  reg({
+    id: 'chest-supported-lat-row',
+    name: 'Chest Supported Lat-Focused Row',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['machine', 'row', 'lat focus'],
+    equipment: 'Machine',
+    summary: 'Chest-supported row emphasizing lat depression and elbow path close to the torso.',
+    instructions: [
+      'Set chest pad so shoulders stay neutral; grab handles with a slight elbow tuck.',
+      'Row by driving elbows back and down toward hips—think lats, not upper traps.',
+      'Pause with shoulder blades squeezed; return until lats stretch without rounding.',
+    ],
+    tips: [
+      'Reduce weight if you feel biceps or rear delts dominate.',
+      'Avoid shrugging at the finish—keep shoulders down.',
+    ],
+    cues: [
+      'Chest stays on pad; no hip lift.',
+      'Elbows track toward back pockets.',
+      'Squeeze lats at peak—two-count hold.',
     ],
   }),
   reg({

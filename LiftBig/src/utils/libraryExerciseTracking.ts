@@ -1,4 +1,10 @@
-import { getDayExercises, type Exercise, type SetLog, type WorkoutLog } from '@/types/workout'
+import {
+  getDayExercises,
+  setCountsTowardProgress,
+  type Exercise,
+  type SetLog,
+  type WorkoutLog,
+} from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { parseStoredLbs } from '@/utils/units'
 
@@ -65,6 +71,7 @@ export function getLibraryExerciseLogStats(
     for (const ex of exercises) {
       if (!exerciseMatchesLibrary(ex, libraryExercise)) continue
       for (const set of ex.sets) {
+        if (!setCountsTowardProgress(set)) continue
         const w = parseStoredLbs(set.weight)
         if (Number.isNaN(w) || w <= 0) continue
         if (!setHasAtLeastOneRep(set)) continue
@@ -90,7 +97,7 @@ export function getLibraryExerciseLogStats(
     return { maxWeightLbs, lastInitialSet: null }
   }
 
-  const first = latestEx.sets[0]!
+  const first = latestEx.sets.find((s) => setCountsTowardProgress(s)) ?? latestEx.sets[0]!
   const firstW = parseStoredLbs(first.weight)
   return {
     maxWeightLbs,

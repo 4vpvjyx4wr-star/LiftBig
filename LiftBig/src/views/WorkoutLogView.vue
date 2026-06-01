@@ -243,6 +243,20 @@ function toggleCircuitSet(exerciseId: string, setId: string) {
   })
 }
 
+function toggleWarmupSet(exerciseId: string, setId: string) {
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    return {
+      ...ex,
+      sets: ex.sets.map((s) => {
+        if (s.id !== setId) return s
+        const nextWarmup = !s.isWarmup
+        return nextWarmup ? { ...s, isWarmup: true } : { ...s, isWarmup: undefined }
+      }),
+    }
+  })
+}
+
 function deleteSet(exerciseId: string, setId: string) {
   exercises.value = exercises.value.map((ex) =>
     ex.id !== exerciseId ? ex : { ...ex, sets: ex.sets.filter((s) => s.id !== setId) },
@@ -491,6 +505,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
           @add-set="addSet(ex.id)"
           @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
           @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
+          @toggle-warmup-set="(setId) => toggleWarmupSet(ex.id, setId)"
           @delete-set="(setId) => deleteSet(ex.id, setId)"
           @swap-exercise="openSwapExercise(ex.id)"
           @delete-exercise="deleteExercise(ex.id)"

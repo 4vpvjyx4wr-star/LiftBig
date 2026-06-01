@@ -3,6 +3,13 @@ export type SetLog = {
   reps: string
   weight: string
   checked?: boolean
+  /** Warmup sets are logged but excluded from strength/progress predictions. */
+  isWarmup?: boolean
+}
+
+/** Whether this set should feed progress charts and progressive-overload logic. */
+export function setCountsTowardProgress(set: SetLog): boolean {
+  return set.isWarmup !== true
 }
 
 export type Exercise = {

@@ -15,6 +15,7 @@ import {
   LEGACY_JOEY_SUMMER_FOLDER_ID,
   LEGACY_JOEY_SUMMER_FOLDER_NAME,
 } from '@/utils/joeySummerCutSplitPlans'
+import { JOEY_SUMMER_PLAN2_FOLDER, JOEY_SUMMER_PLAN2_PLANS } from '@/utils/joeySummerPlan2'
 import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
@@ -98,17 +99,32 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...folders, ...cloneFolders([JOEY_CUT_SPLIT_FOLDER])]
 
+  const hasSummerPlan2Folder = folders.some((folder) => folder.id === JOEY_SUMMER_PLAN2_FOLDER.id)
+  folders = hasSummerPlan2Folder
+    ? folders.map((folder) =>
+        folder.id === JOEY_SUMMER_PLAN2_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_SUMMER_PLAN2_FOLDER.name,
+              purpose: JOEY_SUMMER_PLAN2_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...folders, ...cloneFolders([JOEY_SUMMER_PLAN2_FOLDER])]
+
   const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
   const missingBunsPlans = BUNS_AND_THIGHS_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCutSplitPlans = JOEY_CUT_SPLIT_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingSummerPlan2Plans = JOEY_SUMMER_PLAN2_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
   const missingPlans = [
     ...missingSbdPlans,
     ...missingCalisPlans,
     ...missingBunsPlans,
     ...missingCutSplitPlans,
+    ...missingSummerPlan2Plans,
     ...missingDefaultPlans,
   ]
   templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
@@ -116,6 +132,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   const seededById = new Map([
     ...BUNS_AND_THIGHS_PLANS.map((plan) => [plan.id, plan] as const),
     ...JOEY_CUT_SPLIT_PLANS.map((plan) => [plan.id, plan] as const),
+    ...JOEY_SUMMER_PLAN2_PLANS.map((plan) => [plan.id, plan] as const),
   ])
   templates = templates.map((template) => {
     const seed = seededById.get(template.id)

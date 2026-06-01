@@ -1,9 +1,9 @@
-import { getDayExercises, type Exercise, type WorkoutLog } from '@/types/workout'
+import { getDayExercises, setCountsTowardProgress, type Exercise, type WorkoutLog } from '@/types/workout'
 import { collectExerciseHistory } from '@/utils/exerciseProgress'
 import type { WeightUnit } from '@/utils/units'
 import { formatDeltaFromLbs, parseStoredLbs } from '@/utils/units'
 
-type SetLogLike = { reps: string; weight: string }
+type SetLogLike = { reps: string; weight: string; isWarmup?: boolean }
 
 const INCREMENT_MAP: Record<string, number> = {
   'leg press': 10,
@@ -216,6 +216,7 @@ function collectSetPerformances(
     if (!ex) continue
     const sessionTargetReps = (ex.targetReps ?? '').trim() || undefined
     for (const s of ex.sets) {
+      if (!setCountsTowardProgress(s)) continue
       const weightLbs = parseStoredLbs(s.weight)
       const reps = parseInt(s.reps, 10)
       if (Number.isNaN(weightLbs) || weightLbs <= 0 || Number.isNaN(reps) || reps <= 0) continue
@@ -251,7 +252,9 @@ function lastSessionSets(
     if (excludeDateKey && date === excludeDateKey) continue
     const ex = getDayExercises(dayEntry).find((e) => exerciseNameMatches(e.name, exerciseName))
     if (!ex) continue
-    const completed = ex.sets.filter((s) => s.reps.trim() !== '' && s.weight.trim() !== '')
+    const completed = ex.sets.filter(
+      (s) => setCountsTowardProgress(s) && s.reps.trim() !== '' && s.weight.trim() !== '',
+    )
     if (completed.length > 0) {
       sessions.push({
         date,

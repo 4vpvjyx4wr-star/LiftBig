@@ -47,6 +47,7 @@ const emit = defineEmits<{
   updateSet: [setId: string, field: 'reps' | 'weight', value: string]
   toggleCircuitSet: [setId: string]
   deleteSet: [setId: string]
+  toggleWarmupSet: [setId: string]
   swapExercise: []
   deleteExercise: []
   updateGoals: [patch: Partial<{ targetReps: string; targetWeight: string }>]
@@ -392,6 +393,7 @@ function closeLibraryDetail() {
         :prior-set-weight-stored="index > 0 ? exercise.sets[index - 1]?.weight : undefined"
         :prior-set-reps="index > 0 ? exercise.sets[index - 1]?.reps : undefined"
         @update="(f, v) => onSetRowUpdate(set.id, index, f, v)"
+        @toggle-warmup="emit('toggleWarmupSet', set.id)"
         @delete="emit('deleteSet', set.id)"
       />
       <button

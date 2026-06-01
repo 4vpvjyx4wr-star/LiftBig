@@ -26,8 +26,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   update: [field: 'reps' | 'weight', value: string]
+  toggleWarmup: []
   delete: []
 }>()
+
+const isWarmup = computed(() => props.set.isWarmup === true)
 
 const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
@@ -288,10 +291,29 @@ function selectRepsOption(raw: string) {
 </script>
 
 <template>
-  <div class="relative mb-2 flex min-w-0 items-center gap-2">
+  <div
+    class="relative mb-2 flex min-w-0 items-center gap-2"
+    :class="isWarmup ? 'rounded-lg bg-amber-500/10 px-1 -mx-1' : ''"
+  >
     <div class="flex w-16 shrink-0 flex-col items-center">
-      <span class="text-[11px] font-semibold text-muted">Set {{ index + 1 }}</span>
-      <span v-if="targetReps" class="mt-0.5 text-[9px] font-bold text-primary">{{ targetReps }}</span>
+      <button
+        type="button"
+        class="rounded px-1 py-0.5 text-[11px] font-semibold transition-colors hover:bg-card-inner"
+        :class="isWarmup ? 'text-amber-400' : 'text-muted hover:text-foreground'"
+        :aria-pressed="isWarmup"
+        :title="
+          isWarmup
+            ? 'Warmup set — excluded from progress. Tap to mark as working set.'
+            : 'Tap to mark as warmup (excluded from progress)'
+        "
+        @click="emit('toggleWarmup')"
+      >
+        {{ isWarmup ? 'Warmup' : `Set ${index + 1}` }}
+      </button>
+      <span
+        v-if="targetReps && !isWarmup"
+        class="mt-0.5 text-[9px] font-bold text-primary"
+      >{{ targetReps }}</span>
     </div>
     <div class="relative min-w-0 flex-1 basis-0">
       <input
