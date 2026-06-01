@@ -8,6 +8,7 @@ import ExerciseCard from '@/components/workout/ExerciseCard.vue'
 import SwapExerciseModal from '@/components/workout/SwapExerciseModal.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggingFocus'
 import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
@@ -25,6 +26,7 @@ const route = useRoute()
 const router = useRouter()
 const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
+const setLoggingFocusActive = provideWorkoutSetLoggingFocus()
 
 const dateKey = computed(() => {
   const d = route.params.date
@@ -469,7 +471,10 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       </div>
     </header>
 
-    <div class="px-4 pb-above-workout-dock pt-4">
+    <div
+      class="px-4 pt-4 transition-[padding] duration-200"
+      :class="setLoggingFocusActive ? 'pb-6' : 'pb-above-workout-dock'"
+    >
       <section
         v-if="planCoachingNotes"
         class="mb-3.5 rounded-xl border border-primary/30 bg-card-inner/60 p-3.5"
@@ -525,6 +530,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     </div>
 
     <div
+      v-show="!setLoggingFocusActive"
       class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 pb-workout-dock-safe pt-3 backdrop-blur-sm"
     >
       <div class="mx-auto flex max-w-lg gap-2 px-4 sm:px-0">
@@ -533,7 +539,8 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
             <input
               v-model="inputName"
               type="text"
-              class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-foreground outline-none focus:border-primary"
+              data-touch-input
+              class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-base text-foreground outline-none focus:border-primary"
               placeholder="Add exercise manually..."
               @focus="showInlineLibraryMatches = true"
               @blur="hideInlineLibraryMatchesSoon"
@@ -561,7 +568,8 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
               <input
                 v-model="goalRepsDraft"
                 type="text"
-                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                data-touch-input
+                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
                 placeholder="e.g. 8–12"
                 inputmode="text"
               />
@@ -572,7 +580,8 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
                 :value="storedLbsStringToDisplay(goalWeightStoredLbs, weightUnit)"
                 type="text"
                 inputmode="decimal"
-                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                data-touch-input
+                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
                 :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
                 @input="
                   goalWeightStoredLbs = displayInputToStoredLbsString(

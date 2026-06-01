@@ -925,6 +925,18 @@ body::before {
   padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
 }
 
+/*
+ * iOS Safari zooms focused inputs when font-size < 16px. Apply on coarse pointers only
+ * so desktop layout can stay compact where desired.
+ */
+@media (hover: none) and (pointer: coarse) {
+  input[data-touch-input],
+  textarea[data-touch-input],
+  select[data-touch-input] {
+    font-size: 16px;
+  }
+}
+
 /* Workout log fixed dock: safe areas for notched / gesture phones */
 .pb-workout-dock-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));

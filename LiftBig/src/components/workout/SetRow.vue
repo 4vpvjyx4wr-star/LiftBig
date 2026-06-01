@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
+import { useWorkoutSetLoggingFocusConsumer } from '@/composables/useWorkoutSetLoggingFocus'
 import type { SetLog } from '@/types/workout'
 import { finiteGoalRepMaxForScroll, REP_QUICK_PICK_DESCENDING } from '@/utils/progressiveOverload'
 import {
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 const isWarmup = computed(() => props.set.isWarmup === true)
 
 const settings = inject(settingsInjectionKey)!
+const setLoggingFocus = useWorkoutSetLoggingFocusConsumer()
 const weightUnit = computed(() => settings.weightUnit.value)
 const showWeightMenu = ref(false)
 const showRepsMenu = ref(false)
@@ -198,7 +200,19 @@ function onWeightInput(raw: string) {
   emit('update', 'weight', displayInputToStoredLbsString(raw, weightUnit.value))
 }
 
+function syncSetLoggingFocus() {
+  const el = document.activeElement
+  const inputFocused =
+    el instanceof HTMLElement && el.matches('[data-workout-set-input]')
+  if (showWeightMenu.value || showRepsMenu.value || inputFocused) {
+    setLoggingFocus?.enter()
+  } else {
+    setLoggingFocus?.leave(0)
+  }
+}
+
 async function onWeightFocus() {
+  setLoggingFocus?.enter()
   cancelWeightMenuHide()
   showWeightMenu.value = true
   await nextTick()
@@ -208,6 +222,7 @@ async function onWeightFocus() {
 }
 
 async function onRepsFocus() {
+  setLoggingFocus?.enter()
   cancelRepsMenuHide()
   showRepsMenu.value = true
   await nextTick()
@@ -215,6 +230,10 @@ async function onRepsFocus() {
     alignRepsMenuScroll()
   })
 }
+
+watch([showWeightMenu, showRepsMenu], () => {
+  syncSetLoggingFocus()
+})
 
 watch(
   () =>
@@ -252,6 +271,7 @@ function hideWeightMenuSoon() {
   weightMenuHideTimer = window.setTimeout(() => {
     weightMenuHideTimer = null
     showWeightMenu.value = false
+    syncSetLoggingFocus()
   }, MENU_HIDE_AFTER_BLUR_MS)
 }
 
@@ -260,6 +280,7 @@ function hideRepsMenuSoon() {
   repsMenuHideTimer = window.setTimeout(() => {
     repsMenuHideTimer = null
     showRepsMenu.value = false
+    syncSetLoggingFocus()
   }, MENU_HIDE_AFTER_BLUR_MS)
 }
 
@@ -281,12 +302,14 @@ function selectWeightOption(rawDisplay: string) {
   cancelWeightMenuHide()
   onWeightInput(rawDisplay)
   showWeightMenu.value = false
+  syncSetLoggingFocus()
 }
 
 function selectRepsOption(raw: string) {
   cancelRepsMenuHide()
   emit('update', 'reps', raw)
   showRepsMenu.value = false
+  syncSetLoggingFocus()
 }
 </script>
 
@@ -320,7 +343,9 @@ function selectRepsOption(raw: string) {
         :value="storedLbsStringToDisplay(set.weight, weightUnit)"
         type="text"
         inputmode="decimal"
-        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+        data-touch-input
+        data-workout-set-input
+        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
         @focus="onWeightFocus"
         @blur="hideWeightMenuSoon"
@@ -360,7 +385,9 @@ function selectRepsOption(raw: string) {
         :value="set.reps"
         type="text"
         inputmode="numeric"
-        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+        data-touch-input
+        data-workout-set-input
+        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="repsPlaceholder"
         @focus="onRepsFocus"
         @blur="hideRepsMenuSoon"
