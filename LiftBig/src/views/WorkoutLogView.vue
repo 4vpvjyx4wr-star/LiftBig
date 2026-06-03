@@ -7,12 +7,23 @@ import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import ExerciseCard from '@/components/workout/ExerciseCard.vue'
 import SwapExerciseModal from '@/components/workout/SwapExerciseModal.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
-import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { libraryFavoritesInjectionKey, settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggingFocus'
 import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, libraryExerciseIsCardio } from '@/utils/exerciseLibrary'
+import {
+  applyBodyWeightDefaultsToExercise,
+  applyBodyWeightDefaultsToExercises,
+  applyBodyWeightOnExerciseSwap,
+  defaultWeightForNewSet,
+} from '@/utils/bodyWeightDefaults'
 import { formatDisplayDate } from '@/utils/dateKey'
-import { resolveManualExerciseInput, searchLibrary } from '@/utils/exerciseLibrary'
+import {
+  inlineLibrarySuggestMatches,
+  isFavoritesLibrarySearchQuery,
+  resolveManualExerciseInput,
+} from '@/utils/exerciseLibrary'
 import { applyPredictedGoalsToExercises } from '@/utils/progressiveOverload'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 import {
@@ -21,11 +32,17 @@ import {
   downloadLiftBigBackupJson,
   parseLiftBigBackupJson,
 } from '@/utils/liftbigBackup'
+import { planDurationAssumptionsFromSeconds, formatPlanDurationEstimate } from '@/utils/planDuration'
+import {
+  estimateWorkoutCalories,
+  formatWorkoutCalories,
+} from '@/utils/workoutCalories'
 
 const route = useRoute()
 const router = useRouter()
 const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
+const favorites = inject(libraryFavoritesInjectionKey)!
 const setLoggingFocusActive = provideWorkoutSetLoggingFocus()
 
 const dateKey = computed(() => {
@@ -54,7 +71,9 @@ const goalRepsDraft = ref('')
 const goalWeightStoredLbs = ref('')
 
 const weightUnit = computed(() => settings.weightUnit.value)
-const planCoachingNotes = computed(() => workouts.getPlanNotes(dateKey.value))
+const planName = computed(() => workouts.getPlanName(dateKey.value))
+const planFolderName = computed(() => workouts.getPlanFolderName(dateKey.value))
+const planCoachingNotes = computed(() => workouts.getPlanNotes(dateKey.value)?.trim() || undefined)
 
 function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> {
   const out: Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> = {}
@@ -65,11 +84,9 @@ function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetW
   return out
 }
 
-const inlineLibraryMatches = computed(() => {
-  const needle = inputName.value.trim()
-  if (!needle) return []
-  return searchLibrary(needle, 'all').slice(0, 40)
-})
+const inlineLibraryMatches = computed(() =>
+  inlineLibrarySuggestMatches(inputName.value, favorites.favoriteIds.value, 40),
+)
 
 function flushWorkoutNotesForDate(dateKeyToSave: string) {
   if (workoutNotesTimer) {
@@ -91,20 +108,41 @@ function scheduleWorkoutNotesPersist() {
   }, WORKOUT_NOTES_DEBOUNCE_MS)
 }
 
+function normalizeExerciseForLog(ex: Exercise): Exercise {
+  const lib = ex.libraryId ? getLibraryExercise(ex.libraryId) : undefined
+  const isCardio = ex.isCardio === true || libraryExerciseIsCardio(lib)
+  if (!isCardio) return ex
+  const next: Exercise = { ...ex, isCardio: true }
+  if (next.sets.length === 0) {
+    next.sets = [{ id: newId(), reps: '', weight: '' }]
+  }
+  return next
+}
+
 function loadDay() {
   const k = dateKey.value
   if (!k) return
   if (workoutNotesBoundDate && workoutNotesBoundDate !== k) {
     flushWorkoutNotesForDate(workoutNotesBoundDate)
   }
-  const loaded = JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]
+  const loaded = (JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]).map(
+    normalizeExerciseForLog,
+  )
   applyPredictedGoalsToExercises(loaded, workouts.log.value, k)
-  exercises.value = loaded
+  exercises.value = applyBodyWeightDefaultsToExercises(loaded, settings.bodyWeightLbs.value)
   workoutNotesDraft.value = workouts.getDayNotesForDate(k)
   workoutNotesBoundDate = k
 }
 
 watch(dateKey, loadDay, { immediate: true })
+
+watch(
+  () => settings.bodyWeightLbs.value,
+  (lbs) => {
+    if (lbs <= 0) return
+    exercises.value = applyBodyWeightDefaultsToExercises(exercises.value, lbs)
+  },
+)
 
 watch(
   exercises,
@@ -117,6 +155,20 @@ watch(
 )
 
 const workoutLogPlain = computed(() => workouts.log.value)
+
+const calorieEstimate = computed(() => {
+  const assumptions = planDurationAssumptionsFromSeconds(
+    settings.averageLiftSeconds.value,
+    settings.averageRestSeconds.value,
+  )
+  return estimateWorkoutCalories(
+    exercises.value,
+    settings.bodyWeightLbs.value,
+    assumptions,
+  )
+})
+
+const hasBodyWeightForCalories = computed(() => settings.bodyWeightLbs.value > 0)
 
 const exerciseListEl = ref<HTMLElement | null>(null)
 let exerciseSortable: Sortable | null = null
@@ -176,12 +228,20 @@ function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
 }
 
+function appendExercise(ex: Exercise) {
+  exercises.value = [
+    ...exercises.value,
+    applyBodyWeightDefaultsToExercise(ex, settings.bodyWeightLbs.value),
+  ]
+}
+
 function addExercise() {
   const trimmed = inputName.value.trim()
   if (!trimmed) {
     window.alert('Please enter an exercise name.')
     return
   }
+  if (isFavoritesLibrarySearchQuery(trimmed)) return
   const resolved = resolveManualExerciseInput(trimmed)
   if (resolved) {
     addFromLibrary(resolved)
@@ -201,16 +261,23 @@ function addExercise() {
 }
 
 function addFromLibrary(ex: LibraryExercise) {
-  exercises.value = [
-    ...exercises.value,
-    {
+  if (libraryExerciseIsCardio(ex)) {
+    appendExercise({
       id: newId(),
       name: ex.name,
       libraryId: ex.id,
-      ...optionalGoalsFromDock(),
+      isCardio: true,
       sets: [{ id: newId(), reps: '', weight: '' }],
-    },
-  ]
+    })
+    return
+  }
+  appendExercise({
+    id: newId(),
+    name: ex.name,
+    libraryId: ex.id,
+    ...optionalGoalsFromDock(),
+    sets: [{ id: newId(), reps: '', weight: '' }],
+  })
 }
 
 function addFromInlineLibrary(ex: LibraryExercise) {
@@ -247,11 +314,15 @@ function onInlineSuggestTouchMove(e: TouchEvent) {
 }
 
 function addSet(exerciseId: string) {
-  exercises.value = exercises.value.map((ex) =>
-    ex.id === exerciseId
-      ? { ...ex, sets: [...ex.sets, { id: newId(), reps: '', weight: '' }] }
-      : ex,
-  )
+  const bodyLbs = settings.bodyWeightLbs.value
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    const weight = defaultWeightForNewSet(ex, bodyLbs)
+    return {
+      ...ex,
+      sets: [...ex.sets, { id: newId(), reps: '', weight }],
+    }
+  })
 }
 
 function updateSet(exerciseId: string, setId: string, field: 'reps' | 'weight', value: string) {
@@ -300,11 +371,19 @@ function deleteExercise(exerciseId: string) {
 
 function updateExerciseGoals(
   exerciseId: string,
-  patch: Partial<{ targetReps: string; targetWeight: string }>,
+  patch: Partial<{ targetReps: string; targetWeight: string; targetDuration: string; targetDistance: string }>,
 ) {
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== exerciseId) return ex
     const next: Exercise = { ...ex }
+    if (patch.targetDuration !== undefined) {
+      const t = patch.targetDuration.trim()
+      next.targetDuration = t ? t : undefined
+    }
+    if (patch.targetDistance !== undefined) {
+      const t = patch.targetDistance.trim()
+      next.targetDistance = t ? t : undefined
+    }
     if (patch.targetReps !== undefined) {
       const t = patch.targetReps.trim()
       next.targetReps = t ? t : undefined
@@ -342,9 +421,24 @@ function openSwapExercise(exerciseId: string) {
 function applySwapExerciseReplacement(lib: LibraryExercise) {
   const id = swapModalExerciseId.value
   if (!id) return
-  exercises.value = exercises.value.map((ex) =>
-    ex.id === id ? { ...ex, name: lib.name, libraryId: lib.id } : ex,
-  )
+  const isCardio = libraryExerciseIsCardio(lib)
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== id) return ex
+    const swapped: Exercise = {
+      ...ex,
+      name: lib.name,
+      libraryId: lib.id,
+      isCardio: isCardio ? true : undefined,
+      targetDuration: isCardio ? ex.targetDuration : undefined,
+      targetDistance: isCardio ? ex.targetDistance : undefined,
+      targetReps: isCardio ? undefined : ex.targetReps,
+      targetWeight: isCardio ? undefined : ex.targetWeight,
+      sets: isCardio
+        ? [{ id: ex.sets[0]?.id ?? newId(), reps: ex.sets[0]?.reps ?? '', weight: '' }]
+        : ex.sets,
+    }
+    return applyBodyWeightOnExerciseSwap(swapped, settings.bodyWeightLbs.value)
+  })
   swapModalExerciseId.value = null
 }
 
@@ -400,8 +494,10 @@ async function onImportBackup(file: File) {
 
 const sheetTheme = computed(() => settings.theme.value)
 const sheetWeightUnit = computed(() => settings.weightUnit.value)
+const sheetDistanceUnit = computed(() => settings.distanceUnit.value)
 const sheetAverageRestSeconds = computed(() => settings.averageRestSeconds.value)
 const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value)
+const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
 </script>
 
 <template>
@@ -503,9 +599,13 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     <div class="px-4 pb-6 pt-4">
       <section
         v-if="planCoachingNotes"
-        class="mb-3.5 rounded-xl border border-primary/30 bg-card-inner/60 p-3.5"
+        class="mb-3.5 rounded-xl border border-primary/35 bg-card-inner/70 p-3.5"
       >
-        <h2 class="text-sm font-bold uppercase tracking-wide text-primary">Plan coaching</h2>
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <h2 class="text-sm font-bold uppercase tracking-wide text-primary">Today's plan</h2>
+          <p v-if="planName" class="text-sm font-extrabold text-foreground">{{ planName }}</p>
+          <p v-if="planFolderName" class="text-xs text-muted">({{ planFolderName }})</p>
+        </div>
         <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground">
           {{ planCoachingNotes }}
         </p>
@@ -634,6 +734,47 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
         </div>
       </section>
 
+      <section
+        v-if="exercises.length > 0"
+        class="mt-3.5 rounded-xl border border-border bg-card p-3.5"
+      >
+        <div class="flex items-start gap-3">
+          <i class="fa-solid fa-fire-flame-curved mt-0.5 text-lg text-primary" aria-hidden="true" />
+          <div class="min-w-0">
+            <h2 class="text-sm font-bold uppercase tracking-wide text-muted">Calories burned</h2>
+            <p
+              v-if="calorieEstimate"
+              class="mt-1 text-xl font-extrabold text-foreground"
+            >
+              {{ formatWorkoutCalories(calorieEstimate.calories) }}
+            </p>
+            <p
+              v-else-if="!hasBodyWeightForCalories"
+              class="mt-1 text-sm text-muted"
+            >
+              Add your body weight in
+              <button
+                type="button"
+                class="font-bold text-primary underline-offset-2 hover:underline"
+                @click="settingsOpen = true"
+              >
+                Settings
+              </button>
+              to see an estimate.
+            </p>
+            <p v-else class="mt-1 text-sm text-muted">
+              Log sets or cardio duration to estimate calories.
+            </p>
+            <p
+              v-if="calorieEstimate"
+              class="mt-1 text-xs text-muted"
+            >
+              {{ formatPlanDurationEstimate(calorieEstimate.durationMinutes) }} session · estimate based on your body weight and logged work
+            </p>
+          </div>
+        </div>
+      </section>
+
       <button
         v-if="exercises.length > 0"
         type="button"
@@ -661,13 +802,17 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       :open="settingsOpen"
       :theme="sheetTheme"
       :weight-unit="sheetWeightUnit"
+      :distance-unit="sheetDistanceUnit"
       :average-rest-seconds="sheetAverageRestSeconds"
       :average-lift-seconds="sheetAverageLiftSeconds"
+      :body-weight-lbs="sheetBodyWeightLbs"
       @close="settingsOpen = false"
       @update:theme="settings.setTheme"
       @update:weight-unit="settings.setWeightUnit"
+      @update:distance-unit="settings.setDistanceUnit"
       @update:average-rest-seconds="settings.setAverageRestSeconds"
       @update:average-lift-seconds="settings.setAverageLiftSeconds"
+      @update:body-weight-lbs="settings.setBodyWeightLbs"
       @export-backup="onExportBackup"
       @import-backup="onImportBackup"
     />

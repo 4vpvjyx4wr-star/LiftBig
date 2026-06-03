@@ -3,7 +3,11 @@ import { computed, inject, ref, watch } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
+import { cardioTargetDurationMinutes, cardioTargetDistance } from '@/types/workout'
+import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
+import { distanceUnitLabel, formatDistanceWithUnit, normalizeDistanceInput } from '@/utils/distances'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
+import { libraryExerciseIsCardio } from '@/utils/exerciseLibrary'
 import {
   estimatePlanDurationMinutes,
   formatPlanDurationEstimate,
@@ -13,6 +17,7 @@ import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
 const settings = inject(settingsInjectionKey)!
+const distanceUnit = computed(() => settings.distanceUnit.value)
 
 const props = defineProps<{
   show: boolean
@@ -75,6 +80,17 @@ function blankExercise(): TemplateExercise {
   }
 }
 
+function blankCardioExercise(): TemplateExercise {
+  return {
+    id: `new-ex-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    name: '',
+    isCardio: true,
+    targetDuration: '',
+    targetDistance: '',
+    sets: [{ targetReps: '', targetWeight: '' }],
+  }
+}
+
 function resetFromProps() {
   goalsEditorOpen.value = {}
   resetDurationDraftFromSettings()
@@ -121,7 +137,22 @@ function addExercise() {
   exercises.value = [...exercises.value, blankExercise()]
 }
 
+function addCardioExercise() {
+  exercises.value = [...exercises.value, blankCardioExercise()]
+}
+
 function addFromLibrary(ex: LibraryExercise) {
+  if (libraryExerciseIsCardio(ex)) {
+    exercises.value = [
+      ...exercises.value,
+      {
+        ...blankCardioExercise(),
+        name: ex.name,
+        libraryId: ex.id,
+      },
+    ]
+    return
+  }
   exercises.value = [
     ...exercises.value,
     {
@@ -158,6 +189,16 @@ function toggleGoalsEditor(exId: string) {
 
 function goalSummaryLine(ex: TemplateExercise): string {
   if (ex.isCircuit) return ''
+  if (ex.isCardio) {
+    const parts: string[] = []
+    const d = cardioTargetDurationMinutes(ex)
+    if (d) parts.push(`${d} min`)
+    if (cardioExerciseSupportsDistance(ex)) {
+      const dist = cardioTargetDistance(ex)
+      if (dist) parts.push(formatDistanceWithUnit(dist, distanceUnit.value))
+    }
+    return parts.length ? `Goal: ${parts.join(' · ')}` : ''
+  }
   const n = ex.sets.length
   const reps = (ex.targetReps ?? '').trim()
   const w = (ex.targetWeight ?? '').trim()
@@ -165,6 +206,27 @@ function goalSummaryLine(ex: TemplateExercise): string {
   const mid = reps ? `${n} × ${reps}` : `${n} sets`
   const tail = w ? ` @ ${storedLbsStringToDisplay(w, props.weightUnit)}` : ''
   return `Goal: ${mid}${tail}`
+}
+
+function onCardioDurationInput(exIndex: number, raw: string) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  const trimmed = raw.trim()
+  updateExercise(exIndex, {
+    ...ex,
+    targetDuration: trimmed,
+    sets: [{ targetReps: trimmed, targetWeight: '' }],
+  })
+}
+
+function onCardioDistanceInput(exIndex: number, raw: string) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  const trimmed = normalizeDistanceInput(raw)
+  updateExercise(exIndex, {
+    ...ex,
+    targetDistance: trimmed,
+  })
 }
 
 function onGoalWeightInput(exIndex: number, raw: string) {
@@ -237,7 +299,44 @@ function save() {
               class="mb-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               placeholder="Exercise name"
             />
-            <template v-if="!ex.isCircuit">
+            <template v-if="ex.isCardio">
+              <div class="mb-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <p v-if="goalSummaryLine(ex)" class="min-w-0 flex-1 text-[11px] leading-snug text-muted">
+                  {{ goalSummaryLine(ex) }}
+                </p>
+                <span v-else class="text-[11px] text-muted">Target duration (optional)</span>
+              </div>
+              <div
+                class="grid gap-2"
+                :class="cardioExerciseSupportsDistance(ex) ? 'grid-cols-2' : 'grid-cols-1'"
+              >
+                <div>
+                  <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Duration (min)</label>
+                  <input
+                    :value="cardioTargetDurationMinutes(ex)"
+                    type="text"
+                    inputmode="numeric"
+                    class="mt-0.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                    placeholder="e.g. 30"
+                    @input="onCardioDurationInput(ei, ($event.target as HTMLInputElement).value)"
+                  />
+                </div>
+                <div v-if="cardioExerciseSupportsDistance(ex)">
+                  <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">
+                    Distance ({{ distanceUnitLabel(distanceUnit) }})
+                  </label>
+                  <input
+                    :value="cardioTargetDistance(ex)"
+                    type="text"
+                    inputmode="decimal"
+                    class="mt-0.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                    placeholder="Optional"
+                    @input="onCardioDistanceInput(ei, ($event.target as HTMLInputElement).value)"
+                  />
+                </div>
+              </div>
+            </template>
+            <template v-else-if="!ex.isCircuit">
               <div class="mb-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <button
                   type="button"
@@ -281,6 +380,7 @@ function save() {
                 </div>
               </div>
             </template>
+            <template v-if="!ex.isCardio">
             <div
               class="grid grid-cols-[2.25rem_1fr_1fr_1.75rem] items-center gap-x-1 text-[10px] font-bold uppercase text-muted"
             >
@@ -324,6 +424,7 @@ function save() {
             >
               + Add Set
             </button>
+            </template>
           </div>
         </div>
 
@@ -334,6 +435,13 @@ function save() {
             @click="addExercise"
           >
             + Add exercise
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg border border-border py-2 text-sm font-bold text-foreground"
+            @click="addCardioExercise"
+          >
+            + Add cardio
           </button>
           <button
             type="button"

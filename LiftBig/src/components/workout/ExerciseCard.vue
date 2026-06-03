@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
+import CardioDistanceInput from '@/components/workout/CardioDistanceInput.vue'
+import CardioDurationInput from '@/components/workout/CardioDurationInput.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
-import { getLibraryExercise } from '@/utils/exerciseLibrary'
+import {
+  cardioExerciseComplete,
+  cardioLoggedDistance,
+  cardioLoggedDurationMinutes,
+  cardioTargetDistance,
+  cardioTargetDurationMinutes,
+} from '@/types/workout'
+import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
+import { getLibraryExercise, resolveExerciseIsCardio } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
+import { distanceUnitLabel, formatDistanceWithUnit, normalizeDistanceInput } from '@/utils/distances'
 import {
   formatWeightWithUnit,
   parseStoredLbs,
@@ -21,6 +32,7 @@ const props = defineProps<{
 
 const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
+const distanceUnit = computed(() => settings.distanceUnit.value)
 
 function formatStoredLbsForDisplay(s: string | undefined): string {
   if (!s?.trim()) return ''
@@ -50,7 +62,7 @@ const emit = defineEmits<{
   toggleWarmupSet: [setId: string]
   swapExercise: []
   deleteExercise: []
-  updateGoals: [patch: Partial<{ targetReps: string; targetWeight: string }>]
+  updateGoals: [patch: Partial<{ targetReps: string; targetWeight: string; targetDuration: string; targetDistance: string }>]
   updateNotes: [notes: string]
 }>()
 
@@ -116,6 +128,61 @@ const suggestion = ref<{
   reason: string
 } | null>(null)
 
+const libraryEntry = computed(() => {
+  const id = props.exercise.libraryId
+  if (!id) return null
+  return getLibraryExercise(id) ?? null
+})
+
+const isCardio = computed(
+  () =>
+    props.exercise.isCardio === true ||
+    resolveExerciseIsCardio(libraryEntry.value ?? undefined, props.exercise.libraryId),
+)
+
+const supportsDistance = computed(() => cardioExerciseSupportsDistance(props.exercise))
+
+const cardioGoalLine = computed(() => {
+  const parts: string[] = []
+  const d = cardioTargetDurationMinutes(props.exercise)
+  if (d) parts.push(`${d} min`)
+  const dist = cardioTargetDistance(props.exercise)
+  if (dist && supportsDistance.value) {
+    parts.push(formatDistanceWithUnit(dist, distanceUnit.value))
+  }
+  return parts.length ? `Goal: ${parts.join(' · ')}` : ''
+})
+
+const cardioStatusLine = computed(() => {
+  const parts: string[] = []
+  const d = cardioLoggedDurationMinutes(props.exercise)
+  if (d) parts.push(`${d} min`)
+  const dist = cardioLoggedDistance(props.exercise)
+  if (dist && supportsDistance.value) {
+    parts.push(formatDistanceWithUnit(dist, distanceUnit.value))
+  }
+  if (parts.length) return parts.join(' · ')
+  return supportsDistance.value ? 'Duration / distance' : 'Duration'
+})
+
+const cardioDuration = computed({
+  get: () => cardioLoggedDurationMinutes(props.exercise),
+  set: (value: string) => {
+    const setId = props.exercise.sets[0]?.id
+    if (!setId) return
+    emit('updateSet', setId, 'reps', value)
+  },
+})
+
+const cardioDistance = computed({
+  get: () => cardioLoggedDistance(props.exercise),
+  set: (value: string) => {
+    const setId = props.exercise.sets[0]?.id
+    if (!setId) return
+    emit('updateSet', setId, 'weight', normalizeDistanceInput(value))
+  },
+})
+
 function onSetRowUpdate(setId: string, index: number, field: 'reps' | 'weight', value: string) {
   emit('updateSet', setId, field, value)
 }
@@ -130,9 +197,10 @@ watch(
       props.workoutLog,
       props.sessionDateKey,
       weightUnit.value,
+      isCardio.value,
     ] as const,
   () => {
-    if (props.exercise.isCircuit) {
+    if (props.exercise.isCircuit || isCardio.value) {
       suggestion.value = null
       return
     }
@@ -166,21 +234,16 @@ watch(
   { deep: true, immediate: true },
 )
 
-const completedSets = computed(() =>
-  props.exercise.sets.filter((s) =>
+const completedSets = computed(() => {
+  if (isCardio.value) return cardioExerciseComplete(props.exercise) ? 1 : 0
+  return props.exercise.sets.filter((s) =>
     props.exercise.isCircuit ? s.checked : s.reps !== '' && s.weight !== '',
-  ).length,
-)
+  ).length
+})
 
-const allDone = computed(
-  () =>
-    completedSets.value === props.exercise.sets.length && props.exercise.sets.length > 0,
-)
-
-const libraryEntry = computed(() => {
-  const id = props.exercise.libraryId
-  if (!id) return null
-  return getLibraryExercise(id) ?? null
+const allDone = computed(() => {
+  if (isCardio.value) return cardioExerciseComplete(props.exercise)
+  return completedSets.value === props.exercise.sets.length && props.exercise.sets.length > 0
 })
 
 const detailOpen = ref(false)
@@ -198,7 +261,7 @@ function closeLibraryDetail() {
 <template>
   <div
     class="mb-3.5 rounded-xl border border-border bg-card p-3.5"
-    :class="allDone ? 'border-[#16a34a]' : ''"
+    :class="allDone ? 'border-success' : ''"
   >
     <div class="mb-2 flex justify-between gap-2">
       <div class="min-w-0 flex-1">
@@ -220,7 +283,26 @@ function closeLibraryDetail() {
           </button>
         </div>
         <div
-          v-if="!exercise.isCircuit"
+          v-if="isCardio"
+          class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
+        >
+          <p v-if="cardioGoalLine" class="min-w-0 text-[11px] leading-snug text-muted">
+            {{ cardioGoalLine }}
+          </p>
+          <span v-else class="text-[11px] text-muted">No duration goal</span>
+          <button
+            type="button"
+            class="shrink-0 text-muted hover:text-primary"
+            :aria-expanded="goalsEditorOpen"
+            :aria-controls="`exercise-goals-editor-${exercise.id}`"
+            aria-label="Edit duration goal"
+            @click="goalsEditorOpen = !goalsEditorOpen"
+          >
+            <i class="fa-solid fa-pen text-[10px]" aria-hidden="true" />
+          </button>
+        </div>
+        <div
+          v-else-if="!exercise.isCircuit"
           class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"
         >
           <p v-if="goalSummaryLine" class="min-w-0 text-[11px] leading-snug text-muted">
@@ -242,9 +324,17 @@ function closeLibraryDetail() {
       <div class="flex shrink-0 flex-col items-end gap-1">
         <span
           class="text-[11px] font-bold"
-          :class="allDone ? 'text-[#4ade80]' : 'text-muted'"
+          :class="allDone ? 'text-success-text' : 'text-muted'"
         >
-          {{ allDone ? 'Complete' : `${completedSets}/${exercise.sets.length} sets` }}
+          {{
+            isCardio
+              ? allDone
+                ? 'Complete'
+                : cardioStatusLine
+              : allDone
+                ? 'Complete'
+                : `${completedSets}/${exercise.sets.length} sets`
+          }}
         </span>
         <button
           type="button"
@@ -280,7 +370,7 @@ function closeLibraryDetail() {
         "
         @click="activePanel = 'sets'"
       >
-        Sets
+        {{ isCardio ? 'Activity' : 'Sets' }}
       </button>
       <button
         type="button"
@@ -313,7 +403,67 @@ function closeLibraryDetail() {
 
     <div v-show="activePanel === 'sets'">
     <div
-      v-if="goalsEditorOpen && !exercise.isCircuit"
+      v-if="goalsEditorOpen && isCardio"
+      :id="`exercise-goals-editor-${exercise.id}`"
+      class="mb-2 grid gap-2"
+      :class="supportsDistance ? 'grid-cols-2' : 'grid-cols-1'"
+    >
+      <div>
+        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal duration (min)</label>
+        <input
+          :value="exercise.targetDuration ?? ''"
+          type="text"
+          inputmode="numeric"
+          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+          placeholder="e.g. 30"
+          @input="emit('updateGoals', { targetDuration: ($event.target as HTMLInputElement).value })"
+        />
+      </div>
+      <div v-if="supportsDistance">
+        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">
+          Goal distance ({{ distanceUnitLabel(distanceUnit) }})
+        </label>
+        <input
+          :value="exercise.targetDistance ?? ''"
+          type="text"
+          inputmode="decimal"
+          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+          placeholder="Optional"
+          @input="
+            emit('updateGoals', {
+              targetDistance: normalizeDistanceInput(($event.target as HTMLInputElement).value),
+            })
+          "
+        />
+      </div>
+    </div>
+
+    <div
+      v-if="isCardio"
+      class="mb-2"
+      :class="supportsDistance ? 'grid grid-cols-2 gap-2' : ''"
+    >
+      <div>
+        <label class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-muted">Duration (minutes)</label>
+        <CardioDurationInput
+          v-model="cardioDuration"
+          :target-duration="cardioTargetDurationMinutes(exercise)"
+        />
+      </div>
+      <div v-if="supportsDistance">
+        <label class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-muted">
+          Distance ({{ distanceUnitLabel(distanceUnit) }})
+        </label>
+        <CardioDistanceInput
+          v-model="cardioDistance"
+          :distance-unit="distanceUnit"
+          :target-distance="cardioTargetDistance(exercise)"
+        />
+      </div>
+    </div>
+
+    <div
+      v-else-if="goalsEditorOpen && !exercise.isCircuit"
       :id="`exercise-goals-editor-${exercise.id}`"
       class="mb-2 grid grid-cols-2 gap-2"
     >
@@ -342,15 +492,15 @@ function closeLibraryDetail() {
     </div>
 
     <div
-      v-if="suggestion && !exercise.isCircuit && suggestion.reason !== 'No history yet'"
-      class="mb-2.5 rounded-lg border border-[#16a34a] bg-[#0d2010] p-2"
+      v-if="suggestion && !exercise.isCircuit && !isCardio && suggestion.reason !== 'No history yet'"
+      class="mb-2.5 rounded-lg border border-success bg-success-soft p-2"
     >
-      <div class="text-[13px] font-bold text-[#4ade80]">
+      <div class="text-[13px] font-bold text-success-text">
         Predicted goal:
         {{ exercise.sets.length }} × {{ suggestion.suggestedReps }}
         @ {{ formatWeightWithUnit(suggestion.suggestedWeight, weightUnit, 1) }}
       </div>
-      <div class="mt-0.5 text-[11px] text-[#86efac]">{{ suggestion.reason }}</div>
+      <div class="mt-0.5 text-[11px] text-success-text/80">{{ suggestion.reason }}</div>
     </div>
 
     <template v-if="exercise.isCircuit">
@@ -376,7 +526,7 @@ function closeLibraryDetail() {
       </button>
     </template>
 
-    <template v-else>
+    <template v-else-if="!isCardio">
       <div class="mb-1 flex min-w-0">
         <span class="w-16 shrink-0" />
         <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Weight</span>

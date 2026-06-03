@@ -34,7 +34,9 @@ function onSelect(ex: LibraryExercise) {
         <h3 id="library-picker-title" class="text-lg font-extrabold text-foreground">
           Exercise library
         </h3>
-        <p class="mt-1 text-xs text-muted">Pick an exercise to add. You can edit sets after.</p>
+        <p class="mt-1 text-xs text-muted">
+          Pick an exercise to add. Strength lifts use sets; cardio uses duration only.
+        </p>
         <div class="mt-4">
           <LibraryBrowser @select-exercise="onSelect" />
         </div>

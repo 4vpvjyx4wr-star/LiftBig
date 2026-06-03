@@ -29,14 +29,30 @@ export function planDurationAssumptionsFromSeconds(
 /**
  * Estimated session length: each set counts as `PER_SET` minutes of work plus
  * `REST_BETWEEN_SETS` minutes between every consecutive pair of sets.
+ * Cardio entries use their target duration in minutes when set.
  */
 export function estimatePlanDurationMinutes(
   template: WorkoutTemplate,
   assumptions: PlanDurationAssumptions = DEFAULT_PLAN_DURATION_ASSUMPTIONS,
 ): number {
-  const totalSets = template.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)
-  if (totalSets <= 0) return 0
-  return totalSets * assumptions.minutesPerSet + (totalSets - 1) * assumptions.minutesRestBetweenSets
+  let total = 0
+  let strengthSets = 0
+
+  for (const ex of template.exercises) {
+    if (ex.isCardio) {
+      const raw = (ex.targetDuration ?? ex.sets[0]?.targetReps ?? '').trim()
+      const mins = parseInt(raw, 10)
+      if (!Number.isNaN(mins) && mins > 0) total += mins
+      continue
+    }
+    strengthSets += ex.sets.length
+  }
+
+  if (strengthSets <= 0) return total
+  const strengthMinutes =
+    strengthSets * assumptions.minutesPerSet +
+    (strengthSets - 1) * assumptions.minutesRestBetweenSets
+  return total + strengthMinutes
 }
 
 export function formatPlanDurationEstimate(minutes: number): string {

@@ -53,7 +53,7 @@ function cellTone(key: string): 'work' | 'rest' | 'empty' {
             ? 'border-primary bg-primary/20 text-primary'
             : '',
           todayKey === key && !(highlightSelection && selectedKey === key)
-            ? 'ring-2 ring-[#1d4ed8] ring-offset-2 ring-offset-background'
+            ? 'ring-2 ring-blue ring-offset-2 ring-offset-background'
             : '',
         ]"
         @click="emit('pick', key)"

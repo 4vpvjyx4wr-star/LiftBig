@@ -9,6 +9,7 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
+import { sortFolderPlans } from '@/utils/folderPlanSort'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const props = defineProps<{
@@ -78,24 +79,6 @@ const folderSections = computed(() =>
 const allPlansPickerList = computed(() =>
   filteredTemplates.value.slice().sort((a, b) => a.name.localeCompare(b.name)),
 )
-
-function folderPlanSortKey(name: string): [number, number, string] {
-  const weekMatch = /week\s+(\d+)/i.exec(name)
-  const dayMatch = /day\s+(\d+)/i.exec(name)
-  const week = weekMatch ? Number.parseInt(weekMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  const day = dayMatch ? Number.parseInt(dayMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  return [week, day, name.toLowerCase()]
-}
-
-function sortedPlans(plans: WorkoutTemplate[]): WorkoutTemplate[] {
-  return plans.slice().sort((a, b) => {
-    const [aw, ad, an] = folderPlanSortKey(a.name)
-    const [bw, bd, bn] = folderPlanSortKey(b.name)
-    if (aw !== bw) return aw - bw
-    if (ad !== bd) return ad - bd
-    return an.localeCompare(bn)
-  })
-}
 
 function isFolderOpen(folderId: string): boolean {
   return openFolderMap.value[folderId] === true
@@ -245,7 +228,7 @@ watch(
               No plans in this folder.
             </p>
             <ul v-else class="space-y-2">
-              <li v-for="t in sortedPlans(entry.plans)" :key="t.id">
+              <li v-for="t in sortFolderPlans(entry.plans)" :key="t.id">
                 <button
                   type="button"
                   class="w-full rounded-xl border border-border bg-card-inner px-3 py-3 text-left hover:border-primary"

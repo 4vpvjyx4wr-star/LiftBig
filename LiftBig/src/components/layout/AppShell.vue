@@ -61,8 +61,10 @@ async function onImportBackup(file: File) {
 }
 const sheetTheme = computed(() => settings.theme.value)
 const sheetWeightUnit = computed(() => settings.weightUnit.value)
+const sheetDistanceUnit = computed(() => settings.distanceUnit.value)
 const sheetAverageRestSeconds = computed(() => settings.averageRestSeconds.value)
 const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value)
+const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
 </script>
 
 <template>
@@ -78,7 +80,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
 
     <div class="mx-auto flex w-full max-w-lg flex-1 flex-col px-3">
       <header
-        class="sticky top-0 z-50 flex shrink-0 items-center justify-between gap-3 border-b border-border bg-background/95 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80"
+        class="sticky top-0 z-50 flex shrink-0 items-center justify-between gap-3 border-b border-border bg-header-bg/95 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-header-bg/80"
         :style="{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }"
       >
         <div class="min-w-0 flex-1">
@@ -113,7 +115,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
             <div
               v-if="menuOpen"
               id="app-shell-menu"
-              class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),13rem)] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
+              class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),13rem)] rounded-2xl border border-border bg-menu-bg py-1 shadow-xl"
               role="menu"
               @click.stop
             >
@@ -172,7 +174,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
     <Teleport to="body">
       <nav
         id="app-bottom-tabs"
-        class="fixed inset-x-0 bottom-0 z-40 w-full touch-manipulation border-t border-border bg-card/95 backdrop-blur-sm select-none [transform:translateZ(0)] [-webkit-transform:translateZ(0)] [-webkit-touch-callout:none]"
+        class="fixed inset-x-0 bottom-0 z-40 w-full touch-manipulation border-t border-border bg-nav-bg/95 backdrop-blur-sm select-none [transform:translateZ(0)] [-webkit-transform:translateZ(0)] [-webkit-touch-callout:none]"
       >
         <div
           class="relative mx-auto flex max-w-lg items-end gap-0 px-1 pb-bottom-nav-safe pt-2.5"
@@ -249,13 +251,17 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       :open="settingsOpen"
       :theme="sheetTheme"
       :weight-unit="sheetWeightUnit"
+      :distance-unit="sheetDistanceUnit"
       :average-rest-seconds="sheetAverageRestSeconds"
       :average-lift-seconds="sheetAverageLiftSeconds"
+      :body-weight-lbs="sheetBodyWeightLbs"
       @close="settingsOpen = false"
       @update:theme="settings.setTheme"
       @update:weight-unit="settings.setWeightUnit"
+      @update:distance-unit="settings.setDistanceUnit"
       @update:average-rest-seconds="settings.setAverageRestSeconds"
       @update:average-lift-seconds="settings.setAverageLiftSeconds"
+      @update:body-weight-lbs="settings.setBodyWeightLbs"
       @export-backup="onExportBackup"
       @import-backup="onImportBackup"
     />

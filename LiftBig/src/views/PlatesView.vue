@@ -120,7 +120,7 @@ function unitWord(plural: boolean) {
     </div>
 
     <template v-if="result">
-      <div class="mt-4 rounded-xl border border-[#16a34a] bg-[#0d2010] p-4 text-center">
+      <div class="mt-4 rounded-xl border border-success bg-success-soft p-4 text-center">
         <div class="text-4xl font-black text-success-text">
           {{ totalWeight }} {{ unitWord(true) }}
         </div>

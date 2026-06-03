@@ -15,6 +15,7 @@ import {
   LEGACY_JOEY_SUMMER_FOLDER_ID,
   LEGACY_JOEY_SUMMER_FOLDER_NAME,
 } from '@/utils/joeySummerCutSplitPlans'
+import { reorderSeededFolderPlans } from '@/utils/folderPlanSort'
 import { JOEY_SUMMER_PLAN2_FOLDER, JOEY_SUMMER_PLAN2_PLANS } from '@/utils/joeySummerPlan2'
 import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
@@ -138,6 +139,8 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
     const seed = seededById.get(template.id)
     return seed ? (clonePlans([seed])[0] ?? template) : template
   })
+
+  templates = reorderSeededFolderPlans(templates, JOEY_SUMMER_PLAN2_FOLDER.id, JOEY_SUMMER_PLAN2_PLANS)
 
   return { templates, folders }
 }

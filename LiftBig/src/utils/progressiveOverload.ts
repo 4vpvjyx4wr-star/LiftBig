@@ -448,7 +448,7 @@ export function applyPredictedGoalsToExercises(
   } = {},
 ): void {
   for (const ex of exercises) {
-    if (ex.isCircuit) continue
+    if (ex.isCircuit || ex.isCardio) continue
     const allEmpty = ex.sets.every((s) => !s.reps.trim() && !s.weight.trim())
     if (!allEmpty && !options.refreshFromHistory) continue
 

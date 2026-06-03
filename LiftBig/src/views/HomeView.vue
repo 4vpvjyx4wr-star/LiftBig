@@ -12,6 +12,7 @@ import {
   settingsInjectionKey,
   workoutsInjectionKey,
   templatesInjectionKey,
+  libraryFavoritesInjectionKey,
 } from '@/composables/injectionKeys'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise, WorkoutTemplate } from '@/types/workout'
@@ -27,12 +28,13 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
-import { getLibraryExercise, resolveManualExerciseInput, searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, inlineLibrarySuggestMatches, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 
 const workouts = inject(workoutsInjectionKey)!
 const templates = inject(templatesInjectionKey)!
 const settings = inject(settingsInjectionKey)!
+const favorites = inject(libraryFavoritesInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 
 const today = todayKey()
@@ -233,11 +235,9 @@ const addGoalWeightStoredLbs = ref('')
 const showInlineMatches = ref(false)
 const libraryPickerOpen = ref(false)
 
-const inlineLibraryMatches = computed(() => {
-  const needle = addInputName.value.trim()
-  if (!needle) return []
-  return searchLibrary(needle, 'all').slice(0, 5)
-})
+const inlineLibraryMatches = computed(() =>
+  inlineLibrarySuggestMatches(addInputName.value, favorites.favoriteIds.value, 5),
+)
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -255,6 +255,7 @@ function addExerciseGoals(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight
 function addManualExercise() {
   const trimmed = addInputName.value.trim()
   if (!trimmed) return
+  if (isFavoritesLibrarySearchQuery(trimmed)) return
   const resolved = resolveManualExerciseInput(trimmed)
   if (resolved) {
     addFromLibrary(resolved)

@@ -1,25 +1,55 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { THEME_OPTIONS, type ThemeId } from '@/composables/useSettings'
+import { computed, inject, nextTick, ref, watch } from 'vue'
+import CustomThemeEditor from '@/components/layout/CustomThemeEditor.vue'
+import { settingsInjectionKey } from '@/composables/injectionKeys'
+import { THEME_OPTIONS } from '@/composables/useSettings'
+import { customThemeRef, isCustomThemeRef, paletteCssVariables, type CustomTheme, type ThemePalette } from '@/utils/themePalette'
+import { displayInputToStoredLbsString, parseStoredLbs, storedLbsStringToDisplay } from '@/utils/units'
+import type { DistanceUnit } from '@/utils/distances'
 import type { WeightUnit } from '@/utils/units'
 
 const props = defineProps<{
   open: boolean
-  theme: ThemeId
+  theme: string
   weightUnit: WeightUnit
+  distanceUnit: DistanceUnit
   averageRestSeconds: number
   averageLiftSeconds: number
+  bodyWeightLbs: number
 }>()
 
 const emit = defineEmits<{
   close: []
-  'update:theme': [id: ThemeId]
+  'update:theme': [id: string]
   'update:weightUnit': [u: WeightUnit]
+  'update:distanceUnit': [u: DistanceUnit]
   'update:averageRestSeconds': [seconds: number]
   'update:averageLiftSeconds': [seconds: number]
+  'update:bodyWeightLbs': [lbs: number]
   exportBackup: []
   importBackup: [file: File]
 }>()
+
+const settings = inject(settingsInjectionKey)!
+
+function syncBodyWeightDraftFromProp() {
+  bodyWeightDraft.value =
+    props.bodyWeightLbs > 0
+      ? storedLbsStringToDisplay(String(props.bodyWeightLbs), props.weightUnit)
+      : ''
+}
+
+function commitBodyWeight() {
+  const stored = displayInputToStoredLbsString(bodyWeightDraft.value, props.weightUnit)
+  if (!stored.trim()) {
+    emit('update:bodyWeightLbs', 0)
+    return
+  }
+  const lbs = parseStoredLbs(stored)
+  emit('update:bodyWeightLbs', Number.isFinite(lbs) ? lbs : 0)
+}
+
+const bodyWeightDraft = ref('')
 
 const importInputRef = ref<HTMLInputElement | null>(null)
 const notificationPermission = ref<'unsupported' | NotificationPermission>('unsupported')
@@ -68,18 +98,123 @@ const permissionLabel = computed(() => {
 
 watch(
   () => props.open,
-  () => {
+  (open, wasOpen) => {
     refreshNotificationPermission()
+    if (open) {
+      syncBodyWeightDraftFromProp()
+      scrollActiveThemeIntoView()
+    } else if (wasOpen) {
+      commitBodyWeight()
+    }
   },
   { immediate: true },
 )
 
+watch(
+  () => props.weightUnit,
+  () => {
+    if (!props.open) return
+    commitBodyWeight()
+    syncBodyWeightDraftFromProp()
+  },
+)
+
 function pickRandomTheme() {
-  const candidates = THEME_OPTIONS.filter((o) => o.id !== props.theme)
-  const pool = candidates.length > 0 ? candidates : THEME_OPTIONS
+  const presetCandidates = THEME_OPTIONS.filter((o) => o.id !== props.theme)
+  const customCandidates = settings.customThemes.value
+    .map((t) => ({ id: customThemeRef(t.id), label: t.name }))
+    .filter((o) => o.id !== props.theme)
+  const pool = [...presetCandidates, ...customCandidates]
+  if (pool.length === 0) {
+    emit('update:theme', THEME_OPTIONS[0]!.id)
+    return
+  }
   const pick = pool[Math.floor(Math.random() * pool.length)]!
   emit('update:theme', pick.id)
 }
+
+const customThemes = computed(() => settings.customThemes.value)
+
+const activeThemeLabel = computed(() => {
+  if (isCustomThemeRef(props.theme)) {
+    const id = props.theme.slice('custom:'.length)
+    return customThemes.value.find((t) => t.id === id)?.name ?? 'Custom theme'
+  }
+  return THEME_OPTIONS.find((o) => o.id === props.theme)?.label ?? 'LiftBig (orange)'
+})
+
+const themeButtonRefs = ref<Record<string, HTMLButtonElement>>({})
+
+function setThemeButtonRef(id: string, el: Element | null) {
+  if (el instanceof HTMLButtonElement) {
+    themeButtonRefs.value[id] = el
+  } else {
+    delete themeButtonRefs.value[id]
+  }
+}
+
+function customSwatchStyle(theme: CustomTheme) {
+  return paletteCssVariables(theme.colors)
+}
+
+const customEditorOpen = ref(false)
+const editingCustomTheme = ref<CustomTheme | null>(null)
+
+function openCreateCustomTheme() {
+  editingCustomTheme.value = null
+  customEditorOpen.value = true
+}
+
+function openEditCustomTheme(theme: CustomTheme) {
+  editingCustomTheme.value = theme
+  customEditorOpen.value = true
+}
+
+function closeCustomEditor() {
+  customEditorOpen.value = false
+  editingCustomTheme.value = null
+}
+
+function confirmDeleteCustomTheme(theme: CustomTheme): boolean {
+  return window.confirm(
+    `Delete "${theme.name}"?\n\nThis custom theme will be permanently removed from this device.`,
+  )
+}
+
+function requestDeleteCustomTheme(theme: CustomTheme) {
+  if (!confirmDeleteCustomTheme(theme)) return
+  if (editingCustomTheme.value?.id === theme.id) {
+    closeCustomEditor()
+  }
+  settings.deleteCustomTheme(theme.id)
+}
+
+function onSaveCustomTheme(payload: { name: string; colors: ThemePalette }) {
+  if (editingCustomTheme.value) {
+    settings.updateCustomTheme(editingCustomTheme.value.id, payload.name, payload.colors)
+  } else {
+    settings.addCustomTheme(payload.name, payload.colors)
+  }
+  closeCustomEditor()
+}
+
+function onDeleteCustomTheme() {
+  if (!editingCustomTheme.value) return
+  requestDeleteCustomTheme(editingCustomTheme.value)
+}
+
+function scrollActiveThemeIntoView() {
+  nextTick(() => {
+    themeButtonRefs.value[props.theme]?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+watch(
+  () => props.theme,
+  () => {
+    if (props.open) scrollActiveThemeIntoView()
+  },
+)
 </script>
 
 <template>
@@ -101,36 +236,164 @@ function pickRandomTheme() {
         <p class="mb-5 text-center text-xs text-muted">Theme and units apply everywhere in the app.</p>
 
         <section class="mb-6">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Theme</h3>
-          <label class="sr-only" for="liftbig-theme-select">Theme</label>
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <h3 class="text-xs font-bold uppercase tracking-wide text-muted">Theme</h3>
+            <span class="truncate text-[11px] font-semibold text-primary">{{ activeThemeLabel }}</span>
+          </div>
           <div class="relative">
-            <select
-              id="liftbig-theme-select"
-              class="w-full appearance-none rounded-xl border border-border bg-card-inner py-3 pl-4 pr-10 text-left text-sm font-semibold text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-              :value="theme"
-              @change="
-                emit('update:theme', ($event.target as HTMLSelectElement).value as ThemeId)
-              "
+            <div
+              class="theme-picker-scroll max-h-56 overflow-y-auto rounded-xl border border-border bg-card-inner p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="listbox"
+              aria-label="Theme"
             >
-              <option v-for="opt in THEME_OPTIONS" :key="opt.id" :value="opt.id">
-                {{ opt.label }}
-              </option>
-            </select>
-            <span
-              class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted"
+              <div class="grid grid-cols-2 gap-1.5">
+                <button
+                  v-for="opt in THEME_OPTIONS"
+                  :key="opt.id"
+                  :ref="(el) => setThemeButtonRef(opt.id, el as Element | null)"
+                  type="button"
+                  role="option"
+                  :aria-selected="theme === opt.id"
+                  class="group flex items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors"
+                  :class="
+                    theme === opt.id
+                      ? 'border-primary bg-primary/10 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]'
+                      : 'border-transparent hover:border-border hover:bg-card'
+                  "
+                  :data-theme="opt.id"
+                  @click="emit('update:theme', opt.id)"
+                >
+                  <span
+                    class="theme-swatch-preview h-9 w-9 shrink-0 rounded-lg"
+                    aria-hidden="true"
+                  />
+                  <span class="min-w-0 flex-1">
+                    <span
+                      class="block truncate text-xs font-bold leading-tight"
+                      :class="theme === opt.id ? 'text-foreground' : 'text-foreground/90'"
+                    >
+                      {{ opt.label }}
+                    </span>
+                  </span>
+                  <i
+                    v-if="theme === opt.id"
+                    class="fa-solid fa-circle-check shrink-0 text-xs text-primary"
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+            </div>
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-xl bg-gradient-to-t from-card-inner to-transparent"
               aria-hidden="true"
-            >
-              <i class="fa-solid fa-chevron-down text-xs" />
-            </span>
+            />
           </div>
           <button
             type="button"
-            class="mt-2 w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground hover:border-primary/50"
+            class="mt-2 w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground transition-colors hover:border-primary/50"
             @click="pickRandomTheme"
           >
             <i class="fa-solid fa-shuffle mr-2" aria-hidden="true" />
             Random theme
           </button>
+
+          <div class="mt-4">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <h3 class="text-xs font-bold uppercase tracking-wide text-muted">Custom themes</h3>
+              <span v-if="customThemes.length > 0" class="text-[11px] font-semibold text-muted">
+                {{ customThemes.length }}
+              </span>
+            </div>
+            <div
+              v-if="customThemes.length > 0"
+              class="relative mb-2"
+            >
+              <div
+                class="max-h-40 overflow-y-auto rounded-xl border border-border bg-card-inner p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="listbox"
+                aria-label="Custom themes"
+              >
+                <div class="grid grid-cols-2 gap-1.5">
+                  <div
+                    v-for="custom in customThemes"
+                    :key="custom.id"
+                    class="flex items-center gap-1 rounded-lg border px-1 py-1 transition-colors"
+                    :class="
+                      theme === customThemeRef(custom.id)
+                        ? 'border-primary bg-primary/10 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]'
+                        : 'border-transparent hover:border-border hover:bg-card'
+                    "
+                    data-theme="custom"
+                    :style="customSwatchStyle(custom)"
+                  >
+                    <button
+                      :ref="(el) => setThemeButtonRef(customThemeRef(custom.id), el as Element | null)"
+                      type="button"
+                      role="option"
+                      :aria-selected="theme === customThemeRef(custom.id)"
+                      class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left"
+                      @click="emit('update:theme', customThemeRef(custom.id))"
+                    >
+                      <span
+                        class="theme-swatch-preview h-9 w-9 shrink-0 rounded-lg"
+                        aria-hidden="true"
+                      />
+                      <span class="min-w-0 flex-1">
+                        <span
+                          class="block truncate text-xs font-bold leading-tight"
+                          :class="theme === customThemeRef(custom.id) ? 'text-foreground' : 'text-foreground/90'"
+                        >
+                          {{ custom.name }}
+                        </span>
+                      </span>
+                      <i
+                        v-if="theme === customThemeRef(custom.id)"
+                        class="fa-solid fa-circle-check shrink-0 text-xs text-primary"
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      class="shrink-0 rounded-md p-1.5 text-muted hover:bg-card hover:text-foreground"
+                      aria-label="Edit custom theme"
+                      @click="openEditCustomTheme(custom)"
+                    >
+                      <i class="fa-solid fa-pen text-[10px]" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      class="shrink-0 rounded-md p-1.5 text-muted hover:bg-card hover:text-primary"
+                      aria-label="Delete custom theme"
+                      @click="requestDeleteCustomTheme(custom)"
+                    >
+                      <i class="fa-solid fa-trash text-[10px]" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p
+              v-else
+              class="mb-2 rounded-xl border border-dashed border-border bg-card-inner px-3 py-4 text-center text-[11px] leading-snug text-muted"
+            >
+              No custom themes yet. Build your own palette below.
+            </p>
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground transition-colors hover:border-primary/50"
+              @click="openCreateCustomTheme"
+            >
+              <i class="fa-solid fa-plus mr-2" aria-hidden="true" />
+              Create custom theme
+            </button>
+            <CustomThemeEditor
+              :open="customEditorOpen"
+              :editing="editingCustomTheme"
+              @cancel="closeCustomEditor"
+              @save="onSaveCustomTheme"
+              @delete="onDeleteCustomTheme"
+            />
+          </div>
         </section>
 
         <section class="mb-4">
@@ -156,12 +419,49 @@ function pickRandomTheme() {
               kg
             </button>
           </div>
+          <label class="mt-3 block text-[11px] font-semibold text-muted">
+            Body weight (for calorie estimates)
+            <input
+              v-model="bodyWeightDraft"
+              type="text"
+              inputmode="decimal"
+              data-touch-input
+              class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              :placeholder="weightUnit === 'lb' ? 'e.g. 180' : 'e.g. 82'"
+              @blur="commitBodyWeight(); syncBodyWeightDraftFromProp()"
+            />
+          </label>
+        </section>
+
+        <section class="mb-4">
+          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Distance</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Used for optional distance on cardio like walking, running, and cycling.
+          </p>
+          <div class="flex rounded-xl border border-border p-1">
+            <button
+              type="button"
+              class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
+              :class="distanceUnit === 'mi' ? 'bg-primary text-foreground' : 'text-muted'"
+              @click="emit('update:distanceUnit', 'mi')"
+            >
+              mi
+            </button>
+            <button
+              type="button"
+              class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
+              :class="distanceUnit === 'km' ? 'bg-primary text-foreground' : 'text-muted'"
+              @click="emit('update:distanceUnit', 'km')"
+            >
+              km
+            </button>
+          </div>
         </section>
 
         <section class="mb-6 border-t border-border pt-5">
           <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Workout time estimates</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
-            These values are used for plan duration estimates and workout shuffle target duration matching.
+            These values are used for plan duration estimates, calorie estimates, and workout shuffle target duration matching.
           </p>
           <div class="grid grid-cols-2 gap-2">
             <label class="text-[11px] font-semibold text-muted">
@@ -224,7 +524,7 @@ function pickRandomTheme() {
           <p class="mb-3 text-[11px] leading-snug text-muted">
             Your journal is saved in this browser automatically (including after you close it or when the app is
             updated), using storage under <span class="font-mono text-[10px]">liftbig_*</span>. Export saves everything
-            in that namespace today—workouts, plans, settings, favorites—and future keys using that prefix are included
+            in that namespace today—workouts, plans, settings, custom themes, favorites—and future keys using that prefix are included
             automatically. Import replaces all of it on this device. Clearing site data, private browsing limits, or a
             different browser won’t see the same data—use export if you might switch devices.
           </p>

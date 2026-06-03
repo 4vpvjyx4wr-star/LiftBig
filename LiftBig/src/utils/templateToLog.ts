@@ -1,4 +1,5 @@
 import type { Exercise, TemplateExercise, WorkoutTemplate } from '@/types/workout'
+import { cardioTargetDurationMinutes } from '@/types/workout'
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -14,6 +15,9 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     name: ex.name,
     libraryId: ex.libraryId,
     isCircuit: ex.isCircuit,
+    isCardio: ex.isCardio,
+    targetDuration: ex.targetDuration,
+    targetDistance: ex.targetDistance,
     targetReps: ex.targetReps,
     targetWeight: ex.targetWeight,
     sets: ex.sets.map(() => {
@@ -26,6 +30,19 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
 /** Maps a template to logged exercises with circuit + target fields preserved (Vue spec). */
 export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] {
   return template.exercises.map((tex: TemplateExercise) => {
+    if (tex.isCardio) {
+      const durationGoal = cardioTargetDurationMinutes(tex)
+      return {
+        id: newId(),
+        name: tex.name,
+        libraryId: tex.libraryId,
+        isCardio: true,
+        targetDuration: durationGoal || undefined,
+        targetDistance: (tex.targetDistance ?? '').trim() || undefined,
+        sets: [{ id: newId(), reps: '', weight: '' }],
+      }
+    }
+
     const first = tex.sets[0]
     const repsGoal = (tex.targetReps ?? '').trim() || first?.targetReps
     const weightGoal = (tex.targetWeight ?? '').trim() || first?.targetWeight

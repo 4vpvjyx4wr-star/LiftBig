@@ -26,7 +26,11 @@ export type LibraryExercise = {
   tips?: string[]
   /** Short coaching checkpoints users can scan before each set (posture, rhythm, safety). */
   cues?: string[]
+  /** Cardio / sports — duration-only when logged or planned. */
+  isCardio?: boolean
 }
+
+export type LibraryFilterGroup = MuscleGroup | 'all' | 'cardio'
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   chest: 'Chest',
@@ -1968,6 +1972,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     name: 'Incline Treadmill Walking',
     muscleGroups: ['quads', 'glutes', 'calves'],
     tags: ['cardio', 'LISS', 'conditioning'],
+    isCardio: true,
     equipment: 'Treadmill',
     summary: 'Low-intensity steady-state walking on an incline to burn calories without heavy joint stress.',
     instructions: [
@@ -2088,6 +2093,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     name: 'Light Brisk Walk',
     muscleGroups: ['quads', 'glutes', 'calves'],
     tags: ['cardio', 'recovery', 'low impact'],
+    isCardio: true,
     equipment: 'Bodyweight',
     summary: 'Easy outdoor or treadmill walking to promote blood flow on recovery days.',
     instructions: [
@@ -2379,6 +2385,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     name: 'Easy Stationary Cycling',
     muscleGroups: ['quads', 'glutes', 'calves'],
     tags: ['cardio', 'recovery', 'low impact'],
+    isCardio: true,
     equipment: 'Bike',
     summary: 'Light cycling to promote blood flow without taxing recovery.',
     instructions: [
@@ -2417,6 +2424,44 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
   }),
 ]
 
+import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
+
+for (const ex of CARDIO_LIBRARY) {
+  reg(ex)
+  EXERCISE_LIBRARY.push(ex)
+}
+
+export function libraryExerciseIsCardio(ex: LibraryExercise | undefined): boolean {
+  return ex?.isCardio === true
+}
+
+export function libraryExerciseIsBodyweight(ex: LibraryExercise | undefined): boolean {
+  if (!ex || libraryExerciseIsCardio(ex)) return false
+  return ex.equipment === 'Bodyweight'
+}
+
+export function resolveExerciseIsCardio(
+  entry: Pick<LibraryExercise, 'isCardio'> | undefined,
+  libraryId?: string,
+): boolean {
+  if (entry?.isCardio === true) return true
+  if (libraryId) return libraryExerciseIsCardio(getLibraryExercise(libraryId))
+  return false
+}
+
+export function resolveExerciseIsBodyweight(exercise: {
+  libraryId?: string
+  isCardio?: boolean
+  name?: string
+}): boolean {
+  if (exercise.isCardio) return false
+  if (exercise.libraryId) {
+    return libraryExerciseIsBodyweight(getLibraryExercise(exercise.libraryId))
+  }
+  const resolved = resolveManualExerciseInput((exercise.name ?? '').trim())
+  return libraryExerciseIsBodyweight(resolved)
+}
+
 export function getLibraryExercise(id: string): LibraryExercise | undefined {
   return byId.get(id)
 }
@@ -2444,11 +2489,19 @@ export function findLibraryExerciseByName(name: string | undefined): LibraryExer
 export function getComparableLibraryExercises(exercise: {
   libraryId?: string
   name: string
+  isCardio?: boolean
 }): LibraryExercise[] {
   const base =
     (exercise.libraryId && getLibraryExercise(exercise.libraryId)) ||
     findLibraryExerciseByName(exercise.name)
   if (!base) return []
+
+  if (base.isCardio || exercise.isCardio) {
+    return EXERCISE_LIBRARY.filter((ex) => ex.isCardio === true && ex.id !== base.id).sort(
+      (a, b) => a.name.localeCompare(b.name),
+    )
+  }
+
   const baseGroups = new Set(base.muscleGroups)
   return EXERCISE_LIBRARY.filter((ex) => {
     if (ex.id === base.id) return false
@@ -2673,11 +2726,13 @@ export function resolveManualExerciseInput(raw: string): LibraryExercise | undef
 
 export function searchLibrary(
   q: string,
-  group: MuscleGroup | 'all',
+  group: LibraryFilterGroup,
 ): LibraryExercise[] {
   const needle = q.trim().toLowerCase()
   let list = EXERCISE_LIBRARY
-  if (group !== 'all') {
+  if (group === 'cardio') {
+    list = list.filter((ex) => ex.isCardio === true)
+  } else if (group !== 'all') {
     list = list.filter((ex) => ex.muscleGroups.includes(group))
   }
   if (!needle) return [...list].sort((a, b) => a.name.localeCompare(b.name))
@@ -2690,4 +2745,32 @@ export function searchLibrary(
       return a.ex.name.localeCompare(b.ex.name)
     })
     .map(({ ex }) => ex)
+}
+
+export function isFavoritesLibrarySearchQuery(q: string): boolean {
+  const needle = q.trim().toLowerCase()
+  return needle === 'favorite' || needle === 'favorites'
+}
+
+export function libraryExercisesForFavoriteIds(favoriteIds: readonly string[]): LibraryExercise[] {
+  const out: LibraryExercise[] = []
+  for (const id of favoriteIds) {
+    const ex = getLibraryExercise(id)
+    if (ex) out.push(ex)
+  }
+  return out
+}
+
+/** Inline add-exercise suggest list (library search, or saved favorites when query is "favorite(s)"). */
+export function inlineLibrarySuggestMatches(
+  q: string,
+  favoriteIds: readonly string[],
+  limit = 40,
+): LibraryExercise[] {
+  const trimmed = q.trim()
+  if (!trimmed) return []
+  if (isFavoritesLibrarySearchQuery(trimmed)) {
+    return libraryExercisesForFavoriteIds(favoriteIds).slice(0, limit)
+  }
+  return searchLibrary(trimmed, 'all').slice(0, limit)
 }

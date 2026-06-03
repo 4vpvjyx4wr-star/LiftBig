@@ -10,7 +10,7 @@ import {
   MUSCLE_GROUP_LABELS,
   searchLibrary,
   type LibraryExercise,
-  type MuscleGroup,
+  type LibraryFilterGroup,
 } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
 import {
@@ -37,9 +37,9 @@ const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 
 const searchQuery = ref('')
-const selectedGroup = ref<MuscleGroup | 'all'>('all')
+const selectedGroup = ref<LibraryFilterGroup>('all')
 
-function setGroup(g: MuscleGroup | 'all') {
+function setGroup(g: LibraryFilterGroup) {
   selectedGroup.value = g
 }
 
@@ -60,9 +60,20 @@ function maxWeightLabel(ex: LibraryExercise): string {
 function lastSessionFirstSetLabel(ex: LibraryExercise): string {
   const s = logStats(ex).lastInitialSet
   if (!s) return '—'
+  if (ex.isCardio) {
+    return s.repsDisplay === '—' ? '—' : `${s.repsDisplay} min`
+  }
   const wPart =
     s.weightLbs == null ? '—' : formatWeightWithUnit(s.weightLbs, weightUnit.value, 1)
   return `${s.repsDisplay} reps × ${wPart}`
+}
+
+function maxStatLabel(ex: LibraryExercise): string {
+  const s = logStats(ex)
+  if (ex.isCardio) {
+    return s.maxDurationMinutes == null ? '—' : `${s.maxDurationMinutes} min`
+  }
+  return maxWeightLabel(ex)
 }
 
 function lastSessionDateLabel(ex: LibraryExercise): string {
@@ -77,6 +88,12 @@ function statsTitleAttr(ex: LibraryExercise): string {
     return 'No workouts logged for this exercise yet'
   }
   const s = logStats(ex)
+  if (ex.isCardio) {
+    const max = s.maxDurationMinutes == null ? '—' : `${s.maxDurationMinutes} min`
+    const date = s.lastInitialSet ? formatDisplayDate(s.lastInitialSet.dateKey) : '—'
+    const last = lastSessionFirstSetLabel(ex)
+    return `Longest session: ${max}. Last workout (${date}): ${last}`
+  }
   const max = s.maxWeightLbs == null ? '—' : formatWeightWithUnit(s.maxWeightLbs, weightUnit.value, 1)
   const date = s.lastInitialSet ? formatDisplayDate(s.lastInitialSet.dateKey) : '—'
   const first = lastSessionFirstSetLabel(ex)
@@ -173,6 +190,18 @@ onBeforeUnmount(() => {
         All
       </button>
       <button
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          selectedGroup === 'cardio'
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="setGroup('cardio')"
+      >
+        Cardio
+      </button>
+      <button
         v-for="g in MUSCLE_GROUPS"
         :key="g"
         type="button"
@@ -189,93 +218,122 @@ onBeforeUnmount(() => {
     </div>
 
     <ul class="mt-4 space-y-2 pb-2">
-      <li v-for="ex in filtered" :key="ex.id" class="flex items-stretch gap-1.5">
-        <button
-          type="button"
-          class="flex min-w-0 flex-1 flex-col items-stretch rounded-xl border border-border bg-card-inner px-3 py-3 text-left hover:border-primary"
-          @click="emit('selectExercise', ex)"
+      <li v-for="ex in filtered" :key="ex.id">
+        <div
+          class="relative rounded-xl border border-border bg-card-inner hover:border-primary"
         >
-          <div class="flex w-full items-start justify-between gap-2">
-            <span class="min-w-0 font-bold text-foreground">{{ ex.name }}</span>
-            <div class="flex shrink-0 items-center gap-1">
-              <i
-                v-if="isLogged(ex)"
-                class="fa-solid fa-circle-check shrink-0 text-base text-green-500"
-                title="Logged before"
-                aria-label="You have logged this exercise"
-              />
-              <div class="group relative shrink-0" @click.stop>
-                <button
-                  type="button"
-                  class="rounded p-1 text-muted transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  :aria-label="statsTitleAttr(ex)"
-                  @click.stop
-                >
-                  <i class="fa-solid fa-chart-line text-sm" aria-hidden="true" />
-                </button>
-                <div
-                  role="tooltip"
-                  class="pointer-events-none invisible absolute right-0 top-full z-30 mt-1.5 w-[min(17rem,calc(100vw-2.5rem))] rounded-lg border border-border bg-card px-3 py-2 text-[11px] leading-snug text-foreground opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
-                >
-                  <p class="border-b border-border pb-1.5 font-bold text-foreground">Your log</p>
-                  <template v-if="!isLogged(ex)">
-                    <p class="mt-1.5 text-muted">No workouts logged yet. Log this lift to see max weight and your last first set.</p>
-                  </template>
-                  <template v-else>
-                    <p class="mt-1.5">
-                      <span class="text-muted">Max (≥1 rep):</span>
-                      {{ ' ' }}
-                      <span class="font-semibold">{{ maxWeightLabel(ex) }}</span>
-                    </p>
-                    <p class="mt-1">
-                      <span class="text-muted">Last session — first set</span>
-                      <span v-if="lastSessionDateLabel(ex)" class="block text-[10px] text-muted">
-                        {{ lastSessionDateLabel(ex) }}
-                      </span>
-                      <span class="mt-0.5 block font-semibold">{{ lastSessionFirstSetLabel(ex) }}</span>
-                    </p>
-                  </template>
+          <button
+            type="button"
+            class="flex w-full min-w-0 flex-col items-stretch px-3 py-3 pr-9 text-left"
+            @click="emit('selectExercise', ex)"
+          >
+            <div class="flex w-full items-start justify-between gap-2">
+              <span class="min-w-0 font-bold text-foreground">{{ ex.name }}</span>
+              <div class="flex shrink-0 items-center gap-1">
+                <i
+                  v-if="isLogged(ex)"
+                  class="fa-solid fa-circle-check shrink-0 text-base text-green-500"
+                  title="Logged before"
+                  aria-label="You have logged this exercise"
+                />
+                <div class="group relative shrink-0" @click.stop>
+                  <button
+                    type="button"
+                    class="rounded p-1 text-muted transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    :aria-label="statsTitleAttr(ex)"
+                    @click.stop
+                  >
+                    <i class="fa-solid fa-chart-line text-sm" aria-hidden="true" />
+                  </button>
+                  <div
+                    role="tooltip"
+                    class="pointer-events-none invisible absolute right-0 top-full z-30 mt-1.5 w-[min(17rem,calc(100vw-2.5rem))] rounded-lg border border-border bg-card px-3 py-2 text-[11px] leading-snug text-foreground opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                  >
+                    <p class="border-b border-border pb-1.5 font-bold text-foreground">Your log</p>
+                    <template v-if="!isLogged(ex)">
+                      <p class="mt-1.5 text-muted">
+                        {{
+                          ex.isCardio
+                            ? 'No sessions logged yet. Log duration to see your history here.'
+                            : 'No workouts logged yet. Log this lift to see max weight and your last first set.'
+                        }}
+                      </p>
+                    </template>
+                    <template v-else-if="ex.isCardio">
+                      <p class="mt-1.5">
+                        <span class="text-muted">Longest session:</span>
+                        {{ ' ' }}
+                        <span class="font-semibold">{{ maxStatLabel(ex) }}</span>
+                      </p>
+                      <p class="mt-1">
+                        <span class="text-muted">Last session</span>
+                        <span v-if="lastSessionDateLabel(ex)" class="block text-[10px] text-muted">
+                          {{ lastSessionDateLabel(ex) }}
+                        </span>
+                        <span class="mt-0.5 block font-semibold">{{ lastSessionFirstSetLabel(ex) }}</span>
+                      </p>
+                    </template>
+                    <template v-else>
+                      <p class="mt-1.5">
+                        <span class="text-muted">Max (≥1 rep):</span>
+                        {{ ' ' }}
+                        <span class="font-semibold">{{ maxWeightLabel(ex) }}</span>
+                      </p>
+                      <p class="mt-1">
+                        <span class="text-muted">Last session — first set</span>
+                        <span v-if="lastSessionDateLabel(ex)" class="block text-[10px] text-muted">
+                          {{ lastSessionDateLabel(ex) }}
+                        </span>
+                        <span class="mt-0.5 block font-semibold">{{ lastSessionFirstSetLabel(ex) }}</span>
+                      </p>
+                    </template>
+                  </div>
                 </div>
+                <span v-if="ex.equipment" class="text-[10px] font-bold uppercase text-muted">
+                  {{ ex.equipment }}
+                </span>
               </div>
-              <span v-if="ex.equipment" class="text-[10px] font-bold uppercase text-muted">
-                {{ ex.equipment }}
+            </div>
+            <p v-if="ex.summary" class="mt-1.5 line-clamp-2 text-left text-xs leading-snug text-muted">
+              {{ ex.summary }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-1">
+              <span
+                v-if="ex.isCardio"
+                class="rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400"
+              >
+                Cardio
+              </span>
+              <span
+                v-for="mg in ex.muscleGroups"
+                :key="mg"
+                class="rounded bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted"
+              >
+                {{ MUSCLE_GROUP_LABELS[mg] }}
+              </span>
+              <span
+                v-for="tag in ex.tags ?? []"
+                :key="tag"
+                class="rounded border border-primary/35 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
+              >
+                {{ tag }}
               </span>
             </div>
-          </div>
-          <p v-if="ex.summary" class="mt-1.5 line-clamp-2 text-left text-xs leading-snug text-muted">
-            {{ ex.summary }}
-          </p>
-          <div class="mt-2 flex flex-wrap gap-1">
-            <span
-              v-for="mg in ex.muscleGroups"
-              :key="mg"
-              class="rounded bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted"
-            >
-              {{ MUSCLE_GROUP_LABELS[mg] }}
-            </span>
-            <span
-              v-for="tag in ex.tags ?? []"
-              :key="tag"
-              class="rounded border border-primary/35 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
-            >
-              {{ tag }}
-            </span>
-          </div>
-        </button>
-        <button
-          type="button"
-          class="flex w-11 shrink-0 flex-col items-center justify-center rounded-xl border border-border bg-card-inner px-1 text-foreground hover:border-primary"
-          :class="favorites.isFavorite(ex.id) ? 'border-amber-500/40 bg-card' : ''"
-          :aria-pressed="favorites.isFavorite(ex.id)"
-          :aria-label="favorites.isFavorite(ex.id) ? 'Remove from favorites' : 'Add to favorites'"
-          @click.stop="favorites.toggle(ex.id)"
-        >
-          <i
-            class="fa-solid fa-star text-lg"
-            :class="favorites.isFavorite(ex.id) ? 'text-amber-400' : 'text-muted'"
-            aria-hidden="true"
-          />
-        </button>
+          </button>
+          <button
+            type="button"
+            class="absolute bottom-2 right-2 rounded p-1 text-muted transition hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-pressed="favorites.isFavorite(ex.id)"
+            :aria-label="favorites.isFavorite(ex.id) ? 'Remove from favorites' : 'Add to favorites'"
+            @click.stop="favorites.toggle(ex.id)"
+          >
+            <i
+              class="fa-solid fa-star text-sm"
+              :class="favorites.isFavorite(ex.id) ? 'text-amber-400' : 'text-muted'"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </li>
     </ul>
 

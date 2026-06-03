@@ -19,6 +19,7 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
+import { sortFolderPlans } from '@/utils/folderPlanSort'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
@@ -565,23 +566,8 @@ function scheduledDateForPlanIndex(startDateKey: string, planIndex: number, rest
   return addDaysToDateKey(startDateKey, planIndex + Math.floor(planIndex / restEvery))
 }
 
-function folderPlanSortKey(name: string): [number, number, string] {
-  const weekMatch = /week\s+(\d+)/i.exec(name)
-  const dayMatch = /day\s+(\d+)/i.exec(name)
-  const week = weekMatch ? Number.parseInt(weekMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  const day = dayMatch ? Number.parseInt(dayMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  return [week, day, name.toLowerCase()]
-}
-
 function sortedFolderPlans(folderId: string): WorkoutTemplate[] {
-  const plans = planList.value.filter((item) => item.folderId === folderId)
-  return plans.slice().sort((a, b) => {
-    const [aw, ad, an] = folderPlanSortKey(a.name)
-    const [bw, bd, bn] = folderPlanSortKey(b.name)
-    if (aw !== bw) return aw - bw
-    if (ad !== bd) return ad - bd
-    return an.localeCompare(bn)
-  })
+  return sortFolderPlans(planList.value.filter((item) => item.folderId === folderId))
 }
 
 function isLikelyDuplicatePlanAssignment(dateKey: string, plan: WorkoutTemplate): boolean {
@@ -1081,7 +1067,7 @@ function onPlansRestSecondsChange(ev: Event) {
             class="flex flex-col gap-3"
           >
             <li
-              v-for="item in entry.plans"
+              v-for="item in sortedFolderPlans(entry.folder.id)"
               :key="item.id"
               class="rounded-xl border border-border bg-card p-4 transition-opacity"
               :class="
