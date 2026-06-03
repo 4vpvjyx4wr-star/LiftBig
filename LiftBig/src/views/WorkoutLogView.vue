@@ -12,7 +12,7 @@ import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggin
 import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
-import { searchLibrary } from '@/utils/exerciseLibrary'
+import { resolveManualExerciseInput, searchLibrary } from '@/utils/exerciseLibrary'
 import { applyPredictedGoalsToExercises } from '@/utils/progressiveOverload'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 import {
@@ -45,6 +45,8 @@ const inputName = ref('')
 const libraryOpen = ref(false)
 const swapModalExerciseId = ref<string | null>(null)
 const showInlineLibraryMatches = ref(false)
+const inlineSuggestListRef = ref<HTMLElement | null>(null)
+let inlineSuggestTouchStartY = 0
 const menuOpen = ref(false)
 const settingsOpen = ref(false)
 /** Optional targets applied to the next manually / library-added exercise (stored lb string for weight). */
@@ -66,7 +68,7 @@ function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetW
 const inlineLibraryMatches = computed(() => {
   const needle = inputName.value.trim()
   if (!needle) return []
-  return searchLibrary(needle, 'all').slice(0, 5)
+  return searchLibrary(needle, 'all').slice(0, 40)
 })
 
 function flushWorkoutNotesForDate(dateKeyToSave: string) {
@@ -180,6 +182,12 @@ function addExercise() {
     window.alert('Please enter an exercise name.')
     return
   }
+  const resolved = resolveManualExerciseInput(trimmed)
+  if (resolved) {
+    addFromLibrary(resolved)
+    inputName.value = ''
+    return
+  }
   exercises.value = [
     ...exercises.value,
     {
@@ -215,6 +223,27 @@ function hideInlineLibraryMatchesSoon() {
   window.setTimeout(() => {
     showInlineLibraryMatches.value = false
   }, 120)
+}
+
+function onInlineSuggestTouchStart(e: TouchEvent) {
+  inlineSuggestTouchStartY = e.touches[0]?.clientY ?? 0
+}
+
+function onInlineSuggestTouchMove(e: TouchEvent) {
+  const el = inlineSuggestListRef.value
+  if (!el || e.touches.length === 0) return
+  const y = e.touches[0]!.clientY
+  const delta = y - inlineSuggestTouchStartY
+  inlineSuggestTouchStartY = y
+  if (el.scrollHeight <= el.clientHeight) {
+    e.preventDefault()
+    return
+  }
+  const atTop = el.scrollTop <= 0
+  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
+  if ((atTop && delta > 0) || (atBottom && delta < 0)) {
+    e.preventDefault()
+  }
 }
 
 function addSet(exerciseId: string) {
@@ -471,10 +500,7 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       </div>
     </header>
 
-    <div
-      class="px-4 pt-4 transition-[padding] duration-200"
-      :class="setLoggingFocusActive ? 'pb-6' : 'pb-above-workout-dock'"
-    >
+    <div class="px-4 pb-6 pt-4">
       <section
         v-if="planCoachingNotes"
         class="mb-3.5 rounded-xl border border-primary/30 bg-card-inner/60 p-3.5"
@@ -519,6 +545,95 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
         />
       </div>
 
+      <section
+        v-show="!setLoggingFocusActive"
+        class="mt-3.5 rounded-xl border border-border bg-card p-3.5"
+      >
+        <h2 class="mb-2.5 text-sm font-bold uppercase tracking-wide text-muted">Add exercise</h2>
+        <div class="flex gap-2">
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
+            <div class="relative min-w-0">
+              <input
+                v-model="inputName"
+                type="text"
+                data-touch-input
+                class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-3 py-2.5 text-base text-foreground outline-none focus:border-primary"
+                placeholder="Add exercise manually..."
+                @focus="showInlineLibraryMatches = true"
+                @blur="hideInlineLibraryMatchesSoon"
+                @keydown.enter="addExercise"
+              />
+              <div
+                v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
+                ref="inlineSuggestListRef"
+                class="inline-suggest-scroll absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
+                @mousedown.prevent
+                @touchstart.passive="onInlineSuggestTouchStart"
+                @touchmove="onInlineSuggestTouchMove"
+              >
+                <button
+                  v-for="match in inlineLibraryMatches"
+                  :key="match.id"
+                  type="button"
+                  class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
+                  @mousedown.prevent
+                  @click.prevent="addFromInlineLibrary(match)"
+                >
+                  <span class="font-semibold">{{ match.name }}</span>
+                  <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="grid min-w-0 grid-cols-2 gap-2">
+              <div class="min-w-0">
+                <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+                <input
+                  v-model="goalRepsDraft"
+                  type="text"
+                  data-touch-input
+                  class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
+                  placeholder="e.g. 8–12"
+                  inputmode="text"
+                />
+              </div>
+              <div class="min-w-0">
+                <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+                <input
+                  :value="storedLbsStringToDisplay(goalWeightStoredLbs, weightUnit)"
+                  type="text"
+                  inputmode="decimal"
+                  data-touch-input
+                  class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card-inner px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
+                  :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+                  @input="
+                    goalWeightStoredLbs = displayInputToStoredLbsString(
+                      ($event.target as HTMLInputElement).value,
+                      weightUnit,
+                    )
+                  "
+                />
+              </div>
+            </div>
+          </div>
+          <div class="flex shrink-0 flex-col gap-2 self-start">
+            <button
+              type="button"
+              class="w-full shrink-0 rounded-lg bg-blue px-5 py-2.5 font-bold text-foreground"
+              @click="addExercise"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              class="w-full shrink-0 rounded-lg border border-primary/50 bg-card-inner px-5 py-2.5 font-bold text-primary"
+              @click="libraryOpen = true"
+            >
+              Library
+            </button>
+          </div>
+        </div>
+      </section>
+
       <button
         v-if="exercises.length > 0"
         type="button"
@@ -527,89 +642,6 @@ const sheetAverageLiftSeconds = computed(() => settings.averageLiftSeconds.value
       >
         Finish Workout
       </button>
-    </div>
-
-    <div
-      v-show="!setLoggingFocusActive"
-      class="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 pb-workout-dock-safe pt-3 backdrop-blur-sm"
-    >
-      <div class="mx-auto flex max-w-lg gap-2 px-4 sm:px-0">
-        <div class="flex min-w-0 flex-1 flex-col gap-2">
-          <div class="relative min-w-0">
-            <input
-              v-model="inputName"
-              type="text"
-              data-touch-input
-              class="min-w-0 w-full rounded-lg border border-border bg-card px-3 py-2.5 text-base text-foreground outline-none focus:border-primary"
-              placeholder="Add exercise manually..."
-              @focus="showInlineLibraryMatches = true"
-              @blur="hideInlineLibraryMatchesSoon"
-              @keydown.enter="addExercise"
-            />
-            <div
-              v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
-              class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
-            >
-              <button
-                v-for="match in inlineLibraryMatches"
-                :key="match.id"
-                type="button"
-                class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
-                @click="addFromInlineLibrary(match)"
-              >
-                <span class="font-semibold">{{ match.name }}</span>
-                <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
-              </button>
-            </div>
-          </div>
-          <div class="grid min-w-0 grid-cols-2 gap-2">
-            <div class="min-w-0">
-              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
-              <input
-                v-model="goalRepsDraft"
-                type="text"
-                data-touch-input
-                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
-                placeholder="e.g. 8–12"
-                inputmode="text"
-              />
-            </div>
-            <div class="min-w-0">
-              <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
-              <input
-                :value="storedLbsStringToDisplay(goalWeightStoredLbs, weightUnit)"
-                type="text"
-                inputmode="decimal"
-                data-touch-input
-                class="mt-0.5 w-full min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-base text-foreground outline-none focus:border-primary"
-                :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
-                @input="
-                  goalWeightStoredLbs = displayInputToStoredLbsString(
-                    ($event.target as HTMLInputElement).value,
-                    weightUnit,
-                  )
-                "
-              />
-            </div>
-          </div>
-        </div>
-        <div class="flex shrink-0 flex-col gap-2 self-start">
-          <button
-            type="button"
-            class="w-full shrink-0 rounded-lg bg-blue px-5 py-2.5 font-bold text-foreground"
-            @click="addExercise"
-          >
-            Add
-          </button>
-          <button
-            type="button"
-            class="w-full shrink-0 rounded-lg border border-primary/50 bg-card-inner px-5 py-2.5 font-bold text-primary"
-            @click="libraryOpen = true"
-          >
-            Library
-          </button>
-        </div>
-      </div>
     </div>
 
     <LibraryPickerModal

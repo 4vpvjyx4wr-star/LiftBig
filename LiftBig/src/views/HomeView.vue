@@ -27,7 +27,7 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
-import { getLibraryExercise, searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, resolveManualExerciseInput, searchLibrary, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 
 const workouts = inject(workoutsInjectionKey)!
@@ -255,6 +255,12 @@ function addExerciseGoals(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight
 function addManualExercise() {
   const trimmed = addInputName.value.trim()
   if (!trimmed) return
+  const resolved = resolveManualExerciseInput(trimmed)
+  if (resolved) {
+    addFromLibrary(resolved)
+    addInputName.value = ''
+    return
+  }
   const ex: Exercise = {
     id: newId(),
     name: trimmed,

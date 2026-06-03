@@ -2462,7 +2462,70 @@ export function getComparableLibraryExercises(exercise: {
   })
 }
 
-const SEARCH_TAG_ALIASES: Record<string, MuscleGroup[]> = {
+/** Lowercase alphanumeric only — "Push-Up" and "pushups" both become "pushup". */
+export function normalizeForExerciseMatch(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+const EXERCISE_QUERY_ALIASES = new Map<string, string>()
+
+function registerExerciseAliases(exerciseId: string, phrases: string[]) {
+  for (const phrase of phrases) {
+    EXERCISE_QUERY_ALIASES.set(normalizeForExerciseMatch(phrase), exerciseId)
+  }
+}
+
+registerExerciseAliases('push-up', [
+  'pushups',
+  'push ups',
+  'pushup',
+  'push up',
+  'press ups',
+  'pressups',
+])
+registerExerciseAliases('pull-up', [
+  'pullups',
+  'pull ups',
+  'pullup',
+  'pull up',
+  'chinups',
+  'chin ups',
+  'chinup',
+  'chin up',
+])
+registerExerciseAliases('hamstring-curl', [
+  'leg curls',
+  'leg curl',
+  'legcurls',
+  'legcurl',
+  'lying leg curl',
+  'seated leg curl',
+  'ham curls',
+  'ham curl',
+])
+registerExerciseAliases('bench-press', ['bench', 'flat bench', 'barbell bench'])
+registerExerciseAliases('squat', ['squats', 'squat', 'back squat'])
+registerExerciseAliases('romanian-deadlift', ['rdl', 'romanian deadlift', 'stiff leg deadlift'])
+registerExerciseAliases('lat-pulldown', ['lat pulldown', 'lat pull down', 'pulldown'])
+registerExerciseAliases('barbell-row', ['bent over row', 'bentover row', 'barbell row'])
+registerExerciseAliases('overhead-press', ['ohp', 'shoulder press', 'military press'])
+registerExerciseAliases('tricep-pushdown', [
+  'tricep pushdown',
+  'triceps pushdown',
+  'rope pushdown',
+  'cable pushdown',
+])
+registerExerciseAliases('dumbbell-curl', ['bicep curl', 'biceps curl', 'db curl', 'dumbbell curl'])
+registerExerciseAliases('lateral-raise', ['lat raise', 'side raise', 'lateral raises'])
+registerExerciseAliases('leg-press', ['legpress', 'leg press machine'])
+registerExerciseAliases('leg-extension', ['leg extensions', 'leg extension', 'quad extension'])
+registerExerciseAliases('calf-raise', ['calf raises', 'calf raise', 'calves'])
+registerExerciseAliases('hip-thrust', ['hip thrusts', 'glute bridge weighted'])
+registerExerciseAliases('face-pull', ['face pulls', 'face pull'])
+registerExerciseAliases('cable-crunch', ['cable crunches', 'cable ab crunch'])
+
+/** Body-region terms only — not movement keywords like "push" or "curl". */
+const BODY_REGION_ALIASES: Record<string, MuscleGroup[]> = {
   legs: ['quads', 'hamstrings', 'glutes', 'calves'],
   leg: ['quads', 'hamstrings', 'glutes', 'calves'],
   'lower body': ['quads', 'hamstrings', 'glutes', 'calves'],
@@ -2471,27 +2534,141 @@ const SEARCH_TAG_ALIASES: Record<string, MuscleGroup[]> = {
   arm: ['biceps', 'triceps', 'forearms'],
   'upper body': ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
   upper: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
-  push: ['chest', 'shoulders', 'triceps'],
-  pull: ['back', 'biceps', 'forearms'],
   abs: ['core'],
+  core: ['core'],
   'posterior chain': ['hamstrings', 'glutes', 'back'],
-  hinge: ['hamstrings', 'glutes', 'back'],
-  pressing: ['chest', 'shoulders', 'triceps'],
-  press: ['chest', 'shoulders', 'triceps'],
-  rowing: ['back', 'biceps'],
-  curls: ['biceps', 'forearms'],
-  curl: ['biceps', 'forearms'],
-  extension: ['triceps', 'quads'],
 }
 
-function resolveAliasGroups(needle: string): Set<MuscleGroup> {
+function resolveBodyRegionGroups(needle: string): Set<MuscleGroup> {
   const groups = new Set<MuscleGroup>()
-  for (const [alias, mapped] of Object.entries(SEARCH_TAG_ALIASES)) {
-    if (needle.includes(alias) || alias.includes(needle)) {
-      for (const g of mapped) groups.add(g)
-    }
+  for (const [alias, mapped] of Object.entries(BODY_REGION_ALIASES)) {
+    const matches =
+      needle === alias ||
+      needle.startsWith(`${alias} `) ||
+      (alias.includes(' ') && needle.includes(alias))
+    if (!matches) continue
+    for (const g of mapped) groups.add(g)
   }
   return groups
+}
+
+function fieldMatchesToken(field: string, token: string, normToken: string): boolean {
+  const lower = field.toLowerCase()
+  return lower.includes(token) || normalizeForExerciseMatch(field).includes(normToken)
+}
+
+function scoreExerciseForQuery(ex: LibraryExercise, query: string): number {
+  const q = query.trim().toLowerCase()
+  if (!q) return 0
+
+  const normQ = normalizeForExerciseMatch(q)
+  const normName = normalizeForExerciseMatch(ex.name)
+
+  if (normName === normQ) return 1000
+  if (ex.name.toLowerCase() === q) return 990
+
+  const aliasId = EXERCISE_QUERY_ALIASES.get(normQ)
+  if (aliasId === ex.id) return 950
+
+  const tokens = q.split(/\s+/).filter(Boolean)
+  let score = 0
+
+  if (tokens.length === 1) {
+    const token = tokens[0]!
+    const normToken = normalizeForExerciseMatch(token)
+    const nameMatch = fieldMatchesToken(ex.name, token, normToken)
+    const tagMatch = ex.tags?.some((t) => fieldMatchesToken(t, token, normToken)) ?? false
+    const equipMatch = ex.equipment ? fieldMatchesToken(ex.equipment, token, normToken) : false
+    const muscleMatch = ex.muscleGroups.some((g) =>
+      fieldMatchesToken(MUSCLE_GROUP_LABELS[g], token, normToken),
+    )
+    const normNameMatch = normName.includes(normToken)
+
+    if (nameMatch) score += 120
+    if (normNameMatch) score += 80
+    if (tagMatch) score += 90
+    if (equipMatch) score += 30
+    if (muscleMatch) score += 25
+
+    const primaryMatch = nameMatch || tagMatch || normNameMatch || equipMatch || muscleMatch
+    if (primaryMatch) {
+      if (fieldMatchesToken(ex.summary, token, normToken)) score += 25
+      if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) score += 10
+    } else if (token.length >= 5) {
+      if (fieldMatchesToken(ex.summary, token, normToken)) score += 40
+      if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) score += 15
+    } else {
+      return 0
+    }
+
+    const regionGroups = resolveBodyRegionGroups(q)
+    if (regionGroups.size > 0 && ex.muscleGroups.some((g) => regionGroups.has(g))) {
+      score += 55
+    }
+    return score
+  }
+
+  for (const token of tokens) {
+    const normToken = normalizeForExerciseMatch(token)
+    let tokenScore = 0
+    if (fieldMatchesToken(ex.name, token, normToken)) tokenScore = 80
+    else if (ex.tags?.some((t) => fieldMatchesToken(t, token, normToken))) tokenScore = 55
+    else if (fieldMatchesToken(ex.summary, token, normToken)) tokenScore = 35
+    else if (ex.equipment && fieldMatchesToken(ex.equipment, token, normToken)) tokenScore = 28
+    else if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) tokenScore = 15
+    else if (ex.muscleGroups.some((g) => fieldMatchesToken(MUSCLE_GROUP_LABELS[g], token, normToken))) {
+      tokenScore = 20
+    }
+    if (tokenScore === 0) return 0
+    score += tokenScore
+  }
+
+  if (normName.includes(normQ)) score += 140
+  if (ex.name.toLowerCase().includes(q)) score += 100
+  return score
+}
+
+const AUTO_MATCH_MIN_SCORE = 150
+const AUTO_MATCH_SCORE_GAP = 45
+
+function normNameStartsWithQuery(ex: LibraryExercise, normQuery: string): boolean {
+  const normName = normalizeForExerciseMatch(ex.name)
+  return normName.startsWith(normQuery) || normQuery.startsWith(normName)
+}
+
+/**
+ * Best-effort library link for a manually typed exercise name (fuzzy names, slang, typos).
+ * Returns undefined when the input is too ambiguous to auto-link.
+ */
+export function resolveManualExerciseInput(raw: string): LibraryExercise | undefined {
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+
+  const exact = findLibraryExerciseByName(trimmed)
+  if (exact) return exact
+
+  const norm = normalizeForExerciseMatch(trimmed)
+  const aliasId = EXERCISE_QUERY_ALIASES.get(norm)
+  if (aliasId) return getLibraryExercise(aliasId)
+
+  for (const ex of EXERCISE_LIBRARY) {
+    if (normalizeForExerciseMatch(ex.name) === norm) return ex
+  }
+
+  const ranked = searchLibrary(trimmed, 'all')
+  if (ranked.length === 0) return undefined
+
+  const top = ranked[0]!
+  const topScore = scoreExerciseForQuery(top, trimmed)
+  if (topScore < AUTO_MATCH_MIN_SCORE) return undefined
+
+  if (ranked.length === 1) return top
+
+  const secondScore = scoreExerciseForQuery(ranked[1]!, trimmed)
+  if (topScore - secondScore >= AUTO_MATCH_SCORE_GAP) return top
+  if (normNameStartsWithQuery(top, norm)) return top
+
+  return undefined
 }
 
 export function searchLibrary(
@@ -2504,17 +2681,13 @@ export function searchLibrary(
     list = list.filter((ex) => ex.muscleGroups.includes(group))
   }
   if (!needle) return [...list].sort((a, b) => a.name.localeCompare(b.name))
-  const aliasGroups = resolveAliasGroups(needle)
+
   return list
-    .filter((ex) => {
-      if (ex.name.toLowerCase().includes(needle)) return true
-      if (ex.summary.toLowerCase().includes(needle)) return true
-      if (ex.equipment?.toLowerCase().includes(needle)) return true
-      if (ex.tags?.some((t) => t.toLowerCase().includes(needle))) return true
-      if (ex.cues?.some((c) => c.toLowerCase().includes(needle))) return true
-      if (ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))) return true
-      if (aliasGroups.size > 0 && ex.muscleGroups.some((g) => aliasGroups.has(g))) return true
-      return false
+    .map((ex) => ({ ex, score: scoreExerciseForQuery(ex, needle) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.ex.name.localeCompare(b.ex.name)
     })
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(({ ex }) => ex)
 }

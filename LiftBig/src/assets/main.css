@@ -920,9 +920,9 @@ body::before {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
-/* Workout log body: clear fixed input + optional Finish row + home indicator */
-.pb-above-workout-dock {
-  padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+/* Workout log body: bottom breathing room above tab bar / home indicator */
+.pb-workout-content {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
 }
 
 /*
@@ -937,9 +937,12 @@ body::before {
   }
 }
 
-/* Workout log fixed dock: safe areas for notched / gesture phones */
-.pb-workout-dock-safe {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-  padding-left: max(1rem, env(safe-area-inset-left, 0px));
-  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+/* Inline exercise suggestions: own scroll region, no scroll chaining to the page */
+.inline-suggest-scroll {
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
