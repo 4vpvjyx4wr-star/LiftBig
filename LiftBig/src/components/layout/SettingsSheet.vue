@@ -235,9 +235,9 @@ watch(
         <h2 class="text-center text-lg font-extrabold text-foreground">Settings</h2>
         <p class="mb-5 text-center text-xs text-muted">Theme and units apply everywhere in the app.</p>
 
-        <section class="mb-6">
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
           <div class="mb-2 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-bold uppercase tracking-wide text-muted">Theme</h3>
+            <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Theme</h3>
             <span class="truncate text-[11px] font-semibold text-primary">{{ activeThemeLabel }}</span>
           </div>
           <div class="relative">
@@ -299,7 +299,7 @@ watch(
 
           <div class="mt-4">
             <div class="mb-2 flex items-center justify-between gap-2">
-              <h3 class="text-xs font-bold uppercase tracking-wide text-muted">Custom themes</h3>
+              <h3 class="text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Custom themes</h3>
               <span v-if="customThemes.length > 0" class="text-[11px] font-semibold text-muted">
                 {{ customThemes.length }}
               </span>
@@ -396,12 +396,12 @@ watch(
           </div>
         </section>
 
-        <section class="mb-4">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Weight</h3>
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Weight</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
             Workouts stay stored in pounds; kg mode converts for display and when you type weights.
           </p>
-          <div class="flex rounded-xl border border-border p-1">
+          <div class="flex rounded-xl border border-border bg-card p-1">
             <button
               type="button"
               class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
@@ -419,47 +419,53 @@ watch(
               kg
             </button>
           </div>
-          <label class="mt-3 block text-[11px] font-semibold text-muted">
-            Body weight (for calorie estimates)
+          <div class="mt-4 border-t border-border/70 pt-4">
+            <h4 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Distance</h4>
+            <p class="mb-3 text-[11px] leading-snug text-muted">
+              Used for optional distance on cardio like walking, running, and cycling.
+            </p>
+            <div class="flex rounded-xl border border-border bg-card p-1">
+              <button
+                type="button"
+                class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
+                :class="distanceUnit === 'mi' ? 'bg-primary text-foreground' : 'text-muted'"
+                @click="emit('update:distanceUnit', 'mi')"
+              >
+                mi
+              </button>
+              <button
+                type="button"
+                class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
+                :class="distanceUnit === 'km' ? 'bg-primary text-foreground' : 'text-muted'"
+                @click="emit('update:distanceUnit', 'km')"
+              >
+                km
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Body weight</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Used for calorie estimates during workouts.
+          </p>
+          <label class="block text-[11px] font-semibold text-muted">
+            Body weight
             <input
               v-model="bodyWeightDraft"
               type="text"
               inputmode="decimal"
               data-touch-input
-              class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-              :placeholder="weightUnit === 'lb' ? 'e.g. 180' : 'e.g. 82'"
+              class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              :placeholder="weightUnit === 'lb' ? 'e.g. 180 lb' : 'e.g. 82 kg'"
               @blur="commitBodyWeight(); syncBodyWeightDraftFromProp()"
             />
           </label>
         </section>
 
-        <section class="mb-4">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Distance</h3>
-          <p class="mb-3 text-[11px] leading-snug text-muted">
-            Used for optional distance on cardio like walking, running, and cycling.
-          </p>
-          <div class="flex rounded-xl border border-border p-1">
-            <button
-              type="button"
-              class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
-              :class="distanceUnit === 'mi' ? 'bg-primary text-foreground' : 'text-muted'"
-              @click="emit('update:distanceUnit', 'mi')"
-            >
-              mi
-            </button>
-            <button
-              type="button"
-              class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
-              :class="distanceUnit === 'km' ? 'bg-primary text-foreground' : 'text-muted'"
-              @click="emit('update:distanceUnit', 'km')"
-            >
-              km
-            </button>
-          </div>
-        </section>
-
-        <section class="mb-6 border-t border-border pt-5">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Workout time estimates</h3>
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Workout time estimates</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
             These values are used for plan duration estimates, calorie estimates, and workout shuffle target duration matching.
           </p>
@@ -471,7 +477,7 @@ watch(
                 min="5"
                 max="600"
                 step="5"
-                class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                 :value="averageRestSeconds"
                 @change="
                   emit(
@@ -488,7 +494,7 @@ watch(
                 min="5"
                 max="600"
                 step="5"
-                class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
                 :value="averageLiftSeconds"
                 @change="
                   emit(
@@ -501,8 +507,8 @@ watch(
           </div>
         </section>
 
-        <section class="mb-6 border-t border-border pt-5">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Timer notifications</h3>
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Timer notifications</h3>
           <p class="mb-2 text-[11px] leading-snug text-muted">
             Get a system alert when your rest timer ends: <span class="font-semibold">{{ permissionLabel }}</span>.
           </p>
@@ -519,8 +525,8 @@ watch(
           </p>
         </section>
 
-        <section class="mb-6 border-t border-border pt-5">
-          <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Backup</h3>
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Backup</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
             Your journal is saved in this browser automatically (including after you close it or when the app is
             updated), using storage under <span class="font-mono text-[10px]">liftbig_*</span>. Export saves everything
