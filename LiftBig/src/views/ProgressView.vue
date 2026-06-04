@@ -15,21 +15,65 @@ const weightUnit = computed(() => settings.weightUnit.value)
 
 const exerciseNames = computed(() => listExerciseNamesFromLog(workouts.log.value))
 
+const exerciseQuery = ref('')
 const selectedExercise = ref('')
+const showSuggestions = ref(false)
+
+const filteredExerciseNames = computed(() => {
+  const q = exerciseQuery.value.trim().toLowerCase()
+  if (!q) return exerciseNames.value
+  return exerciseNames.value.filter((name) => name.toLowerCase().includes(q))
+})
 
 watch(
   exerciseNames,
   (names) => {
     if (names.length === 0) {
       selectedExercise.value = ''
+      exerciseQuery.value = ''
       return
     }
     if (!selectedExercise.value || !names.includes(selectedExercise.value)) {
-      selectedExercise.value = names[0]!
+      const first = names[0]!
+      selectedExercise.value = first
+      exerciseQuery.value = first
     }
   },
   { immediate: true },
 )
+
+function pickExercise(name: string) {
+  selectedExercise.value = name
+  exerciseQuery.value = name
+  showSuggestions.value = false
+}
+
+function confirmExerciseQuery() {
+  const q = exerciseQuery.value.trim()
+  if (!q) return
+  const exact = exerciseNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
+  if (exact) {
+    pickExercise(exact)
+    return
+  }
+  const matches = filteredExerciseNames.value
+  if (matches.length === 1) {
+    pickExercise(matches[0]!)
+    return
+  }
+  selectedExercise.value = q
+  showSuggestions.value = false
+}
+
+function hideSuggestionsSoon() {
+  window.setTimeout(() => {
+    showSuggestions.value = false
+    const q = exerciseQuery.value.trim()
+    if (!q) return
+    const exact = exerciseNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
+    if (exact) pickExercise(exact)
+  }, 120)
+}
 
 const history = computed(() =>
   selectedExercise.value
@@ -62,7 +106,7 @@ function fmtLbs(lbs: number): string {
   <div class="pb-6">
     <h1 class="mb-1 text-2xl font-black tracking-tight text-foreground">Progress</h1>
     <p class="mb-5 text-sm leading-relaxed text-muted">
-      Pick an exercise to see max weight and average reps over time. The dashed line projects future
+      Type or pick an exercise to see max weight and average reps over time. The dashed line projects future
       strength using your recent trend, capped each session by the same progressive overload jump used
       when suggesting weights (so projections stay grounded).
     </p>
@@ -81,14 +125,33 @@ function fmtLbs(lbs: number): string {
         <span class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">
           Exercise
         </span>
-        <select
-          v-model="selectedExercise"
-          class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
-        >
-          <option v-for="name in exerciseNames" :key="name" :value="name">
-            {{ name }}
-          </option>
-        </select>
+        <div class="relative">
+          <input
+            v-model="exerciseQuery"
+            type="search"
+            autocomplete="off"
+            class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
+            placeholder="Search logged exercises..."
+            @focus="showSuggestions = true"
+            @blur="hideSuggestionsSoon"
+            @keydown.enter.prevent="confirmExerciseQuery"
+          />
+          <div
+            v-if="showSuggestions && filteredExerciseNames.length > 0"
+            class="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg"
+            @mousedown.prevent
+          >
+            <button
+              v-for="name in filteredExerciseNames"
+              :key="name"
+              type="button"
+              class="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-card-inner"
+              @click="pickExercise(name)"
+            >
+              {{ name }}
+            </button>
+          </div>
+        </div>
       </label>
 
       <div
@@ -113,6 +176,16 @@ function fmtLbs(lbs: number): string {
             {{ projectedEnd != null ? fmtLbs(projectedEnd) : '—' }}
           </div>
         </div>
+      </div>
+
+      <div
+        v-else-if="selectedExercise"
+        class="mb-4 rounded-2xl border border-border bg-card-inner px-4 py-8 text-center"
+      >
+        <p class="text-sm font-semibold text-foreground">No progress data for this exercise</p>
+        <p class="mt-2 text-xs text-muted">
+          Log sets with weight and reps for “{{ selectedExercise }}” to see charts here.
+        </p>
       </div>
 
       <ProgressChart

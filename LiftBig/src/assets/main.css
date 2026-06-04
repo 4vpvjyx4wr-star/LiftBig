@@ -261,9 +261,9 @@ body::before {
 
 /* Cyberpunk: neon grid + magenta/teal haze */
 [data-theme='cyberpunk'] {
-  --color-background: #040814;
-  --color-card: #0e1830;
-  --color-card-inner: #081020;
+  --color-background: #050810;
+  --color-card: #0c1220;
+  --color-card-inner: #080c18;
   --color-border: #00f0ff;
   --color-primary: #ff2a6d;
   --color-blue: #05d9e8;

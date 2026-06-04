@@ -78,9 +78,11 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
       />
     </Teleport>
 
-    <div class="mx-auto flex w-full max-w-lg flex-1 flex-col px-3">
-      <header
-        class="sticky top-0 z-50 flex shrink-0 items-center justify-between gap-3 border-b border-border bg-header-bg/95 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-header-bg/80"
+    <header
+      class="sticky top-0 z-50 w-full shrink-0 border-b border-border bg-header-bg/95 backdrop-blur-sm supports-[backdrop-filter]:bg-header-bg/80"
+    >
+      <div
+        class="mx-auto flex max-w-lg items-center justify-between gap-3 px-3 py-3"
         :style="{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }"
       >
         <div class="min-w-0 flex-1">
@@ -163,8 +165,10 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
             </div>
           </div>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <div class="mx-auto flex w-full max-w-lg flex-1 flex-col px-3">
       <div class="min-h-0 flex-1 pb-1 pt-3">
         <RouterView />
       </div>
