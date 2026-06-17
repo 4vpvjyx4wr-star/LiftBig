@@ -24,8 +24,145 @@ export const LIBRARY_EQUIPMENT_TYPES: string[] = Array.from(
 
 const LEG_MUSCLES: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'calves']
 
+const FINISHER_TAGS = ['mobility', 'warm-up', 'recovery', 'stretch', 'cooldown', 'foam roll'] as const
+
+const COMPOUND_MOVEMENT_TAGS = [
+  'compound',
+  'squat',
+  'deadlift',
+  'hinge',
+  'oly lifting',
+  'pull-up',
+  'row',
+  'press',
+  'parallel bars',
+] as const
+
 function hasTag(ex: LibraryExercise, needle: string): boolean {
   return (ex.tags ?? []).some((t) => t.toLowerCase() === needle.toLowerCase())
+}
+
+function hasAnyTag(ex: LibraryExercise, needles: readonly string[]): boolean {
+  return needles.some((n) => hasTag(ex, n))
+}
+
+/** Primary muscles for fatigue spacing (core treated as secondary when paired). */
+export function primaryMuscleGroups(ex: LibraryExercise): MuscleGroup[] {
+  const withoutCore = ex.muscleGroups.filter((m) => m !== 'core')
+  return withoutCore.length > 0 ? withoutCore : ex.muscleGroups
+}
+
+export function muscleOverlap(a: LibraryExercise, b: LibraryExercise): number {
+  const primary = new Set(primaryMuscleGroups(a))
+  let overlap = 0
+  for (const m of primaryMuscleGroups(b)) {
+    if (primary.has(m)) overlap += 1
+  }
+  return overlap
+}
+
+/** Cardio, mobility, and recovery work belong at the end of the session. */
+export function isSessionFinisher(ex: LibraryExercise): boolean {
+  if (ex.isCardio) return true
+  return hasAnyTag(ex, FINISHER_TAGS)
+}
+
+export function isCompoundLift(ex: LibraryExercise): boolean {
+  if (ex.isCardio || isSessionFinisher(ex)) return false
+  if (hasTag(ex, 'compound')) return true
+  if (hasTag(ex, 'isolation')) return false
+
+  if (primaryMuscleGroups(ex).length >= 2) return true
+
+  const name = ex.name.toLowerCase()
+  if (
+    /\b(squat|deadlift|bench|press|row|pull-up|pullup|chin-up|lunge|rdl|thrust|clean|snatch|step-up)\b/.test(
+      name,
+    )
+  ) {
+    return true
+  }
+  if (COMPOUND_MOVEMENT_TAGS.some((t) => hasTag(ex, t))) return true
+  if (/\b(curl|extension|fly|flye|raise|crunch|pushdown|kickback|pullover|plank)\b/.test(name)) {
+    return false
+  }
+
+  return false
+}
+
+/**
+ * Orders a fixed exercise list: compounds before isolation, finishers last,
+ * and avoids back-to-back overlap on the same muscle groups.
+ */
+export function orderExercisesForSession(
+  exercises: LibraryExercise[],
+  random: () => number = Math.random,
+): LibraryExercise[] {
+  if (exercises.length <= 1) return [...exercises]
+
+  const remaining = [...exercises]
+  const ordered: LibraryExercise[] = []
+
+  while (remaining.length > 0) {
+    let bestIdx = 0
+    let bestScore = -Infinity
+
+    for (let i = 0; i < remaining.length; i++) {
+      const ex = remaining[i]!
+      const score = scoreExerciseOrderCandidate(ex, ordered, remaining, random)
+      if (score > bestScore) {
+        bestScore = score
+        bestIdx = i
+      }
+    }
+
+    ordered.push(remaining.splice(bestIdx, 1)[0]!)
+  }
+
+  return ordered
+}
+
+function scoreExerciseOrderCandidate(
+  ex: LibraryExercise,
+  ordered: LibraryExercise[],
+  remaining: LibraryExercise[],
+  random: () => number,
+): number {
+  let score = random() * 2
+
+  const finisher = isSessionFinisher(ex)
+  const mainStillAvailable = remaining.some((e) => e !== ex && !isSessionFinisher(e))
+
+  if (finisher) {
+    if (mainStillAvailable) score -= 80
+    else score += ordered.length * 3
+    if (ex.isCardio) score += ordered.length * 2
+  } else if (isCompoundLift(ex)) {
+    const compoundsLeft = remaining.filter((e) => !isSessionFinisher(e) && isCompoundLift(e)).length
+    if (compoundsLeft > 0) score += 25
+    score += Math.max(0, 18 - ordered.filter((e) => !isSessionFinisher(e)).length)
+  } else {
+    const compoundsLeft = remaining.filter((e) => !isSessionFinisher(e) && isCompoundLift(e)).length
+    if (compoundsLeft > 0) score -= 22
+    else score += 10
+  }
+
+  const last = ordered[ordered.length - 1]
+  if (last) {
+    const overlap = muscleOverlap(ex, last)
+    score -= overlap * 14
+    if (overlap > 0 && isCompoundLift(ex) && isCompoundLift(last)) score -= 10
+    const lastPatterns = exerciseMovementPatterns(last)
+    const exPatterns = exerciseMovementPatterns(ex)
+    const sharesPattern = lastPatterns.some((p) => exPatterns.includes(p))
+    if (overlap === 0 && !sharesPattern) score += 4
+    else if (overlap === 0 && sharesPattern) score -= 2
+  }
+
+  const secondLast = ordered[ordered.length - 2]
+  if (secondLast) score -= muscleOverlap(ex, secondLast) * 5
+
+  return score
 }
 
 /**
@@ -69,10 +206,12 @@ export function exerciseMatchesFocus(ex: LibraryExercise, selectedFocus: Shuffle
 export function filterLibraryForShuffle(
   selectedEquipment: string[],
   selectedFocus: ShuffleFocus[],
+  includeCardio = false,
 ): LibraryExercise[] {
-  return EXERCISE_LIBRARY.filter(
-    (ex) => exerciseMatchesEquipment(ex, selectedEquipment) && exerciseMatchesFocus(ex, selectedFocus),
-  )
+  return EXERCISE_LIBRARY.filter((ex) => {
+    if (ex.isCardio && !includeCardio) return false
+    return exerciseMatchesEquipment(ex, selectedEquipment) && exerciseMatchesFocus(ex, selectedFocus)
+  })
 }
 
 function shuffleInPlace<T>(items: T[], random: () => number): void {
@@ -98,6 +237,16 @@ export function libraryExerciseToTemplateExercise(
   planKey: string,
   index: number,
 ): TemplateExercise {
+  if (ex.isCardio) {
+    return {
+      id: `${planKey}__${ex.id}__${index}`,
+      name: ex.name,
+      libraryId: ex.id,
+      isCardio: true,
+      targetDuration: '30',
+      sets: [{ targetReps: '30', targetWeight: '' }],
+    }
+  }
   return {
     id: `${planKey}__${ex.id}__${index}`,
     name: ex.name,
@@ -111,6 +260,7 @@ export type ShuffleMode = 'duration' | 'count'
 export type ShuffleParams = {
   selectedEquipment: string[]
   selectedFocus: ShuffleFocus[]
+  includeCardio?: boolean
   mode: ShuffleMode
   /** Target minutes when mode === 'duration' */
   targetMinutes: number
@@ -130,11 +280,51 @@ function estimateMinutes(
   return estimatePlanDurationMinutes(template, assumptions)
 }
 
+function pickExercisesFromPool(
+  pool: LibraryExercise[],
+  params: ShuffleParams,
+  draftId: string,
+  random: () => number,
+): LibraryExercise[] {
+  const shuffled = [...pool]
+  shuffleInPlace(shuffled, random)
+
+  if (params.mode === 'count') {
+    const n = Math.max(1, Math.floor(params.exerciseCount))
+    return shuffled.slice(0, Math.min(n, shuffled.length))
+  }
+
+  const target = Math.max(5, Math.floor(params.targetMinutes))
+  const assumptions = params.durationAssumptions ?? DEFAULT_PLAN_DURATION_ASSUMPTIONS
+  const picked: LibraryExercise[] = []
+  let i = 0
+  for (const ex of shuffled) {
+    const next = libraryExerciseToTemplateExercise(ex, draftId, i)
+    const candidate = emptyTemplate(
+      draftId,
+      'Shuffled plan',
+      [
+        ...picked.map((p, j) => libraryExerciseToTemplateExercise(p, draftId, j)),
+        next,
+      ],
+    )
+    picked.push(ex)
+    i += 1
+    if (estimateMinutes(candidate, assumptions) >= target) break
+  }
+  return picked
+}
+
 /**
  * Builds a randomized plan from the library using the given constraints.
+ * Exercises are picked at random, then ordered compounds → isolation with muscle-group spacing.
  */
 export function buildShuffledPlan(params: ShuffleParams, random: () => number = Math.random): WorkoutTemplate {
-  const pool = filterLibraryForShuffle(params.selectedEquipment, params.selectedFocus)
+  const pool = filterLibraryForShuffle(
+    params.selectedEquipment,
+    params.selectedFocus,
+    params.includeCardio === true,
+  )
   const draftId = `shuffle-${Date.now()}`
   const name = 'Shuffled plan'
 
@@ -142,27 +332,9 @@ export function buildShuffledPlan(params: ShuffleParams, random: () => number = 
     return emptyTemplate(draftId, name, [])
   }
 
-  const shuffled = [...pool]
-  shuffleInPlace(shuffled, random)
-
-  if (params.mode === 'count') {
-    const n = Math.max(1, Math.floor(params.exerciseCount))
-    const picked = shuffled.slice(0, Math.min(n, shuffled.length))
-    const exercises = picked.map((ex, i) => libraryExerciseToTemplateExercise(ex, draftId, i))
-    return emptyTemplate(draftId, name, exercises)
-  }
-
-  const target = Math.max(5, Math.floor(params.targetMinutes))
-  const assumptions = params.durationAssumptions ?? DEFAULT_PLAN_DURATION_ASSUMPTIONS
-  const exercises: TemplateExercise[] = []
-  let i = 0
-  for (const ex of shuffled) {
-    const next = libraryExerciseToTemplateExercise(ex, draftId, i)
-    const candidate = emptyTemplate(draftId, name, [...exercises, next])
-    exercises.push(next)
-    i += 1
-    if (estimateMinutes(candidate, assumptions) >= target) break
-  }
+  const picked = pickExercisesFromPool(pool, params, draftId, random)
+  const ordered = orderExercisesForSession(picked, random)
+  const exercises = ordered.map((ex, i) => libraryExerciseToTemplateExercise(ex, draftId, i))
 
   return emptyTemplate(draftId, name, exercises)
 }

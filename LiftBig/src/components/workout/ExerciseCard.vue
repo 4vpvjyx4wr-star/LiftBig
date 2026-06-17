@@ -22,6 +22,7 @@ import {
   parseStoredLbs,
   storedLbsStringToDisplay,
 } from '@/utils/units'
+import { formatCircuitSetLine } from '@/utils/circuitExerciseDisplay'
 
 const props = defineProps<{
   exercise: Exercise
@@ -521,7 +522,7 @@ function closeLibraryDetail() {
         </span>
         <span class="w-11 text-xs text-muted">Set {{ index + 1 }}</span>
         <span class="flex-1 text-[13px] text-foreground">
-          {{ set.reps || 'AMRAP' }} reps @ {{ formatStoredLbsForDisplay(set.weight || '20') }}
+          {{ formatCircuitSetLine(set, exercise, weightUnit) }}
         </span>
       </button>
     </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Sortable from 'sortablejs'
 import { RouterLink } from 'vue-router'
 import MonthGrid from '@/components/calendar/MonthGrid.vue'
 import MonthNav from '@/components/calendar/MonthNav.vue'
@@ -30,6 +31,8 @@ import {
 } from '@/utils/planDuration'
 import { getLibraryExercise, inlineLibrarySuggestMatches, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
+import { formatCircuitExerciseGoal } from '@/utils/circuitExerciseDisplay'
+import { cardioTargetDurationMinutes, exerciseIsCardio } from '@/types/workout'
 
 const workouts = inject(workoutsInjectionKey)!
 const templates = inject(templatesInjectionKey)!
@@ -163,6 +166,14 @@ function onCopyDone(targetDate: string) {
 }
 
 function exerciseGoalLabel(ex: Exercise): string {
+  if (exerciseIsCardio(ex)) {
+    const duration = cardioTargetDurationMinutes(ex)
+    return duration ? `${duration} min` : `${ex.sets.length} set${ex.sets.length !== 1 ? 's' : ''}`
+  }
+  if (ex.isCircuit) {
+    return formatCircuitExerciseGoal(ex, weightUnit.value)
+  }
+
   const parts: string[] = []
   const setCount = ex.sets.length
   parts.push(`${setCount} set${setCount !== 1 ? 's' : ''}`)
@@ -316,6 +327,56 @@ function toggleRestDay() {
 function onPickDay(key: string) {
   selectedDate.value = key
 }
+
+const homeExerciseListEl = ref<HTMLElement | null>(null)
+let homeExerciseSortable: Sortable | null = null
+
+function destroyHomeExerciseSortable() {
+  homeExerciseSortable?.destroy()
+  homeExerciseSortable = null
+}
+
+function bindHomeExerciseSortable() {
+  destroyHomeExerciseSortable()
+  const el = homeExerciseListEl.value
+  if (!el || dayExercises.value.length < 2) return
+
+  homeExerciseSortable = Sortable.create(el, {
+    animation: 180,
+    handle: '.exercise-reorder-handle',
+    delay: 500,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    ghostClass: 'exercise-sortable-ghost',
+    chosenClass: 'exercise-sortable-chosen',
+    onEnd(evt: Sortable.SortableEvent) {
+      const oi = evt.oldIndex
+      const ni = evt.newIndex
+      if (oi == null || ni == null || oi === ni) return
+      const next = [...dayExercises.value]
+      const [moved] = next.splice(oi, 1)
+      if (!moved) return
+      next.splice(ni, 0, moved)
+      workouts.setDay(selectedDate.value, next)
+    },
+  })
+}
+
+onMounted(() => {
+  nextTick(bindHomeExerciseSortable)
+})
+
+watch(selectedDate, () => {
+  nextTick(bindHomeExerciseSortable)
+})
+
+watch(exerciseCount, () => {
+  nextTick(bindHomeExerciseSortable)
+})
+
+onBeforeUnmount(() => {
+  destroyHomeExerciseSortable()
+})
 </script>
 
 <template>
@@ -417,7 +478,7 @@ function onPickDay(key: string) {
           {{ selectedDayDuration }} · {{ selectedDayStats.sets }} sets · {{ selectedDayStats.reps }} total reps (where entered) ·
           max {{ formatMaxWeightDisplay(selectedDayStats.maxW, weightUnit) }}
         </p>
-        <ul class="mt-3 space-y-2">
+        <ul ref="homeExerciseListEl" class="mt-3 space-y-2">
           <li
             v-for="ex in dayExercises"
             :key="ex.id"
@@ -427,7 +488,8 @@ function onPickDay(key: string) {
               <div class="flex items-center gap-2">
                 <RouterLink
                   :to="`/workout/${selectedDate}`"
-                  class="font-bold text-foreground hover:text-primary"
+                  class="exercise-reorder-handle cursor-grab font-bold text-foreground hover:text-primary active:cursor-grabbing touch-manipulation select-none"
+                  title="Hold, then drag to reorder"
                 >
                   {{ ex.name }}
                 </RouterLink>
@@ -444,6 +506,7 @@ function onPickDay(key: string) {
               <div class="flex items-center gap-1.5">
                 <span class="text-xs text-muted">{{ exerciseGoalLabel(ex) }}</span>
                 <button
+                  v-if="!ex.isCircuit"
                   type="button"
                   class="text-muted hover:text-primary"
                   aria-label="Edit goals"

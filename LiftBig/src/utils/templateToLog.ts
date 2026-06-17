@@ -20,9 +20,16 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     targetDistance: ex.targetDistance,
     targetReps: ex.targetReps,
     targetWeight: ex.targetWeight,
-    sets: ex.sets.map(() => {
-      const base = { id: newId(), reps: '', weight: '' }
-      return ex.isCircuit ? { ...base, checked: false } : base
+    sets: ex.sets.map((s) => {
+      if (ex.isCircuit) {
+        return {
+          id: newId(),
+          reps: s.reps,
+          weight: s.weight,
+          checked: false,
+        }
+      }
+      return { id: newId(), reps: '', weight: '' }
     }),
   }))
 }
@@ -53,14 +60,21 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
       isCircuit: tex.isCircuit,
       targetReps: repsGoal,
       targetWeight: weightGoal,
-      sets: tex.sets.map(() => {
+      sets: tex.sets.map((ts) => {
+        if (tex.isCircuit) {
+          return {
+            id: newId(),
+            reps: (ts.targetReps ?? '').trim(),
+            weight: (ts.targetWeight ?? '').trim(),
+            checked: false,
+          }
+        }
         // Plan assignment creates empty working sets so users enter all reps/weight manually.
-        const base = {
+        return {
           id: newId(),
           reps: '',
           weight: '',
         }
-        return tex.isCircuit ? { ...base, checked: false } : base
       }),
     }
   })
