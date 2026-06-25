@@ -8,6 +8,7 @@ import {
 import {
   MUSCLE_GROUPS,
   MUSCLE_GROUP_LABELS,
+  listLibraryEquipmentTypes,
   searchLibrary,
   type LibraryExercise,
   type LibraryFilterGroup,
@@ -38,9 +39,22 @@ const weightUnit = computed(() => settings.weightUnit.value)
 
 const searchQuery = ref('')
 const selectedGroup = ref<LibraryFilterGroup>('all')
+const equipmentTypes = listLibraryEquipmentTypes()
 
 function setGroup(g: LibraryFilterGroup) {
   selectedGroup.value = g
+}
+
+function isEquipmentSelected(eq: string): boolean {
+  return settings.equipmentFilterPrefs.value.includes(eq)
+}
+
+function toggleEquipment(eq: string) {
+  settings.toggleEquipmentFilter(eq)
+}
+
+function selectAllEquipment() {
+  settings.clearEquipmentFilters()
 }
 
 function isLogged(ex: LibraryExercise): boolean {
@@ -102,6 +116,14 @@ function statsTitleAttr(ex: LibraryExercise): string {
 
 const filtered = computed(() => {
   let list = searchLibrary(searchQuery.value, selectedGroup.value)
+  const equipment = settings.equipmentFilterPrefs.value
+  if (equipment.length > 0) {
+    const allowed = new Set(equipment.map((e) => e.toLowerCase()))
+    list = list.filter((ex) => {
+      const eq = (ex.equipment ?? '').trim().toLowerCase()
+      return eq && allowed.has(eq)
+    })
+  }
   if (props.scope === 'favorites') {
     list = list.filter((ex) => favorites.isFavorite(ex.id))
   } else if (props.scope === 'logged') {
@@ -172,6 +194,37 @@ onBeforeUnmount(() => {
       placeholder="Search by name, muscle, tags, equipment…"
       autocomplete="off"
     />
+
+    <div
+      class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <button
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          settings.equipmentFilterPrefs.value.length === 0
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="selectAllEquipment"
+      >
+        All equipment
+      </button>
+      <button
+        v-for="eq in equipmentTypes"
+        :key="eq"
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          isEquipmentSelected(eq)
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="toggleEquipment(eq)"
+      >
+        {{ eq }}
+      </button>
+    </div>
 
     <div
       ref="muscleGroupStripRef"

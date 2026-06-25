@@ -48,6 +48,11 @@ const router = createRouter({
           name: 'progress',
           component: () => import('@/views/ProgressView.vue'),
         },
+        {
+          path: 'achievements',
+          name: 'achievements',
+          component: () => import('@/views/AchievementsView.vue'),
+        },
       ],
     },
     {

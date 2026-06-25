@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import CustomThemeEditor from '@/components/layout/CustomThemeEditor.vue'
-import { settingsInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import { THEME_OPTIONS } from '@/composables/useSettings'
 import { customThemeRef, isCustomThemeRef, paletteCssVariables, type CustomTheme, type ThemePalette } from '@/utils/themePalette'
 import { displayInputToStoredLbsString, parseStoredLbs, storedLbsStringToDisplay } from '@/utils/units'
@@ -9,6 +9,10 @@ import {
   getNotificationPermission,
   requestNotificationPermission as requestTimerNotifications,
 } from '@/utils/notifications'
+import {
+  findDuplicateExerciseGroups,
+  mergeExerciseNameVariants,
+} from '@/utils/exerciseDuplicates'
 import type { DistanceUnit } from '@/utils/distances'
 import type { WeightUnit } from '@/utils/units'
 
@@ -35,6 +39,21 @@ const emit = defineEmits<{
 }>()
 
 const settings = inject(settingsInjectionKey)!
+const workouts = inject(workoutsInjectionKey)!
+
+const duplicateGroups = computed(() => findDuplicateExerciseGroups(workouts.log.value))
+
+function mergeDuplicateGroup(key: string, variants: string[]) {
+  const canonical = variants.slice().sort((a, b) => a.localeCompare(b))[0]
+  if (!canonical) return
+  const ok = window.confirm(
+    `Merge these names into "${canonical}"?\n\n${variants.join('\n')}\n\nAll history will use the canonical name.`,
+  )
+  if (!ok) return
+  const next = mergeExerciseNameVariants(workouts.log.value, key, canonical)
+  workouts.log.value = next
+  workouts.flush()
+}
 
 function syncBodyWeightDraftFromProp() {
   bodyWeightDraft.value =
@@ -502,6 +521,114 @@ watch(
               />
             </label>
           </div>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Daily lift reminder</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Gentle nudge on Home when it's past your chosen time and you haven't logged today. Uses a system
+            notification when allowed; otherwise an in-app banner.
+          </p>
+          <label class="mb-3 flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Enable daily nudge</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.dailyLiftReminderEnabled.value"
+              @change="settings.setDailyLiftReminderEnabled(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+          <label class="block text-[11px] font-semibold text-muted">
+            Reminder time
+            <input
+              type="time"
+              class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              :value="settings.dailyLiftReminderTime.value"
+              :disabled="!settings.dailyLiftReminderEnabled.value"
+              @change="settings.setDailyLiftReminderTime(($event.target as HTMLInputElement).value)"
+            />
+          </label>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Workout logging</h3>
+          <label class="mb-3 flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Double-tap reps or weight to copy previous set</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.doubleTapCopyWeight.value"
+              @change="settings.setDoubleTapCopyWeight(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Auto-advance to next set's weight after reps</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.autoAdvanceRepsToWeight.value"
+              @change="settings.setAutoAdvanceRepsToWeight(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Controls &amp; tips</h3>
+          <ul class="space-y-2 text-[11px] leading-snug text-muted">
+            <li>
+              <span class="font-bold text-foreground">Double-tap reps or weight</span> — copies the previous set's
+              reps or weight (toggle above).
+            </li>
+            <li>
+              <span class="font-bold text-foreground">Hold exercise name</span> in the workout log, then drag to
+              reorder exercises.
+            </li>
+            <li>
+              <span class="font-bold text-foreground">Hold exercise name</span> on Home's day preview to reorder that
+              day's plan.
+            </li>
+          </ul>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Timer sound</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Short beep when the rest timer completes (in addition to haptic and notifications).
+          </p>
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Play sound when timer ends</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.timerSoundEnabled.value"
+              @change="settings.setTimerSoundEnabled(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+        </section>
+
+        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Data health</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Exercises logged with different capitalization or spacing are grouped below. Merge only when they're the
+            same lift.
+          </p>
+          <p v-if="duplicateGroups.length === 0" class="text-xs text-muted">No duplicate exercise names found.</p>
+          <ul v-else class="space-y-2">
+            <li
+              v-for="group in duplicateGroups"
+              :key="group.key"
+              class="rounded-lg border border-border bg-card px-3 py-2"
+            >
+              <p class="text-xs font-bold text-foreground">{{ group.variants.join(' · ') }}</p>
+              <button
+                type="button"
+                class="mt-2 text-xs font-bold text-primary hover:text-foreground"
+                @click="mergeDuplicateGroup(group.key, group.variants)"
+              >
+                Merge to canonical name
+              </button>
+            </li>
+          </ul>
         </section>
 
         <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">

@@ -8,7 +8,7 @@ import ExerciseNameSuggestList from '@/components/library/ExerciseNameSuggestLis
 import ExerciseCard from '@/components/workout/ExerciseCard.vue'
 import SwapExerciseModal from '@/components/workout/SwapExerciseModal.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
-import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, workoutsInjectionKey, templatesInjectionKey } from '@/composables/injectionKeys'
 import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggingFocus'
 import type { Exercise } from '@/types/workout'
@@ -38,10 +38,14 @@ import {
   estimateWorkoutCalories,
   formatWorkoutCalories,
 } from '@/utils/workoutCalories'
+import { logExercisesToTemplate } from '@/utils/logToTemplate'
+import type { WorkoutTemplate } from '@/types/workout'
+import { haptic } from '@/utils/haptics'
 
 const route = useRoute()
 const router = useRouter()
 const workouts = inject(workoutsInjectionKey)!
+const templates = inject(templatesInjectionKey)!
 const settings = inject(settingsInjectionKey)!
 const setLoggingFocusActive = provideWorkoutSetLoggingFocus()
 
@@ -462,6 +466,23 @@ function finish() {
   router.push('/')
 }
 
+function saveTodayAsPlan() {
+  if (exercises.value.length === 0) return
+  const defaultName = `From ${formatDisplayDate(dateKey.value)}`
+  const name = window.prompt('Plan name', defaultName)?.trim()
+  if (!name) return
+  const templateExercises = logExercisesToTemplate(exercises.value)
+  const newPlan: WorkoutTemplate = {
+    id: `${Date.now()}`,
+    name,
+    exercises: templateExercises,
+  }
+  templates.setAll([...templates.templates.value, newPlan])
+  haptic('success')
+  const openPlans = window.confirm(`Saved plan "${name}". Open Plans tab now?`)
+  if (openPlans) router.push('/plans')
+}
+
 function closeMenu() {
   menuOpen.value = false
 }
@@ -582,6 +603,18 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
                 >
                   <i class="fa-solid fa-calculator w-5 text-center text-base text-muted" aria-hidden="true" />
                   1RM
+                </button>
+              </RouterLink>
+              <RouterLink v-slot="{ navigate, isActive }" to="/achievements" custom>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-trophy w-5 text-center text-base text-muted" aria-hidden="true" />
+                  Achievements
                 </button>
               </RouterLink>
               <button
@@ -777,6 +810,15 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
         @click="finish"
       >
         Finish Workout
+      </button>
+
+      <button
+        v-if="exercises.length > 0"
+        type="button"
+        class="mx-auto mt-2 flex w-full max-w-lg justify-center rounded-lg border border-border bg-card-inner py-2 text-sm font-semibold text-muted hover:text-foreground"
+        @click="saveTodayAsPlan"
+      >
+        Save today as plan
       </button>
     </div>
 

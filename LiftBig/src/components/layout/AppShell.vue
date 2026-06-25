@@ -153,6 +153,22 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
                   1RM
                 </button>
               </RouterLink>
+              <RouterLink
+                v-slot="{ navigate, isActive }"
+                to="/achievements"
+                custom
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-bold text-foreground active:bg-card"
+                  :class="{ '!text-primary': isActive }"
+                  @click="closeMenu(); navigate($event)"
+                >
+                  <i class="fa-solid fa-trophy w-5 text-center text-base text-muted" aria-hidden="true" />
+                  Achievements
+                </button>
+              </RouterLink>
               <button
                 type="button"
                 role="menuitem"

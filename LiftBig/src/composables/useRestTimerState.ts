@@ -4,6 +4,8 @@ import {
   requestNotificationPermission,
   showTimerFinishedNotification,
 } from '@/utils/notifications'
+import { playTimerDoneSound } from '@/utils/timerSound'
+import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 
 const TIMER_OPTIONS = [30, 60, 90, 120] as const
 
@@ -23,11 +25,24 @@ let endsAtMs: number | null = null
 let alertedThisRun = false
 let resumeListenersAttached = false
 
+function isTimerSoundEnabled(): boolean {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    const raw = localStorage.getItem(LIFTBIG_STORAGE_KEYS.settings)
+    if (!raw) return true
+    const parsed = JSON.parse(raw) as { timerSoundEnabled?: boolean }
+    return parsed.timerSoundEnabled !== false
+  } catch {
+    return true
+  }
+}
+
 function maybeNotifyTimerFinished() {
   showTimerFinishedNotification({
     title: 'Time to Lift Big',
     body: 'Your rest timer is done — get back to it!',
   })
+  if (isTimerSoundEnabled()) playTimerDoneSound()
 }
 
 function tickFromClock() {

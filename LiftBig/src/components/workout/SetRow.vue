@@ -18,6 +18,8 @@ const REPS_MENU_TARGET_VISIBLE_INDEX = 2
 const props = defineProps<{
   set: SetLog
   index: number
+  /** Id of the next set in the same exercise (for auto-advance focus). */
+  nextSetId?: string
   targetReps?: string
   /** First set: goal weight (stored lb string) — scroll picker to this row. */
   targetWeightStored?: string
@@ -37,6 +39,7 @@ const emit = defineEmits<{
   update: [field: 'reps' | 'weight' | 'durationSeconds', value: string]
   toggleWarmup: []
   delete: []
+  advanceToNextWeight: []
 }>()
 
 const isWarmup = computed(() => props.set.isWarmup === true)
@@ -333,6 +336,37 @@ function selectRepsOption(raw: string) {
   emit('update', 'reps', raw)
   showRepsMenu.value = false
   syncSetLoggingFocus()
+  maybeAdvanceAfterReps(raw)
+}
+
+function onRepsBlur() {
+  hideRepsMenuSoon()
+  maybeAdvanceAfterReps(props.set.reps)
+}
+
+function maybeAdvanceAfterReps(repsValue: string) {
+  if (!settings.autoAdvanceRepsToWeight.value) return
+  if (!props.nextSetId) return
+  if (!repsValue.trim()) return
+  window.setTimeout(() => emit('advanceToNextWeight'), MENU_HIDE_AFTER_BLUR_MS + 40)
+}
+
+function onWeightDoubleTap() {
+  if (!settings.doubleTapCopyWeight.value) return
+  if (props.index <= 0) return
+  const prior = (props.priorSetWeightStored ?? '').trim()
+  if (!prior) return
+  haptic('tap')
+  emit('update', 'weight', prior)
+}
+
+function onRepsDoubleTap() {
+  if (!settings.doubleTapCopyWeight.value) return
+  if (props.index <= 0) return
+  const prior = (props.priorSetReps ?? '').trim()
+  if (!prior) return
+  haptic('tap')
+  emit('update', 'reps', prior)
 }
 </script>
 
@@ -368,10 +402,12 @@ function selectRepsOption(raw: string) {
         inputmode="decimal"
         data-touch-input
         data-workout-set-input
+        :data-set-weight="set.id"
         class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
         @focus="onWeightFocus"
         @blur="hideWeightMenuSoon"
+        @dblclick="onWeightDoubleTap"
         @input="onWeightInput(($event.target as HTMLInputElement).value)"
       />
       <div
@@ -413,7 +449,8 @@ function selectRepsOption(raw: string) {
         class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="repsPlaceholder"
         @focus="onRepsFocus"
-        @blur="hideRepsMenuSoon"
+        @blur="onRepsBlur"
+        @dblclick="onRepsDoubleTap"
         @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
       />
       <div

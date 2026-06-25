@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import CardioDistanceInput from '@/components/workout/CardioDistanceInput.vue'
 import CardioDurationInput from '@/components/workout/CardioDurationInput.vue'
@@ -332,6 +332,16 @@ function openLibraryDetail() {
 function closeLibraryDetail() {
   detailOpen.value = false
 }
+
+function focusSetWeightInput(setId: string) {
+  void nextTick(() => {
+    const el = document.querySelector(
+      `[data-set-weight="${setId}"]`,
+    ) as HTMLInputElement | null
+    el?.focus()
+    el?.select()
+  })
+}
 </script>
 
 <template>
@@ -621,6 +631,7 @@ function closeLibraryDetail() {
         :key="set.id"
         :set="set"
         :index="index"
+        :next-set-id="index < exercise.sets.length - 1 ? exercise.sets[index + 1]?.id : undefined"
         :target-reps="setRepGoal"
         :target-weight-stored="index === 0 ? exercise.targetWeight : undefined"
         :prior-set-weight-stored="index > 0 ? exercise.sets[index - 1]?.weight : undefined"
@@ -629,6 +640,11 @@ function closeLibraryDetail() {
         :target-duration-seconds="coreTimeGoalSeconds || undefined"
         :prior-set-duration-seconds="index > 0 ? exercise.sets[index - 1]?.durationSeconds : undefined"
         @update="(f, v) => onSetRowUpdate(set.id, index, f, v)"
+        @advance-to-next-weight="
+          index < exercise.sets.length - 1 && exercise.sets[index + 1]
+            ? focusSetWeightInput(exercise.sets[index + 1]!.id)
+            : undefined
+        "
         @toggle-warmup="emit('toggleWarmupSet', set.id)"
         @delete="emit('deleteSet', set.id)"
       />

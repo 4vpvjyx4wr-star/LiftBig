@@ -2742,6 +2742,16 @@ export function resolveManualExerciseInput(raw: string): LibraryExercise | undef
   return undefined
 }
 
+/** Distinct equipment labels from the library (for filter chips). */
+export function listLibraryEquipmentTypes(): string[] {
+  const set = new Set<string>()
+  for (const ex of EXERCISE_LIBRARY) {
+    const eq = ex.equipment?.trim()
+    if (eq) set.add(eq)
+  }
+  return [...set].sort((a, b) => a.localeCompare(b))
+}
+
 export function searchLibrary(
   q: string,
   group: LibraryFilterGroup,

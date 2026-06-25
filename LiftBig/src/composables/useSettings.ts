@@ -64,6 +64,18 @@ export type AppSettings = {
   averageLiftSeconds: number
   /** Body weight in pounds; used for calorie estimates. 0 = not set. */
   bodyWeightLbs: number
+  /** Daily "lift big" reminder at a chosen local time. */
+  dailyLiftReminderEnabled: boolean
+  /** Local time as HH:MM (24h). */
+  dailyLiftReminderTime: string
+  /** Double-tap reps or weight field to copy previous set's value. */
+  doubleTapCopyWeight: boolean
+  /** After logging reps, focus the next set's weight field. */
+  autoAdvanceRepsToWeight: boolean
+  /** Short sound when rest timer completes. */
+  timerSoundEnabled: boolean
+  /** Selected equipment filters for library/swap (empty = show all). */
+  equipmentFilterPrefs: string[]
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -73,6 +85,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   averageRestSeconds: 60,
   averageLiftSeconds: 60,
   bodyWeightLbs: 0,
+  dailyLiftReminderEnabled: false,
+  dailyLiftReminderTime: '17:00',
+  doubleTapCopyWeight: true,
+  autoAdvanceRepsToWeight: true,
+  timerSoundEnabled: true,
+  equipmentFilterPrefs: [],
 }
 
 const MIN_AVERAGE_SECONDS = 5
@@ -89,6 +107,27 @@ const MAX_BODY_WEIGHT_LBS = 700
 function sanitizeBodyWeightLbs(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 0
   return Math.min(MAX_BODY_WEIGHT_LBS, Math.max(MIN_BODY_WEIGHT_LBS, Math.round(value * 10) / 10))
+}
+
+const REMINDER_TIME_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/
+
+function sanitizeReminderTime(value: unknown): string {
+  if (typeof value !== 'string') return DEFAULT_SETTINGS.dailyLiftReminderTime
+  const t = value.trim()
+  if (!REMINDER_TIME_RE.test(t)) return DEFAULT_SETTINGS.dailyLiftReminderTime
+  const [h, m] = t.split(':')
+  return `${String(Number(h)).padStart(2, '0')}:${m}`
+}
+
+function sanitizeEquipmentFilterPrefs(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const out: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string') continue
+    const t = item.trim()
+    if (t && !out.includes(t)) out.push(t)
+  }
+  return out
 }
 
 export const THEME_OPTIONS: { id: ThemeId; label: string }[] = [
@@ -164,6 +203,22 @@ export function useSettings() {
     sanitizeAverageSeconds(loaded.averageLiftSeconds, DEFAULT_SETTINGS.averageLiftSeconds),
   )
   const bodyWeightLbs = ref<number>(sanitizeBodyWeightLbs(loaded.bodyWeightLbs ?? 0))
+  const dailyLiftReminderEnabled = ref<boolean>(
+    loaded.dailyLiftReminderEnabled === true,
+  )
+  const dailyLiftReminderTime = ref<string>(
+    sanitizeReminderTime(loaded.dailyLiftReminderTime),
+  )
+  const doubleTapCopyWeight = ref<boolean>(
+    loaded.doubleTapCopyWeight !== false,
+  )
+  const autoAdvanceRepsToWeight = ref<boolean>(
+    loaded.autoAdvanceRepsToWeight !== false,
+  )
+  const timerSoundEnabled = ref<boolean>(loaded.timerSoundEnabled !== false)
+  const equipmentFilterPrefs = ref<string[]>(
+    sanitizeEquipmentFilterPrefs(loaded.equipmentFilterPrefs),
+  )
 
   function persistSettings() {
     saveJson(STORAGE_KEY, {
@@ -179,6 +234,12 @@ export function useSettings() {
         DEFAULT_SETTINGS.averageLiftSeconds,
       ),
       bodyWeightLbs: sanitizeBodyWeightLbs(bodyWeightLbs.value),
+      dailyLiftReminderEnabled: dailyLiftReminderEnabled.value,
+      dailyLiftReminderTime: sanitizeReminderTime(dailyLiftReminderTime.value),
+      doubleTapCopyWeight: doubleTapCopyWeight.value,
+      autoAdvanceRepsToWeight: autoAdvanceRepsToWeight.value,
+      timerSoundEnabled: timerSoundEnabled.value,
+      equipmentFilterPrefs: sanitizeEquipmentFilterPrefs(equipmentFilterPrefs.value),
     })
   }
 
@@ -191,7 +252,20 @@ export function useSettings() {
   }
 
   watch(
-    [theme, weightUnit, distanceUnit, averageRestSeconds, averageLiftSeconds, bodyWeightLbs],
+    [
+      theme,
+      weightUnit,
+      distanceUnit,
+      averageRestSeconds,
+      averageLiftSeconds,
+      bodyWeightLbs,
+      dailyLiftReminderEnabled,
+      dailyLiftReminderTime,
+      doubleTapCopyWeight,
+      autoAdvanceRepsToWeight,
+      timerSoundEnabled,
+      equipmentFilterPrefs,
+    ],
     () => {
       averageRestSeconds.value = sanitizeAverageSeconds(
         averageRestSeconds.value,
@@ -258,6 +332,12 @@ export function useSettings() {
     averageRestSeconds,
     averageLiftSeconds,
     bodyWeightLbs,
+    dailyLiftReminderEnabled,
+    dailyLiftReminderTime,
+    doubleTapCopyWeight,
+    autoAdvanceRepsToWeight,
+    timerSoundEnabled,
+    equipmentFilterPrefs,
     setTheme,
     addCustomTheme,
     updateCustomTheme,
@@ -276,6 +356,32 @@ export function useSettings() {
     },
     setBodyWeightLbs(value: number) {
       bodyWeightLbs.value = sanitizeBodyWeightLbs(value)
+    },
+    setDailyLiftReminderEnabled(enabled: boolean) {
+      dailyLiftReminderEnabled.value = enabled
+    },
+    setDailyLiftReminderTime(time: string) {
+      dailyLiftReminderTime.value = sanitizeReminderTime(time)
+    },
+    setDoubleTapCopyWeight(enabled: boolean) {
+      doubleTapCopyWeight.value = enabled
+    },
+    setAutoAdvanceRepsToWeight(enabled: boolean) {
+      autoAdvanceRepsToWeight.value = enabled
+    },
+    setTimerSoundEnabled(enabled: boolean) {
+      timerSoundEnabled.value = enabled
+    },
+    toggleEquipmentFilter(equipment: string) {
+      const key = equipment.trim()
+      if (!key) return
+      const cur = equipmentFilterPrefs.value
+      equipmentFilterPrefs.value = cur.includes(key)
+        ? cur.filter((e) => e !== key)
+        : [...cur, key]
+    },
+    clearEquipmentFilters() {
+      equipmentFilterPrefs.value = []
     },
   }
 }

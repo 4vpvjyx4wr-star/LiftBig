@@ -65,7 +65,27 @@ function normalizeSettings(raw: unknown, customThemes: CustomTheme[] = []): AppS
   const rawBody = o.bodyWeightLbs
   const bodyWeightLbs =
     typeof rawBody === 'number' && Number.isFinite(rawBody) && rawBody > 0 ? rawBody : 0
-  return { theme, weightUnit, distanceUnit, averageRestSeconds, averageLiftSeconds, bodyWeightLbs }
+  const equipmentFilterPrefs = Array.isArray(o.equipmentFilterPrefs)
+    ? o.equipmentFilterPrefs.filter((x): x is string => typeof x === 'string')
+    : DEFAULT_SETTINGS.equipmentFilterPrefs
+  return {
+    ...DEFAULT_SETTINGS,
+    theme,
+    weightUnit,
+    distanceUnit,
+    averageRestSeconds,
+    averageLiftSeconds,
+    bodyWeightLbs,
+    dailyLiftReminderEnabled: o.dailyLiftReminderEnabled === true,
+    dailyLiftReminderTime:
+      typeof o.dailyLiftReminderTime === 'string'
+        ? o.dailyLiftReminderTime
+        : DEFAULT_SETTINGS.dailyLiftReminderTime,
+    doubleTapCopyWeight: o.doubleTapCopyWeight !== false,
+    autoAdvanceRepsToWeight: o.autoAdvanceRepsToWeight !== false,
+    timerSoundEnabled: o.timerSoundEnabled !== false,
+    equipmentFilterPrefs,
+  }
 }
 
 function normalizeTemplates(raw: unknown): WorkoutTemplate[] {

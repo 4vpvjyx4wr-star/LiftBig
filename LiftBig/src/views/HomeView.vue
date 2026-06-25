@@ -19,6 +19,10 @@ import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise, WorkoutTemplate } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
+import {
+  dismissDailyReminderForToday,
+  evaluateDailyLiftReminder,
+} from '@/utils/dailyLiftReminder'
 import { haptic } from '@/utils/haptics'
 import {
   displayInputToStoredLbsString,
@@ -375,10 +379,58 @@ watch(exerciseCount, () => {
 onBeforeUnmount(() => {
   destroyHomeExerciseSortable()
 })
+
+const dailyReminderDismissTick = ref(0)
+
+const dailyReminder = computed(() => {
+  dailyReminderDismissTick.value
+  return evaluateDailyLiftReminder(
+    workoutLogPlain.value,
+    settings.dailyLiftReminderEnabled.value,
+    settings.dailyLiftReminderTime.value,
+  )
+})
+
+function dismissDailyNudge() {
+  dismissDailyReminderForToday()
+  dailyReminderDismissTick.value++
+  haptic('tap')
+}
+
+const liftHref = computed(() => `/workout/${today}`)
 </script>
 
 <template>
   <div>
+    <div
+      v-if="dailyReminder.shouldNudge"
+      class="mb-4 flex items-start gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"
+      role="status"
+    >
+      <i class="fa-solid fa-dumbbell mt-0.5 text-primary" aria-hidden="true" />
+      <div class="min-w-0 flex-1">
+        <p class="text-sm font-extrabold text-foreground">Time to lift big</p>
+        <p class="mt-0.5 text-xs leading-snug text-muted">
+          You haven't logged today's workout yet. Open your log when you're ready.
+        </p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <RouterLink
+            :to="liftHref"
+            class="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-foreground"
+          >
+            Open log
+          </RouterLink>
+          <button
+            type="button"
+            class="rounded-lg border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-muted"
+            @click="dismissDailyNudge"
+          >
+            Not today
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="mb-4">
       <MonthNav :label="monthLabel" @prev="changeMonth(-1)" @next="changeMonth(1)" />
     </div>

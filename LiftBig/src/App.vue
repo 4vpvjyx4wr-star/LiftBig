@@ -11,6 +11,7 @@ import { useLocalWorkouts } from '@/composables/useLocalWorkouts'
 import { useLibraryFavorites } from '@/composables/useLibraryFavorites'
 import { useTemplates } from '@/composables/useTemplates'
 import { useSettings } from '@/composables/useSettings'
+import { maybeFireDailyLiftNotification } from '@/utils/dailyLiftReminder'
 
 const workouts = useLocalWorkouts()
 const templates = useTemplates()
@@ -21,6 +22,16 @@ provide(workoutsInjectionKey, workouts)
 provide(templatesInjectionKey, templates)
 provide(settingsInjectionKey, settings)
 provide(libraryFavoritesInjectionKey, libraryFavorites)
+
+let dailyReminderInterval: ReturnType<typeof setInterval> | null = null
+
+function checkDailyLiftReminder() {
+  maybeFireDailyLiftNotification(
+    workouts.log.value,
+    settings.dailyLiftReminderEnabled.value,
+    settings.dailyLiftReminderTime.value,
+  )
+}
 
 /** Workouts autosave is debounced; flush before the tab goes away so nothing is lost on close. */
 function flushWorkoutsToDisk() {
@@ -37,11 +48,14 @@ onMounted(() => {
   }
   window.addEventListener('pagehide', flushWorkoutsToDisk)
   document.addEventListener('visibilitychange', onDocumentVisibilityChange)
+  checkDailyLiftReminder()
+  dailyReminderInterval = setInterval(checkDailyLiftReminder, 60_000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('pagehide', flushWorkoutsToDisk)
   document.removeEventListener('visibilitychange', onDocumentVisibilityChange)
+  if (dailyReminderInterval) clearInterval(dailyReminderInterval)
 })
 </script>
 

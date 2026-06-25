@@ -41,3 +41,18 @@ export function showTimerFinishedNotification(options: TimerNotificationOptions 
     // Ignore notification failures.
   }
 }
+
+export function showDailyLiftReminderNotification(): void {
+  if (!canUseNotifications() || Notification.permission !== 'granted') return
+  try {
+    void new Notification('Time to lift big', {
+      body: "Your daily nudge — log today's workout when you're ready.",
+      tag: 'liftbig-daily-reminder',
+      icon: '/pwa-192x192.svg',
+      badge: '/pwa-192x192.svg',
+      silent: false,
+    })
+  } catch {
+    // Ignore notification failures.
+  }
+}
