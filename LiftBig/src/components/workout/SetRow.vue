@@ -5,6 +5,7 @@ import { useWorkoutSetLoggingFocusConsumer } from '@/composables/useWorkoutSetLo
 import type { SetLog } from '@/types/workout'
 import { finiteGoalRepMaxForScroll, REP_QUICK_PICK_DESCENDING } from '@/utils/progressiveOverload'
 import { haptic } from '@/utils/haptics'
+import { createDoubleTapDetector } from '@/utils/doubleTap'
 import CoreDurationInput from '@/components/workout/CoreDurationInput.vue'
 import {
   displayInputToStoredLbsString,
@@ -368,6 +369,17 @@ function onRepsDoubleTap() {
   haptic('tap')
   emit('update', 'reps', prior)
 }
+
+const weightDoubleTap = createDoubleTapDetector(onWeightDoubleTap)
+const repsDoubleTap = createDoubleTapDetector(onRepsDoubleTap)
+
+function handleWeightTap(e: MouseEvent) {
+  if (weightDoubleTap.registerTap()) e.preventDefault()
+}
+
+function handleRepsTap(e: MouseEvent) {
+  if (repsDoubleTap.registerTap()) e.preventDefault()
+}
 </script>
 
 <template>
@@ -406,8 +418,8 @@ function onRepsDoubleTap() {
         class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
         @focus="onWeightFocus"
-        @blur="hideWeightMenuSoon"
-        @dblclick="onWeightDoubleTap"
+        @blur="hideWeightMenuSoon(); weightDoubleTap.reset()"
+        @click="handleWeightTap"
         @input="onWeightInput(($event.target as HTMLInputElement).value)"
       />
       <div
@@ -449,8 +461,8 @@ function onRepsDoubleTap() {
         class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="repsPlaceholder"
         @focus="onRepsFocus"
-        @blur="onRepsBlur"
-        @dblclick="onRepsDoubleTap"
+        @blur="onRepsBlur(); repsDoubleTap.reset()"
+        @click="handleRepsTap"
         @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
       />
       <div
