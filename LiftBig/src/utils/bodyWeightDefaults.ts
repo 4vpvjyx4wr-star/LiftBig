@@ -1,6 +1,6 @@
 import type { Exercise } from '@/types/workout'
 import { DEFAULT_SETTINGS, type AppSettings } from '@/composables/useSettings'
-import { resolveExerciseIsBodyweight } from '@/utils/exerciseLibrary'
+import { resolveExerciseIsBodyweight, resolveExerciseIsCore } from '@/utils/exerciseLibrary'
 import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJson } from '@/utils/storage'
 import { parseStoredLbs } from '@/utils/units'
@@ -24,10 +24,11 @@ export function storedBodyWeightLbsString(bodyWeightLbs: number): string {
 }
 
 export function defaultBodyWeightForExercise(
-  exercise: Pick<Exercise, 'libraryId' | 'isCardio' | 'name' | 'isCircuit'>,
+  exercise: Pick<Exercise, 'libraryId' | 'isCardio' | 'isCore' | 'name' | 'isCircuit'>,
   bodyWeightLbs: number,
 ): string {
   if (bodyWeightLbs <= 0 || exercise.isCircuit || exercise.isCardio) return ''
+  if (resolveExerciseIsCore(exercise)) return ''
   if (!resolveExerciseIsBodyweight(exercise)) return ''
   return storedBodyWeightLbsString(bodyWeightLbs)
 }

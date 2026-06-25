@@ -1,4 +1,9 @@
 import { computed, ref, watch } from 'vue'
+import { haptic } from '@/utils/haptics'
+import {
+  requestNotificationPermission,
+  showTimerFinishedNotification,
+} from '@/utils/notifications'
 
 const TIMER_OPTIONS = [30, 60, 90, 120] as const
 
@@ -19,13 +24,10 @@ let alertedThisRun = false
 let resumeListenersAttached = false
 
 function maybeNotifyTimerFinished() {
-  if (typeof window === 'undefined' || typeof Notification === 'undefined') return
-  if (Notification.permission !== 'granted') return
-  try {
-    void new Notification('Time to Lift Big')
-  } catch {
-    // Ignore notification failures (unsupported environment, blocked runtime, etc.).
-  }
+  showTimerFinishedNotification({
+    title: 'Time to Lift Big',
+    body: 'Your rest timer is done — get back to it!',
+  })
 }
 
 function tickFromClock() {
@@ -38,9 +40,7 @@ function tickFromClock() {
   clearTick()
   if (!alertedThisRun) {
     alertedThisRun = true
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate([80, 50, 80])
-    }
+    haptic('timerDone')
     maybeNotifyTimerFinished()
   }
 }
@@ -57,11 +57,9 @@ function attachResumeListenersIfNeeded() {
 }
 
 function requestNotificationPermissionIfNeeded() {
-  if (typeof window === 'undefined' || typeof Notification === 'undefined') return
-  if (Notification.permission !== 'default') return
   if (notificationPermissionRequested) return
   notificationPermissionRequested = true
-  void Notification.requestPermission().catch(() => {})
+  void requestNotificationPermission()
 }
 
 function clearTick() {
@@ -144,7 +142,11 @@ function toggle() {
     reset()
     return
   }
-  if (!running.value) requestNotificationPermissionIfNeeded()
+  const starting = !running.value
+  if (starting) {
+    requestNotificationPermissionIfNeeded()
+    haptic('timerStart')
+  }
   running.value = !running.value
 }
 

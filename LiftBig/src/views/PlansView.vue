@@ -20,6 +20,7 @@ import {
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
 import { sortFolderPlans } from '@/utils/folderPlanSort'
+import { haptic } from '@/utils/haptics'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
@@ -315,13 +316,7 @@ function onPlanNameTouchEnd() {
 
 function activateTouchDrag(templateId: string) {
   touchLongPressTimer = null
-  if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    try {
-      navigator.vibrate(15)
-    } catch {
-      // Ignore vibration failures (unsupported environment, etc.).
-    }
-  }
+  haptic('tap')
   draggedTemplateId.value = templateId
   isTouchDragActive.value = true
   document.addEventListener('touchmove', onTouchDragMove, { passive: false })

@@ -2,6 +2,8 @@ export type SetLog = {
   id: string
   reps: string
   weight: string
+  /** Logged hold/work duration in seconds (core / ab exercises). */
+  durationSeconds?: string
   checked?: boolean
   /** Warmup sets are logged but excluded from strength/progress predictions. */
   isWarmup?: boolean
@@ -20,8 +22,12 @@ export type Exercise = {
   isCircuit?: boolean
   /** Cardio / sports: duration-only logging (no weight). */
   isCardio?: boolean
+  /** Core / ab exercises: optional per-set time and rep logging. */
+  isCore?: boolean
   /** Target duration in minutes (plans and optional workout goals). */
   targetDuration?: string
+  /** Goal hold/work time in seconds (core exercises). */
+  targetTimeSeconds?: string
   /** Optional goal distance for distance-based cardio (numeric string; unit from settings). */
   targetDistance?: string
   targetReps?: string
@@ -125,8 +131,12 @@ export type TemplateExercise = {
   isCircuit?: boolean
   /** Cardio / sports: duration-only (no weight). */
   isCardio?: boolean
+  /** Core / ab exercises: optional per-set time and rep logging. */
+  isCore?: boolean
   /** Target duration in minutes. */
   targetDuration?: string
+  /** Goal hold/work time in seconds (core exercises). */
+  targetTimeSeconds?: string
   /** Optional goal distance for distance-based cardio (numeric string; unit from settings). */
   targetDistance?: string
   /** Optional targets for the workout log (same idea as live “Set goals”). */
@@ -175,6 +185,60 @@ export function cardioExerciseComplete(ex: Exercise): boolean {
   if (!d) return false
   const n = parseInt(d, 10)
   return !Number.isNaN(n) && n > 0
+}
+
+/** Parse seconds from goal text like "45 sec", "1 min", or "45-60 sec". */
+export function parseSecondsFromGoalText(text: string | undefined): number | null {
+  const t = (text ?? '').trim().toLowerCase()
+  if (!t) return null
+  const minMatch = t.match(/(\d+)\s*min/)
+  if (minMatch) {
+    const n = parseInt(minMatch[1]!, 10)
+    return !Number.isNaN(n) && n > 0 ? n * 60 : null
+  }
+  const secMatch = t.match(/(\d+)\s*sec/)
+  if (secMatch) {
+    const n = parseInt(secMatch[1]!, 10)
+    return !Number.isNaN(n) && n > 0 ? n : null
+  }
+  return null
+}
+
+/** Goal time in seconds for core exercises (explicit field, then legacy rep-goal text). */
+export function coreTargetTimeSeconds(
+  ex: Pick<Exercise | TemplateExercise, 'targetTimeSeconds' | 'targetReps'>,
+): string {
+  const explicit = (ex.targetTimeSeconds ?? '').trim()
+  if (explicit) return explicit
+  const parsed = parseSecondsFromGoalText(ex.targetReps)
+  return parsed != null ? String(parsed) : ''
+}
+
+export function parseSetDurationSeconds(set: Pick<SetLog, 'durationSeconds'>): number | null {
+  const t = (set.durationSeconds ?? '').trim()
+  if (!t) return null
+  const n = parseInt(t, 10)
+  return !Number.isNaN(n) && n > 0 ? n : null
+}
+
+export function parseSetRepsCount(set: Pick<SetLog, 'reps'>): number | null {
+  const t = set.reps.trim()
+  if (!t) return null
+  const n = parseInt(t, 10)
+  return !Number.isNaN(n) && n >= 1 ? n : null
+}
+
+/** A core set counts as logged when it has valid reps and/or duration. */
+export function coreSetLogged(set: Pick<SetLog, 'reps' | 'durationSeconds'>): boolean {
+  return parseSetRepsCount(set) != null || parseSetDurationSeconds(set) != null
+}
+
+export function formatDurationSecondsDisplay(seconds: number): string {
+  if (seconds < 60) return `${seconds} sec`
+  if (seconds % 60 === 0) return `${seconds / 60} min`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 export type WorkoutTemplate = {

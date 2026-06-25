@@ -1,5 +1,6 @@
 import type { Exercise, TemplateExercise, WorkoutTemplate } from '@/types/workout'
 import { cardioTargetDurationMinutes } from '@/types/workout'
+import { resolveExerciseIsCore } from '@/utils/exerciseLibrary'
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -16,8 +17,10 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     libraryId: ex.libraryId,
     isCircuit: ex.isCircuit,
     isCardio: ex.isCardio,
+    isCore: ex.isCore,
     targetDuration: ex.targetDuration,
     targetDistance: ex.targetDistance,
+    targetTimeSeconds: ex.targetTimeSeconds,
     targetReps: ex.targetReps,
     targetWeight: ex.targetWeight,
     sets: ex.sets.map((s) => {
@@ -53,13 +56,21 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
     const first = tex.sets[0]
     const repsGoal = (tex.targetReps ?? '').trim() || first?.targetReps
     const weightGoal = (tex.targetWeight ?? '').trim() || first?.targetWeight
+    const isCore = resolveExerciseIsCore({
+      libraryId: tex.libraryId,
+      isCore: tex.isCore,
+      isCircuit: tex.isCircuit,
+      name: tex.name,
+    })
     return {
       id: newId(),
       name: tex.name,
       libraryId: tex.libraryId,
       isCircuit: tex.isCircuit,
+      isCore: isCore ? true : undefined,
       targetReps: repsGoal,
       targetWeight: weightGoal,
+      targetTimeSeconds: tex.targetTimeSeconds,
       sets: tex.sets.map((ts) => {
         if (tex.isCircuit) {
           return {

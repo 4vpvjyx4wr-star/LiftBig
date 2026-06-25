@@ -13,7 +13,7 @@ import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggingFocus'
 import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
-import { getLibraryExercise, libraryExerciseIsCardio } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, libraryExerciseIsCardio, resolveExerciseIsCore } from '@/utils/exerciseLibrary'
 import {
   applyBodyWeightDefaultsToExercise,
   applyBodyWeightDefaultsToExercises,
@@ -111,12 +111,22 @@ function scheduleWorkoutNotesPersist() {
 function normalizeExerciseForLog(ex: Exercise): Exercise {
   const lib = ex.libraryId ? getLibraryExercise(ex.libraryId) : undefined
   const isCardio = ex.isCardio === true || libraryExerciseIsCardio(lib)
-  if (!isCardio) return ex
-  const next: Exercise = { ...ex, isCardio: true }
-  if (next.sets.length === 0) {
-    next.sets = [{ id: newId(), reps: '', weight: '' }]
+  if (isCardio) {
+    const next: Exercise = { ...ex, isCardio: true }
+    if (next.sets.length === 0) {
+      next.sets = [{ id: newId(), reps: '', weight: '' }]
+    }
+    return next
   }
-  return next
+  const isCore = resolveExerciseIsCore({
+    libraryId: ex.libraryId,
+    isCore: ex.isCore,
+    isCardio: false,
+    isCircuit: ex.isCircuit,
+    name: ex.name,
+  })
+  if (!isCore) return ex
+  return { ...ex, isCore: true }
 }
 
 function loadDay() {
@@ -271,10 +281,12 @@ function addFromLibrary(ex: LibraryExercise) {
     })
     return
   }
+  const isCore = resolveExerciseIsCore({ libraryId: ex.id, name: ex.name })
   appendExercise({
     id: newId(),
     name: ex.name,
     libraryId: ex.id,
+    isCore: isCore ? true : undefined,
     ...optionalGoalsFromDock(),
     sets: [{ id: newId(), reps: '', weight: '' }],
   })
@@ -298,12 +310,24 @@ function addSet(exerciseId: string) {
   })
 }
 
-function updateSet(exerciseId: string, setId: string, field: 'reps' | 'weight', value: string) {
+function updateSet(
+  exerciseId: string,
+  setId: string,
+  field: 'reps' | 'weight' | 'durationSeconds',
+  value: string,
+) {
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== exerciseId) return ex
     return {
       ...ex,
-      sets: ex.sets.map((s) => (s.id === setId ? { ...s, [field]: value } : s)),
+      sets: ex.sets.map((s) => {
+        if (s.id !== setId) return s
+        if (field === 'durationSeconds') {
+          const t = value.trim()
+          return t ? { ...s, durationSeconds: t } : { ...s, durationSeconds: undefined }
+        }
+        return { ...s, [field]: value }
+      }),
     }
   })
 }
@@ -344,7 +368,13 @@ function deleteExercise(exerciseId: string) {
 
 function updateExerciseGoals(
   exerciseId: string,
-  patch: Partial<{ targetReps: string; targetWeight: string; targetDuration: string; targetDistance: string }>,
+  patch: Partial<{
+    targetReps: string
+    targetWeight: string
+    targetDuration: string
+    targetDistance: string
+    targetTimeSeconds: string
+  }>,
 ) {
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== exerciseId) return ex
@@ -356,6 +386,10 @@ function updateExerciseGoals(
     if (patch.targetDistance !== undefined) {
       const t = patch.targetDistance.trim()
       next.targetDistance = t ? t : undefined
+    }
+    if (patch.targetTimeSeconds !== undefined) {
+      const t = patch.targetTimeSeconds.trim()
+      next.targetTimeSeconds = t ? t : undefined
     }
     if (patch.targetReps !== undefined) {
       const t = patch.targetReps.trim()
@@ -395,6 +429,7 @@ function applySwapExerciseReplacement(lib: LibraryExercise) {
   const id = swapModalExerciseId.value
   if (!id) return
   const isCardio = libraryExerciseIsCardio(lib)
+  const isCore = !isCardio && resolveExerciseIsCore({ libraryId: lib.id, name: lib.name })
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== id) return ex
     const swapped: Exercise = {
@@ -402,8 +437,10 @@ function applySwapExerciseReplacement(lib: LibraryExercise) {
       name: lib.name,
       libraryId: lib.id,
       isCardio: isCardio ? true : undefined,
+      isCore: isCore ? true : undefined,
       targetDuration: isCardio ? ex.targetDuration : undefined,
       targetDistance: isCardio ? ex.targetDistance : undefined,
+      targetTimeSeconds: isCore ? ex.targetTimeSeconds : undefined,
       targetReps: isCardio ? undefined : ex.targetReps,
       targetWeight: isCardio ? undefined : ex.targetWeight,
       sets: isCardio

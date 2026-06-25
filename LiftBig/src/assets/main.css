@@ -957,3 +957,11 @@ html[data-theme] #app-shell-menu [role='menuitem'].active\:bg-card:active {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
+
+/* Subtle press feedback for primary actions */
+.btn-press {
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}

@@ -19,6 +19,7 @@ import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise, WorkoutTemplate } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
+import { haptic } from '@/utils/haptics'
 import {
   displayInputToStoredLbsString,
   formatMaxWeightDisplay,
@@ -129,6 +130,7 @@ function deleteDay() {
 function onAssignPlan(payload: { template: WorkoutTemplate; restDaysPerWeek: number; folderName?: string }) {
   workouts.applyPlanWithWeeklyRest(selectedDate.value, payload.template, payload.restDaysPerWeek, payload.folderName)
   planSheetOpen.value = false
+  haptic('success')
 }
 
 const moveSheetOpen = ref(false)

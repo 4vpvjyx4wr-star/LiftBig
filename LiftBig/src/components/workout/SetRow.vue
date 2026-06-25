@@ -4,6 +4,8 @@ import { settingsInjectionKey } from '@/composables/injectionKeys'
 import { useWorkoutSetLoggingFocusConsumer } from '@/composables/useWorkoutSetLoggingFocus'
 import type { SetLog } from '@/types/workout'
 import { finiteGoalRepMaxForScroll, REP_QUICK_PICK_DESCENDING } from '@/utils/progressiveOverload'
+import { haptic } from '@/utils/haptics'
+import CoreDurationInput from '@/components/workout/CoreDurationInput.vue'
 import {
   displayInputToStoredLbsString,
   parseStoredLbs,
@@ -23,15 +25,36 @@ const props = defineProps<{
   priorSetWeightStored?: string
   /** Sets after the first: prior row’s reps — reps picker scroll centers on this when opening. */
   priorSetReps?: string
+  /** Core exercises: show optional time column. */
+  showDuration?: boolean
+  /** Goal time in seconds for the duration input placeholder. */
+  targetDurationSeconds?: string
+  /** Sets after the first: prior row’s logged duration (seconds). */
+  priorSetDurationSeconds?: string
 }>()
 
 const emit = defineEmits<{
-  update: [field: 'reps' | 'weight', value: string]
+  update: [field: 'reps' | 'weight' | 'durationSeconds', value: string]
   toggleWarmup: []
   delete: []
 }>()
 
 const isWarmup = computed(() => props.set.isWarmup === true)
+
+function isWorkingSetComplete(set: SetLog): boolean {
+  return set.reps.trim() !== '' && set.weight.trim() !== ''
+}
+
+watch(
+  () => [props.set.reps, props.set.weight, props.set.isWarmup] as const,
+  ([reps, weight, warmup], prev) => {
+    if (warmup === true) return
+    const wasComplete = prev ? prev[0].trim() !== '' && prev[1].trim() !== '' : false
+    if (isWorkingSetComplete({ ...props.set, reps, weight }) && !wasComplete) {
+      haptic('success')
+    }
+  },
+)
 
 const settings = inject(settingsInjectionKey)!
 const setLoggingFocus = useWorkoutSetLoggingFocusConsumer()
@@ -318,7 +341,7 @@ function selectRepsOption(raw: string) {
     class="relative mb-2 flex min-w-0 items-center gap-2"
     :class="isWarmup ? 'rounded-lg bg-amber-500/10 px-1 -mx-1' : ''"
   >
-    <div class="flex w-16 shrink-0 flex-col items-center">
+    <div class="flex w-14 shrink-0 flex-col items-center">
       <button
         type="button"
         class="rounded px-1 py-0.5 text-[11px] font-semibold transition-colors hover:bg-card-inner"
@@ -411,6 +434,14 @@ function selectRepsOption(raw: string) {
           {{ opt }}
         </button>
       </div>
+    </div>
+    <div v-if="showDuration" class="relative min-w-0 flex-1 basis-0">
+      <CoreDurationInput
+        :model-value="set.durationSeconds ?? ''"
+        :target-duration-seconds="targetDurationSeconds"
+        placeholder="Time"
+        @update:model-value="emit('update', 'durationSeconds', $event)"
+      />
     </div>
     <button
       type="button"

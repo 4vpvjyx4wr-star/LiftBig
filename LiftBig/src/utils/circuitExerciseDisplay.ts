@@ -1,5 +1,9 @@
 import type { Exercise, TemplateExercise } from '@/types/workout'
 import type { SetLog } from '@/types/workout'
+import {
+  formatDurationSecondsDisplay,
+  parseSetDurationSeconds,
+} from '@/types/workout'
 import type { WeightUnit } from '@/utils/units'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
@@ -19,17 +23,28 @@ export function circuitSetTargets(
   }
 }
 
-/** One circuit set line, e.g. "15 reps @ 85 lb" or "30 sec/side reps" for bodyweight. */
+/** One circuit set line, e.g. "15 reps @ 85 lb", "45 sec", or "1 min @ 35 lb". */
 export function formatCircuitSetLine(
-  set: Pick<SetLog, 'reps' | 'weight'>,
+  set: Pick<SetLog, 'reps' | 'weight' | 'durationSeconds'>,
   ex: CircuitGoalExercise,
   weightUnit: WeightUnit,
 ): string {
   const { reps, weightRaw } = circuitSetTargets(set, ex)
-  if (!weightRaw) return `${reps} reps`
+  const durationSec = parseSetDurationSeconds(set)
+
+  let effortPart: string
+  if (durationSec != null) {
+    effortPart = formatDurationSecondsDisplay(durationSec)
+  } else if (/\d+\s*sec|\d+\s*min/i.test(reps)) {
+    effortPart = reps
+  } else {
+    effortPart = `${reps} reps`
+  }
+
+  if (!weightRaw) return effortPart
   const lbs = parseStoredLbs(weightRaw)
-  if (Number.isNaN(lbs) || lbs <= 0) return `${reps} reps`
-  return `${reps} reps @ ${formatWeightWithUnit(lbs, weightUnit, 1)}`
+  if (Number.isNaN(lbs) || lbs <= 0) return effortPart
+  return `${effortPart} @ ${formatWeightWithUnit(lbs, weightUnit, 1)}`
 }
 
 /** Compact goal for home / plan previews; matches circuit check-off targets. */

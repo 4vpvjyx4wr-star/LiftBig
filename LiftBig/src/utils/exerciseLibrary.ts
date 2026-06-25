@@ -2435,6 +2435,24 @@ export function libraryExerciseIsCardio(ex: LibraryExercise | undefined): boolea
   return ex?.isCardio === true
 }
 
+export function libraryExerciseIsCore(ex: LibraryExercise | undefined): boolean {
+  if (!ex || libraryExerciseIsCardio(ex)) return false
+  return ex.muscleGroups[0] === 'core'
+}
+
+export function resolveExerciseIsCore(exercise: {
+  libraryId?: string
+  isCore?: boolean
+  isCardio?: boolean
+  isCircuit?: boolean
+  name?: string
+}): boolean {
+  if (exercise.isCircuit || exercise.isCardio) return false
+  if (exercise.isCore === true) return true
+  if (exercise.libraryId) return libraryExerciseIsCore(getLibraryExercise(exercise.libraryId))
+  return libraryExerciseIsCore(findLibraryExerciseByName(exercise.name))
+}
+
 export function libraryExerciseIsBodyweight(ex: LibraryExercise | undefined): boolean {
   if (!ex || libraryExerciseIsCardio(ex)) return false
   return ex.equipment === 'Bodyweight'

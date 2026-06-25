@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import ProgressChart from '@/components/progress/ProgressChart.vue'
+import WeeklyVolumeSummary from '@/components/progress/WeeklyVolumeSummary.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import {
   collectExerciseHistory,
@@ -110,6 +111,8 @@ function fmtLbs(lbs: number): string {
       strength using your recent trend, capped each session by the same progressive overload jump used
       when suggesting weights (so projections stay grounded).
     </p>
+
+    <WeeklyVolumeSummary />
 
     <template v-if="exerciseNames.length === 0">
       <div class="rounded-2xl border border-border bg-card-inner px-4 py-10 text-center">

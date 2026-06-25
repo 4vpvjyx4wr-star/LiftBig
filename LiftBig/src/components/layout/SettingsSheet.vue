@@ -5,6 +5,10 @@ import { settingsInjectionKey } from '@/composables/injectionKeys'
 import { THEME_OPTIONS } from '@/composables/useSettings'
 import { customThemeRef, isCustomThemeRef, paletteCssVariables, type CustomTheme, type ThemePalette } from '@/utils/themePalette'
 import { displayInputToStoredLbsString, parseStoredLbs, storedLbsStringToDisplay } from '@/utils/units'
+import {
+  getNotificationPermission,
+  requestNotificationPermission as requestTimerNotifications,
+} from '@/utils/notifications'
 import type { DistanceUnit } from '@/utils/distances'
 import type { WeightUnit } from '@/utils/units'
 
@@ -52,7 +56,9 @@ function commitBodyWeight() {
 const bodyWeightDraft = ref('')
 
 const importInputRef = ref<HTMLInputElement | null>(null)
-const notificationPermission = ref<'unsupported' | NotificationPermission>('unsupported')
+const notificationPermission = ref<'unsupported' | NotificationPermission>(
+  getNotificationPermission(),
+)
 
 function triggerImportPick() {
   importInputRef.value?.click()
@@ -67,20 +73,11 @@ function onImportFileChange(ev: Event) {
 }
 
 function refreshNotificationPermission() {
-  if (typeof window === 'undefined' || typeof Notification === 'undefined') {
-    notificationPermission.value = 'unsupported'
-    return
-  }
-  notificationPermission.value = Notification.permission
+  notificationPermission.value = getNotificationPermission()
 }
 
 async function requestNotificationPermission() {
-  if (typeof window === 'undefined' || typeof Notification === 'undefined') return
-  try {
-    notificationPermission.value = await Notification.requestPermission()
-  } catch {
-    refreshNotificationPermission()
-  }
+  notificationPermission.value = await requestTimerNotifications()
 }
 
 const permissionLabel = computed(() => {

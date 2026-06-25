@@ -45,8 +45,8 @@ const showInlineLauncher = computed(
 
 const launcherClass = computed(() =>
   props.compact
-    ? 'min-w-[5.75rem] rounded-xl border-[1.5px] px-3 py-1.5 text-center select-none'
-    : 'min-w-[130px] rounded-2xl border-[1.5px] px-5 py-3 text-center select-none',
+    ? 'min-w-[5.75rem] rounded-xl border-[1.5px] px-3 py-1.5 text-center select-none transition-transform active:scale-[0.97]'
+    : 'min-w-[130px] rounded-2xl border-[1.5px] px-5 py-3 text-center select-none transition-transform active:scale-[0.97]',
 )
 
 const timeClass = computed(() =>
@@ -97,7 +97,7 @@ onUnmounted(() => {
     <button
       v-if="showFloating && isFloatingActive"
       type="button"
-      class="fixed left-1/2 top-3 z-40 min-w-[130px] -translate-x-1/2 rounded-2xl border-[1.5px] px-5 py-3 text-center select-none"
+      class="fixed left-1/2 top-3 z-40 min-w-[130px] -translate-x-1/2 rounded-2xl border-[1.5px] px-5 py-3 text-center select-none transition-transform active:scale-[0.97]"
       :class="bubbleClass"
       @pointerdown="onPointerDown"
       @pointerup="onPointerUp"
