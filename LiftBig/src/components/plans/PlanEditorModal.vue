@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
-import { settingsInjectionKey } from '@/composables/injectionKeys'
+import ExerciseNameSuggestList from '@/components/library/ExerciseNameSuggestList.vue'
+import { libraryFavoritesInjectionKey, settingsInjectionKey } from '@/composables/injectionKeys'
 import type { TemplateExercise, WorkoutTemplate } from '@/types/workout'
 import { cardioTargetDurationMinutes, cardioTargetDistance } from '@/types/workout'
 import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
 import { distanceUnitLabel, formatDistanceWithUnit, normalizeDistanceInput } from '@/utils/distances'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
-import { libraryExerciseIsCardio } from '@/utils/exerciseLibrary'
+import { inlineLibrarySuggestMatches, libraryExerciseIsCardio } from '@/utils/exerciseLibrary'
 import {
   estimatePlanDurationMinutes,
   formatPlanDurationEstimate,
@@ -17,7 +18,11 @@ import type { WeightUnit } from '@/utils/units'
 import { displayInputToStoredLbsString, storedLbsStringToDisplay } from '@/utils/units'
 
 const settings = inject(settingsInjectionKey)!
+const favorites = inject(libraryFavoritesInjectionKey)!
 const distanceUnit = computed(() => settings.distanceUnit.value)
+
+const SET_COUNT_QUICK_PICKS = [1, 2, 3, 4, 5, 6, 8, 10] as const
+const activeNameSuggestIndex = ref<number | null>(null)
 
 const props = defineProps<{
   show: boolean
@@ -115,12 +120,74 @@ function updateExercise(index: number, updated: TemplateExercise) {
   exercises.value = exercises.value.map((e, i) => (i === index ? updated : e))
 }
 
-function addSet(exIndex: number) {
+function exerciseNameSuggestions(exIndex: number): LibraryExercise[] {
+  const ex = exercises.value[exIndex]
+  if (!ex) return []
+  return inlineLibrarySuggestMatches(ex.name, favorites.favoriteIds.value)
+}
+
+function hideNameSuggestSoon() {
+  window.setTimeout(() => {
+    activeNameSuggestIndex.value = null
+  }, 120)
+}
+
+function applyLibraryMatchToExercise(exIndex: number, lib: LibraryExercise) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  if (libraryExerciseIsCardio(lib)) {
+    updateExercise(exIndex, {
+      ...blankCardioExercise(),
+      id: ex.id,
+      name: lib.name,
+      libraryId: lib.id,
+    })
+  } else {
+    updateExercise(exIndex, {
+      ...ex,
+      name: lib.name,
+      libraryId: lib.id,
+      isCardio: false,
+    })
+  }
+  activeNameSuggestIndex.value = null
+}
+
+function setExerciseSetCount(exIndex: number, count: number) {
+  const ex = exercises.value[exIndex]
+  if (!ex || ex.isCardio) return
+  const n = Math.max(1, Math.min(20, Math.round(count)))
+  if (!Number.isFinite(n)) return
+  const reps = (ex.targetReps ?? '').trim()
+  const weight = (ex.targetWeight ?? '').trim()
+  const next = [...ex.sets]
+  while (next.length < n) {
+    next.push({ targetReps: reps, targetWeight: weight })
+  }
+  while (next.length > n) {
+    next.pop()
+  }
+  updateExercise(exIndex, { ...ex, sets: next })
+}
+
+function onGoalRepsInput(exIndex: number, raw: string) {
   const ex = exercises.value[exIndex]
   if (!ex) return
   updateExercise(exIndex, {
     ...ex,
-    sets: [...ex.sets, { targetReps: '', targetWeight: '' }],
+    targetReps: raw,
+    sets: ex.sets.map((s) => ({ ...s, targetReps: raw })),
+  })
+}
+
+function addSet(exIndex: number) {
+  const ex = exercises.value[exIndex]
+  if (!ex) return
+  const reps = (ex.targetReps ?? '').trim()
+  const weight = (ex.targetWeight ?? '').trim()
+  updateExercise(exIndex, {
+    ...ex,
+    sets: [...ex.sets, { targetReps: reps, targetWeight: weight }],
   })
 }
 
@@ -176,6 +243,19 @@ function onTargetWeightInput(exIndex: number, setIndex: number, raw: string) {
   const ex = exercises.value[exIndex]
   if (!ex) return
   const next = displayInputToStoredLbsString(raw, props.weightUnit)
+
+  if (setIndex === 0) {
+    const prevGoal = (ex.targetWeight ?? '').trim()
+    const sets = ex.sets.map((s, i) => {
+      if (i === 0) return { ...s, targetWeight: next }
+      const setWeight = (s.targetWeight ?? '').trim()
+      if (!setWeight || setWeight === prevGoal) return { ...s, targetWeight: next }
+      return s
+    })
+    updateExercise(exIndex, { ...ex, targetWeight: next, sets })
+    return
+  }
+
   const sets = ex.sets.map((s, i) => (i === setIndex ? { ...s, targetWeight: next } : s))
   updateExercise(exIndex, { ...ex, sets })
 }
@@ -233,7 +313,11 @@ function onGoalWeightInput(exIndex: number, raw: string) {
   const ex = exercises.value[exIndex]
   if (!ex) return
   const next = displayInputToStoredLbsString(raw, props.weightUnit)
-  updateExercise(exIndex, { ...ex, targetWeight: next })
+  updateExercise(exIndex, {
+    ...ex,
+    targetWeight: next,
+    sets: ex.sets.map((s) => ({ ...s, targetWeight: next })),
+  })
 }
 
 function save() {
@@ -293,12 +377,22 @@ function save() {
                 Remove
               </button>
             </div>
-            <input
-              v-model="ex.name"
-              type="text"
-              class="mb-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              placeholder="Exercise name"
-            />
+            <div class="relative">
+              <input
+                v-model="ex.name"
+                type="text"
+                class="mb-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                placeholder="Exercise name"
+                @focus="activeNameSuggestIndex = ei"
+                @blur="hideNameSuggestSoon"
+              />
+              <ExerciseNameSuggestList
+                :show="activeNameSuggestIndex === ei"
+                :matches="exerciseNameSuggestions(ei)"
+                placement="below"
+                @pick="applyLibraryMatchToExercise(ei, $event)"
+              />
+            </div>
             <template v-if="ex.isCardio">
               <div class="mb-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <p v-if="goalSummaryLine(ex)" class="min-w-0 flex-1 text-[11px] leading-snug text-muted">
@@ -364,7 +458,7 @@ function save() {
                     class="mt-0.5 w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
                     placeholder="e.g. 8–12"
                     inputmode="text"
-                    @input="updateExercise(ei, { ...ex, targetReps: ($event.target as HTMLInputElement).value })"
+                    @input="onGoalRepsInput(ei, ($event.target as HTMLInputElement).value)"
                   />
                 </div>
                 <div>
@@ -377,6 +471,41 @@ function save() {
                     :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
                     @input="onGoalWeightInput(ei, ($event.target as HTMLInputElement).value)"
                   />
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Sets</label>
+                <div class="mt-1 flex flex-wrap items-center gap-1">
+                  <button
+                    v-for="n in SET_COUNT_QUICK_PICKS"
+                    :key="n"
+                    type="button"
+                    class="min-w-[2rem] rounded-md border px-2 py-1 text-xs font-bold tabular-nums transition-colors"
+                    :class="
+                      ex.sets.length === n
+                        ? 'border-primary bg-primary/15 text-primary'
+                        : 'border-border bg-background text-muted hover:border-primary/50 hover:text-foreground'
+                    "
+                    @click="setExerciseSetCount(ei, n)"
+                  >
+                    {{ n }}
+                  </button>
+                  <label class="ml-1 flex items-center gap-1 text-[11px] text-muted">
+                    <span>Custom</span>
+                    <input
+                      :value="ex.sets.length"
+                      type="number"
+                      min="1"
+                      max="20"
+                      class="w-12 rounded-md border border-border bg-background px-1 py-1 text-center text-xs font-bold tabular-nums text-foreground outline-none focus:border-primary"
+                      @change="
+                        setExerciseSetCount(
+                          ei,
+                          Number(($event.target as HTMLInputElement).value),
+                        )
+                      "
+                    />
+                  </label>
                 </div>
               </div>
             </template>
@@ -398,7 +527,8 @@ function save() {
               <input
                 v-model="set.targetReps"
                 type="text"
-                inputmode="numeric"
+                inputmode="text"
+                placeholder="8–12"
                 class="min-w-0 w-full rounded border border-border bg-background px-1 py-1 text-center text-sm text-foreground"
               />
               <input

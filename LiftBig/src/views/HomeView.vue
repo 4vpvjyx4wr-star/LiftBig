@@ -7,14 +7,15 @@ import MonthNav from '@/components/calendar/MonthNav.vue'
 import CopyDaySheet from '@/components/calendar/CopyDaySheet.vue'
 import MoveDaySheet from '@/components/calendar/MoveDaySheet.vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
+import ExerciseNameSuggestList from '@/components/library/ExerciseNameSuggestList.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import AssignPlanSheet from '@/components/plans/AssignPlanSheet.vue'
 import {
   settingsInjectionKey,
   workoutsInjectionKey,
   templatesInjectionKey,
-  libraryFavoritesInjectionKey,
 } from '@/composables/injectionKeys'
+import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import type { Exercise, WorkoutTemplate } from '@/types/workout'
 import { formatDisplayDate, todayKey } from '@/utils/dateKey'
@@ -29,7 +30,7 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
-import { getLibraryExercise, inlineLibrarySuggestMatches, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 import { formatCircuitExerciseGoal } from '@/utils/circuitExerciseDisplay'
 import { cardioTargetDurationMinutes, exerciseIsCardio } from '@/types/workout'
@@ -37,7 +38,6 @@ import { cardioTargetDurationMinutes, exerciseIsCardio } from '@/types/workout'
 const workouts = inject(workoutsInjectionKey)!
 const templates = inject(templatesInjectionKey)!
 const settings = inject(settingsInjectionKey)!
-const favorites = inject(libraryFavoritesInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 
 const today = todayKey()
@@ -243,12 +243,14 @@ const addPanelOpen = ref(false)
 const addInputName = ref('')
 const addGoalReps = ref('')
 const addGoalWeightStoredLbs = ref('')
-const showInlineMatches = ref(false)
 const libraryPickerOpen = ref(false)
-
-const inlineLibraryMatches = computed(() =>
-  inlineLibrarySuggestMatches(addInputName.value, favorites.favoriteIds.value, 5),
-)
+const {
+  show: showExerciseSuggest,
+  matches: exerciseSuggestMatches,
+  onFocus: onExerciseSuggestFocus,
+  hideSoon: hideExerciseSuggestSoon,
+  dismiss: dismissExerciseSuggest,
+} = useExerciseNameSuggest(addInputName)
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -297,13 +299,7 @@ function addFromLibrary(lib: LibraryExercise) {
 function addFromInlineMatch(lib: LibraryExercise) {
   addFromLibrary(lib)
   addInputName.value = ''
-  showInlineMatches.value = false
-}
-
-function hideInlineMatchesSoon() {
-  window.setTimeout(() => {
-    showInlineMatches.value = false
-  }, 120)
+  dismissExerciseSuggest()
 }
 
 function openAddPanel() {
@@ -576,25 +572,15 @@ onBeforeUnmount(() => {
               type="text"
               class="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary"
               placeholder="Exercise name..."
-              @focus="showInlineMatches = true"
-              @blur="hideInlineMatchesSoon"
+              @focus="onExerciseSuggestFocus()"
+              @blur="hideExerciseSuggestSoon()"
               @keydown.enter="addManualExercise"
             />
-            <div
-              v-if="showInlineMatches && inlineLibraryMatches.length > 0"
-              class="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
-            >
-              <button
-                v-for="match in inlineLibraryMatches"
-                :key="match.id"
-                type="button"
-                class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
-                @click="addFromInlineMatch(match)"
-              >
-                <span class="font-semibold">{{ match.name }}</span>
-                <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
-              </button>
-            </div>
+            <ExerciseNameSuggestList
+              :show="showExerciseSuggest"
+              :matches="exerciseSuggestMatches"
+              @pick="addFromInlineMatch"
+            />
           </div>
           <div class="mt-2 grid grid-cols-2 gap-2">
             <div>

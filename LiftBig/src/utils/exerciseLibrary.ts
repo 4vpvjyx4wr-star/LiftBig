@@ -2761,11 +2761,14 @@ export function libraryExercisesForFavoriteIds(favoriteIds: readonly string[]): 
   return out
 }
 
+/** Default cap for inline exercise-name suggestion dropdowns (use with ExerciseNameSuggestList). */
+export const INLINE_LIBRARY_SUGGEST_LIMIT = 40
+
 /** Inline add-exercise suggest list (library search, or saved favorites when query is "favorite(s)"). */
 export function inlineLibrarySuggestMatches(
   q: string,
   favoriteIds: readonly string[],
-  limit = 40,
+  limit = INLINE_LIBRARY_SUGGEST_LIMIT,
 ): LibraryExercise[] {
   const trimmed = q.trim()
   if (!trimmed) return []

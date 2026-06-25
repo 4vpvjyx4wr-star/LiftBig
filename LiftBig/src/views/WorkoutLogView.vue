@@ -4,10 +4,12 @@ import Sortable from 'sortablejs'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
+import ExerciseNameSuggestList from '@/components/library/ExerciseNameSuggestList.vue'
 import ExerciseCard from '@/components/workout/ExerciseCard.vue'
 import SwapExerciseModal from '@/components/workout/SwapExerciseModal.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
-import { libraryFavoritesInjectionKey, settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { useExerciseNameSuggest } from '@/composables/useExerciseNameSuggest'
 import { provideWorkoutSetLoggingFocus } from '@/composables/useWorkoutSetLoggingFocus'
 import type { Exercise } from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
@@ -20,7 +22,6 @@ import {
 } from '@/utils/bodyWeightDefaults'
 import { formatDisplayDate } from '@/utils/dateKey'
 import {
-  inlineLibrarySuggestMatches,
   isFavoritesLibrarySearchQuery,
   resolveManualExerciseInput,
 } from '@/utils/exerciseLibrary'
@@ -42,7 +43,6 @@ const route = useRoute()
 const router = useRouter()
 const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
-const favorites = inject(libraryFavoritesInjectionKey)!
 const setLoggingFocusActive = provideWorkoutSetLoggingFocus()
 
 const dateKey = computed(() => {
@@ -61,9 +61,13 @@ const WORKOUT_NOTES_DEBOUNCE_MS = 550
 const inputName = ref('')
 const libraryOpen = ref(false)
 const swapModalExerciseId = ref<string | null>(null)
-const showInlineLibraryMatches = ref(false)
-const inlineSuggestListRef = ref<HTMLElement | null>(null)
-let inlineSuggestTouchStartY = 0
+const {
+  show: showExerciseSuggest,
+  matches: exerciseSuggestMatches,
+  onFocus: onExerciseSuggestFocus,
+  hideSoon: hideExerciseSuggestSoon,
+  dismiss: dismissExerciseSuggest,
+} = useExerciseNameSuggest(inputName)
 const menuOpen = ref(false)
 const settingsOpen = ref(false)
 /** Optional targets applied to the next manually / library-added exercise (stored lb string for weight). */
@@ -83,10 +87,6 @@ function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetW
   if (w) out.targetWeight = w
   return out
 }
-
-const inlineLibraryMatches = computed(() =>
-  inlineLibrarySuggestMatches(inputName.value, favorites.favoriteIds.value, 40),
-)
 
 function flushWorkoutNotesForDate(dateKeyToSave: string) {
   if (workoutNotesTimer) {
@@ -283,34 +283,7 @@ function addFromLibrary(ex: LibraryExercise) {
 function addFromInlineLibrary(ex: LibraryExercise) {
   addFromLibrary(ex)
   inputName.value = ''
-  showInlineLibraryMatches.value = false
-}
-
-function hideInlineLibraryMatchesSoon() {
-  window.setTimeout(() => {
-    showInlineLibraryMatches.value = false
-  }, 120)
-}
-
-function onInlineSuggestTouchStart(e: TouchEvent) {
-  inlineSuggestTouchStartY = e.touches[0]?.clientY ?? 0
-}
-
-function onInlineSuggestTouchMove(e: TouchEvent) {
-  const el = inlineSuggestListRef.value
-  if (!el || e.touches.length === 0) return
-  const y = e.touches[0]!.clientY
-  const delta = y - inlineSuggestTouchStartY
-  inlineSuggestTouchStartY = y
-  if (el.scrollHeight <= el.clientHeight) {
-    e.preventDefault()
-    return
-  }
-  const atTop = el.scrollTop <= 0
-  const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1
-  if ((atTop && delta > 0) || (atBottom && delta < 0)) {
-    e.preventDefault()
-  }
+  dismissExerciseSuggest()
 }
 
 function addSet(exerciseId: string) {
@@ -659,30 +632,15 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
                 data-touch-input
                 class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-3 py-2.5 text-base text-foreground outline-none focus:border-primary"
                 placeholder="Add exercise manually..."
-                @focus="showInlineLibraryMatches = true"
-                @blur="hideInlineLibraryMatchesSoon"
+                @focus="onExerciseSuggestFocus()"
+                @blur="hideExerciseSuggestSoon()"
                 @keydown.enter="addExercise"
               />
-              <div
-                v-if="showInlineLibraryMatches && inlineLibraryMatches.length > 0"
-                ref="inlineSuggestListRef"
-                class="inline-suggest-scroll absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-card p-1 shadow-lg"
-                @mousedown.prevent
-                @touchstart.passive="onInlineSuggestTouchStart"
-                @touchmove="onInlineSuggestTouchMove"
-              >
-                <button
-                  v-for="match in inlineLibraryMatches"
-                  :key="match.id"
-                  type="button"
-                  class="block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-card-inner"
-                  @mousedown.prevent
-                  @click.prevent="addFromInlineLibrary(match)"
-                >
-                  <span class="font-semibold">{{ match.name }}</span>
-                  <span class="ml-2 text-xs text-muted">{{ match.equipment ?? 'Exercise' }}</span>
-                </button>
-              </div>
+              <ExerciseNameSuggestList
+                :show="showExerciseSuggest"
+                :matches="exerciseSuggestMatches"
+                @pick="addFromInlineLibrary"
+              />
             </div>
             <div class="grid min-w-0 grid-cols-2 gap-2">
               <div class="min-w-0">
