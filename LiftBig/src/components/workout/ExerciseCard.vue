@@ -20,7 +20,7 @@ import {
   parseCardioLoggedCalories,
 } from '@/types/workout'
 import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
-import { getLibraryExercise, resolveExerciseIsCardio, resolveExerciseIsCore } from '@/utils/exerciseLibrary'
+import { getLibraryExercise, resolveExerciseIsCardio, resolveExerciseIsCore, coreExerciseSupportsTimeLogging } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 import { haptic } from '@/utils/haptics'
 import { distanceUnitLabel, formatDistanceWithUnit, normalizeDistanceInput } from '@/utils/distances'
@@ -202,12 +202,22 @@ const isCore = computed(
     }),
 )
 
+const showCoreTime = computed(() =>
+  coreExerciseSupportsTimeLogging({
+    libraryId: props.exercise.libraryId,
+    isCore: props.exercise.isCore,
+    isCardio: isCardio.value,
+    isCircuit: props.exercise.isCircuit,
+    name: props.exercise.name,
+  }),
+)
+
 const coreTimeGoalSeconds = computed(() => coreTargetTimeSeconds(props.exercise))
 
 /** Rep goal for set rows — omit time-only goals like "45 sec" when a Time column is shown. */
 const setRepGoal = computed(() => {
   const g = (props.exercise.targetReps ?? '').trim()
-  if (!isCore.value) return g || undefined
+  if (!showCoreTime.value) return g || undefined
   if (!g || /\d+\s*sec|\d+\s*min/i.test(g)) return undefined
   return g
 })
@@ -455,7 +465,8 @@ function pickLinkPartner(partnerId: string) {
       <p v-if="goalSummaryLine" class="min-w-0 text-[11px] leading-snug text-muted">
         {{ goalSummaryLine }}
       </p>
-      <span v-else-if="isCore" class="text-[11px] text-muted">Log reps and/or time per set</span>
+      <span v-else-if="isCore && showCoreTime" class="text-[11px] text-muted">Log reps and/or time per set</span>
+      <span v-else-if="isCore" class="text-[11px] text-muted">Log reps per set</span>
       <span v-else class="text-[11px] text-muted">No goals set</span>
           <button
             type="button"
@@ -648,7 +659,7 @@ function pickLinkPartner(partnerId: string) {
       :id="`exercise-goals-editor-${exercise.id}`"
       class="mb-2 rounded-lg border border-border bg-card-inner/50 p-2.5"
     >
-      <div class="grid gap-2" :class="isCore ? 'grid-cols-3' : 'grid-cols-2'">
+      <div class="grid gap-2" :class="showCoreTime ? 'grid-cols-3' : 'grid-cols-2'">
         <div>
           <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
           <input
@@ -660,7 +671,7 @@ function pickLinkPartner(partnerId: string) {
             @input="emit('updateGoals', { targetReps: ($event.target as HTMLInputElement).value })"
           />
         </div>
-        <div v-if="isCore">
+        <div v-if="showCoreTime">
           <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal time (sec)</label>
           <input
             :value="exercise.targetTimeSeconds ?? coreTimeGoalSeconds"
@@ -755,7 +766,7 @@ function pickLinkPartner(partnerId: string) {
         <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Weight</span>
         <span class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted">Reps</span>
         <span
-          v-if="isCore"
+          v-if="showCoreTime"
           class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted"
         >Time</span>
         <span class="w-8 shrink-0" />
@@ -770,7 +781,7 @@ function pickLinkPartner(partnerId: string) {
         :target-weight-stored="index === 0 ? exercise.targetWeight : undefined"
         :prior-set-weight-stored="index > 0 ? exercise.sets[index - 1]?.weight : undefined"
         :prior-set-reps="index > 0 ? exercise.sets[index - 1]?.reps : undefined"
-        :show-duration="isCore"
+        :show-duration="showCoreTime"
         :target-duration-seconds="coreTimeGoalSeconds || undefined"
         :prior-set-duration-seconds="index > 0 ? exercise.sets[index - 1]?.durationSeconds : undefined"
         @update="(f, v) => onSetRowUpdate(set.id, index, f, v)"

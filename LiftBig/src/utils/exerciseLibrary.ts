@@ -28,6 +28,8 @@ export type LibraryExercise = {
   cues?: string[]
   /** Cardio / sports — duration-only when logged or planned. */
   isCardio?: boolean
+  /** Core exercise logged with reps and weight only (no per-set time column). */
+  repBasedCore?: boolean
 }
 
 export type LibraryFilterGroup = MuscleGroup | 'all' | 'cardio'
@@ -686,6 +688,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     name: 'Cable Crunch',
     muscleGroups: ['core'],
     equipment: 'Cable',
+    repBasedCore: true,
     summary: 'Kneeling crunch with high cable for abs.',
     instructions: [
       'Kneel facing stack, rope behind head or at shoulders.',
@@ -2539,6 +2542,27 @@ export function resolveExerciseIsCore(exercise: {
   if (exercise.isCore === true) return true
   if (exercise.libraryId) return libraryExerciseIsCore(getLibraryExercise(exercise.libraryId))
   return libraryExerciseIsCore(findLibraryExerciseByName(exercise.name))
+}
+
+function resolveLibraryExerciseForCore(exercise: {
+  libraryId?: string
+  name?: string
+}): LibraryExercise | undefined {
+  if (exercise.libraryId) return getLibraryExercise(exercise.libraryId)
+  return findLibraryExerciseByName(exercise.name)
+}
+
+/** Whether a core exercise shows the optional per-set time column. */
+export function coreExerciseSupportsTimeLogging(exercise: {
+  libraryId?: string
+  isCore?: boolean
+  isCardio?: boolean
+  isCircuit?: boolean
+  name?: string
+}): boolean {
+  if (!resolveExerciseIsCore(exercise)) return false
+  const lib = resolveLibraryExerciseForCore(exercise)
+  return lib?.repBasedCore !== true
 }
 
 export function libraryExerciseIsBodyweight(ex: LibraryExercise | undefined): boolean {
