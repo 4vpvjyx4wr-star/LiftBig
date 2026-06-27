@@ -10,6 +10,7 @@ import {
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
 import { sortFolderPlans } from '@/utils/folderPlanSort'
+import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const props = defineProps<{
@@ -258,6 +259,12 @@ watch(
                     >
                       <span class="text-muted">·</span>
                       <span class="font-semibold">{{ ex.name }}</span>
+                      <span
+                        v-if="supersetBadgeLabel(ex)"
+                        class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                      >
+                        {{ supersetBadgeLabel(ex) }}
+                      </span>
                       <button
                         v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
                         type="button"
@@ -318,6 +325,12 @@ watch(
                     >
                       <span class="text-muted">·</span>
                       <span class="font-semibold">{{ ex.name }}</span>
+                      <span
+                        v-if="supersetBadgeLabel(ex)"
+                        class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                      >
+                        {{ supersetBadgeLabel(ex) }}
+                      </span>
                       <button
                         v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
                         type="button"

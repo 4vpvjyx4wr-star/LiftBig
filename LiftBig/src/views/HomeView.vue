@@ -38,6 +38,7 @@ import {
 import { getLibraryExercise, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 import { formatCircuitExerciseGoal } from '@/utils/circuitExerciseDisplay'
+import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { cardioTargetDurationMinutes, exerciseIsCardio } from '@/types/workout'
 
 const workouts = inject(workoutsInjectionKey)!
@@ -543,6 +544,12 @@ const liftHref = computed(() => `/workout/${today}`)
                 >
                   {{ ex.name }}
                 </RouterLink>
+                <span
+                  v-if="supersetBadgeLabel(ex)"
+                  class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                >
+                  {{ supersetBadgeLabel(ex) }}
+                </span>
                 <button
                   v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
                   type="button"

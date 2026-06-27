@@ -60,6 +60,9 @@ export function logExercisesToTemplate(exercises: Exercise[]): TemplateExercise[
       targetReps: repsGoal || undefined,
       targetWeight: weightGoal || undefined,
       targetTimeSeconds: ex.targetTimeSeconds,
+      supersetGroupId: ex.supersetGroupId,
+      supersetLabel: ex.supersetLabel,
+      supersetOrder: ex.supersetOrder,
       sets: ex.sets.map((s) => ({
         targetReps: (s.reps ?? '').trim() || repsGoal,
         targetWeight: (s.weight ?? '').trim() || weightGoal,

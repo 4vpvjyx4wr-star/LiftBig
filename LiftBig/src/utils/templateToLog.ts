@@ -23,6 +23,9 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     targetTimeSeconds: ex.targetTimeSeconds,
     targetReps: ex.targetReps,
     targetWeight: ex.targetWeight,
+    supersetGroupId: ex.supersetGroupId,
+    supersetLabel: ex.supersetLabel,
+    supersetOrder: ex.supersetOrder,
     sets: ex.sets.map((s) => {
       if (ex.isCircuit) {
         return {
@@ -71,6 +74,9 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
       targetReps: repsGoal,
       targetWeight: weightGoal,
       targetTimeSeconds: tex.targetTimeSeconds,
+      supersetGroupId: tex.supersetGroupId,
+      supersetLabel: tex.supersetLabel,
+      supersetOrder: tex.supersetOrder,
       sets: tex.sets.map((ts) => {
         if (tex.isCircuit) {
           return {

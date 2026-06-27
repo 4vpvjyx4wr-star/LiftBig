@@ -20,6 +20,7 @@ import {
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
 import { sortFolderPlans } from '@/utils/folderPlanSort'
+import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { haptic } from '@/utils/haptics'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
@@ -90,7 +91,12 @@ function onScheduleApply(payload: { startDateKey: string; restDaysPerWeek: numbe
   closeScheduleSheet()
 }
 
-function onSave(payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }) {
+function onSave(payload: {
+  id: string | null
+  name: string
+  exercises: import('@/types/workout').TemplateExercise[]
+  prepend?: boolean
+}) {
   const list = planList.value
   let next: WorkoutTemplate[]
   if (payload.id) {
@@ -103,10 +109,15 @@ function onSave(payload: { id: string | null; name: string; exercises: import('@
       name: payload.name,
       exercises: payload.exercises,
     }
-    next = [...list, newT]
+    next = payload.prepend ? [newT, ...list] : [...list, newT]
+    if (payload.prepend) {
+      allPlansExpanded.value = true
+      allPlansSearchQuery.value = ''
+    }
   }
   templates.setAll(next)
   closeModal()
+  if (payload.prepend) closeShuffle()
 }
 
 function deletePlan(id: string) {
@@ -907,6 +918,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 >
                   <span class="text-muted">·</span>
                   <span class="font-semibold">{{ ex.name }}</span>
+                  <span
+                    v-if="supersetBadgeLabel(ex)"
+                    class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                  >
+                    {{ supersetBadgeLabel(ex) }}
+                  </span>
                   <button
                     v-if="resolveLibraryEntry(ex)"
                     type="button"
@@ -1136,6 +1153,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 >
                   <span class="text-muted">·</span>
                   <span class="font-semibold">{{ ex.name }}</span>
+                  <span
+                    v-if="supersetBadgeLabel(ex)"
+                    class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                  >
+                    {{ supersetBadgeLabel(ex) }}
+                  </span>
                   <button
                     v-if="resolveLibraryEntry(ex)"
                     type="button"

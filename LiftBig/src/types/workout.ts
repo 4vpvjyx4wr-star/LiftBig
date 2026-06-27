@@ -30,10 +30,18 @@ export type Exercise = {
   targetTimeSeconds?: string
   /** Optional goal distance for distance-based cardio (numeric string; unit from settings). */
   targetDistance?: string
+  /** Optional calories from a watch or cardio machine (overrides MET estimate for totals). */
+  loggedCalories?: string
   targetReps?: string
   targetWeight?: string
   /** Session notes for this exercise on the logged day (stored in the workout log). */
   notes?: string
+  /** Shared id linking exercises performed back-to-back as a superset. */
+  supersetGroupId?: string
+  /** Display label for the superset block (e.g. "A", "B"). */
+  supersetLabel?: string
+  /** Order within the superset pair (1 = first move, 2 = second). */
+  supersetOrder?: number
 }
 
 /** Single-day payload (with optional notes), or legacy flat exercise list */
@@ -142,6 +150,9 @@ export type TemplateExercise = {
   /** Optional targets for the workout log (same idea as live “Set goals”). */
   targetReps?: string
   targetWeight?: string
+  supersetGroupId?: string
+  supersetLabel?: string
+  supersetOrder?: number
 }
 
 /** Whether an exercise should use duration-only cardio UI and storage. */
@@ -178,6 +189,19 @@ export function cardioTargetDistance(
 /** Logged distance for distance-based cardio (stored on the single set’s weight field). */
 export function cardioLoggedDistance(ex: Exercise): string {
   return (ex.sets[0]?.weight ?? '').trim()
+}
+
+/** User-entered calories for cardio (e.g. from a smart watch). */
+export function cardioLoggedCalories(ex: Pick<Exercise, 'loggedCalories'>): string {
+  return (ex.loggedCalories ?? '').trim()
+}
+
+/** Parsed custom cardio calories, or null when unset or invalid. */
+export function parseCardioLoggedCalories(ex: Pick<Exercise, 'loggedCalories'>): number | null {
+  const raw = cardioLoggedCalories(ex)
+  if (!raw) return null
+  const n = parseInt(raw, 10)
+  return !Number.isNaN(n) && n > 0 ? n : null
 }
 
 export function cardioExerciseComplete(ex: Exercise): boolean {

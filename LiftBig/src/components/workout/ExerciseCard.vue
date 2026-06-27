@@ -9,6 +9,7 @@ import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
 import {
   cardioExerciseComplete,
+  cardioLoggedCalories,
   cardioLoggedDistance,
   cardioLoggedDurationMinutes,
   cardioTargetDistance,
@@ -16,12 +17,17 @@ import {
   coreSetLogged,
   coreTargetTimeSeconds,
   formatDurationSecondsDisplay,
+  parseCardioLoggedCalories,
 } from '@/types/workout'
 import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
 import { getLibraryExercise, resolveExerciseIsCardio, resolveExerciseIsCore } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
 import { haptic } from '@/utils/haptics'
 import { distanceUnitLabel, formatDistanceWithUnit, normalizeDistanceInput } from '@/utils/distances'
+import {
+  estimateCardioExerciseCalories,
+  formatWorkoutCalories,
+} from '@/utils/workoutCalories'
 import {
   formatWeightWithUnit,
   parseStoredLbs,
@@ -33,11 +39,19 @@ const props = defineProps<{
   workoutLog: WorkoutLog
   /** Exclude this day from history when predicting (current session). */
   sessionDateKey?: string
+  /** Render inside a superset block (shared border, no outer card chrome). */
+  embeddedInSuperset?: boolean
+  supersetPosition?: 'first' | 'last'
+  /** Next exercise in the log can be linked as a superset. */
+  canLinkWithNext?: boolean
+  /** Other standalone exercises available to link with. */
+  linkPartnerOptions?: { id: string; name: string }[]
 }>()
 
 const settings = inject(settingsInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 const distanceUnit = computed(() => settings.distanceUnit.value)
+const bodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
 
 function formatStoredLbsForDisplay(s: string | undefined): string {
   if (!s?.trim()) return ''
@@ -98,6 +112,9 @@ const emit = defineEmits<{
     }>,
   ]
   updateNotes: [notes: string]
+  updateLoggedCalories: [value: string]
+  linkWithNext: []
+  linkWithPartner: [partnerId: string]
 }>()
 
 const NOTES_DEBOUNCE_MS = 550
@@ -238,6 +255,25 @@ const cardioDistance = computed({
   },
 })
 
+const cardioCalories = computed({
+  get: () => cardioLoggedCalories(props.exercise),
+  set: (value: string) => {
+    emit('updateLoggedCalories', value.replace(/[^\d]/g, ''))
+  },
+})
+
+const hasCustomCardioCalories = computed(() => parseCardioLoggedCalories(props.exercise) != null)
+
+const cardioCalorieEstimate = computed(() => {
+  if (hasCustomCardioCalories.value) return null
+  return estimateCardioExerciseCalories(props.exercise, bodyWeightLbs.value)
+})
+
+function onCardioCaloriesInput(event: Event) {
+  const raw = (event.target as HTMLInputElement).value.replace(/[^\d]/g, '')
+  cardioCalories.value = raw
+}
+
 function onSetRowUpdate(
   setId: string,
   index: number,
@@ -342,19 +378,44 @@ function focusSetWeightInput(setId: string) {
     el?.select()
   })
 }
+const linkPickerOpen = ref(false)
+
+watch(goalsEditorOpen, (open) => {
+  if (!open) linkPickerOpen.value = false
+})
+
+function pickLinkPartner(partnerId: string) {
+  linkPickerOpen.value = false
+  emit('linkWithPartner', partnerId)
+}
 </script>
 
 <template>
+  <div>
   <div
-    class="mb-3.5 rounded-xl border border-border bg-card p-3.5 transition-colors duration-200"
-    :class="allDone ? 'border-success' : ''"
+    class="transition-colors duration-200"
+    :class="
+      embeddedInSuperset
+        ? [
+            'border-x-2 border-primary/45 bg-card p-3',
+            supersetPosition === 'last' ? 'rounded-b-xl border-b-2' : 'mb-0 border-b-0',
+          ]
+        : [
+            'mb-3.5 rounded-xl border border-border bg-card p-3.5',
+            allDone ? 'border-success' : '',
+          ]
+    "
   >
     <div class="mb-2 flex justify-between gap-2">
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
           <h4
-            class="exercise-reorder-handle cursor-grab select-none text-base font-bold text-foreground active:cursor-grabbing touch-manipulation"
-            title="Hold, then drag to reorder"
+            :class="
+              embeddedInSuperset
+                ? 'text-base font-bold text-foreground'
+                : 'exercise-reorder-handle cursor-grab select-none text-base font-bold text-foreground active:cursor-grabbing touch-manipulation'
+            "
+            :title="embeddedInSuperset ? undefined : 'Hold, then drag to reorder'"
           >
             {{ exercise.name }}
           </h4>
@@ -549,44 +610,117 @@ function focusSetWeightInput(setId: string) {
       </div>
     </div>
 
+    <div v-if="isCardio" class="mb-2">
+      <label class="mb-1 block text-[10px] font-bold uppercase tracking-wide text-muted">
+        Calories (optional)
+      </label>
+      <input
+        :value="cardioCalories"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        placeholder="From watch or machine"
+        class="w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-sm font-semibold text-foreground placeholder:font-normal placeholder:text-muted focus:border-primary focus:outline-none"
+        @input="onCardioCaloriesInput"
+      />
+      <p
+        v-if="hasCustomCardioCalories"
+        class="mt-1 text-[11px] text-muted"
+      >
+        Using your logged calories in the workout total.
+      </p>
+      <p
+        v-else-if="cardioCalorieEstimate != null"
+        class="mt-1 text-[11px] text-muted"
+      >
+        {{ formatWorkoutCalories(cardioCalorieEstimate) }} estimated
+      </p>
+      <p
+        v-else-if="cardioLoggedDurationMinutes(exercise) || cardioTargetDurationMinutes(exercise)"
+        class="mt-1 text-[11px] text-muted"
+      >
+        Add body weight in Settings to see an estimate.
+      </p>
+    </div>
+
     <div
       v-if="goalsEditorOpen && !exercise.isCircuit && !isCardio"
       :id="`exercise-goals-editor-${exercise.id}`"
-      class="mb-2 grid gap-2"
-      :class="isCore ? 'grid-cols-3' : 'grid-cols-2'"
+      class="mb-2 rounded-lg border border-border bg-card-inner/50 p-2.5"
     >
-      <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
-        <input
-          :value="exercise.targetReps ?? ''"
-          type="text"
-          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
-          :placeholder="isCore ? 'e.g. 15–20' : 'e.g. 8–12'"
-          inputmode="text"
-          @input="emit('updateGoals', { targetReps: ($event.target as HTMLInputElement).value })"
-        />
+      <div class="grid gap-2" :class="isCore ? 'grid-cols-3' : 'grid-cols-2'">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal reps</label>
+          <input
+            :value="exercise.targetReps ?? ''"
+            type="text"
+            class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+            :placeholder="isCore ? 'e.g. 15–20' : 'e.g. 8–12'"
+            inputmode="text"
+            @input="emit('updateGoals', { targetReps: ($event.target as HTMLInputElement).value })"
+          />
+        </div>
+        <div v-if="isCore">
+          <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal time (sec)</label>
+          <input
+            :value="exercise.targetTimeSeconds ?? coreTimeGoalSeconds"
+            type="text"
+            inputmode="numeric"
+            class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+            placeholder="e.g. 60"
+            @input="emit('updateGoals', { targetTimeSeconds: ($event.target as HTMLInputElement).value })"
+          />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
+          <input
+            :value="storedLbsStringToDisplay(exercise.targetWeight ?? '', weightUnit)"
+            type="text"
+            inputmode="decimal"
+            class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
+            :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
+            @input="emit('updateGoals', { targetWeight: ($event.target as HTMLInputElement).value })"
+          />
+        </div>
       </div>
-      <div v-if="isCore">
-        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal time (sec)</label>
-        <input
-          :value="exercise.targetTimeSeconds ?? coreTimeGoalSeconds"
-          type="text"
-          inputmode="numeric"
-          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
-          placeholder="e.g. 60"
-          @input="emit('updateGoals', { targetTimeSeconds: ($event.target as HTMLInputElement).value })"
-        />
-      </div>
-      <div>
-        <label class="block text-[10px] font-bold uppercase tracking-wide text-muted">Goal weight</label>
-        <input
-          :value="storedLbsStringToDisplay(exercise.targetWeight ?? '', weightUnit)"
-          type="text"
-          inputmode="decimal"
-          class="mt-0.5 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-primary"
-          :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
-          @input="emit('updateGoals', { targetWeight: ($event.target as HTMLInputElement).value })"
-        />
+
+      <div
+        v-if="!embeddedInSuperset && (canLinkWithNext || (linkPartnerOptions && linkPartnerOptions.length > 0))"
+        class="mt-3 flex flex-wrap items-center gap-2 border-t border-border/60 pt-2.5"
+      >
+        <span class="text-[10px] font-bold uppercase tracking-wide text-muted">Superset</span>
+        <button
+          v-if="canLinkWithNext"
+          type="button"
+          class="rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary/20"
+          @click="emit('linkWithNext')"
+        >
+          Link with next
+        </button>
+        <div v-if="linkPartnerOptions && linkPartnerOptions.length > 0" class="relative">
+          <button
+            type="button"
+            class="rounded-md border border-border bg-card-inner px-2 py-1 text-[11px] font-semibold text-muted hover:text-primary"
+            :aria-expanded="linkPickerOpen"
+            @click="linkPickerOpen = !linkPickerOpen"
+          >
+            Link with…
+          </button>
+          <div
+            v-if="linkPickerOpen"
+            class="absolute left-0 top-full z-20 mt-1 min-w-[12rem] rounded-lg border border-border bg-card p-1 shadow-lg"
+          >
+            <button
+              v-for="opt in linkPartnerOptions"
+              :key="opt.id"
+              type="button"
+              class="block w-full rounded-md px-2 py-1.5 text-left text-xs font-semibold text-foreground hover:bg-card-inner"
+              @click="pickLinkPartner(opt.id)"
+            >
+              {{ opt.name }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -663,5 +797,6 @@ function focusSetWeightInput(setId: string) {
       :exercise="libraryEntry"
       @close="closeLibraryDetail"
     />
+  </div>
   </div>
 </template>

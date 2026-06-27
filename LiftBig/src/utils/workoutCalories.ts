@@ -2,6 +2,7 @@ import {
   cardioLoggedDurationMinutes,
   cardioTargetDurationMinutes,
   exerciseIsCardio,
+  parseCardioLoggedCalories,
   type Exercise,
 } from '@/types/workout'
 import type { PlanDurationAssumptions } from '@/utils/planDuration'
@@ -70,6 +71,26 @@ function strengthExerciseMinutes(setCount: number, assumptions: PlanDurationAssu
   )
 }
 
+function cardioDurationMinutes(ex: Exercise): number {
+  const logged = cardioLoggedDurationMinutes(ex)
+  const target = cardioTargetDurationMinutes(ex)
+  const raw = logged || target
+  const mins = parseInt(raw, 10)
+  return !Number.isNaN(mins) && mins > 0 ? mins : 0
+}
+
+/** MET-based calorie estimate for one cardio exercise (logged duration, else goal). */
+export function estimateCardioExerciseCalories(
+  ex: Exercise,
+  bodyWeightLbs: number,
+): number | null {
+  const mins = cardioDurationMinutes(ex)
+  if (mins <= 0 || !Number.isFinite(bodyWeightLbs) || bodyWeightLbs <= 0) return null
+  const bodyWeightKg = lbsToKg(bodyWeightLbs)
+  const met = metForCardioLibraryId(ex.libraryId)
+  return Math.round(caloriesFromMet(mins, met, bodyWeightKg))
+}
+
 export type WorkoutCalorieEstimate = {
   calories: number
   durationMinutes: number
@@ -85,35 +106,42 @@ export function estimateWorkoutCalories(
   bodyWeightLbs: number,
   assumptions: PlanDurationAssumptions,
 ): WorkoutCalorieEstimate | null {
-  if (!Number.isFinite(bodyWeightLbs) || bodyWeightLbs <= 0 || exercises.length === 0) {
-    return null
-  }
+  if (exercises.length === 0) return null
 
-  const bodyWeightKg = lbsToKg(bodyWeightLbs)
+  const hasBodyWeight = Number.isFinite(bodyWeightLbs) && bodyWeightLbs > 0
+  const bodyWeightKg = hasBodyWeight ? lbsToKg(bodyWeightLbs) : 0
   let totalCalories = 0
   let totalMinutes = 0
+  let hasCalorieContribution = false
 
   for (const ex of exercises) {
     if (exerciseIsCardio(ex)) {
-      const logged = cardioLoggedDurationMinutes(ex)
-      const target = cardioTargetDurationMinutes(ex)
-      const raw = logged || target
-      const mins = parseInt(raw, 10)
-      if (Number.isNaN(mins) || mins <= 0) continue
+      const custom = parseCardioLoggedCalories(ex)
+      const mins = cardioDurationMinutes(ex)
+      if (custom != null) {
+        totalCalories += custom
+        if (mins > 0) totalMinutes += mins
+        hasCalorieContribution = true
+        continue
+      }
+      if (mins <= 0 || !hasBodyWeight) continue
       const met = metForCardioLibraryId(ex.libraryId)
       totalCalories += caloriesFromMet(mins, met, bodyWeightKg)
       totalMinutes += mins
+      hasCalorieContribution = true
       continue
     }
 
+    if (!hasBodyWeight) continue
     const setCount = ex.sets.length
     const mins = strengthExerciseMinutes(setCount, assumptions)
     if (mins <= 0) continue
     totalCalories += caloriesFromMet(mins, STRENGTH_TRAINING_MET, bodyWeightKg)
     totalMinutes += mins
+    hasCalorieContribution = true
   }
 
-  if (totalMinutes <= 0) return null
+  if (!hasCalorieContribution) return null
 
   return {
     calories: Math.round(totalCalories),

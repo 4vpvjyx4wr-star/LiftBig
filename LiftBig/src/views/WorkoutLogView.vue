@@ -39,6 +39,14 @@ import {
   formatWorkoutCalories,
 } from '@/utils/workoutCalories'
 import { logExercisesToTemplate } from '@/utils/logToTemplate'
+import {
+  exerciseInSuperset,
+  groupExercisesForDisplay,
+  linkExercisesAsSuperset,
+  moveDisplayItem,
+  swapSupersetPairOrder,
+  unlinkSupersetGroup,
+} from '@/utils/supersetUtils'
 import type { WorkoutTemplate } from '@/types/workout'
 import { haptic } from '@/utils/haptics'
 
@@ -82,6 +90,47 @@ const weightUnit = computed(() => settings.weightUnit.value)
 const planName = computed(() => workouts.getPlanName(dateKey.value))
 const planFolderName = computed(() => workouts.getPlanFolderName(dateKey.value))
 const planCoachingNotes = computed(() => workouts.getPlanNotes(dateKey.value)?.trim() || undefined)
+
+const exerciseDisplayItems = computed(() => groupExercisesForDisplay(exercises.value))
+
+function canLinkWithNext(exerciseId: string): boolean {
+  const flat = exercises.value
+  const idx = flat.findIndex((ex) => ex.id === exerciseId)
+  if (idx < 0 || idx >= flat.length - 1) return false
+  const current = flat[idx]!
+  const next = flat[idx + 1]!
+  return !exerciseInSuperset(current) && !exerciseInSuperset(next)
+}
+
+function linkPartnerOptions(exerciseId: string): { id: string; name: string }[] {
+  return exercises.value
+    .filter((ex) => ex.id !== exerciseId && !exerciseInSuperset(ex))
+    .map((ex) => ({ id: ex.id, name: ex.name }))
+}
+
+function linkWithNextExercise(exerciseId: string) {
+  const flat = exercises.value
+  const idx = flat.findIndex((ex) => ex.id === exerciseId)
+  const next = idx >= 0 ? flat[idx + 1] : undefined
+  if (!next) return
+  exercises.value = linkExercisesAsSuperset(flat, exerciseId, next.id)
+  haptic('tap')
+}
+
+function linkWithPartner(firstId: string, secondId: string) {
+  exercises.value = linkExercisesAsSuperset(exercises.value, firstId, secondId)
+  haptic('tap')
+}
+
+function unlinkGroup(groupId: string) {
+  exercises.value = unlinkSupersetGroup(exercises.value, groupId)
+  haptic('tap')
+}
+
+function swapSupersetOrder(groupId: string) {
+  exercises.value = swapSupersetPairOrder(exercises.value, groupId)
+  haptic('tap')
+}
 
 function optionalGoalsFromDock(): Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> {
   const out: Partial<Pick<Exercise, 'targetReps' | 'targetWeight'>> = {}
@@ -195,7 +244,7 @@ function destroyExerciseSortable() {
 function bindExerciseSortable() {
   destroyExerciseSortable()
   const el = exerciseListEl.value
-  if (!el || exercises.value.length < 2) return
+  if (!el || exerciseDisplayItems.value.length < 2) return
 
   exerciseSortable = Sortable.create(el, {
     animation: 180,
@@ -205,15 +254,12 @@ function bindExerciseSortable() {
     touchStartThreshold: 5,
     ghostClass: 'exercise-sortable-ghost',
     chosenClass: 'exercise-sortable-chosen',
+    draggable: '.workout-sortable-item',
     onEnd(evt: Sortable.SortableEvent) {
       const oi = evt.oldIndex
       const ni = evt.newIndex
       if (oi == null || ni == null || oi === ni) return
-      const next = [...exercises.value]
-      const [moved] = next.splice(oi, 1)
-      if (!moved) return
-      next.splice(ni, 0, moved)
-      exercises.value = next
+      exercises.value = moveDisplayItem(exercises.value, oi, ni)
     },
   })
 }
@@ -227,7 +273,7 @@ watch(dateKey, () => {
 })
 
 watch(
-  () => exercises.value.length,
+  () => exerciseDisplayItems.value.length,
   () => {
     nextTick(bindExerciseSortable)
   },
@@ -367,7 +413,11 @@ function deleteSet(exerciseId: string, setId: string) {
 }
 
 function deleteExercise(exerciseId: string) {
-  exercises.value = exercises.value.filter((ex) => ex.id !== exerciseId)
+  const target = exercises.value.find((ex) => ex.id === exerciseId)
+  const groupId = target?.supersetGroupId?.trim()
+  let next = exercises.value.filter((ex) => ex.id !== exerciseId)
+  if (groupId) next = unlinkSupersetGroup(next, groupId)
+  exercises.value = next
 }
 
 function updateExerciseGoals(
@@ -415,6 +465,17 @@ function updateExerciseNotes(exerciseId: string, notes: string) {
     const next: Exercise = { ...ex }
     if (!notes) delete next.notes
     else next.notes = notes
+    return next
+  })
+}
+
+function updateExerciseLoggedCalories(exerciseId: string, value: string) {
+  exercises.value = exercises.value.map((ex) => {
+    if (ex.id !== exerciseId) return ex
+    const next: Exercise = { ...ex }
+    const t = value.trim()
+    if (!t) delete next.loggedCalories
+    else next.loggedCalories = t
     return next
   })
 }
@@ -670,22 +731,89 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
       </div>
 
       <div v-if="exercises.length > 0" ref="exerciseListEl">
-        <ExerciseCard
-          v-for="ex in exercises"
-          :key="ex.id"
-          :exercise="ex"
-          :workout-log="workoutLogPlain"
-          :session-date-key="dateKey"
-          @add-set="addSet(ex.id)"
-          @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
-          @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
-          @toggle-warmup-set="(setId) => toggleWarmupSet(ex.id, setId)"
-          @delete-set="(setId) => deleteSet(ex.id, setId)"
-          @swap-exercise="openSwapExercise(ex.id)"
-          @delete-exercise="deleteExercise(ex.id)"
-          @update-goals="(patch) => updateExerciseGoals(ex.id, patch)"
-          @update-notes="(n) => updateExerciseNotes(ex.id, n)"
-        />
+        <template
+          v-for="item in exerciseDisplayItems"
+          :key="item.kind === 'standalone' ? item.exercise.id : item.groupId"
+        >
+          <div v-if="item.kind === 'superset'" class="workout-sortable-item mb-3.5">
+            <div
+              class="flex items-center justify-between gap-2 rounded-t-xl border-2 border-b-0 border-primary/45 bg-primary/5 px-2.5 py-1.5"
+            >
+              <div class="flex min-w-0 items-center gap-2">
+                <span
+                  class="exercise-reorder-handle cursor-grab select-none rounded-md bg-primary/20 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-primary active:cursor-grabbing touch-manipulation"
+                  title="Hold, then drag to reorder superset"
+                >
+                  Superset {{ item.label || '?' }}
+                </span>
+                <span class="text-[11px] text-muted">Alternate moves · rest after both</span>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 text-[11px] font-semibold text-muted hover:text-red-400"
+                @click="unlinkGroup(item.groupId)"
+              >
+                Unlink
+              </button>
+            </div>
+
+            <template v-for="(ex, index) in item.exercises" :key="ex.id">
+              <div
+                v-if="index > 0"
+                class="flex items-center justify-center border-x-2 border-primary/45 bg-primary/10 px-2 py-1"
+              >
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-md border border-primary/35 bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary hover:bg-primary/25"
+                  aria-label="Swap order of exercises in this superset"
+                  @click="swapSupersetOrder(item.groupId)"
+                >
+                  <i class="fa-solid fa-arrows-up-down text-[11px]" aria-hidden="true" />
+                  Swap
+                </button>
+              </div>
+              <ExerciseCard
+                :exercise="ex"
+                :workout-log="workoutLogPlain"
+                :session-date-key="dateKey"
+                embedded-in-superset
+                :superset-position="index === 0 ? 'first' : 'last'"
+                @add-set="addSet(ex.id)"
+                @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
+                @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"
+                @toggle-warmup-set="(setId) => toggleWarmupSet(ex.id, setId)"
+                @delete-set="(setId) => deleteSet(ex.id, setId)"
+                @swap-exercise="openSwapExercise(ex.id)"
+                @delete-exercise="deleteExercise(ex.id)"
+                @update-goals="(patch) => updateExerciseGoals(ex.id, patch)"
+                @update-notes="(n) => updateExerciseNotes(ex.id, n)"
+                @update-logged-calories="(v) => updateExerciseLoggedCalories(ex.id, v)"
+              />
+            </template>
+          </div>
+
+          <div v-else class="workout-sortable-item">
+            <ExerciseCard
+              :exercise="item.exercise"
+              :workout-log="workoutLogPlain"
+              :session-date-key="dateKey"
+              :can-link-with-next="canLinkWithNext(item.exercise.id)"
+              :link-partner-options="linkPartnerOptions(item.exercise.id)"
+              @add-set="addSet(item.exercise.id)"
+              @update-set="(setId, field, v) => updateSet(item.exercise.id, setId, field, v)"
+              @toggle-circuit-set="(setId) => toggleCircuitSet(item.exercise.id, setId)"
+              @toggle-warmup-set="(setId) => toggleWarmupSet(item.exercise.id, setId)"
+              @delete-set="(setId) => deleteSet(item.exercise.id, setId)"
+              @swap-exercise="openSwapExercise(item.exercise.id)"
+              @delete-exercise="deleteExercise(item.exercise.id)"
+              @update-goals="(patch) => updateExerciseGoals(item.exercise.id, patch)"
+              @update-notes="(n) => updateExerciseNotes(item.exercise.id, n)"
+              @update-logged-calories="(v) => updateExerciseLoggedCalories(item.exercise.id, v)"
+              @link-with-next="linkWithNextExercise(item.exercise.id)"
+              @link-with-partner="(partnerId) => linkWithPartner(item.exercise.id, partnerId)"
+            />
+          </div>
+        </template>
       </div>
 
       <section

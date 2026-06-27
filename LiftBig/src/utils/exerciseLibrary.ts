@@ -1130,6 +1130,94 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'dead-bug',
+    name: 'Dead Bug',
+    muscleGroups: ['core'],
+    tags: ['anti-extension', 'stability', 'abs'],
+    equipment: 'Bodyweight',
+    summary: 'Supine alternating arm and leg extensions while keeping the lower back pressed to the floor.',
+    instructions: [
+      'Lie on your back, arms toward the ceiling, hips and knees at 90°.',
+      'Brace your core and press your lower back into the floor.',
+      'Slowly extend opposite arm and leg; return and alternate sides.',
+    ],
+    tips: [
+      'Move only as far as you can without your lower back arching off the floor.',
+      'Exhale as you extend; keep ribs down throughout.',
+    ],
+    cues: [
+      'Lower back glued to the mat—if it lifts, shorten the range.',
+      'Reach long through heel and fingertips; don’t rush.',
+      'Breathe out on the extension; reset the brace each rep.',
+    ],
+  }),
+  reg({
+    id: 'cable-side-crunch',
+    name: 'Cable Side Crunch',
+    muscleGroups: ['core'],
+    tags: ['obliques', 'cable'],
+    equipment: 'Cable',
+    summary: 'Standing side bend with a low cable to target obliques.',
+    instructions: [
+      'Stand sideways to a low cable; hold the handle at your shoulder or behind your head.',
+      'Crunch sideways by shortening the distance between rib cage and hip on the working side.',
+      'Pause; control the return without leaning into the stack.',
+    ],
+    tips: [
+      'Keep hips square—movement is lateral flexion, not rotation.',
+      'Use a light load; quality side crunch beats heavy swinging.',
+    ],
+    cues: [
+      'Elbow drives toward hip on the working side.',
+      'Opposite hip stays planted; no twisting through the waist.',
+      'Squeeze the oblique at the bottom; slow negative.',
+    ],
+  }),
+  reg({
+    id: 'weighted-decline-situp',
+    name: 'Weighted Decline Sit-Up',
+    muscleGroups: ['core'],
+    tags: ['decline', 'weighted', 'abs'],
+    equipment: 'Decline bench',
+    summary: 'Decline sit-up holding a plate or dumbbell for loaded abdominal work.',
+    instructions: [
+      'Secure feet on a decline bench; hold a weight at your chest or overhead.',
+      'Curl up by flexing your spine, not pulling with hip flexors alone.',
+      'Lower under control to just above the bench without bouncing.',
+    ],
+    tips: [
+      'Start with a modest decline and light weight—add load only when form stays crisp.',
+      'If you feel pulling in the hip flexors, reduce decline or range.',
+    ],
+    cues: [
+      'Ribs toward pelvis—think crunch, not sit-up swing.',
+      'Weight stays close to chest until you own the movement.',
+      'Exhale hard at the top; don’t yank with arms.',
+    ],
+  }),
+  reg({
+    id: 'machine-pullover',
+    name: 'Machine Pullover',
+    muscleGroups: ['back', 'chest'],
+    tags: ['lat isolation', 'machine'],
+    equipment: 'Machine',
+    summary: 'Seated pullover machine emphasizing lats and serratus with a fixed arc.',
+    instructions: [
+      'Adjust seat so shoulders align with the machine pivot; grip handles or bar.',
+      'With a slight elbow bend, pull the pad down and around in the machine’s arc.',
+      'Squeeze lats at the bottom; return slowly without shrugging.',
+    ],
+    tips: [
+      'Think “pull elbows to pockets” rather than bending arms like a curl.',
+      'Keep ribs down—don’t over-arch to chase range.',
+    ],
+    cues: [
+      'Chest tall; slight elbow bend fixed throughout.',
+      'Drive elbows down and back through the pad’s arc.',
+      'Feel lats and serratus—pause, then control the stretch.',
+    ],
+  }),
+  reg({
     id: 'bicycle-crunch',
     name: 'Bicycle Crunch',
     muscleGroups: ['core'],
@@ -2594,6 +2682,10 @@ registerExerciseAliases('calf-raise', ['calf raises', 'calf raise', 'calves'])
 registerExerciseAliases('hip-thrust', ['hip thrusts', 'glute bridge weighted'])
 registerExerciseAliases('face-pull', ['face pulls', 'face pull'])
 registerExerciseAliases('cable-crunch', ['cable crunches', 'cable ab crunch'])
+registerExerciseAliases('machine-pullover', ['machine pullover', 'pullover machine', 'nautilus pullover'])
+registerExerciseAliases('cable-side-crunch', ['cable side crunches', 'side cable crunch', 'standing cable side crunch'])
+registerExerciseAliases('weighted-decline-situp', ['weighted decline sit up', 'decline weighted situp', 'decline sit up weighted'])
+registerExerciseAliases('dead-bug', ['dead bugs', 'deadbug'])
 
 /** Body-region terms only — not movement keywords like "push" or "curl". */
 const BODY_REGION_ALIASES: Record<string, MuscleGroup[]> = {

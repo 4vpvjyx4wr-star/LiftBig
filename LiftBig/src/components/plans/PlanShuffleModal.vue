@@ -27,7 +27,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }]
+  save: [
+    payload: {
+      id: string | null
+      name: string
+      exercises: import('@/types/workout').TemplateExercise[]
+      prepend?: boolean
+    },
+  ]
 }>()
 
 const settings = inject(settingsInjectionKey)!
@@ -145,9 +152,6 @@ function runShuffle() {
     return
   }
   previewPlan.value = plan
-  if (!saveName.value.trim()) {
-    saveName.value = 'Shuffled plan'
-  }
 }
 
 function reshuffle() {
@@ -171,6 +175,7 @@ function savePlan() {
     id: null,
     name,
     exercises: previewPlan.value.exercises,
+    prepend: true,
   })
   emit('close')
 }
@@ -398,18 +403,20 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
         </template>
 
         <template v-else>
-          <p class="mt-2 text-xs text-muted">
-            {{ previewPlan.exercises.length }} lift{{ previewPlan.exercises.length !== 1 ? 's' : '' }}
-            · {{ previewDurationLabel }}
-          </p>
-
-          <label class="mt-4 block text-xs font-bold uppercase tracking-wide text-muted">Plan name</label>
+          <label class="mt-3 block text-xs font-bold uppercase tracking-wide text-muted">Plan name</label>
           <input
             v-model="saveName"
             type="text"
             class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"
-            placeholder="Name when saving"
+            placeholder="e.g. Upper body shuffle"
+            autofocus
           />
+          <p class="mt-1 text-[11px] text-muted">Name your plan before saving.</p>
+
+          <p class="mt-3 text-xs text-muted">
+            {{ previewPlan.exercises.length }} lift{{ previewPlan.exercises.length !== 1 ? 's' : '' }}
+            · {{ previewDurationLabel }}
+          </p>
 
           <ul class="mt-3 max-h-[40vh] space-y-2 overflow-y-auto border-t border-border pt-3">
             <li
