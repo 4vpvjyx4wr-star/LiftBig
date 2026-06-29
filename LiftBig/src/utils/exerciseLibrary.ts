@@ -28,15 +28,12 @@ export type LibraryExercise = {
   tips?: string[]
   /** Short coaching checkpoints users can scan before each set (posture, rhythm, safety). */
   cues?: string[]
-<<<<<<< HEAD
   /** Short-form YouTube tutorial focused on form and cues. */
   tutorialUrl?: string
-=======
   /** Cardio / sports — duration-only when logged or planned. */
   isCardio?: boolean
   /** Core exercise logged with reps and weight only (no per-set time column). */
   repBasedCore?: boolean
->>>>>>> 95547ca7d28adaf3098527f6bdec493d983f3fba
 }
 
 export type LibraryFilterGroup = MuscleGroup | 'all' | 'cardio'
