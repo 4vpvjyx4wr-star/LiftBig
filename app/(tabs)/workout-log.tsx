@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -137,13 +138,94 @@ const CircuitSetRow = React.memo(({
   prev.index === next.index
 );
 
+// ─── Weight Input (double-tap copies previous set; avoids iOS text selection) ─
+const DOUBLE_TAP_MS = 300;
+
+const WeightInput = React.memo(({
+  value,
+  previousWeight,
+  onUpdate,
+}: {
+  value: string;
+  previousWeight?: string;
+  onUpdate: (value: string) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+  const lastTapRef = useRef(0);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+  }, []);
+
+  const openEditor = useCallback(() => {
+    setEditing(true);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
+
+  const handlePress = useCallback(() => {
+    const now = Date.now();
+    const delta = now - lastTapRef.current;
+
+    if (delta < DOUBLE_TAP_MS) {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      if (previousWeight) {
+        onUpdate(previousWeight);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        openEditor();
+      }
+      lastTapRef.current = 0;
+      return;
+    }
+
+    lastTapRef.current = now;
+    singleTapTimerRef.current = setTimeout(() => {
+      singleTapTimerRef.current = null;
+      openEditor();
+    }, DOUBLE_TAP_MS);
+  }, [previousWeight, onUpdate, openEditor]);
+
+  if (editing) {
+    return (
+      <TextInput
+        ref={inputRef}
+        style={s.setInput}
+        placeholder="lbs"
+        placeholderTextColor={MUTED}
+        keyboardType="numeric"
+        value={value}
+        onChangeText={onUpdate}
+        onBlur={() => setEditing(false)}
+        selectTextOnFocus={false}
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <Pressable style={s.setInput} onPress={handlePress}>
+      <Text style={[s.setInputDisplay, !value && s.setInputPlaceholder]}>
+        {value || "lbs"}
+      </Text>
+    </Pressable>
+  );
+}, (prev, next) =>
+  prev.value === next.value && prev.previousWeight === next.previousWeight
+);
+
 // ─── Normal Set Row ───────────────────────────────────────────────────────────
 const SetRow = React.memo(({
-  set, index, targetReps, onUpdate, onDelete,
+  set, index, targetReps, previousWeight, onUpdate, onDelete,
 }: {
   set: SetLog;
   index: number;
   targetReps?: string;
+  previousWeight?: string;
   onUpdate: (field: "reps" | "weight", value: string) => void;
   onDelete: () => void;
 }) => (
@@ -163,13 +245,10 @@ const SetRow = React.memo(({
         if (set.reps) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }}
     />
-    <TextInput
-      style={s.setInput}
-      placeholder="lbs"
-      placeholderTextColor={MUTED}
-      keyboardType="numeric"
+    <WeightInput
       value={set.weight}
-      onChangeText={(v) => onUpdate("weight", v)}
+      previousWeight={previousWeight}
+      onUpdate={(v) => onUpdate("weight", v)}
     />
     <TouchableOpacity onPress={onDelete} style={s.deleteSetBtn}>
       <Text style={s.deleteSetText}>✕</Text>
@@ -179,7 +258,8 @@ const SetRow = React.memo(({
   prev.set.reps === next.set.reps &&
   prev.set.weight === next.set.weight &&
   prev.index === next.index &&
-  prev.targetReps === next.targetReps
+  prev.targetReps === next.targetReps &&
+  prev.previousWeight === next.previousWeight
 );
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
@@ -261,6 +341,7 @@ const ExerciseCard = React.memo(({
               set={set}
               index={index}
               targetReps={exercise.targetReps}
+              previousWeight={index > 0 ? exercise.sets[index - 1].weight : undefined}
               onUpdate={(field, value) => onUpdateSet(set.id, field, value)}
               onDelete={() => onDeleteSet(set.id)}
             />
@@ -572,7 +653,10 @@ const s = StyleSheet.create({
     flex: 1, backgroundColor: "#0D1526", borderRadius: 8,
     borderWidth: 1, borderColor: BORDER, color: WHITE,
     paddingHorizontal: 10, paddingVertical: 7, fontSize: 15, textAlign: "center",
+    justifyContent: "center",
   },
+  setInputDisplay: { color: WHITE, fontSize: 15, textAlign: "center" },
+  setInputPlaceholder: { color: MUTED },
   deleteSetBtn: { padding: 6, width: 30, alignItems: "center" },
   deleteSetText: { color: MUTED, fontSize: 14 },
   addSetBtn: { marginTop: 4, alignSelf: "flex-start" },
