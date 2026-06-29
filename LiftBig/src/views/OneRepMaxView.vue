@@ -90,7 +90,7 @@ const canShowResults = computed(
 
     <div
       v-if="canShowResults && averageEstimate != null"
-      class="mt-4 rounded-xl border border-[#16a34a] bg-[#0d2010] p-4 text-center"
+      class="mt-4 rounded-xl border border-success bg-success-soft p-4 text-center"
     >
       <p class="text-[10px] font-bold uppercase tracking-wider text-success-text">Average of formulas</p>
       <div class="mt-1 text-4xl font-black text-success-text">

@@ -19,7 +19,9 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
-import { cloneTemplateToExercises } from '@/utils/templateToLog'
+import { sortFolderPlans } from '@/utils/folderPlanSort'
+import { supersetBadgeLabel } from '@/utils/supersetUtils'
+import { haptic } from '@/utils/haptics'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const templates = inject(templatesInjectionKey)!
@@ -89,7 +91,12 @@ function onScheduleApply(payload: { startDateKey: string; restDaysPerWeek: numbe
   closeScheduleSheet()
 }
 
-function onSave(payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }) {
+function onSave(payload: {
+  id: string | null
+  name: string
+  exercises: import('@/types/workout').TemplateExercise[]
+  prepend?: boolean
+}) {
   const list = planList.value
   let next: WorkoutTemplate[]
   if (payload.id) {
@@ -102,10 +109,15 @@ function onSave(payload: { id: string | null; name: string; exercises: import('@
       name: payload.name,
       exercises: payload.exercises,
     }
-    next = [...list, newT]
+    next = payload.prepend ? [newT, ...list] : [...list, newT]
+    if (payload.prepend) {
+      allPlansExpanded.value = true
+      allPlansSearchQuery.value = ''
+    }
   }
   templates.setAll(next)
   closeModal()
+  if (payload.prepend) closeShuffle()
 }
 
 function deletePlan(id: string) {
@@ -315,13 +327,7 @@ function onPlanNameTouchEnd() {
 
 function activateTouchDrag(templateId: string) {
   touchLongPressTimer = null
-  if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    try {
-      navigator.vibrate(15)
-    } catch {
-      // Ignore vibration failures (unsupported environment, etc.).
-    }
-  }
+  haptic('tap')
   draggedTemplateId.value = templateId
   isTouchDragActive.value = true
   document.addEventListener('touchmove', onTouchDragMove, { passive: false })
@@ -566,23 +572,8 @@ function scheduledDateForPlanIndex(startDateKey: string, planIndex: number, rest
   return addDaysToDateKey(startDateKey, planIndex + Math.floor(planIndex / restEvery))
 }
 
-function folderPlanSortKey(name: string): [number, number, string] {
-  const weekMatch = /week\s+(\d+)/i.exec(name)
-  const dayMatch = /day\s+(\d+)/i.exec(name)
-  const week = weekMatch ? Number.parseInt(weekMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  const day = dayMatch ? Number.parseInt(dayMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  return [week, day, name.toLowerCase()]
-}
-
 function sortedFolderPlans(folderId: string): WorkoutTemplate[] {
-  const plans = planList.value.filter((item) => item.folderId === folderId)
-  return plans.slice().sort((a, b) => {
-    const [aw, ad, an] = folderPlanSortKey(a.name)
-    const [bw, bd, bn] = folderPlanSortKey(b.name)
-    if (aw !== bw) return aw - bw
-    if (ad !== bd) return ad - bd
-    return an.localeCompare(bn)
-  })
+  return sortFolderPlans(planList.value.filter((item) => item.folderId === folderId))
 }
 
 function isLikelyDuplicatePlanAssignment(dateKey: string, plan: WorkoutTemplate): boolean {
@@ -668,7 +659,7 @@ function assignFolderPlansToCalendar(folderId: string) {
   }
 
   for (const slot of workoutAssignments) {
-    workouts.appendExercises(slot.dateKey, cloneTemplateToExercises(slot.plan))
+    workouts.assignPlanToDate(slot.dateKey, slot.plan, folderName)
   }
 
   window.alert(
@@ -913,6 +904,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
                 · {{ planDurationLabel(item) }}
               </p>
+              <p
+                v-if="item.notes?.trim()"
+                class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card-inner/60 px-2.5 py-2 text-xs leading-relaxed text-foreground"
+              >
+                {{ item.notes }}
+              </p>
               <ul class="mt-2 space-y-1 border-t border-border pt-2">
                 <li
                   v-for="ex in item.exercises"
@@ -921,6 +918,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 >
                   <span class="text-muted">·</span>
                   <span class="font-semibold">{{ ex.name }}</span>
+                  <span
+                    v-if="supersetBadgeLabel(ex)"
+                    class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                  >
+                    {{ supersetBadgeLabel(ex) }}
+                  </span>
                   <button
                     v-if="resolveLibraryEntry(ex)"
                     type="button"
@@ -1076,7 +1079,7 @@ function onPlansRestSecondsChange(ev: Event) {
             class="flex flex-col gap-3"
           >
             <li
-              v-for="item in entry.plans"
+              v-for="item in sortedFolderPlans(entry.folder.id)"
               :key="item.id"
               class="rounded-xl border border-border bg-card p-4 transition-opacity"
               :class="
@@ -1136,6 +1139,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 {{ item.exercises.length }} exercise{{ item.exercises.length !== 1 ? 's' : '' }}
                 · {{ planDurationLabel(item) }}
               </p>
+              <p
+                v-if="item.notes?.trim()"
+                class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card-inner/60 px-2.5 py-2 text-xs leading-relaxed text-foreground"
+              >
+                {{ item.notes }}
+              </p>
               <ul class="mt-2 space-y-1 border-t border-border pt-2">
                 <li
                   v-for="ex in item.exercises"
@@ -1144,6 +1153,12 @@ function onPlansRestSecondsChange(ev: Event) {
                 >
                   <span class="text-muted">·</span>
                   <span class="font-semibold">{{ ex.name }}</span>
+                  <span
+                    v-if="supersetBadgeLabel(ex)"
+                    class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                  >
+                    {{ supersetBadgeLabel(ex) }}
+                  </span>
                   <button
                     v-if="resolveLibraryEntry(ex)"
                     type="button"

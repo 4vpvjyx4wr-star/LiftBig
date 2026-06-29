@@ -42,8 +42,12 @@ function onSelect(ex: LibraryExercise) {
           Swap exercise
         </h3>
         <p class="mt-1 text-xs text-muted">
-          Replace <span class="font-semibold text-foreground">{{ exercise.name }}</span> with a
-          comparable movement. Sets stay the same; adjust weight if needed.
+          Replace <span class="font-semibold text-foreground">{{ exercise.name }}</span>
+          {{
+            exercise.isCardio
+              ? 'with another cardio activity. Duration stays the same.'
+              : 'with a comparable movement. Sets stay the same; adjust weight if needed.'
+          }}
         </p>
 
         <section v-if="comparables.length > 0" class="mt-4">

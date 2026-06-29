@@ -1,14 +1,22 @@
 import { ref } from 'vue'
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
+import { BUNS_AND_THIGHS_FOLDER, BUNS_AND_THIGHS_PLANS } from '@/utils/bunsAndThighsPlans'
 import {
   CALISTHENICS_FULL_BODY_FOLDER,
   CALISTHENICS_FULL_BODY_PLANS,
   DEFAULT_PLANS,
-  JOEY_SUMMER_FOLDER,
-  JOEY_SUMMER_PLAN_IDS,
   SBD_STRENGTH_FOLDER,
   SBD_STRENGTH_PLANS,
 } from '@/utils/defaultPlans'
+import {
+  JOEY_CUT_SPLIT_FOLDER,
+  JOEY_CUT_SPLIT_PLANS,
+  JOEY_SUMMER_LEGACY_PLAN_IDS,
+  LEGACY_JOEY_SUMMER_FOLDER_ID,
+  LEGACY_JOEY_SUMMER_FOLDER_NAME,
+} from '@/utils/joeySummerCutSplitPlans'
+import { reorderSeededFolderPlans } from '@/utils/folderPlanSort'
+import { JOEY_SUMMER_PLAN2_FOLDER, JOEY_SUMMER_PLAN2_PLANS } from '@/utils/joeySummerPlan2'
 import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 import { loadJsonWithRecovery, saveJson } from '@/utils/storage'
 
@@ -48,41 +56,91 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
           : folder,
       )
     : [...withSbdFolder, ...cloneFolders([CALISTHENICS_FULL_BODY_FOLDER])]
-  const hasJoeyFolder = withCalisFolders.some((folder) => folder.id === JOEY_SUMMER_FOLDER.id)
-  let folders = hasJoeyFolder
+  const hasBunsFolder = withCalisFolders.some((folder) => folder.id === BUNS_AND_THIGHS_FOLDER.id)
+  const withBunsFolders = hasBunsFolder
     ? withCalisFolders.map((folder) =>
-        folder.id === JOEY_SUMMER_FOLDER.id
-          ? { ...folder, name: JOEY_SUMMER_FOLDER.name, purpose: JOEY_SUMMER_FOLDER.purpose }
+        folder.id === BUNS_AND_THIGHS_FOLDER.id
+          ? {
+              ...folder,
+              name: BUNS_AND_THIGHS_FOLDER.name,
+              purpose: BUNS_AND_THIGHS_FOLDER.purpose,
+            }
           : folder,
       )
-    : [...withCalisFolders, ...cloneFolders([JOEY_SUMMER_FOLDER])]
+    : [...withCalisFolders, ...cloneFolders([BUNS_AND_THIGHS_FOLDER])]
 
-  const joeyPlanIdSet = new Set(JOEY_SUMMER_PLAN_IDS)
-  let templates = state.templates.map((template) =>
-    joeyPlanIdSet.has(template.id) && template.folderId == null
-      ? { ...template, folderId: JOEY_SUMMER_FOLDER.id }
-      : template,
+  const legacyJoeyFolderIds = new Set(
+    withBunsFolders
+      .filter(
+        (f) => f.id === LEGACY_JOEY_SUMMER_FOLDER_ID || f.name === LEGACY_JOEY_SUMMER_FOLDER_NAME,
+      )
+      .map((f) => f.id),
   )
+  let templates = state.templates.map((template) => {
+    const legacyJoeyPlan = JOEY_SUMMER_LEGACY_PLAN_IDS.includes(template.id)
+    const inLegacyFolder =
+      template.folderId != null && legacyJoeyFolderIds.has(template.folderId)
+    if (legacyJoeyPlan || inLegacyFolder) {
+      return { ...template, folderId: null }
+    }
+    return template
+  })
+  let folders = withBunsFolders.filter((f) => !legacyJoeyFolderIds.has(f.id))
 
-  // Deduplicate: some older saved states can contain multiple "Joey's Summer PPL/Core/Circuit"
-  // folders (same name, different ids). Remap all Joey plans to the canonical folder id.
-  const joeyFolderIdsByName = folders.filter((f) => f.name === JOEY_SUMMER_FOLDER.name).map((f) => f.id)
-  const duplicateJoeyFolderIds = joeyFolderIdsByName.filter((id) => id !== JOEY_SUMMER_FOLDER.id)
-  if (duplicateJoeyFolderIds.length > 0) {
-    templates = templates.map((t) =>
-      joeyPlanIdSet.has(t.id) && t.folderId != null && duplicateJoeyFolderIds.includes(t.folderId)
-        ? { ...t, folderId: JOEY_SUMMER_FOLDER.id }
-        : t,
-    )
-    folders = folders.filter((f) => !duplicateJoeyFolderIds.includes(f.id))
-  }
+  const hasCutSplitFolder = folders.some((folder) => folder.id === JOEY_CUT_SPLIT_FOLDER.id)
+  folders = hasCutSplitFolder
+    ? folders.map((folder) =>
+        folder.id === JOEY_CUT_SPLIT_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_CUT_SPLIT_FOLDER.name,
+              purpose: JOEY_CUT_SPLIT_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...folders, ...cloneFolders([JOEY_CUT_SPLIT_FOLDER])]
+
+  const hasSummerPlan2Folder = folders.some((folder) => folder.id === JOEY_SUMMER_PLAN2_FOLDER.id)
+  folders = hasSummerPlan2Folder
+    ? folders.map((folder) =>
+        folder.id === JOEY_SUMMER_PLAN2_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_SUMMER_PLAN2_FOLDER.name,
+              purpose: JOEY_SUMMER_PLAN2_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...folders, ...cloneFolders([JOEY_SUMMER_PLAN2_FOLDER])]
 
   const existingIds = new Set(templates.map((template) => template.id))
   const missingSbdPlans = SBD_STRENGTH_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCalisPlans = CALISTHENICS_FULL_BODY_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingBunsPlans = BUNS_AND_THIGHS_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingCutSplitPlans = JOEY_CUT_SPLIT_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingSummerPlan2Plans = JOEY_SUMMER_PLAN2_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
-  const missingPlans = [...missingSbdPlans, ...missingCalisPlans, ...missingDefaultPlans]
+  const missingPlans = [
+    ...missingSbdPlans,
+    ...missingCalisPlans,
+    ...missingBunsPlans,
+    ...missingCutSplitPlans,
+    ...missingSummerPlan2Plans,
+    ...missingDefaultPlans,
+  ]
   templates = missingPlans.length > 0 ? [...templates, ...clonePlans(missingPlans)] : templates
+
+  const seededById = new Map([
+    ...BUNS_AND_THIGHS_PLANS.map((plan) => [plan.id, plan] as const),
+    ...JOEY_CUT_SPLIT_PLANS.map((plan) => [plan.id, plan] as const),
+    ...JOEY_SUMMER_PLAN2_PLANS.map((plan) => [plan.id, plan] as const),
+  ])
+  templates = templates.map((template) => {
+    const seed = seededById.get(template.id)
+    return seed ? (clonePlans([seed])[0] ?? template) : template
+  })
+
+  templates = reorderSeededFolderPlans(templates, JOEY_SUMMER_PLAN2_FOLDER.id, JOEY_SUMMER_PLAN2_PLANS)
 
   return { templates, folders }
 }

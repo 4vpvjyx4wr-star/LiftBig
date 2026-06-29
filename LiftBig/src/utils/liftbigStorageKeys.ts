@@ -19,6 +19,7 @@ export const LIFTBIG_STORAGE_KEYS = {
   workouts: 'liftbig_workouts',
   templates: 'liftbig_templates',
   settings: 'liftbig_settings',
+  customThemes: 'liftbig_custom_themes',
   libraryFavorites: 'liftbig_library_favorites',
 } as const
 

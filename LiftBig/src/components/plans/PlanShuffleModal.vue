@@ -27,7 +27,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [payload: { id: string | null; name: string; exercises: import('@/types/workout').TemplateExercise[] }]
+  save: [
+    payload: {
+      id: string | null
+      name: string
+      exercises: import('@/types/workout').TemplateExercise[]
+      prepend?: boolean
+    },
+  ]
 }>()
 
 const settings = inject(settingsInjectionKey)!
@@ -40,7 +47,8 @@ function clampPace(value: number, fallback: number): number {
   return Math.min(MAX_PACE_SECONDS, Math.max(MIN_PACE_SECONDS, Math.round(value)))
 }
 
-const selectedEquipment = ref<string[]>([...LIBRARY_EQUIPMENT_TYPES])
+const selectedEquipment = ref<string[]>([])
+const includeCardio = ref(false)
 const selectedFocus = ref<ShuffleFocus[]>([])
 const mode = ref<ShuffleMode>('duration')
 const targetMinutes = ref(45)
@@ -54,7 +62,11 @@ const matchWarning = ref<string | null>(null)
 const muscleGroups = allMuscleGroups()
 
 const poolSize = computed(() => {
-  return filterLibraryForShuffle(selectedEquipment.value, selectedFocus.value).length
+  return filterLibraryForShuffle(
+    selectedEquipment.value,
+    selectedFocus.value,
+    includeCardio.value,
+  ).length
 })
 
 const durationAssumptions = computed(() =>
@@ -72,7 +84,8 @@ const previewDurationLabel = computed(() => {
 })
 
 function resetForm() {
-  selectedEquipment.value = [...LIBRARY_EQUIPMENT_TYPES]
+  selectedEquipment.value = []
+  includeCardio.value = false
   selectedFocus.value = []
   mode.value = 'duration'
   targetMinutes.value = 45
@@ -126,6 +139,7 @@ function runShuffle() {
   const plan = buildShuffledPlan({
     selectedEquipment: selectedEquipment.value,
     selectedFocus: selectedFocus.value,
+    includeCardio: includeCardio.value,
     mode: mode.value,
     targetMinutes: targetMinutes.value,
     exerciseCount: exerciseCount.value,
@@ -133,14 +147,11 @@ function runShuffle() {
   })
   if (plan.exercises.length === 0) {
     matchWarning.value =
-      'No exercises match your equipment and focus filters. Try including more equipment or fewer focus filters.'
+      'No exercises match your filters. Select at least one equipment type, turn on cardio if you want it, or loosen your focus filters.'
     previewPlan.value = null
     return
   }
   previewPlan.value = plan
-  if (!saveName.value.trim()) {
-    saveName.value = 'Shuffled plan'
-  }
 }
 
 function reshuffle() {
@@ -164,6 +175,7 @@ function savePlan() {
     id: null,
     name,
     exercises: previewPlan.value.exercises,
+    prepend: true,
   })
   emit('close')
 }
@@ -202,12 +214,15 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
 
         <template v-if="!previewPlan">
           <p class="mt-2 text-xs leading-snug text-muted">
-            Pick what you have available, then choose a target session length or number of lifts. Optionally narrow by
-            muscle groups or push / pull / legs. Exercises are drawn from the library at random.
+            Select the equipment you have available, then choose a target session length or number of lifts. Optionally
+            narrow by muscle groups or push / pull / legs. Lifts are picked at random, then ordered compounds first with
+            muscle-group variety.
           </p>
 
           <label class="mt-4 block text-xs font-bold uppercase tracking-wide text-muted">Equipment</label>
-          <p class="mt-1 text-[11px] text-muted">Only exercises whose equipment tag matches a selected type are included.</p>
+          <p class="mt-1 text-[11px] text-muted">
+            Choose each type of gear you can use. Nothing is selected until you pick it.
+          </p>
           <div class="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
@@ -231,6 +246,27 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
           >
             Select all equipment
           </button>
+          <button
+            type="button"
+            class="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-card-inner px-3 py-2.5 text-left transition-colors hover:border-primary/40"
+            :class="includeCardio ? 'border-primary/50' : ''"
+            @click="includeCardio = !includeCardio"
+          >
+            <span class="text-xs font-bold text-foreground">Include cardio</span>
+            <span
+              class="rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide"
+              :class="
+                includeCardio
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-card text-muted'
+              "
+            >
+              {{ includeCardio ? 'On' : 'Off' }}
+            </span>
+          </button>
+          <p class="mt-1 text-[11px] text-muted">
+            When on, cardio and sports from the library can appear if their equipment matches your selection.
+          </p>
 
           <label class="mt-4 block text-xs font-bold uppercase tracking-wide text-muted">Session size</label>
           <div class="mt-2 flex gap-2">
@@ -367,18 +403,20 @@ function patternLabelsForLibraryId(libraryId: string | undefined): string {
         </template>
 
         <template v-else>
-          <p class="mt-2 text-xs text-muted">
-            {{ previewPlan.exercises.length }} lift{{ previewPlan.exercises.length !== 1 ? 's' : '' }}
-            · {{ previewDurationLabel }}
-          </p>
-
-          <label class="mt-4 block text-xs font-bold uppercase tracking-wide text-muted">Plan name</label>
+          <label class="mt-3 block text-xs font-bold uppercase tracking-wide text-muted">Plan name</label>
           <input
             v-model="saveName"
             type="text"
             class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"
-            placeholder="Name when saving"
+            placeholder="e.g. Upper body shuffle"
+            autofocus
           />
+          <p class="mt-1 text-[11px] text-muted">Name your plan before saving.</p>
+
+          <p class="mt-3 text-xs text-muted">
+            {{ previewPlan.exercises.length }} lift{{ previewPlan.exercises.length !== 1 ? 's' : '' }}
+            · {{ previewDurationLabel }}
+          </p>
 
           <ul class="mt-3 max-h-[40vh] space-y-2 overflow-y-auto border-t border-border pt-3">
             <li

@@ -16,6 +16,8 @@ export type LocalWorkoutsApi = {
   markRestDay: (dateKey: string) => void
   getPlanName: (dateKey: string) => string | undefined
   getPlanFolderName: (dateKey: string) => string | undefined
+  getPlanNotes: (dateKey: string) => string | undefined
+  assignPlanToDate: (dateKey: string, template: WorkoutTemplate, folderName?: string) => void
   applyPlanWithWeeklyRest: (
     startDateKey: string,
     template: WorkoutTemplate,
@@ -24,6 +26,7 @@ export type LocalWorkoutsApi = {
   ) => void
   moveDay: (fromKey: string, toKey: string) => void
   swapDays: (keyA: string, keyB: string) => void
+  copyExercisesToDay: (fromKey: string, toKey: string) => void
 }
 
 export type TemplatesApi = {

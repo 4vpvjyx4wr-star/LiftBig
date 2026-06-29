@@ -28,9 +28,18 @@ export type LibraryExercise = {
   tips?: string[]
   /** Short coaching checkpoints users can scan before each set (posture, rhythm, safety). */
   cues?: string[]
+<<<<<<< HEAD
   /** Short-form YouTube tutorial focused on form and cues. */
   tutorialUrl?: string
+=======
+  /** Cardio / sports — duration-only when logged or planned. */
+  isCardio?: boolean
+  /** Core exercise logged with reps and weight only (no per-set time column). */
+  repBasedCore?: boolean
+>>>>>>> 95547ca7d28adaf3098527f6bdec493d983f3fba
 }
+
+export type LibraryFilterGroup = MuscleGroup | 'all' | 'cardio'
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   chest: 'Chest',
@@ -495,7 +504,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Stop before lower back rounds; feel hamstring stretch.',
       'Drive hips forward to stand.',
     ],
-    tips: ['Keep dumbbells close to legs; neutral neck.'],
+    tips: [
+      'Keep dumbbells close to legs; neutral neck.',
+      'Push hips back as far as possible; stop around mid-shin if hamstrings limit depth.',
+    ],
     cues: [
       'Soft knees; hips reach back like closing a car door.',
       'Weights skim the legs—don’t drift forward.',
@@ -538,6 +550,50 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Mid-foot under bar; pull slack out; brace before you break the floor.',
       'Push the floor away; hips and chest rise together.',
       'Lock out tall with glutes; lower by hinging hips back first.',
+    ],
+  }),
+  reg({
+    id: 'seated-leg-curl',
+    name: 'Seated Leg Curl',
+    muscleGroups: ['hamstrings'],
+    tags: ['machine', 'isolation'],
+    equipment: 'Machine',
+    summary: 'Seated knee flexion isolating hamstrings with hips flexed—great paired with leg extensions.',
+    instructions: [
+      'Adjust the back pad and leg pad so knees align with the machine axis.',
+      'Curl heels under the seat toward glutes; hips stay planted.',
+      'Squeeze hamstrings at peak; return slowly without letting the stack slam.',
+    ],
+    tips: [
+      'Point toes slightly up (dorsiflex) to reduce calf takeover.',
+      'Pair with leg extensions in supersets for efficient leg work.',
+    ],
+    cues: [
+      'Hips glued to the seat—no rocking.',
+      'Smooth curl; pause at peak contraction.',
+      'Two-second negative on every rep.',
+    ],
+  }),
+  reg({
+    id: 'machine-chest-press',
+    name: 'Machine Chest Press',
+    muscleGroups: ['chest', 'shoulders', 'triceps'],
+    tags: ['machine', 'press'],
+    equipment: 'Machine',
+    summary: 'Stable horizontal press on a chest machine—useful for volume after heavy shoulder work.',
+    instructions: [
+      'Set seat so handles align with mid-chest; feet flat and back on pad.',
+      'Press forward without locking elbows aggressively backward.',
+      'Lower under control to a comfortable stretch without shoulder pinch.',
+    ],
+    tips: [
+      'Keep shoulders down and back on the pad throughout.',
+      'Use after shoulder pressing when barbell/dumbbell stability is fatigued.',
+    ],
+    cues: [
+      'Scapulae set before the first rep.',
+      'Press in a slight arc—don’t shrug at lockout.',
+      'Touch smooth, not bounce, at the bottom.',
     ],
   }),
   reg({
@@ -587,7 +643,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Drop back knee toward floor; torso tall.',
       'Push through front foot to step into next lunge.',
     ],
-    tips: ['Short steps over-stress knee; stride for hip comfort.'],
+    tips: [
+      'Short steps over-stress knee; stride for hip comfort.',
+      'Lean torso slightly forward to shift load from quads to glutes.',
+    ],
     cues: [
       'Torso stays tall; rib cage over pelvis.',
       'Front knee tracks over mid-foot, not past the toe line.',
@@ -605,7 +664,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squat down between hips; elbows can track inside knees.',
       'Drive up keeping chest up.',
     ],
-    tips: ['Great for learning squat depth and torso position.'],
+    tips: [
+      'Great for learning squat depth and torso position.',
+      'Use deep depth to maximize glute stretch at the bottom.',
+    ],
     cues: [
       'Elbows trace along ribs—use them to wedge knees out.',
       'Chest stays tall; weight sits over mid-foot.',
@@ -635,6 +697,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     name: 'Cable Crunch',
     muscleGroups: ['core'],
     equipment: 'Cable',
+    repBasedCore: true,
     summary: 'Kneeling crunch with high cable for abs.',
     instructions: [
       'Kneel facing stack, rope behind head or at shoulders.',
@@ -703,6 +766,492 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'low-to-high-cable-fly',
+    name: 'Low-to-High Cable Fly',
+    muscleGroups: ['chest', 'shoulders'],
+    tags: ['cable', 'upper chest', 'fly'],
+    equipment: 'Cable',
+    summary: 'Cable fly from low pulleys upward to emphasize upper chest and front delts.',
+    instructions: [
+      'Set both pulleys to the lowest position; grab handles with palms facing forward.',
+      'Step forward into a staggered stance; slight bend in elbows throughout.',
+      'Sweep hands up and together in an arc finishing around eye level.',
+      'Control the return—feel the stretch across upper chest without shrugging.',
+    ],
+    tips: [
+      'Use lighter weight than flat flies; tension peaks at the top.',
+      'Keep ribs down—don’t hyperextend the lower back to finish the rep.',
+    ],
+    cues: [
+      'Low pulleys, soft elbows—arc up and in.',
+      'Squeeze upper chest at the top; shoulders stay down.',
+      'Lower with control; don’t let handles yank you forward.',
+    ],
+  }),
+  reg({
+    id: 'cable-lateral-raise',
+    name: 'Cable Lateral Raise',
+    muscleGroups: ['shoulders'],
+    tags: ['cable', 'medial delt', 'isolation'],
+    equipment: 'Cable',
+    summary: 'Constant-tension lateral raise from a low or mid pulley for medial delts.',
+    instructions: [
+      'Stand beside the stack with the cable crossing lightly in front of your body, or use a single low pulley at your side.',
+      'With a slight elbow bend, raise your arm out to the side to shoulder height.',
+      'Pause; lower under control without letting the stack pull your shoulder forward.',
+    ],
+    tips: [
+      'Stay lighter than dumbbells—cables keep tension at the bottom.',
+      'Keep the non-working hand on your hip or the rack for balance.',
+    ],
+    cues: [
+      'Elbows soft; lead with the elbow, not the hand.',
+      'Raise to shoulder height—no trap shrug at the top.',
+      'Three-count lowering; stack stays quiet between reps.',
+    ],
+  }),
+  reg({
+    id: 'lean-away-cable-lateral-raise',
+    name: 'Lean-Away Cable Lateral Raise',
+    muscleGroups: ['shoulders'],
+    tags: ['cable', 'medial delt', 'isolation', 'unilateral'],
+    equipment: 'Cable',
+    summary: 'Single-arm lateral raise leaning away from the stack for a longer medial-delt arc.',
+    instructions: [
+      'Grab the rack or post with your off hand; lean away so the working arm hangs with cable tension at the bottom.',
+      'Raise the handle out to the side to shoulder height with a soft elbow bend.',
+      'Pause; lower slowly without losing tension at the bottom.',
+    ],
+    tips: [
+      'The lean increases range—use less weight than standing cable laterals.',
+      'Keep ribs down; don’t side-bend to cheat the rep.',
+    ],
+    cues: [
+      'Lean creates tension at the bottom—no dead hang between reps.',
+      'Pinkies slightly high at the top.',
+      'Shoulders down; traps stay quiet.',
+    ],
+  }),
+  reg({
+    id: 'leaning-dumbbell-lateral-raise',
+    name: 'Leaning Dumbbell Lateral Raise',
+    muscleGroups: ['shoulders'],
+    tags: ['dumbbell', 'medial delt', 'isolation'],
+    equipment: 'Dumbbell',
+    summary: 'Single-arm lateral raise with a lean away from a post for a longer medial-delt arc.',
+    instructions: [
+      'Hold a rack or post with one hand; lean away so your working arm hangs freely.',
+      'With a slight elbow bend, raise the dumbbell out to the side to shoulder height.',
+      'Pause briefly; lower under control without resting tension at the bottom.',
+    ],
+    tips: [
+      'The lean increases range—stay lighter than standing laterals.',
+      'Lead with the elbow; don’t shrug the trap to finish the rep.',
+    ],
+    cues: [
+      'Lean creates tension at the bottom—no dead hang between reps.',
+      'Pinkies slightly high at the top (“pour water”).',
+      'Three-count lowering beats swinging a heavy dumbbell.',
+    ],
+  }),
+  reg({
+    id: 'lateral-raise-partial',
+    name: 'Lateral Raise Partial',
+    muscleGroups: ['shoulders'],
+    tags: ['burnout', 'finisher', 'medial delt'],
+    equipment: 'Dumbbell',
+    summary: 'Short-range lateral raise reps in the top half of the movement for a medial-delt burnout.',
+    instructions: [
+      'After main lateral work, use light dumbbells.',
+      'Raise only through the top 30–50% of your normal range—no full rest at the bottom.',
+      'Pump continuous partial reps until near failure.',
+    ],
+    tips: [
+      'Best as a finisher—expect a deep burn with minimal load.',
+      'Keep elbows soft; momentum from the hips defeats the purpose.',
+    ],
+    cues: [
+      'Small arc, constant tension—no pause at the bottom.',
+      'Shoulders down; traps stay quiet.',
+      'Stop when form breaks, not when ego says one more.',
+    ],
+  }),
+  reg({
+    id: 'assisted-pull-up',
+    name: 'Assisted Pull-Up',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['pull-up', 'machine', 'bodyweight'],
+    equipment: 'Machine',
+    summary: 'Pull-up with counterweight assistance to build vertical pulling strength and volume.',
+    instructions: [
+      'Set assistance so you can hit target reps with 1–2 reps in reserve on early sets.',
+      'Hang with active shoulders; pull chest toward the bar driving elbows down.',
+      'Clear the chin over the bar; lower under control to a long but active hang.',
+    ],
+    tips: [
+      'Reduce assistance over time as strength improves.',
+      'Avoid excessive kipping unless training specifically for it.',
+    ],
+    cues: [
+      'Shoulders set before you pull—no dead shrug hang.',
+      'Drive elbows to your back pockets.',
+      'Lower fully without relaxing into the shoulders.',
+    ],
+  }),
+  reg({
+    id: 'rear-delt-cable-fly',
+    name: 'Rear Delt Cable Fly',
+    muscleGroups: ['shoulders', 'back'],
+    tags: ['cable', 'rear delts', 'isolation'],
+    equipment: 'Cable',
+    summary: 'Standing or bent cable fly targeting rear delts and upper back.',
+    instructions: [
+      'Set cables at shoulder height or use a rear-delt station; cross handles if needed.',
+      'Hinge slightly with neutral spine; arms start in front of the torso.',
+      'Pull handles apart and back, squeezing rear delts and shoulder blades.',
+      'Return with control without rounding forward.',
+    ],
+    tips: [
+      'Light weight, high reps—rear delts respond to tension, not load.',
+      'Think “spread the chest” rather than rowing with the elbows low.',
+    ],
+    cues: [
+      'Soft elbows fixed—open from the rear delts, not the lats.',
+      'Pause at peak squeeze; scapulae retract.',
+      'Stop before traps take over the movement.',
+    ],
+  }),
+  reg({
+    id: 'neutral-grip-lat-pulldown',
+    name: 'Neutral Grip Lat Pulldown',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['cable', 'lat', 'vertical pull'],
+    equipment: 'Cable',
+    summary: 'Lat pulldown with parallel handles—friendly on shoulders while building lat width.',
+    instructions: [
+      'Use a neutral (parallel) attachment on a high pulley; sit with thighs secured.',
+      'Pull elbows down and slightly back toward your ribs without excessive lean.',
+      'Squeeze lats at the bottom; return until arms are extended with shoulders set.',
+    ],
+    tips: [
+      'Think elbows to back pockets, not hands to chest.',
+      'A slight forward torso angle can help feel the lats—avoid swinging.',
+    ],
+    cues: [
+      'Chest tall; ribs down before you pull.',
+      'Drive elbows down—minimal wrist curl.',
+      'Full stretch at the top without shrugging.',
+    ],
+  }),
+  reg({
+    id: 'chest-supported-lat-row',
+    name: 'Chest Supported Lat-Focused Row',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['machine', 'row', 'lat focus'],
+    equipment: 'Machine',
+    summary: 'Chest-supported row emphasizing lat depression and elbow path close to the torso.',
+    instructions: [
+      'Set chest pad so shoulders stay neutral; grab handles with a slight elbow tuck.',
+      'Row by driving elbows back and down toward hips—think lats, not upper traps.',
+      'Pause with shoulder blades squeezed; return until lats stretch without rounding.',
+    ],
+    tips: [
+      'Reduce weight if you feel biceps or rear delts dominate.',
+      'Avoid shrugging at the finish—keep shoulders down.',
+    ],
+    cues: [
+      'Chest stays on pad; no hip lift.',
+      'Elbows track toward back pockets.',
+      'Squeeze lats at peak—two-count hold.',
+    ],
+  }),
+  reg({
+    id: 'single-arm-lat-pulldown',
+    name: 'Single Arm Lat Pulldown',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['cable', 'unilateral', 'lat'],
+    equipment: 'Cable',
+    summary: 'Unilateral vertical pull to train each lat independently with a full stretch.',
+    instructions: [
+      'Use a single handle on a high pulley; kneel or sit depending on station.',
+      'Pull elbow down and slightly back toward the hip, not straight to the ribs.',
+      'Pause at the bottom; control the return until the lat is fully stretched.',
+    ],
+    tips: [
+      'Avoid rotating the torso excessively—small twist is OK, not a full twist.',
+      'Match reps and quality side to side before adding load.',
+    ],
+    cues: [
+      'Initiate by pulling the elbow to your back pocket.',
+      'Stretch long at the top without shrugging the working shoulder.',
+      'Same path every rep—no yanking with the arm.',
+    ],
+  }),
+  reg({
+    id: 'overhead-cable-tricep-extension',
+    name: 'Overhead Cable Tricep Extension',
+    muscleGroups: ['triceps'],
+    tags: ['cable', 'overhead', 'long head'],
+    equipment: 'Cable',
+    summary: 'Overhead triceps extension with a rope or bar on a low pulley for long-head emphasis.',
+    instructions: [
+      'Face away from the stack; rope overhead with elbows beside the head.',
+      'Extend forearms forward until arms are straight without flaring ribs.',
+      'Lower behind the head under control to roughly 90° elbow bend.',
+    ],
+    tips: [
+      'Stagger stance for balance; keep upper arms vertical.',
+      'Slightly lighter than dumbbell overhead work—constant cable tension is demanding.',
+    ],
+    cues: [
+      'Elbows point at the ceiling—don’t let them drift forward.',
+      'Ribs down; move only at the elbow.',
+      'Full lockout without hyperextending the lower back.',
+    ],
+  }),
+  reg({
+    id: 'overhead-dumbbell-tricep-extension',
+    name: 'Overhead Dumbbell Tricep Extension',
+    muscleGroups: ['triceps'],
+    tags: ['dumbbell', 'overhead', 'single or double arm'],
+    equipment: 'Dumbbell',
+    summary: 'Standing or seated overhead extension with one or two dumbbells.',
+    instructions: [
+      'Press dumbbell(s) overhead; upper arms stay vertical beside the head.',
+      'Lower behind the head by bending elbows while keeping upper arms fixed.',
+      'Extend to lockout without arching the lower back.',
+    ],
+    tips: [
+      'Single-arm allows a natural path; two-hand on one dumbbell needs stable wrists.',
+      'Use a bench back for support if lower back tends to arch.',
+    ],
+    cues: [
+      'Biceps beside ears at the start of each rep.',
+      'Elbows stay in—don’t flare wide.',
+      'Control the stretch; no free-fall behind the head.',
+    ],
+  }),
+  reg({
+    id: 'dumbbell-curl',
+    name: 'Dumbbell Curl',
+    muscleGroups: ['biceps', 'forearms'],
+    tags: ['dumbbell', 'curl', 'arms'],
+    equipment: 'Dumbbell',
+    summary: 'Standing alternating or simultaneous dumbbell curl for biceps.',
+    instructions: [
+      'Stand tall with dumbbells at sides, palms forward (or neutral for hammer variation).',
+      'Curl toward shoulders without swinging the hips or shoulders.',
+      'Lower under control to full elbow extension.',
+    ],
+    tips: [
+      'Supinate through the rep for peak biceps contraction if using standard grip.',
+      'Alternate arms if grip fatigue is an issue in circuits.',
+    ],
+    cues: [
+      'Elbows pinned at your sides.',
+      'Curl to shoulder height—no shoulder roll forward.',
+      'Lower until arms are straight without resting the weights on your thighs.',
+    ],
+  }),
+  reg({
+    id: 'standing-dumbbell-shoulder-press',
+    name: 'Standing Dumbbell Shoulder Press',
+    muscleGroups: ['shoulders', 'triceps', 'core'],
+    tags: ['overhead', 'standing', 'strict press'],
+    equipment: 'Dumbbell',
+    summary: 'Vertical press from the shoulders while standing—trains delts with core bracing.',
+    instructions: [
+      'Dumbbells at shoulder height, palms forward or neutral; feet hip-width.',
+      'Brace core and glutes; press overhead without excessive lean-back.',
+      'Lower to ear level or shoulders under control.',
+    ],
+    tips: [
+      'Slight leg drive is OK for heavy sets; keep it strict in conditioning circuits.',
+      'Don’t flare ribs—stop the set if lower back arches hard.',
+    ],
+    cues: [
+      'Ribs down; squeeze glutes lightly.',
+      'Press up and slightly in—biceps beside ears at lockout.',
+      'Head through the “window” only after the bell passes your face.',
+    ],
+  }),
+  reg({
+    id: 'decline-reverse-crunch',
+    name: 'Decline Reverse Crunch',
+    muscleGroups: ['core'],
+    tags: ['decline', 'lower abs', 'bodyweight'],
+    equipment: 'Bench',
+    summary: 'Reverse crunch on a decline bench for extra lower-ab loading.',
+    instructions: [
+      'Lie on a decline bench, hold the pads behind your head for stability.',
+      'Curl hips off the bench bringing knees toward chest; posterior pelvic tilt.',
+      'Lower with control without swinging the legs.',
+    ],
+    tips: [
+      'Small range beats wild leg swings.',
+      'Skip decline if you feel neck strain—use flat bench reverse crunch instead.',
+    ],
+    cues: [
+      'Tuck pelvis first—lift comes from abs, not momentum.',
+      'Exhale as hips rise.',
+      'Slow negative; don’t drop the legs.',
+    ],
+  }),
+  reg({
+    id: 'weighted-crunch',
+    name: 'Weighted Crunch',
+    muscleGroups: ['core'],
+    tags: ['crunch', 'loaded', 'abs'],
+    equipment: 'Dumbbell',
+    summary: 'Crunch holding a plate or dumbbell on the chest for loaded flexion.',
+    instructions: [
+      'Lie on back, knees bent, feet flat; hold weight on upper chest.',
+      'Curl shoulders off floor by flexing abs—chin stays a fist-width from chest.',
+      'Pause; lower until shoulder blades lightly touch without fully relaxing.',
+    ],
+    tips: [
+      'Don’t pull the weight with your arms—hands only anchor the load.',
+      'Use moderate weight in circuits; quality reps over max load.',
+    ],
+    cues: [
+      'Ribs move toward pelvis—no neck yanking.',
+      'Exhale on the way up.',
+      'Short pause at the top; control the descent.',
+    ],
+  }),
+  reg({
+    id: 'side-plank',
+    name: 'Side Plank',
+    muscleGroups: ['core', 'shoulders'],
+    tags: ['isometric', 'obliques', 'anti-lateral-flexion'],
+    equipment: 'Bodyweight',
+    summary: 'Isometric hold on one forearm to train obliques and lateral core stability.',
+    instructions: [
+      'Forearm on floor, elbow under shoulder; stack feet or stagger for balance.',
+      'Lift hips to a straight line from head to heels; top arm on hip or ceiling.',
+      'Hold for time; breathe steadily without sagging at the hips.',
+    ],
+    tips: [
+      'Regress to knees down if hips drop repeatedly.',
+      'In circuits, hit each side within the listed time.',
+    ],
+    cues: [
+      'Drive forearm and bottom foot into the floor.',
+      'Hips forward—no banana sag.',
+      'Neck neutral; squeeze glutes lightly.',
+    ],
+  }),
+  reg({
+    id: 'dead-bug',
+    name: 'Dead Bug',
+    muscleGroups: ['core'],
+    tags: ['anti-extension', 'stability', 'abs'],
+    equipment: 'Bodyweight',
+    summary: 'Supine alternating arm and leg extensions while keeping the lower back pressed to the floor.',
+    instructions: [
+      'Lie on your back, arms toward the ceiling, hips and knees at 90°.',
+      'Brace your core and press your lower back into the floor.',
+      'Slowly extend opposite arm and leg; return and alternate sides.',
+    ],
+    tips: [
+      'Move only as far as you can without your lower back arching off the floor.',
+      'Exhale as you extend; keep ribs down throughout.',
+    ],
+    cues: [
+      'Lower back glued to the mat—if it lifts, shorten the range.',
+      'Reach long through heel and fingertips; don’t rush.',
+      'Breathe out on the extension; reset the brace each rep.',
+    ],
+  }),
+  reg({
+    id: 'cable-side-crunch',
+    name: 'Cable Side Crunch',
+    muscleGroups: ['core'],
+    tags: ['obliques', 'cable'],
+    equipment: 'Cable',
+    summary: 'Standing side bend with a low cable to target obliques.',
+    instructions: [
+      'Stand sideways to a low cable; hold the handle at your shoulder or behind your head.',
+      'Crunch sideways by shortening the distance between rib cage and hip on the working side.',
+      'Pause; control the return without leaning into the stack.',
+    ],
+    tips: [
+      'Keep hips square—movement is lateral flexion, not rotation.',
+      'Use a light load; quality side crunch beats heavy swinging.',
+    ],
+    cues: [
+      'Elbow drives toward hip on the working side.',
+      'Opposite hip stays planted; no twisting through the waist.',
+      'Squeeze the oblique at the bottom; slow negative.',
+    ],
+  }),
+  reg({
+    id: 'weighted-decline-situp',
+    name: 'Weighted Decline Sit-Up',
+    muscleGroups: ['core'],
+    tags: ['decline', 'weighted', 'abs'],
+    equipment: 'Decline bench',
+    summary: 'Decline sit-up holding a plate or dumbbell for loaded abdominal work.',
+    instructions: [
+      'Secure feet on a decline bench; hold a weight at your chest or overhead.',
+      'Curl up by flexing your spine, not pulling with hip flexors alone.',
+      'Lower under control to just above the bench without bouncing.',
+    ],
+    tips: [
+      'Start with a modest decline and light weight—add load only when form stays crisp.',
+      'If you feel pulling in the hip flexors, reduce decline or range.',
+    ],
+    cues: [
+      'Ribs toward pelvis—think crunch, not sit-up swing.',
+      'Weight stays close to chest until you own the movement.',
+      'Exhale hard at the top; don’t yank with arms.',
+    ],
+  }),
+  reg({
+    id: 'machine-pullover',
+    name: 'Machine Pullover',
+    muscleGroups: ['back', 'chest'],
+    tags: ['lat isolation', 'machine'],
+    equipment: 'Machine',
+    summary: 'Seated pullover machine emphasizing lats and serratus with a fixed arc.',
+    instructions: [
+      'Adjust seat so shoulders align with the machine pivot; grip handles or bar.',
+      'With a slight elbow bend, pull the pad down and around in the machine’s arc.',
+      'Squeeze lats at the bottom; return slowly without shrugging.',
+    ],
+    tips: [
+      'Think “pull elbows to pockets” rather than bending arms like a curl.',
+      'Keep ribs down—don’t over-arch to chase range.',
+    ],
+    cues: [
+      'Chest tall; slight elbow bend fixed throughout.',
+      'Drive elbows down and back through the pad’s arc.',
+      'Feel lats and serratus—pause, then control the stretch.',
+    ],
+  }),
+  reg({
+    id: 'bicycle-crunch',
+    name: 'Bicycle Crunch',
+    muscleGroups: ['core'],
+    tags: ['dynamic', 'obliques', 'abs'],
+    equipment: 'Bodyweight',
+    summary: 'Alternating elbow-to-knee crunch for rectus abdominis and obliques.',
+    instructions: [
+      'Lie on back, hands lightly behind head, legs in tabletop.',
+      'Extend one leg while rotating opposite elbow toward the bent knee.',
+      'Alternate sides in a controlled rhythm—don’t pull on the neck.',
+    ],
+    tips: [
+      'Slow tempo improves control; speed is not the goal on recovery days.',
+      'Keep lower back pressed down if you feel lumbar arching.',
+    ],
+    cues: [
+      'Rotate from the ribs, not the elbows yanking forward.',
+      'Fully extend the straight leg without letting the heel slam down.',
+      'Exhale on each twist.',
+    ],
+  }),
+  reg({
     id: 'incline-machine-press',
     name: 'Incline Machine Press',
     muscleGroups: ['chest', 'shoulders', 'triceps'],
@@ -732,7 +1281,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Squeeze glutes at top; chin tucked slightly.',
       'Lower with control.',
     ],
-    tips: ['Do not hyperextend the lower back at the top.'],
+    tips: [
+      'Do not hyperextend the lower back at the top.',
+      'Pause at the top for 1 full second; chin tucked throughout.',
+    ],
     cues: [
       'Chin tucked; eyes forward—neck long.',
       'Drive through heels; knees track over toes.',
@@ -786,7 +1338,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Curl pelvis off floor bringing knees toward chest.',
       'Lower with control.',
     ],
-    tips: ['Small range; focus on posterior pelvic tilt.'],
+    tips: [
+      'Small range; focus on posterior pelvic tilt.',
+      'Lift the pelvis off the floor using lower abs, not momentum from the legs.',
+    ],
     cues: [
       'Posterior pelvic tilt before you lift feet.',
       'Low back stays pressed down if possible.',
@@ -852,7 +1407,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
     tips: [
       'If you feel knee irritation, shorten stride slightly.',
-      'Lean torso slightly forward if you want more glute bias.',
+      'Take a wider stance and lean forward to bias the glutes over quads.',
     ],
     cues: [
       'Front foot planted; rear foot is a kickstand, not load-bearing.',
@@ -1107,6 +1662,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     tips: [
       'Keep eyes forward enough to protect neck; movement is from hips.',
       'Light weight teaches pattern before loading.',
+      'Squeeze glutes hard at lockout on every rep.',
     ],
     cues: [
       'Soft knees; arms are hooks—don’t row the rope.',
@@ -1378,7 +1934,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Sit hips down and back while knees track over toes.',
       'Drive through mid-foot to stand tall with full control.',
     ],
-    tips: ['Use a controlled tempo and full range that keeps your heels planted.'],
+    tips: [
+      'Use a controlled tempo and full range that keeps your heels planted.',
+      'Deep depth maximizes glute stretch at the bottom of each rep.',
+    ],
     cues: [
       'Feet about shoulder width; toes slight turnout.',
       'Sit between hips; knees track over mid-foot.',
@@ -1397,7 +1956,10 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Brace core and drive through heels to lift hips until knees, hips, and shoulders align.',
       'Pause at the top, then lower hips under control.',
     ],
-    tips: ['Avoid arching your lower back; think ribs down and glutes squeezed.'],
+    tips: [
+      'Avoid arching your lower back; think ribs down and glutes squeezed.',
+      'Hold peak contraction for 2 seconds on warm-up sets.',
+    ],
     cues: [
       'Drive through heels; dig shoulder blades into the floor.',
       'Top line is knees–hips–shoulders with glutes prime movers.',
@@ -1461,7 +2023,583 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Shallow breathing; ribs stay connected to pelvis.',
     ],
   }),
+  reg({
+    id: 'hanging-knee-raise',
+    name: 'Hanging Knee Raise',
+    muscleGroups: ['core'],
+    tags: ['hanging', 'ab training', 'lower abs'],
+    equipment: 'Bodyweight',
+    summary: 'Hang from a bar or use a captain’s chair and curl knees toward chest for lower-ab emphasis.',
+    instructions: [
+      'Hang with active shoulders or support yourself on captain’s chair pads.',
+      'Posterior pelvic tilt slightly; exhale as knees rise toward chest.',
+      'Pause briefly; lower without swinging.',
+    ],
+    tips: [
+      'Captain’s chair reduces grip demand if forearms fatigue first.',
+      'Keep ribs down—avoid arching into lumbar extension at the top.',
+    ],
+    cues: [
+      'Active hang; shoulders away from ears.',
+      'Curl pelvis up as knees rise—think hips to ribs.',
+      'Control the descent; no kipping.',
+    ],
+  }),
+  reg({
+    id: 'ab-wheel-rollout',
+    name: 'Ab Wheel Rollout',
+    muscleGroups: ['core', 'shoulders'],
+    tags: ['anti-extension', 'core strength'],
+    equipment: 'Ab wheel',
+    summary: 'Roll forward from knees or feet while keeping a hollow, braced trunk.',
+    instructions: [
+      'Kneel (or stand) gripping the wheel; brace into a hollow body.',
+      'Roll forward as far as you can without losing lower-back position.',
+      'Pull back with lats and abs to return to start.',
+    ],
+    tips: [
+      'Keep lower back rounded or in a hollow position—do not let ribs flare.',
+      'Shorten range before form breaks; build distance over weeks.',
+    ],
+    cues: [
+      'Ribs down; glutes lightly on if kneeling.',
+      'Roll out only as far as you can pull back with control.',
+      'Pull the wheel back with abs and lats, not hips sagging.',
+    ],
+  }),
+  reg({
+    id: 'incline-treadmill-walk',
+    name: 'Incline Treadmill Walking',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['cardio', 'LISS', 'conditioning'],
+    isCardio: true,
+    equipment: 'Treadmill',
+    summary: 'Low-intensity steady-state walking on an incline to burn calories without heavy joint stress.',
+    instructions: [
+      'Set incline (typically 6–12%) and a comfortable walking pace.',
+      'Stand tall; avoid holding the rails unless needed for balance.',
+      'Maintain steady breathing for the full duration.',
+    ],
+    tips: [
+      'Incline 6–10% at 2.8–3.2 mph is a common starting zone; progress incline or time weekly.',
+      'Keep strides natural—do not lean excessively on the console.',
+    ],
+    cues: [
+      'Chest up; soft landing through mid-foot.',
+      'Arms swing naturally at your sides.',
+      'Steady breath—you should be able to speak in short sentences.',
+    ],
+  }),
+  reg({
+    id: 'plank-shoulder-tap',
+    name: 'Plank with Shoulder Taps',
+    muscleGroups: ['core', 'shoulders'],
+    tags: ['anti-rotation', 'isometric', 'core'],
+    equipment: 'Bodyweight',
+    summary: 'High plank while alternately tapping opposite shoulders—trains anti-rotation and deep core stability.',
+    instructions: [
+      'Set up in a strong high plank, feet slightly wider for stability.',
+      'Shift weight slightly and tap one hand to the opposite shoulder.',
+      'Alternate sides while keeping hips level and core braced.',
+    ],
+    tips: [
+      'Widen feet or slow tempo if hips twist excessively.',
+      'Excellent for a tight, stable waist without thickening obliques like heavy side bends.',
+    ],
+    cues: [
+      'Feet wider than hip width if needed for control.',
+      'Hips stay level—imagine a cup of water on your low back.',
+      'Tap light and quick; brace before each tap.',
+    ],
+  }),
+  reg({
+    id: 'hip-90-90-switch',
+    name: '90/90 Hip Switches',
+    muscleGroups: ['glutes', 'hamstrings', 'core'],
+    tags: ['mobility', 'warm-up', 'hips'],
+    equipment: 'Bodyweight',
+    summary: 'Seated hip mobility drill alternating internal and external rotation in a 90/90 position.',
+    instructions: [
+      'Sit with front shin parallel to torso and back shin perpendicular (both knees ~90°).',
+      'Hinge forward over the front leg for a gentle stretch, then switch sides in one smooth motion.',
+      'Flow side to side for the prescribed time.',
+    ],
+    tips: ['Use hands on the floor for balance; keep spine long rather than rounding aggressively.'],
+    cues: [
+      'Both sit bones grounded before you switch.',
+      'Rotate from the hip, not the knee.',
+      'Smooth transitions—no bouncing.',
+    ],
+  }),
+  reg({
+    id: 'cat-cow-child-pose',
+    name: 'Cat-Cow to Child’s Pose',
+    muscleGroups: ['back', 'core'],
+    tags: ['mobility', 'warm-up', 'yoga'],
+    equipment: 'Bodyweight',
+    summary: 'Spinal flexion and extension flow finishing in child’s pose for thoracic and hip relaxation.',
+    instructions: [
+      'On all fours, alternate arching (cow) and rounding (cat) the spine with breath.',
+      'After several cycles, sit hips back to heels into child’s pose with arms extended.',
+      'Breathe into the back and hips.',
+    ],
+    tips: ['Move slowly—2–3 seconds per phase builds control and mind-body connection.'],
+    cues: [
+      'Cat: push floor away, tuck chin, exhale.',
+      'Cow: chest through, tailbone up, inhale.',
+      'Child’s pose: hips to heels; relax shoulders.',
+    ],
+  }),
+  reg({
+    id: 'worlds-greatest-stretch',
+    name: 'World’s Greatest Stretch',
+    muscleGroups: ['quads', 'glutes', 'hamstrings', 'core'],
+    tags: ['mobility', 'dynamic stretch', 'warm-up'],
+    equipment: 'Bodyweight',
+    summary: 'Lunge with rotation and hamstring sweep—full-body opener for hips, thoracic spine, and groin.',
+    instructions: [
+      'Step into a long lunge; place opposite hand inside the front foot.',
+      'Rotate open through the chest, then straighten the front leg for a hamstring stretch.',
+      'Return to lunge and repeat for reps per side.',
+    ],
+    tips: ['Keep front knee tracking over toes in the lunge position.'],
+    cues: [
+      'Long lunge; back leg straight when possible.',
+      'Open chest on the rotation—eyes follow the hand.',
+      'Sweep to hamstring stretch without locking the knee aggressively.',
+    ],
+  }),
+  reg({
+    id: 'frog-stretch',
+    name: 'Frog Stretch',
+    muscleGroups: ['glutes', 'quads'],
+    tags: ['mobility', 'adductors', 'hips'],
+    equipment: 'Bodyweight',
+    summary: 'Kneeling wide-knee position that opens adductors and inner thighs.',
+    instructions: [
+      'Kneel and spread knees wide, feet in line with knees or slightly turned out.',
+      'Sink hips back toward heels while keeping spine neutral.',
+      'Hold and breathe into the inner thighs.',
+    ],
+    tips: ['Opens adductors and inner thighs—ease into depth over several sessions.'],
+    cues: [
+      'Knees wide; ankles in line with knees.',
+      'Hips shift back; chest stays lifted.',
+      'Long exhales—never force painful range.',
+    ],
+  }),
+  reg({
+    id: 'brisk-walk',
+    name: 'Light Brisk Walk',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['cardio', 'recovery', 'low impact'],
+    isCardio: true,
+    equipment: 'Bodyweight',
+    summary: 'Easy outdoor or treadmill walking to promote blood flow on recovery days.',
+    instructions: [
+      'Walk at a pace slightly faster than casual—you should feel warm but not breathless.',
+      'Maintain upright posture and relaxed shoulders.',
+      'Continue for the prescribed duration.',
+    ],
+    tips: ['Ideal after mobility work or on active recovery days.'],
+    cues: [
+      'Upright posture; eyes forward.',
+      'Quick enough to elevate heart rate slightly.',
+      'Relaxed arms and steady breathing.',
+    ],
+  }),
+  reg({
+    id: 'glute-kickback',
+    name: 'Glute Kickback',
+    muscleGroups: ['glutes'],
+    tags: ['isolation', 'cable', 'bands'],
+    equipment: 'Cable',
+    summary: 'Hip extension behind the body with cable or band to isolate glute max.',
+    instructions: [
+      'Attach ankle strap or hold band; hinge slightly at hips for support.',
+      'Extend leg back in an arc, squeezing glute at the top.',
+      'Return without swinging; keep torso stable.',
+    ],
+    tips: [
+      'Hold peak contraction 1–2 seconds on hypertrophy days.',
+      'Avoid hyperextending the lower back—movement is from the hip only.',
+    ],
+    cues: [
+      'Soft knee on the working leg.',
+      'Squeeze glute at top—toes point slightly down.',
+      'Torso still; no rocking.',
+    ],
+  }),
+  reg({
+    id: 'banded-clamshell',
+    name: 'Seated or Banded Clamshell',
+    muscleGroups: ['glutes'],
+    tags: ['isolation', 'glute med', 'bands'],
+    equipment: 'Band',
+    summary: 'Hip abduction in side-lying or seated position to target gluteus medius for side-glute shape.',
+    instructions: [
+      'Band above knees (side-lying) or around thighs (seated).',
+      'Keep feet together and open the top knee like a clamshell.',
+      'Pause at end range; lower with control.',
+    ],
+    tips: ['Targets gluteus medius for the “side-glute” shelf—light weight, high quality reps.'],
+    cues: [
+      'Ribs stacked; pelvis does not roll back.',
+      'Drive the knee up from the side glute, not the low back.',
+      'Pause and squeeze at the top.',
+    ],
+  }),
+  reg({
+    id: 'sumo-squat',
+    name: 'Sumo Squat (Plie Squat)',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['squat', 'inner thighs', 'hypertrophy'],
+    equipment: 'Dumbbell',
+    summary: 'Wide-stance squat with toes turned out to emphasize inner thighs and glutes.',
+    instructions: [
+      'Stand wide with toes out; hold one dumbbell vertically (goblet) or two at sides.',
+      'Sit straight down between hips, knees tracking over toes.',
+      'Drive through mid-foot to stand, squeezing glutes.',
+    ],
+    tips: [
+      'Wide stance and toes out target inner thighs (gracilis) and glutes.',
+      'Keep torso as upright as mobility allows.',
+    ],
+    cues: [
+      'Knees track over second toe.',
+      'Sit between hips—don’t collapse inward.',
+      'Stand tall; squeeze glutes without thrusting ribs forward.',
+    ],
+  }),
+  reg({
+    id: 'deadbug',
+    name: 'Deadbug',
+    muscleGroups: ['core'],
+    tags: ['anti-extension', 'coordination', 'lower abs'],
+    equipment: 'Bodyweight',
+    summary: 'Supine alternating arm and leg extensions while keeping the low back pressed down.',
+    instructions: [
+      'Lie on back, arms up, hips and knees at 90°.',
+      'Brace; slowly extend opposite arm and leg toward the floor.',
+      'Return and alternate sides.',
+    ],
+    tips: ['Focus on lifting the pelvis with lower abs on paired days—ribs stay down throughout.'],
+    cues: [
+      'Low back stays glued to the floor.',
+      'Exhale as limbs extend; inhale to return.',
+      'Move only as far as you can without arching.',
+    ],
+  }),
+  reg({
+    id: 'jump-squat',
+    name: 'Jump Squat',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['plyometric', 'HIIT', 'conditioning'],
+    equipment: 'Bodyweight',
+    summary: 'Explosive squat with vertical jump—power and metabolic demand for HIIT circuits.',
+    instructions: [
+      'Squat to comfortable depth with chest up.',
+      'Explode upward, extending hips and knees fully.',
+      'Land softly into the next rep with knees tracking toes.',
+    ],
+    tips: ['Land quietly—absorb through hips and knees to protect joints.'],
+    cues: [
+      'Chest up on the descent.',
+      'Explode through mid-foot—full hip extension.',
+      'Soft landing; immediate next rep or reset as programmed.',
+    ],
+  }),
+  reg({
+    id: 'russian-twist',
+    name: 'Russian Twist',
+    muscleGroups: ['core', 'shoulders'],
+    tags: ['rotation', 'HIIT', 'conditioning'],
+    equipment: 'Bodyweight',
+    summary: 'Seated rotation of the torso for oblique endurance—often used in conditioning circuits.',
+    instructions: [
+      'Sit with knees bent, feet lifted or anchored for easier versions.',
+      'Hold hands together; rotate torso side to side with control.',
+      'Keep chest lifted and movement from the rib cage, not just arms.',
+    ],
+    tips: ['Controlled rotation beats fast sloppy reps for core training.'],
+    cues: [
+      'Chest tall; ribs down.',
+      'Rotate through the thoracic spine.',
+      'Feet light or lifted for more demand.',
+    ],
+  }),
+  reg({
+    id: 'pop-squat',
+    name: 'Pop Squat',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['plyometric', 'HIIT', 'conditioning'],
+    equipment: 'Bodyweight',
+    summary: 'Quick squat with a small hop or “pop” at the top—lower-impact alternative to kettlebell swings in HIIT.',
+    instructions: [
+      'Perform a shallow to moderate squat.',
+      'Drive up with a small hop or calf pop at lockout.',
+      'Land immediately into the next rep with soft knees.',
+    ],
+    tips: ['Use when kettlebells are unavailable in HIIT circuits.'],
+    cues: [
+      'Quick rhythm—stay tall through the chest.',
+      'Minimal ground contact on the pop.',
+      'Knees track toes every landing.',
+    ],
+  }),
+  reg({
+    id: 'foam-roll-lower-body',
+    name: 'Foam Rolling (Quads, IT Band, Glutes)',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['recovery', 'mobility', 'self-massage'],
+    equipment: 'Foam roller',
+    summary: 'Self-myofascial release for quads, IT bands, and glutes on rest or recovery days.',
+    instructions: [
+      'Roll slowly over each area for 30–60 seconds.',
+      'Pause on tender spots and breathe; avoid rolling directly on joints or bones.',
+      'Spend extra time on glutes and outer quad/IT band as needed.',
+    ],
+    tips: ['Light pressure is enough—more pain is not more gain.'],
+    cues: [
+      'Slow passes—about one inch per second.',
+      'Breathe on tender spots; relax the muscle.',
+      'Support your weight with hands to control pressure.',
+    ],
+  }),
+  reg({
+    id: 'hamstring-stretch-hold',
+    name: 'Hamstring Stretch (Long Hold)',
+    muscleGroups: ['hamstrings'],
+    tags: ['stretch', 'recovery', 'flexibility'],
+    equipment: 'Bodyweight',
+    summary: 'Static hamstring stretch held 30–60 seconds per side for recovery and flexibility.',
+    instructions: [
+      'Hinge at hips with flat back or lie on back and raise one leg.',
+      'Hold a gentle stretch without bouncing.',
+      'Switch sides and repeat.',
+    ],
+    tips: ['Use on rest days after foam rolling for best recovery.'],
+    cues: [
+      'Hinge from hips—spine stays long.',
+      'Gentle tension only; no bouncing.',
+      'Breathe and relax into the hold.',
+    ],
+  }),
+  reg({
+    id: 'hip-flexor-stretch',
+    name: 'Hip Flexor Stretch (Long Hold)',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['stretch', 'recovery', 'hips'],
+    equipment: 'Bodyweight',
+    summary: 'Half-kneeling or standing hip flexor stretch held 30–60 seconds per side.',
+    instructions: [
+      'Half-kneel with rear foot elevated optional; tuck pelvis slightly.',
+      'Shift weight forward until you feel stretch in the front of the rear hip.',
+      'Hold and breathe; switch sides.',
+    ],
+    tips: ['Posterior pelvic tilt increases the stretch—avoid arching the low back.'],
+    cues: [
+      'Squeeze glute on the back leg.',
+      'Ribs down; tall posture.',
+      'Forward shift comes from the hip, not lumbar arch.',
+    ],
+  }),
+  reg({
+    id: 'downward-dog-cobra-flow',
+    name: 'Downward Dog to Cobra Flow',
+    muscleGroups: ['back', 'shoulders', 'hamstrings'],
+    tags: ['mobility', 'yoga', 'recovery'],
+    equipment: 'Bodyweight',
+    summary: 'Yoga-inspired flow between downward dog and cobra for spinal and shoulder mobility.',
+    instructions: [
+      'Start in downward dog—hips high, heels reaching down.',
+      'Shift forward to plank, lower chest, and open into cobra or upward dog.',
+      'Push back to downward dog and repeat for rounds.',
+    ],
+    tips: ['Move with breath—exhale into dog, inhale into cobra.'],
+    cues: [
+      'Long spine in downward dog.',
+      'Shoulders away from ears in cobra.',
+      'Smooth transitions—no rushing.',
+    ],
+  }),
+  reg({
+    id: 'pigeon-pose',
+    name: 'Pigeon Pose',
+    muscleGroups: ['glutes', 'hamstrings'],
+    tags: ['stretch', 'yoga', 'recovery'],
+    equipment: 'Bodyweight',
+    summary: 'Deep glute and hip external rotator stretch held for extended time per side.',
+    instructions: [
+      'From all fours, bring one shin forward across the body; extend the back leg.',
+      'Square hips toward the floor and hinge forward if comfortable.',
+      'Hold for the prescribed time; switch sides.',
+    ],
+    tips: ['Deep glute release—use a block under the front hip if needed.'],
+    cues: [
+      'Front shin roughly parallel to the top of the mat (adjust as needed).',
+      'Back leg long; hips level.',
+      'Breathe into the outer hip of the front leg.',
+    ],
+  }),
+  reg({
+    id: 'low-lunge-hip-flexor-stretch',
+    name: 'Low Lunge Hip Flexor Stretch',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['stretch', 'mobility', 'hips'],
+    equipment: 'Bodyweight',
+    summary: 'Low lunge position held to open hip flexors on the back leg.',
+    instructions: [
+      'Step into a low lunge, back knee down optional.',
+      'Tuck pelvis and shift weight forward until stretch is felt in the rear hip.',
+      'Hold; switch sides.',
+    ],
+    tips: ['Hold 60–90 seconds per side on recovery-focused days.'],
+    cues: [
+      'Front knee over ankle.',
+      'Glute squeeze on back leg.',
+      'Torso tall; ribs down.',
+    ],
+  }),
+  reg({
+    id: 'lying-spinal-twist',
+    name: 'Lying Spinal Twist',
+    muscleGroups: ['back', 'core'],
+    tags: ['mobility', 'recovery', 'stretch'],
+    equipment: 'Bodyweight',
+    summary: 'Supine twist with knees dropped to one side for thoracic and lumbar decompression.',
+    instructions: [
+      'Lie on back; hug knees to chest or extend arms in T.',
+      'Lower knees to one side while keeping shoulders on the floor.',
+      'Hold and breathe; switch sides.',
+    ],
+    tips: ['Use for hip mobility and core decompression on active recovery days.'],
+    cues: [
+      'Shoulders stay heavy on the floor.',
+      'Let gravity draw the knees down.',
+      'Long exhales to deepen the twist gently.',
+    ],
+  }),
+  reg({
+    id: 'easy-stationary-bike',
+    name: 'Easy Stationary Cycling',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['cardio', 'recovery', 'low impact'],
+    isCardio: true,
+    equipment: 'Bike',
+    summary: 'Light cycling to promote blood flow without taxing recovery.',
+    instructions: [
+      'Set low resistance on a stationary bike.',
+      'Pedal at an easy, conversational pace for the prescribed duration.',
+      'Stay upright with relaxed shoulders.',
+    ],
+    tips: ['Pair with mobility work on decompression days.'],
+    cues: [
+      'Low resistance; smooth cadence.',
+      'Easy breathing throughout.',
+      'Light contact on handlebars—no death grip.',
+    ],
+  }),
+  reg({
+    id: 'deep-static-stretch-lower',
+    name: 'Deep Static Stretch (Hips & Lower Back)',
+    muscleGroups: ['glutes', 'hamstrings', 'back'],
+    tags: ['stretch', 'recovery', 'rest day'],
+    equipment: 'Bodyweight',
+    summary: 'Combined focus on hip flexors, glutes, hamstrings, and lower back for total recovery.',
+    instructions: [
+      'Cycle through hip flexor, figure-four glute, hamstring, and gentle lower-back stretches.',
+      'Hold each 30–60 seconds per side with slow breathing.',
+      'Avoid aggressive bouncing or painful ranges.',
+    ],
+    tips: [
+      'Encourages optimal muscle recovery after a hard training week.',
+      'Perfect for full rest and regeneration days.',
+    ],
+    cues: [
+      'Pain-free tension only.',
+      'Exhale longer than you inhale on each hold.',
+      'Relax shoulders and jaw.',
+    ],
+  }),
 ]
+
+import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
+
+for (const ex of CARDIO_LIBRARY) {
+  reg(ex)
+  EXERCISE_LIBRARY.push(ex)
+}
+
+export function libraryExerciseIsCardio(ex: LibraryExercise | undefined): boolean {
+  return ex?.isCardio === true
+}
+
+export function libraryExerciseIsCore(ex: LibraryExercise | undefined): boolean {
+  if (!ex || libraryExerciseIsCardio(ex)) return false
+  return ex.muscleGroups[0] === 'core'
+}
+
+export function resolveExerciseIsCore(exercise: {
+  libraryId?: string
+  isCore?: boolean
+  isCardio?: boolean
+  isCircuit?: boolean
+  name?: string
+}): boolean {
+  if (exercise.isCircuit || exercise.isCardio) return false
+  if (exercise.isCore === true) return true
+  if (exercise.libraryId) return libraryExerciseIsCore(getLibraryExercise(exercise.libraryId))
+  return libraryExerciseIsCore(findLibraryExerciseByName(exercise.name))
+}
+
+function resolveLibraryExerciseForCore(exercise: {
+  libraryId?: string
+  name?: string
+}): LibraryExercise | undefined {
+  if (exercise.libraryId) return getLibraryExercise(exercise.libraryId)
+  return findLibraryExerciseByName(exercise.name)
+}
+
+/** Whether a core exercise shows the optional per-set time column. */
+export function coreExerciseSupportsTimeLogging(exercise: {
+  libraryId?: string
+  isCore?: boolean
+  isCardio?: boolean
+  isCircuit?: boolean
+  name?: string
+}): boolean {
+  if (!resolveExerciseIsCore(exercise)) return false
+  const lib = resolveLibraryExerciseForCore(exercise)
+  return lib?.repBasedCore !== true
+}
+
+export function libraryExerciseIsBodyweight(ex: LibraryExercise | undefined): boolean {
+  if (!ex || libraryExerciseIsCardio(ex)) return false
+  return ex.equipment === 'Bodyweight'
+}
+
+export function resolveExerciseIsCardio(
+  entry: Pick<LibraryExercise, 'isCardio'> | undefined,
+  libraryId?: string,
+): boolean {
+  if (entry?.isCardio === true) return true
+  if (libraryId) return libraryExerciseIsCardio(getLibraryExercise(libraryId))
+  return false
+}
+
+export function resolveExerciseIsBodyweight(exercise: {
+  libraryId?: string
+  isCardio?: boolean
+  name?: string
+}): boolean {
+  if (exercise.isCardio) return false
+  if (exercise.libraryId) {
+    return libraryExerciseIsBodyweight(getLibraryExercise(exercise.libraryId))
+  }
+  const resolved = resolveManualExerciseInput((exercise.name ?? '').trim())
+  return libraryExerciseIsBodyweight(resolved)
+}
 
 export function getLibraryExercise(id: string): LibraryExercise | undefined {
   return byId.get(id)
@@ -1490,11 +2628,19 @@ export function findLibraryExerciseByName(name: string | undefined): LibraryExer
 export function getComparableLibraryExercises(exercise: {
   libraryId?: string
   name: string
+  isCardio?: boolean
 }): LibraryExercise[] {
   const base =
     (exercise.libraryId && getLibraryExercise(exercise.libraryId)) ||
     findLibraryExerciseByName(exercise.name)
   if (!base) return []
+
+  if (base.isCardio || exercise.isCardio) {
+    return EXERCISE_LIBRARY.filter((ex) => ex.isCardio === true && ex.id !== base.id).sort(
+      (a, b) => a.name.localeCompare(b.name),
+    )
+  }
+
   const baseGroups = new Set(base.muscleGroups)
   return EXERCISE_LIBRARY.filter((ex) => {
     if (ex.id === base.id) return false
@@ -1508,7 +2654,74 @@ export function getComparableLibraryExercises(exercise: {
   })
 }
 
-const SEARCH_TAG_ALIASES: Record<string, MuscleGroup[]> = {
+/** Lowercase alphanumeric only — "Push-Up" and "pushups" both become "pushup". */
+export function normalizeForExerciseMatch(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+const EXERCISE_QUERY_ALIASES = new Map<string, string>()
+
+function registerExerciseAliases(exerciseId: string, phrases: string[]) {
+  for (const phrase of phrases) {
+    EXERCISE_QUERY_ALIASES.set(normalizeForExerciseMatch(phrase), exerciseId)
+  }
+}
+
+registerExerciseAliases('push-up', [
+  'pushups',
+  'push ups',
+  'pushup',
+  'push up',
+  'press ups',
+  'pressups',
+])
+registerExerciseAliases('pull-up', [
+  'pullups',
+  'pull ups',
+  'pullup',
+  'pull up',
+  'chinups',
+  'chin ups',
+  'chinup',
+  'chin up',
+])
+registerExerciseAliases('hamstring-curl', [
+  'leg curls',
+  'leg curl',
+  'legcurls',
+  'legcurl',
+  'lying leg curl',
+  'seated leg curl',
+  'ham curls',
+  'ham curl',
+])
+registerExerciseAliases('bench-press', ['bench', 'flat bench', 'barbell bench'])
+registerExerciseAliases('squat', ['squats', 'squat', 'back squat'])
+registerExerciseAliases('romanian-deadlift', ['rdl', 'romanian deadlift', 'stiff leg deadlift'])
+registerExerciseAliases('lat-pulldown', ['lat pulldown', 'lat pull down', 'pulldown'])
+registerExerciseAliases('barbell-row', ['bent over row', 'bentover row', 'barbell row'])
+registerExerciseAliases('overhead-press', ['ohp', 'shoulder press', 'military press'])
+registerExerciseAliases('tricep-pushdown', [
+  'tricep pushdown',
+  'triceps pushdown',
+  'rope pushdown',
+  'cable pushdown',
+])
+registerExerciseAliases('dumbbell-curl', ['bicep curl', 'biceps curl', 'db curl', 'dumbbell curl'])
+registerExerciseAliases('lateral-raise', ['lat raise', 'side raise', 'lateral raises'])
+registerExerciseAliases('leg-press', ['legpress', 'leg press machine'])
+registerExerciseAliases('leg-extension', ['leg extensions', 'leg extension', 'quad extension'])
+registerExerciseAliases('calf-raise', ['calf raises', 'calf raise', 'calves'])
+registerExerciseAliases('hip-thrust', ['hip thrusts', 'glute bridge weighted'])
+registerExerciseAliases('face-pull', ['face pulls', 'face pull'])
+registerExerciseAliases('cable-crunch', ['cable crunches', 'cable ab crunch'])
+registerExerciseAliases('machine-pullover', ['machine pullover', 'pullover machine', 'nautilus pullover'])
+registerExerciseAliases('cable-side-crunch', ['cable side crunches', 'side cable crunch', 'standing cable side crunch'])
+registerExerciseAliases('weighted-decline-situp', ['weighted decline sit up', 'decline weighted situp', 'decline sit up weighted'])
+registerExerciseAliases('dead-bug', ['dead bugs', 'deadbug'])
+
+/** Body-region terms only — not movement keywords like "push" or "curl". */
+const BODY_REGION_ALIASES: Record<string, MuscleGroup[]> = {
   legs: ['quads', 'hamstrings', 'glutes', 'calves'],
   leg: ['quads', 'hamstrings', 'glutes', 'calves'],
   'lower body': ['quads', 'hamstrings', 'glutes', 'calves'],
@@ -1517,50 +2730,203 @@ const SEARCH_TAG_ALIASES: Record<string, MuscleGroup[]> = {
   arm: ['biceps', 'triceps', 'forearms'],
   'upper body': ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
   upper: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
-  push: ['chest', 'shoulders', 'triceps'],
-  pull: ['back', 'biceps', 'forearms'],
   abs: ['core'],
+  core: ['core'],
   'posterior chain': ['hamstrings', 'glutes', 'back'],
-  hinge: ['hamstrings', 'glutes', 'back'],
-  pressing: ['chest', 'shoulders', 'triceps'],
-  press: ['chest', 'shoulders', 'triceps'],
-  rowing: ['back', 'biceps'],
-  curls: ['biceps', 'forearms'],
-  curl: ['biceps', 'forearms'],
-  extension: ['triceps', 'quads'],
 }
 
-function resolveAliasGroups(needle: string): Set<MuscleGroup> {
+function resolveBodyRegionGroups(needle: string): Set<MuscleGroup> {
   const groups = new Set<MuscleGroup>()
-  for (const [alias, mapped] of Object.entries(SEARCH_TAG_ALIASES)) {
-    if (needle.includes(alias) || alias.includes(needle)) {
-      for (const g of mapped) groups.add(g)
-    }
+  for (const [alias, mapped] of Object.entries(BODY_REGION_ALIASES)) {
+    const matches =
+      needle === alias ||
+      needle.startsWith(`${alias} `) ||
+      (alias.includes(' ') && needle.includes(alias))
+    if (!matches) continue
+    for (const g of mapped) groups.add(g)
   }
   return groups
 }
 
+function fieldMatchesToken(field: string, token: string, normToken: string): boolean {
+  const lower = field.toLowerCase()
+  return lower.includes(token) || normalizeForExerciseMatch(field).includes(normToken)
+}
+
+function scoreExerciseForQuery(ex: LibraryExercise, query: string): number {
+  const q = query.trim().toLowerCase()
+  if (!q) return 0
+
+  const normQ = normalizeForExerciseMatch(q)
+  const normName = normalizeForExerciseMatch(ex.name)
+
+  if (normName === normQ) return 1000
+  if (ex.name.toLowerCase() === q) return 990
+
+  const aliasId = EXERCISE_QUERY_ALIASES.get(normQ)
+  if (aliasId === ex.id) return 950
+
+  const tokens = q.split(/\s+/).filter(Boolean)
+  let score = 0
+
+  if (tokens.length === 1) {
+    const token = tokens[0]!
+    const normToken = normalizeForExerciseMatch(token)
+    const nameMatch = fieldMatchesToken(ex.name, token, normToken)
+    const tagMatch = ex.tags?.some((t) => fieldMatchesToken(t, token, normToken)) ?? false
+    const equipMatch = ex.equipment ? fieldMatchesToken(ex.equipment, token, normToken) : false
+    const muscleMatch = ex.muscleGroups.some((g) =>
+      fieldMatchesToken(MUSCLE_GROUP_LABELS[g], token, normToken),
+    )
+    const normNameMatch = normName.includes(normToken)
+
+    if (nameMatch) score += 120
+    if (normNameMatch) score += 80
+    if (tagMatch) score += 90
+    if (equipMatch) score += 30
+    if (muscleMatch) score += 25
+
+    const primaryMatch = nameMatch || tagMatch || normNameMatch || equipMatch || muscleMatch
+    if (primaryMatch) {
+      if (fieldMatchesToken(ex.summary, token, normToken)) score += 25
+      if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) score += 10
+    } else if (token.length >= 5) {
+      if (fieldMatchesToken(ex.summary, token, normToken)) score += 40
+      if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) score += 15
+    } else {
+      return 0
+    }
+
+    const regionGroups = resolveBodyRegionGroups(q)
+    if (regionGroups.size > 0 && ex.muscleGroups.some((g) => regionGroups.has(g))) {
+      score += 55
+    }
+    return score
+  }
+
+  for (const token of tokens) {
+    const normToken = normalizeForExerciseMatch(token)
+    let tokenScore = 0
+    if (fieldMatchesToken(ex.name, token, normToken)) tokenScore = 80
+    else if (ex.tags?.some((t) => fieldMatchesToken(t, token, normToken))) tokenScore = 55
+    else if (fieldMatchesToken(ex.summary, token, normToken)) tokenScore = 35
+    else if (ex.equipment && fieldMatchesToken(ex.equipment, token, normToken)) tokenScore = 28
+    else if (ex.cues?.some((c) => fieldMatchesToken(c, token, normToken))) tokenScore = 15
+    else if (ex.muscleGroups.some((g) => fieldMatchesToken(MUSCLE_GROUP_LABELS[g], token, normToken))) {
+      tokenScore = 20
+    }
+    if (tokenScore === 0) return 0
+    score += tokenScore
+  }
+
+  if (normName.includes(normQ)) score += 140
+  if (ex.name.toLowerCase().includes(q)) score += 100
+  return score
+}
+
+const AUTO_MATCH_MIN_SCORE = 150
+const AUTO_MATCH_SCORE_GAP = 45
+
+function normNameStartsWithQuery(ex: LibraryExercise, normQuery: string): boolean {
+  const normName = normalizeForExerciseMatch(ex.name)
+  return normName.startsWith(normQuery) || normQuery.startsWith(normName)
+}
+
+/**
+ * Best-effort library link for a manually typed exercise name (fuzzy names, slang, typos).
+ * Returns undefined when the input is too ambiguous to auto-link.
+ */
+export function resolveManualExerciseInput(raw: string): LibraryExercise | undefined {
+  const trimmed = raw.trim()
+  if (!trimmed) return undefined
+
+  const exact = findLibraryExerciseByName(trimmed)
+  if (exact) return exact
+
+  const norm = normalizeForExerciseMatch(trimmed)
+  const aliasId = EXERCISE_QUERY_ALIASES.get(norm)
+  if (aliasId) return getLibraryExercise(aliasId)
+
+  for (const ex of EXERCISE_LIBRARY) {
+    if (normalizeForExerciseMatch(ex.name) === norm) return ex
+  }
+
+  const ranked = searchLibrary(trimmed, 'all')
+  if (ranked.length === 0) return undefined
+
+  const top = ranked[0]!
+  const topScore = scoreExerciseForQuery(top, trimmed)
+  if (topScore < AUTO_MATCH_MIN_SCORE) return undefined
+
+  if (ranked.length === 1) return top
+
+  const secondScore = scoreExerciseForQuery(ranked[1]!, trimmed)
+  if (topScore - secondScore >= AUTO_MATCH_SCORE_GAP) return top
+  if (normNameStartsWithQuery(top, norm)) return top
+
+  return undefined
+}
+
+/** Distinct equipment labels from the library (for filter chips). */
+export function listLibraryEquipmentTypes(): string[] {
+  const set = new Set<string>()
+  for (const ex of EXERCISE_LIBRARY) {
+    const eq = ex.equipment?.trim()
+    if (eq) set.add(eq)
+  }
+  return [...set].sort((a, b) => a.localeCompare(b))
+}
+
 export function searchLibrary(
   q: string,
-  group: MuscleGroup | 'all',
+  group: LibraryFilterGroup,
 ): LibraryExercise[] {
   const needle = q.trim().toLowerCase()
   let list = EXERCISE_LIBRARY
-  if (group !== 'all') {
+  if (group === 'cardio') {
+    list = list.filter((ex) => ex.isCardio === true)
+  } else if (group !== 'all') {
     list = list.filter((ex) => ex.muscleGroups.includes(group))
   }
   if (!needle) return [...list].sort((a, b) => a.name.localeCompare(b.name))
-  const aliasGroups = resolveAliasGroups(needle)
+
   return list
-    .filter((ex) => {
-      if (ex.name.toLowerCase().includes(needle)) return true
-      if (ex.summary.toLowerCase().includes(needle)) return true
-      if (ex.equipment?.toLowerCase().includes(needle)) return true
-      if (ex.tags?.some((t) => t.toLowerCase().includes(needle))) return true
-      if (ex.cues?.some((c) => c.toLowerCase().includes(needle))) return true
-      if (ex.muscleGroups.some((g) => MUSCLE_GROUP_LABELS[g].toLowerCase().includes(needle))) return true
-      if (aliasGroups.size > 0 && ex.muscleGroups.some((g) => aliasGroups.has(g))) return true
-      return false
+    .map((ex) => ({ ex, score: scoreExerciseForQuery(ex, needle) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.ex.name.localeCompare(b.ex.name)
     })
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(({ ex }) => ex)
+}
+
+export function isFavoritesLibrarySearchQuery(q: string): boolean {
+  const needle = q.trim().toLowerCase()
+  return needle === 'favorite' || needle === 'favorites'
+}
+
+export function libraryExercisesForFavoriteIds(favoriteIds: readonly string[]): LibraryExercise[] {
+  const out: LibraryExercise[] = []
+  for (const id of favoriteIds) {
+    const ex = getLibraryExercise(id)
+    if (ex) out.push(ex)
+  }
+  return out
+}
+
+/** Default cap for inline exercise-name suggestion dropdowns (use with ExerciseNameSuggestList). */
+export const INLINE_LIBRARY_SUGGEST_LIMIT = 40
+
+/** Inline add-exercise suggest list (library search, or saved favorites when query is "favorite(s)"). */
+export function inlineLibrarySuggestMatches(
+  q: string,
+  favoriteIds: readonly string[],
+  limit = INLINE_LIBRARY_SUGGEST_LIMIT,
+): LibraryExercise[] {
+  const trimmed = q.trim()
+  if (!trimmed) return []
+  if (isFavoritesLibrarySearchQuery(trimmed)) {
+    return libraryExercisesForFavoriteIds(favoriteIds).slice(0, limit)
+  }
+  return searchLibrary(trimmed, 'all').slice(0, limit)
 }

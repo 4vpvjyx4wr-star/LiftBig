@@ -9,6 +9,7 @@ import {
   plateSizesForUnit,
   quickPresetsForUnit,
 } from '@/utils/plates'
+import { haptic } from '@/utils/haptics'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 
 const settings = inject(settingsInjectionKey)!
@@ -33,6 +34,7 @@ function runCalc() {
   const target = parseFloat(targetInput.value.replace(',', '.'))
   if (Number.isNaN(target) || target <= 0) return
   result.value = calculatePlates(target, barWeight.value, sizes.value)
+  haptic('tap')
 }
 
 const totalWeight = computed(() => {
@@ -112,7 +114,7 @@ function unitWord(plural: boolean) {
 
       <button
         type="button"
-        class="mt-4 w-full rounded-xl bg-primary py-3 text-base font-extrabold text-foreground"
+        class="btn-press mt-4 w-full rounded-xl bg-primary py-3 text-base font-extrabold text-foreground"
         @click="runCalc"
       >
         Calculate Plates
@@ -120,7 +122,7 @@ function unitWord(plural: boolean) {
     </div>
 
     <template v-if="result">
-      <div class="mt-4 rounded-xl border border-[#16a34a] bg-[#0d2010] p-4 text-center">
+      <div class="mt-4 rounded-xl border border-success bg-success-soft p-4 text-center">
         <div class="text-4xl font-black text-success-text">
           {{ totalWeight }} {{ unitWord(true) }}
         </div>

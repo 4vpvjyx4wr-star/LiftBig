@@ -9,6 +9,8 @@ import {
   formatPlanDurationEstimate,
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
+import { sortFolderPlans } from '@/utils/folderPlanSort'
+import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 
 const props = defineProps<{
@@ -78,24 +80,6 @@ const folderSections = computed(() =>
 const allPlansPickerList = computed(() =>
   filteredTemplates.value.slice().sort((a, b) => a.name.localeCompare(b.name)),
 )
-
-function folderPlanSortKey(name: string): [number, number, string] {
-  const weekMatch = /week\s+(\d+)/i.exec(name)
-  const dayMatch = /day\s+(\d+)/i.exec(name)
-  const week = weekMatch ? Number.parseInt(weekMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  const day = dayMatch ? Number.parseInt(dayMatch[1]!, 10) : Number.MAX_SAFE_INTEGER
-  return [week, day, name.toLowerCase()]
-}
-
-function sortedPlans(plans: WorkoutTemplate[]): WorkoutTemplate[] {
-  return plans.slice().sort((a, b) => {
-    const [aw, ad, an] = folderPlanSortKey(a.name)
-    const [bw, bd, bn] = folderPlanSortKey(b.name)
-    if (aw !== bw) return aw - bw
-    if (ad !== bd) return ad - bd
-    return an.localeCompare(bn)
-  })
-}
 
 function isFolderOpen(folderId: string): boolean {
   return openFolderMap.value[folderId] === true
@@ -245,7 +229,7 @@ watch(
               No plans in this folder.
             </p>
             <ul v-else class="space-y-2">
-              <li v-for="t in sortedPlans(entry.plans)" :key="t.id">
+              <li v-for="t in sortFolderPlans(entry.plans)" :key="t.id">
                 <button
                   type="button"
                   class="w-full rounded-xl border border-border bg-card-inner px-3 py-3 text-left hover:border-primary"
@@ -261,6 +245,12 @@ watch(
                     </div>
                     <span class="shrink-0 text-xl text-primary">›</span>
                   </div>
+                  <p
+                    v-if="t.notes?.trim()"
+                    class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card px-2 py-1.5 text-xs leading-relaxed text-foreground"
+                  >
+                    {{ t.notes }}
+                  </p>
                   <ul class="mt-2 space-y-1 border-t border-border pt-2">
                     <li
                       v-for="ex in t.exercises"
@@ -269,6 +259,12 @@ watch(
                     >
                       <span class="text-muted">·</span>
                       <span class="font-semibold">{{ ex.name }}</span>
+                      <span
+                        v-if="supersetBadgeLabel(ex)"
+                        class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                      >
+                        {{ supersetBadgeLabel(ex) }}
+                      </span>
                       <button
                         v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
                         type="button"
@@ -315,6 +311,12 @@ watch(
                     </div>
                     <span class="shrink-0 text-xl text-primary">›</span>
                   </div>
+                  <p
+                    v-if="t.notes?.trim()"
+                    class="mt-2 whitespace-pre-line rounded-lg border border-border bg-card px-2 py-1.5 text-xs leading-relaxed text-foreground"
+                  >
+                    {{ t.notes }}
+                  </p>
                   <ul class="mt-2 space-y-1 border-t border-border pt-2">
                     <li
                       v-for="ex in t.exercises"
@@ -323,6 +325,12 @@ watch(
                     >
                       <span class="text-muted">·</span>
                       <span class="font-semibold">{{ ex.name }}</span>
+                      <span
+                        v-if="supersetBadgeLabel(ex)"
+                        class="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary"
+                      >
+                        {{ supersetBadgeLabel(ex) }}
+                      </span>
                       <button
                         v-if="ex.libraryId && getLibraryExercise(ex.libraryId)"
                         type="button"

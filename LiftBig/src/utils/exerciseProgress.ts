@@ -1,4 +1,4 @@
-import { getDayExercises, type WorkoutLog } from '@/types/workout'
+import { getDayExercises, setCountsTowardProgress, type WorkoutLog } from '@/types/workout'
 import { getWeightIncrementLbs } from '@/utils/progressiveOverload'
 import { parseStoredLbs } from '@/utils/units'
 
@@ -81,7 +81,9 @@ export function collectExerciseHistory(log: WorkoutLog, exerciseName: string): S
     const exercises = getDayExercises(dayEntry)
     const ex = exercises.find((e) => exerciseNameMatches(e.name, exerciseName))
     if (!ex) continue
-    const sets = ex.sets.filter((s) => s.reps.trim() !== '' && s.weight.trim() !== '')
+    const sets = ex.sets.filter(
+      (s) => setCountsTowardProgress(s) && s.reps.trim() !== '' && s.weight.trim() !== '',
+    )
     if (sets.length === 0) continue
 
     let maxW = 0

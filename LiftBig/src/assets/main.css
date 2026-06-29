@@ -13,6 +13,10 @@
   --color-muted: #4a5a7a;
   --color-success: #16a34a;
   --color-success-text: #4ade80;
+  --color-success-soft: #0d2010;
+  --color-header-bg: var(--color-background);
+  --color-nav-bg: var(--color-card);
+  --color-menu-bg: var(--color-card-inner);
   --font-sans: ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -138,53 +142,95 @@ body::before {
   }
 }
 
+[data-theme='default'] {
+  --color-background: #0a0f1e;
+  --color-card: #111827;
+  --color-card-inner: #0d1526;
+  --color-border: #1e2a45;
+  --color-primary: #f4501e;
+  --color-blue: #1d4ed8;
+  --color-blue-soft: #1e3a5f;
+  --color-foreground: #f0f4ff;
+  --color-muted: #4a5a7a;
+  --color-success: #16a34a;
+  --color-success-text: #4ade80;
+  --color-success-soft: #0d2010;
+}
+
 [data-theme='forest'] {
-  --color-background: #04120b;
-  --color-card: #0a2018;
-  --color-card-inner: #071810;
+  --color-background: #021408;
+  --color-card: #1a3d28;
+  --color-card-inner: #122818;
   --color-border: #22c55e;
   --color-primary: #4ade80;
-  --color-blue: #14b8a6;
+  --color-blue: #fbbf24;
   --color-blue-soft: #115e59;
   --color-foreground: #f0fdf4;
   --color-muted: #4d8b6a;
-  --color-success: #34d399;
-  --color-success-text: #86efac;
+  --color-success: #14b8a6;
+  --color-success-text: #5eead4;
+}
+
+[data-theme='forest'] body::before {
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(251, 191, 36, 0.18), transparent 38%),
+    radial-gradient(ellipse at 82% 68%, rgba(20, 184, 166, 0.16), transparent 42%),
+    radial-gradient(ellipse at 40% 88%, rgba(74, 222, 128, 0.14), transparent 40%),
+    radial-gradient(ellipse at 70% 25%, rgba(167, 139, 250, 0.08), transparent 35%);
 }
 
 [data-theme='violet'] {
-  --color-background: #0a0416;
-  --color-card: #150c2c;
-  --color-card-inner: #100720;
+  --color-background: #080312;
+  --color-card: #241045;
+  --color-card-inner: #180830;
   --color-border: #7c3aed;
   --color-primary: #c084fc;
-  --color-blue: #818cf8;
+  --color-blue: #f472b6;
   --color-blue-soft: #3730a3;
   --color-foreground: #f5f3ff;
   --color-muted: #9b85c8;
-  --color-success: #34d399;
-  --color-success-text: #a7f3d0;
+  --color-success: #22d3ee;
+  --color-success-text: #a5f3fc;
+}
+
+[data-theme='violet'] body::before {
+  opacity: 0.5;
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(192, 132, 252, 0.28), transparent 42%),
+    radial-gradient(ellipse at 80% 70%, rgba(244, 114, 182, 0.18), transparent 40%),
+    radial-gradient(ellipse at 55% 45%, rgba(34, 211, 238, 0.12), transparent 38%),
+    radial-gradient(ellipse at 10% 85%, rgba(129, 140, 248, 0.14), transparent 36%);
 }
 
 [data-theme='sunset'] {
-  --color-background: #14060a;
-  --color-card: #260e16;
-  --color-card-inner: #1c0a10;
+  --color-background: #180508;
+  --color-card: #381018;
+  --color-card-inner: #280810;
   --color-border: #f43f5e;
   --color-primary: #ff6b8a;
   --color-blue: #fb923c;
   --color-blue-soft: #9a3412;
   --color-foreground: #fff1f2;
   --color-muted: #d4748a;
-  --color-success: #22c55e;
-  --color-success-text: #bbf7d0;
+  --color-success: #fde047;
+  --color-success-text: #fef9c3;
+}
+
+[data-theme='sunset'] body::before {
+  opacity: 0.55;
+  background:
+    radial-gradient(ellipse at 50% -5%, rgba(253, 224, 71, 0.22), transparent 45%),
+    radial-gradient(ellipse at 15% 60%, rgba(244, 63, 94, 0.26), transparent 42%),
+    radial-gradient(ellipse at 85% 55%, rgba(251, 146, 60, 0.22), transparent 40%),
+    radial-gradient(ellipse at 45% 100%, rgba(190, 24, 93, 0.16), transparent 48%);
 }
 
 /* Loud: maximum contrast + animated acid rainbow wash */
 [data-theme='loud'] {
   --color-background: #120018;
-  --color-card: #1a0024;
-  --color-card-inner: #14001c;
+  --color-card: #240030;
+  --color-card-inner: #1a0024;
   --color-border: #ff00cc;
   --color-primary: #fffb00;
   --color-blue: #00f5ff;
@@ -258,58 +304,27 @@ body::before {
 }
 
 [data-theme='iron'] body::before {
-  opacity: 0.45;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%2364748b' stroke-width='1.2' opacity='0.5'%3E%3Ccircle cx='28' cy='60' r='14'/%3E%3Ccircle cx='92' cy='60' r='14'/%3E%3Cpath d='M28 60h64'/%3E%3C/g%3E%3Ccircle cx='28' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3Ccircle cx='92' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3C/svg%3E");
-  background-size: 120px 120px;
-}
-
-/* Caffeine: coffee lab — bonds + warm roast tones */
-[data-theme='caffeine'] {
-  --color-background: #1a1008;
-  --color-card: #2c1c0e;
-  --color-card-inner: #24160a;
-  --color-border: #d97706;
-  --color-primary: #f59e0b;
-  --color-blue: #b45309;
-  --color-blue-soft: #6b3a10;
-  --color-foreground: #fefce8;
-  --color-muted: #c4a060;
-  --color-success: #84cc16;
-  --color-success-text: #d9f99d;
-}
-
-[data-theme='caffeine'] body::before {
-  opacity: 0.55;
+  opacity: 0.5;
   background-image:
-    repeating-linear-gradient(
-      120deg,
-      transparent,
-      transparent 38px,
-      rgba(212, 165, 116, 0.06) 38px,
-      rgba(212, 165, 116, 0.06) 39px
-    ),
-    repeating-linear-gradient(
-      -120deg,
-      transparent,
-      transparent 38px,
-      rgba(139, 105, 20, 0.05) 38px,
-      rgba(139, 105, 20, 0.05) 39px
-    ),
-    radial-gradient(circle at 30% 20%, rgba(212, 165, 116, 0.15), transparent 40%);
+    radial-gradient(ellipse at 75% 20%, rgba(249, 115, 22, 0.12), transparent 40%),
+    radial-gradient(ellipse at 20% 80%, rgba(100, 116, 139, 0.14), transparent 42%),
+    radial-gradient(ellipse at 90% 85%, rgba(56, 189, 248, 0.08), transparent 35%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%2364748b' stroke-width='1.2' opacity='0.5'%3E%3Ccircle cx='28' cy='60' r='14'/%3E%3Ccircle cx='92' cy='60' r='14'/%3E%3Cpath d='M28 60h64'/%3E%3C/g%3E%3Ccircle cx='28' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3Ccircle cx='92' cy='60' r='4' fill='%23f97316' opacity='0.35'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 100% 100%, 120px 120px;
 }
 
 /* Aurora: shifting borealis bands */
 [data-theme='aurora'] {
-  --color-background: #061210;
-  --color-card: #0d1f1c;
-  --color-card-inner: #0a1815;
+  --color-background: #041210;
+  --color-card: #0f3028;
+  --color-card-inner: #0a221c;
   --color-border: #1f4d45;
   --color-primary: #5eead4;
-  --color-blue: #34d399;
+  --color-blue: #a78bfa;
   --color-blue-soft: #134e4a;
   --color-foreground: #ecfeff;
   --color-muted: #6b9e94;
-  --color-success: #4ade80;
+  --color-success: #34d399;
   --color-success-text: #bbf7d0;
 }
 
@@ -318,36 +333,42 @@ body::before {
   background:
     radial-gradient(ellipse 120% 80% at 50% -20%, rgba(94, 234, 212, 0.35), transparent 55%),
     radial-gradient(ellipse 100% 60% at 20% 60%, rgba(52, 211, 153, 0.25), transparent 45%),
-    radial-gradient(ellipse 90% 50% at 85% 40%, rgba(167, 139, 250, 0.2), transparent 50%);
+    radial-gradient(ellipse 90% 50% at 85% 40%, rgba(167, 139, 250, 0.22), transparent 50%),
+    radial-gradient(ellipse 70% 45% at 55% 85%, rgba(251, 191, 36, 0.1), transparent 42%);
   animation: theme-aurora-flow 18s ease-in-out infinite;
 }
 
 /* Bubblegum: candy dots */
 [data-theme='bubblegum'] {
-  --color-background: #200820;
-  --color-card: #3a1040;
-  --color-card-inner: #2e0c34;
+  --color-background: #18041c;
+  --color-card: #502060;
+  --color-card-inner: #381448;
   --color-border: #f472b6;
   --color-primary: #ff6eb4;
-  --color-blue: #f0abfc;
+  --color-blue: #67e8f9;
   --color-blue-soft: #a21caf;
   --color-foreground: #fdf2f8;
   --color-muted: #e08ec4;
-  --color-success: #4ade80;
-  --color-success-text: #bbf7d0;
+  --color-success: #fde047;
+  --color-success-text: #fef9c3;
 }
 
 [data-theme='bubblegum'] body::before {
-  opacity: 0.4;
-  background-image: radial-gradient(circle, rgba(244, 114, 182, 0.35) 2px, transparent 2.5px);
-  background-size: 28px 28px;
+  opacity: 0.45;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(253, 224, 71, 0.35) 3px, transparent 3.5px),
+    radial-gradient(circle at 72% 28%, rgba(103, 232, 249, 0.35) 2.5px, transparent 3px),
+    radial-gradient(circle at 38% 72%, rgba(244, 114, 182, 0.4) 2px, transparent 2.5px),
+    radial-gradient(circle at 88% 78%, rgba(240, 171, 252, 0.35) 3px, transparent 3.5px),
+    radial-gradient(circle, rgba(244, 114, 182, 0.28) 2px, transparent 2.5px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 28px 28px;
 }
 
 /* Midnight: star specks */
 [data-theme='midnight'] {
-  --color-background: #030612;
-  --color-card: #0c1428;
-  --color-card-inner: #080e1e;
+  --color-background: #020510;
+  --color-card: #121e42;
+  --color-card-inner: #0c1430;
   --color-border: #3b82f6;
   --color-primary: #a5c8ff;
   --color-blue: #60a5fa;
@@ -359,7 +380,7 @@ body::before {
 }
 
 [data-theme='midnight'] body::before {
-  opacity: 0.65;
+  opacity: 0.7;
   background-image:
     radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.9), transparent),
     radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.75), transparent),
@@ -367,8 +388,12 @@ body::before {
     radial-gradient(1px 1px at 88% 78%, rgba(255, 255, 255, 0.7), transparent),
     radial-gradient(1px 1px at 45% 90%, rgba(255, 255, 255, 0.55), transparent),
     radial-gradient(1px 1px at 55% 12%, rgba(255, 255, 255, 0.65), transparent),
-    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(30, 58, 138, 0.35), transparent 70%);
+    radial-gradient(ellipse 80% 55% at 20% 15%, rgba(167, 139, 250, 0.18), transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(30, 58, 138, 0.35), transparent 70%),
+    radial-gradient(ellipse at 85% 40%, rgba(253, 224, 71, 0.08), transparent 40%);
   background-size:
+    100% 100%,
+    100% 100%,
     100% 100%,
     100% 100%,
     100% 100%,
@@ -380,21 +405,21 @@ body::before {
 
 /* Sandstorm: desert grain */
 [data-theme='sandstorm'] {
-  --color-background: #18120a;
-  --color-card: #281e12;
-  --color-card-inner: #20180e;
+  --color-background: #140e06;
+  --color-card: #3d2a14;
+  --color-card-inner: #2a1c0c;
   --color-border: #f59e0b;
   --color-primary: #fbbf24;
   --color-blue: #f97316;
   --color-blue-soft: #92400e;
   --color-foreground: #fffbeb;
   --color-muted: #d4a95e;
-  --color-success: #a3e635;
-  --color-success-text: #d9f99d;
+  --color-success: #84cc16;
+  --color-success-text: #ecfccb;
 }
 
 [data-theme='sandstorm'] body::before {
-  opacity: 0.35;
+  opacity: 0.45;
   background-image:
     repeating-linear-gradient(
       0deg,
@@ -403,14 +428,16 @@ body::before {
       rgba(251, 191, 36, 0.04) 2px,
       rgba(251, 191, 36, 0.04) 4px
     ),
-    linear-gradient(165deg, rgba(217, 119, 6, 0.12) 0%, transparent 45%);
+    radial-gradient(ellipse at 25% 30%, rgba(249, 115, 22, 0.18), transparent 42%),
+    radial-gradient(ellipse at 78% 65%, rgba(190, 24, 93, 0.1), transparent 38%),
+    linear-gradient(165deg, rgba(217, 119, 6, 0.14) 0%, rgba(132, 204, 22, 0.06) 55%, transparent 75%);
 }
 
 /* Cherry lime: split punch */
 [data-theme='cherrylime'] {
-  --color-background: #140a12;
-  --color-card: #1f1218;
-  --color-card-inner: #190e14;
+  --color-background: #120810;
+  --color-card: #381018;
+  --color-card-inner: #1a2808;
   --color-border: #be185d;
   --color-primary: #f43f5e;
   --color-blue: #a3e635;
@@ -435,35 +462,38 @@ body::before {
 
 /* Terminal: phosphor green scanlines */
 [data-theme='terminal'] {
-  --color-background: #020604;
-  --color-card: #081008;
-  --color-card-inner: #050a06;
+  --color-background: #010402;
+  --color-card: #0a200a;
+  --color-card-inner: #061806;
   --color-border: #22c55e;
   --color-primary: #4ade80;
-  --color-blue: #34d399;
+  --color-blue: #fbbf24;
   --color-blue-soft: #166534;
   --color-foreground: #dcfce7;
   --color-muted: #5cb87a;
-  --color-success: #86efac;
-  --color-success-text: #bbf7d0;
+  --color-success: #22d3ee;
+  --color-success-text: #a5f3fc;
 }
 
 [data-theme='terminal'] body::before {
-  opacity: 0.25;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(74, 222, 128, 0.06) 2px,
-    rgba(74, 222, 128, 0.06) 3px
-  );
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(74, 222, 128, 0.06) 2px,
+      rgba(74, 222, 128, 0.06) 3px
+    ),
+    radial-gradient(ellipse at 85% 15%, rgba(251, 191, 36, 0.12), transparent 35%),
+    radial-gradient(ellipse at 12% 78%, rgba(34, 211, 238, 0.1), transparent 38%);
 }
 
 /* Disco: mirror-ball sparkles */
 [data-theme='disco'] {
-  --color-background: #12081a;
-  --color-card: #1c1028;
-  --color-card-inner: #160c20;
+  --color-background: #100818;
+  --color-card: #281845;
+  --color-card-inner: #1c1030;
   --color-border: #c084fc;
   --color-primary: #fde047;
   --color-blue: #e879f9;
@@ -488,33 +518,34 @@ body::before {
 
 /* Ocean: depth bubbles */
 [data-theme='ocean'] {
-  --color-background: #020e16;
-  --color-card: #081a28;
-  --color-card-inner: #05121e;
+  --color-background: #020c18;
+  --color-card: #0a2848;
+  --color-card-inner: #061830;
   --color-border: #06b6d4;
   --color-primary: #22d3ee;
-  --color-blue: #38bdf8;
+  --color-blue: #6366f1;
   --color-blue-soft: #0c4a6e;
   --color-foreground: #ecfeff;
   --color-muted: #5ec4d8;
-  --color-success: #2dd4bf;
-  --color-success-text: #99f6e4;
+  --color-success: #f472b6;
+  --color-success-text: #fbcfe8;
 }
 
 [data-theme='ocean'] body::before {
-  opacity: 0.5;
+  opacity: 0.55;
   background-image:
-    radial-gradient(circle at 15% 70%, rgba(34, 211, 238, 0.12) 0%, transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.1) 0%, transparent 22%),
-    radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 35%),
+    radial-gradient(circle at 15% 70%, rgba(34, 211, 238, 0.14) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(244, 114, 182, 0.08) 0%, transparent 30%),
+    radial-gradient(circle at 70% 85%, rgba(14, 165, 233, 0.1) 0%, transparent 28%),
     linear-gradient(180deg, rgba(3, 16, 24, 0.3) 0%, rgba(14, 165, 233, 0.08) 100%);
 }
 
 /* New pop themes share animated color-wave backgrounds with dark, readable surfaces. */
 [data-theme='voltage'] {
   --color-background: #05070f;
-  --color-card: #0d1020;
-  --color-card-inner: #090c18;
+  --color-card: #181830;
+  --color-card-inner: #101020;
   --color-border: #facc15;
   --color-primary: #fde047;
   --color-blue: #22d3ee;
@@ -530,9 +561,9 @@ body::before {
 }
 
 [data-theme='dragonfruit'] {
-  --color-background: #160016;
-  --color-card: #260728;
-  --color-card-inner: #1d0520;
+  --color-background: #120012;
+  --color-card: #381040;
+  --color-card-inner: #280830;
   --color-border: #fb7185;
   --color-primary: #ff4fd8;
   --color-blue: #a3e635;
@@ -548,27 +579,28 @@ body::before {
 }
 
 [data-theme='glacier'] {
-  --color-background: #041018;
-  --color-card: #0a1d28;
-  --color-card-inner: #061620;
+  --color-background: #031018;
+  --color-card: #0c2840;
+  --color-card-inner: #081c30;
   --color-border: #67e8f9;
   --color-primary: #a5f3fc;
-  --color-blue: #38bdf8;
+  --color-blue: #c4b5fd;
   --color-blue-soft: #075985;
   --color-foreground: #ecfeff;
   --color-muted: #8bd3df;
-  --color-success: #2dd4bf;
-  --color-success-text: #ccfbf1;
+  --color-success: #38bdf8;
+  --color-success-text: #bae6fd;
   --theme-wave:
     radial-gradient(ellipse at 30% 0%, rgba(165, 243, 252, 0.32), transparent 42%),
-    radial-gradient(ellipse at 75% 75%, rgba(56, 189, 248, 0.18), transparent 38%),
-    linear-gradient(160deg, rgba(34, 211, 238, 0.14), rgba(4, 16, 24, 0.08));
+    radial-gradient(ellipse at 75% 75%, rgba(196, 181, 253, 0.2), transparent 38%),
+    radial-gradient(ellipse at 15% 85%, rgba(56, 189, 248, 0.14), transparent 40%),
+    linear-gradient(160deg, rgba(34, 211, 238, 0.14), rgba(244, 114, 182, 0.06), rgba(4, 16, 24, 0.08));
 }
 
 [data-theme='lavaflow'] {
-  --color-background: #150502;
-  --color-card: #260c06;
-  --color-card-inner: #1d0804;
+  --color-background: #120402;
+  --color-card: #401008;
+  --color-card-inner: #280804;
   --color-border: #f97316;
   --color-primary: #fb923c;
   --color-blue: #ef4444;
@@ -584,9 +616,9 @@ body::before {
 }
 
 [data-theme='nebula'] {
-  --color-background: #09051a;
-  --color-card: #130d2a;
-  --color-card-inner: #0e0921;
+  --color-background: #060318;
+  --color-card: #1a1040;
+  --color-card-inner: #120830;
   --color-border: #8b5cf6;
   --color-primary: #c084fc;
   --color-blue: #22d3ee;
@@ -602,9 +634,9 @@ body::before {
 }
 
 [data-theme='toxic'] {
-  --color-background: #061006;
-  --color-card: #0c1d0b;
-  --color-card-inner: #081607;
+  --color-background: #041006;
+  --color-card: #1a3810;
+  --color-card-inner: #102808;
   --color-border: #a3e635;
   --color-primary: #d9f99d;
   --color-blue: #14b8a6;
@@ -620,27 +652,28 @@ body::before {
 }
 
 [data-theme='sapphire'] {
-  --color-background: #03091d;
-  --color-card: #071337;
-  --color-card-inner: #050e29;
+  --color-background: #020818;
+  --color-card: #0c2048;
+  --color-card-inner: #081838;
   --color-border: #2563eb;
   --color-primary: #60a5fa;
-  --color-blue: #38bdf8;
+  --color-blue: #22d3ee;
   --color-blue-soft: #1e3a8a;
   --color-foreground: #eff6ff;
   --color-muted: #8fb6ef;
-  --color-success: #2dd4bf;
-  --color-success-text: #ccfbf1;
+  --color-success: #a78bfa;
+  --color-success-text: #ddd6fe;
   --theme-wave:
     radial-gradient(ellipse at 22% 18%, rgba(96, 165, 250, 0.34), transparent 42%),
-    radial-gradient(ellipse at 80% 76%, rgba(56, 189, 248, 0.18), transparent 38%),
-    linear-gradient(140deg, rgba(37, 99, 235, 0.18), rgba(3, 9, 29, 0.08));
+    radial-gradient(ellipse at 80% 76%, rgba(34, 211, 238, 0.2), transparent 38%),
+    radial-gradient(ellipse at 55% 45%, rgba(167, 139, 250, 0.14), transparent 40%),
+    linear-gradient(140deg, rgba(37, 99, 235, 0.18), rgba(244, 114, 182, 0.06), rgba(3, 9, 29, 0.08));
 }
 
 [data-theme='mango'] {
-  --color-background: #170b02;
-  --color-card: #281506;
-  --color-card-inner: #201004;
+  --color-background: #140802;
+  --color-card: #402010;
+  --color-card-inner: #301408;
   --color-border: #fb923c;
   --color-primary: #fbbf24;
   --color-blue: #fb7185;
@@ -656,9 +689,9 @@ body::before {
 }
 
 [data-theme='prism'] {
-  --color-background: #080812;
-  --color-card: #111125;
-  --color-card-inner: #0d0d1d;
+  --color-background: #060610;
+  --color-card: #181830;
+  --color-card-inner: #101020;
   --color-border: #f0abfc;
   --color-primary: #f9a8d4;
   --color-blue: #67e8f9;
@@ -677,119 +710,68 @@ body::before {
   );
 }
 
-[data-theme='blacklight'] {
-  --color-background: #070012;
-  --color-card: #130024;
-  --color-card-inner: #0e001c;
-  --color-border: #d946ef;
-  --color-primary: #f0abfc;
-  --color-blue: #00e5ff;
-  --color-blue-soft: #164e63;
-  --color-foreground: #fdf4ff;
-  --color-muted: #d6a1ef;
-  --color-success: #a3e635;
-  --color-success-text: #ecfccb;
-  --theme-wave:
-    radial-gradient(ellipse at 15% 15%, rgba(217, 70, 239, 0.34), transparent 38%),
-    radial-gradient(ellipse at 82% 65%, rgba(0, 229, 255, 0.22), transparent 40%),
-    linear-gradient(145deg, rgba(163, 230, 53, 0.12), rgba(7, 0, 18, 0.1));
-}
-
 [data-theme='mintchip'] {
-  --color-background: #04110d;
-  --color-card: #0b2119;
-  --color-card-inner: #071913;
+  --color-background: #031410;
+  --color-card: #0c3828;
+  --color-card-inner: #082818;
   --color-border: #6ee7b7;
   --color-primary: #99f6e4;
-  --color-blue: #34d399;
+  --color-blue: #92400e;
   --color-blue-soft: #065f46;
   --color-foreground: #f0fdfa;
   --color-muted: #8bd9c0;
-  --color-success: #86efac;
-  --color-success-text: #dcfce7;
+  --color-success: #fef3c7;
+  --color-success-text: #fde68a;
   --theme-wave:
     radial-gradient(ellipse at 20% 18%, rgba(153, 246, 228, 0.3), transparent 40%),
-    radial-gradient(ellipse at 78% 76%, rgba(52, 211, 153, 0.18), transparent 38%),
-    linear-gradient(135deg, rgba(45, 212, 191, 0.14), rgba(4, 17, 13, 0.08));
-}
-
-[data-theme='ember'] {
-  --color-background: #100608;
-  --color-card: #1d0d12;
-  --color-card-inner: #16090d;
-  --color-border: #f43f5e;
-  --color-primary: #fb7185;
-  --color-blue: #f97316;
-  --color-blue-soft: #7c2d12;
-  --color-foreground: #fff1f2;
-  --color-muted: #dfa0a9;
-  --color-success: #facc15;
-  --color-success-text: #fef9c3;
-  --theme-wave:
-    radial-gradient(ellipse at 24% 72%, rgba(244, 63, 94, 0.3), transparent 40%),
-    radial-gradient(ellipse at 80% 22%, rgba(249, 115, 22, 0.24), transparent 36%),
-    linear-gradient(145deg, rgba(250, 204, 21, 0.12), rgba(16, 6, 8, 0.08));
+    radial-gradient(ellipse at 78% 76%, rgba(146, 64, 14, 0.22), transparent 38%),
+    radial-gradient(ellipse at 55% 55%, rgba(254, 243, 199, 0.1), transparent 36%),
+    linear-gradient(135deg, rgba(45, 212, 191, 0.14), rgba(52, 211, 153, 0.1), rgba(4, 17, 13, 0.08));
 }
 
 [data-theme='tidal'] {
-  --color-background: #021214;
-  --color-card: #082429;
-  --color-card-inner: #061a1f;
+  --color-background: #021018;
+  --color-card: #0a3040;
+  --color-card-inner: #062830;
   --color-border: #2dd4bf;
   --color-primary: #5eead4;
-  --color-blue: #0ea5e9;
+  --color-blue: #f472b6;
   --color-blue-soft: #164e63;
   --color-foreground: #ecfeff;
   --color-muted: #85d6ce;
-  --color-success: #34d399;
-  --color-success-text: #a7f3d0;
+  --color-success: #0ea5e9;
+  --color-success-text: #7dd3fc;
   --theme-wave:
     radial-gradient(ellipse at 18% 20%, rgba(94, 234, 212, 0.3), transparent 42%),
     radial-gradient(ellipse at 84% 78%, rgba(14, 165, 233, 0.2), transparent 40%),
-    linear-gradient(160deg, rgba(45, 212, 191, 0.2), rgba(2, 18, 20, 0.08));
-}
-
-[data-theme='royal'] {
-  --color-background: #0d0618;
-  --color-card: #190f2d;
-  --color-card-inner: #130a24;
-  --color-border: #a78bfa;
-  --color-primary: #c4b5fd;
-  --color-blue: #facc15;
-  --color-blue-soft: #713f12;
-  --color-foreground: #faf5ff;
-  --color-muted: #c3afe8;
-  --color-success: #4ade80;
-  --color-success-text: #bbf7d0;
-  --theme-wave:
-    radial-gradient(ellipse at 22% 18%, rgba(196, 181, 253, 0.28), transparent 40%),
-    radial-gradient(ellipse at 78% 72%, rgba(250, 204, 21, 0.2), transparent 36%),
-    linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(13, 6, 24, 0.08));
+    radial-gradient(ellipse at 65% 35%, rgba(244, 114, 182, 0.12), transparent 38%),
+    linear-gradient(160deg, rgba(45, 212, 191, 0.2), rgba(253, 224, 71, 0.06), rgba(2, 18, 20, 0.08));
 }
 
 [data-theme='cottoncandy'] {
-  --color-background: #120719;
-  --color-card: #211029;
-  --color-card-inner: #190c21;
+  --color-background: #100418;
+  --color-card: #381848;
+  --color-card-inner: #281030;
   --color-border: #f9a8d4;
   --color-primary: #f0abfc;
   --color-blue: #67e8f9;
   --color-blue-soft: #155e75;
   --color-foreground: #fdf4ff;
   --color-muted: #e8b9dd;
-  --color-success: #86efac;
-  --color-success-text: #dcfce7;
+  --color-success: #fde047;
+  --color-success-text: #fef9c3;
   --theme-wave:
     radial-gradient(ellipse at 20% 18%, rgba(249, 168, 212, 0.3), transparent 40%),
     radial-gradient(ellipse at 82% 74%, rgba(103, 232, 249, 0.2), transparent 40%),
-    linear-gradient(145deg, rgba(240, 171, 252, 0.18), rgba(18, 7, 25, 0.08));
+    radial-gradient(ellipse at 50% 50%, rgba(253, 224, 71, 0.1), transparent 38%),
+    linear-gradient(145deg, rgba(240, 171, 252, 0.18), rgba(167, 139, 250, 0.08), rgba(18, 7, 25, 0.08));
 }
 
 /* Blood Moon: ominous crimson eclipse */
 [data-theme='bloodmoon'] {
-  --color-background: #0e0204;
-  --color-card: #1c080c;
-  --color-card-inner: #140508;
+  --color-background: #0c0204;
+  --color-card: #381018;
+  --color-card-inner: #28080c;
   --color-border: #dc2626;
   --color-primary: #ef4444;
   --color-blue: #f97316;
@@ -804,30 +786,11 @@ body::before {
     linear-gradient(180deg, rgba(127, 29, 29, 0.18), rgba(14, 2, 4, 0.06));
 }
 
-/* Solar Flare: white-hot energy corona on deep space */
-[data-theme='solarflare'] {
-  --color-background: #0a0804;
-  --color-card: #181208;
-  --color-card-inner: #120e06;
-  --color-border: #fbbf24;
-  --color-primary: #fde68a;
-  --color-blue: #f97316;
-  --color-blue-soft: #92400e;
-  --color-foreground: #fffbeb;
-  --color-muted: #d4b452;
-  --color-success: #f59e0b;
-  --color-success-text: #fef3c7;
-  --theme-wave:
-    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(253, 230, 138, 0.35), transparent 50%),
-    radial-gradient(ellipse 100% 80% at 50% 40%, rgba(251, 191, 36, 0.2), transparent 55%),
-    radial-gradient(ellipse at 80% 75%, rgba(249, 115, 22, 0.18), transparent 40%);
-}
-
 /* Retrowave: 80s synth sunset with hot pink and electric blue */
 [data-theme='retrowave'] {
-  --color-background: #0c0418;
-  --color-card: #18082e;
-  --color-card-inner: #120624;
+  --color-background: #0a0418;
+  --color-card: #281050;
+  --color-card-inner: #1c0838;
   --color-border: #ff2a92;
   --color-primary: #ff6ec7;
   --color-blue: #00d4ff;
@@ -842,25 +805,6 @@ body::before {
     radial-gradient(ellipse at 50% 100%, rgba(255, 42, 146, 0.22), transparent 60%);
 }
 
-/* Jungle: tropical canopy with vivid greens and golden accents */
-[data-theme='jungle'] {
-  --color-background: #060e04;
-  --color-card: #0e1c08;
-  --color-card-inner: #0a1406;
-  --color-border: #84cc16;
-  --color-primary: #a3e635;
-  --color-blue: #fbbf24;
-  --color-blue-soft: #5a6f12;
-  --color-foreground: #f7fee7;
-  --color-muted: #7daa4a;
-  --color-success: #22c55e;
-  --color-success-text: #bbf7d0;
-  --theme-wave:
-    radial-gradient(ellipse at 15% 25%, rgba(163, 230, 53, 0.28), transparent 40%),
-    radial-gradient(ellipse at 80% 70%, rgba(251, 191, 36, 0.2), transparent 38%),
-    linear-gradient(160deg, rgba(132, 204, 22, 0.16), rgba(6, 14, 4, 0.06));
-}
-
 /* Titanium: cool chrome with electric blue highlights */
 [data-theme='titanium'] {
   --color-background: #08090e;
@@ -868,16 +812,17 @@ body::before {
   --color-card-inner: #0e1016;
   --color-border: #64748b;
   --color-primary: #94a3b8;
-  --color-blue: #38bdf8;
+  --color-blue: #f97316;
   --color-blue-soft: #1e3a5f;
   --color-foreground: #f1f5f9;
   --color-muted: #8494a8;
-  --color-success: #22d3ee;
+  --color-success: #38bdf8;
   --color-success-text: #a5f3fc;
   --theme-wave:
     radial-gradient(ellipse at 30% 15%, rgba(148, 163, 184, 0.2), transparent 40%),
     radial-gradient(ellipse at 75% 70%, rgba(56, 189, 248, 0.16), transparent 38%),
-    linear-gradient(140deg, rgba(100, 116, 139, 0.14), rgba(8, 9, 14, 0.06));
+    radial-gradient(ellipse at 18% 82%, rgba(249, 115, 22, 0.1), transparent 36%),
+    linear-gradient(140deg, rgba(167, 139, 250, 0.08), rgba(100, 116, 139, 0.14), rgba(8, 9, 14, 0.06));
 }
 
 [data-theme='voltage'] body::before,
@@ -889,21 +834,87 @@ body::before {
 [data-theme='sapphire'] body::before,
 [data-theme='mango'] body::before,
 [data-theme='prism'] body::before,
-[data-theme='blacklight'] body::before,
 [data-theme='mintchip'] body::before,
-[data-theme='ember'] body::before,
 [data-theme='tidal'] body::before,
-[data-theme='royal'] body::before,
 [data-theme='cottoncandy'] body::before,
 [data-theme='bloodmoon'] body::before,
-[data-theme='solarflare'] body::before,
 [data-theme='retrowave'] body::before,
-[data-theme='jungle'] body::before,
 [data-theme='titanium'] body::before {
   opacity: 1;
   background: var(--theme-wave);
   background-size: 180% 180%;
   animation: theme-loud-shift 14s ease-in-out infinite;
+}
+
+/*
+ * Non-default themes: derive chrome + surface tints so cards, menus, header, and
+ * tab bar all pick up the theme palette — not just the page background.
+ */
+html[data-theme] {
+  --color-success-soft: color-mix(in srgb, var(--color-success) 20%, var(--color-card-inner));
+  --color-header-bg: color-mix(in srgb, var(--color-background) 72%, var(--color-primary));
+  --color-nav-bg: color-mix(in srgb, var(--color-card) 62%, var(--color-primary));
+  --color-menu-bg: color-mix(in srgb, var(--color-card-inner) 58%, var(--color-blue));
+}
+
+html[data-theme] .bg-card {
+  background-color: color-mix(in srgb, var(--color-card) 78%, var(--color-primary));
+}
+
+html[data-theme] .bg-card-inner {
+  background-color: color-mix(in srgb, var(--color-card-inner) 74%, var(--color-blue));
+}
+
+html[data-theme] .bg-card\/95 {
+  background-color: color-mix(in srgb, var(--color-nav-bg) 95%, transparent);
+}
+
+html[data-theme] .bg-background\/95,
+html[data-theme] .supports-\[backdrop-filter\]\:bg-background\/80 {
+  background-color: color-mix(in srgb, var(--color-header-bg) 95%, transparent);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  html[data-theme] header.supports-\[backdrop-filter\]\:bg-background\/80 {
+    background-color: color-mix(in srgb, var(--color-header-bg) 82%, transparent);
+  }
+}
+
+html[data-theme] header.border-b {
+  border-bottom-color: color-mix(in srgb, var(--color-border) 45%, var(--color-primary));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+html[data-theme] #app-bottom-tabs {
+  background-color: color-mix(in srgb, var(--color-nav-bg) 94%, transparent);
+  border-top-color: color-mix(in srgb, var(--color-border) 40%, var(--color-primary));
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--color-blue) 10%, transparent);
+}
+
+html[data-theme] #app-shell-menu {
+  border-color: color-mix(in srgb, var(--color-border) 35%, var(--color-primary));
+  background-color: var(--color-menu-bg);
+  box-shadow:
+    0 12px 40px color-mix(in srgb, var(--color-primary) 18%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+html[data-theme] #app-shell-menu [role='menuitem'].active\:bg-card:active {
+  background-color: color-mix(in srgb, var(--color-card) 70%, var(--color-primary));
+}
+
+/* Simple 3-stripe theme preview swatch (settings picker) */
+.theme-swatch-preview {
+  background: linear-gradient(
+    180deg,
+    var(--color-background) 0%,
+    var(--color-background) 54%,
+    var(--color-primary) 54%,
+    var(--color-primary) 77%,
+    var(--color-blue) 77%,
+    var(--color-blue) 100%
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border) 45%, transparent);
 }
 
 /*
@@ -920,14 +931,37 @@ body::before {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
-/* Workout log body: clear fixed input + optional Finish row + home indicator */
-.pb-above-workout-dock {
-  padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+/* Workout log body: bottom breathing room above tab bar / home indicator */
+.pb-workout-content {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
 }
 
-/* Workout log fixed dock: safe areas for notched / gesture phones */
-.pb-workout-dock-safe {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-  padding-left: max(1rem, env(safe-area-inset-left, 0px));
-  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+/*
+ * iOS Safari zooms focused inputs when font-size < 16px. Apply on coarse pointers only
+ * so desktop layout can stay compact where desired.
+ */
+@media (hover: none) and (pointer: coarse) {
+  input[data-touch-input],
+  textarea[data-touch-input],
+  select[data-touch-input] {
+    font-size: 16px;
+  }
+}
+
+/* Inline exercise suggestions: own scroll region, no scroll chaining to the page */
+.inline-suggest-scroll {
+  max-height: 12rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Subtle press feedback for primary actions */
+.btn-press {
+  transition: transform 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
 }

@@ -2,7 +2,16 @@ export type SetLog = {
   id: string
   reps: string
   weight: string
+  /** Logged hold/work duration in seconds (core / ab exercises). */
+  durationSeconds?: string
   checked?: boolean
+  /** Warmup sets are logged but excluded from strength/progress predictions. */
+  isWarmup?: boolean
+}
+
+/** Whether this set should feed progress charts and progressive-overload logic. */
+export function setCountsTowardProgress(set: SetLog): boolean {
+  return set.isWarmup !== true
 }
 
 export type Exercise = {
@@ -11,10 +20,28 @@ export type Exercise = {
   libraryId?: string
   sets: SetLog[]
   isCircuit?: boolean
+  /** Cardio / sports: duration-only logging (no weight). */
+  isCardio?: boolean
+  /** Core / ab exercises: optional per-set time and rep logging. */
+  isCore?: boolean
+  /** Target duration in minutes (plans and optional workout goals). */
+  targetDuration?: string
+  /** Goal hold/work time in seconds (core exercises). */
+  targetTimeSeconds?: string
+  /** Optional goal distance for distance-based cardio (numeric string; unit from settings). */
+  targetDistance?: string
+  /** Optional calories from a watch or cardio machine (overrides MET estimate for totals). */
+  loggedCalories?: string
   targetReps?: string
   targetWeight?: string
   /** Session notes for this exercise on the logged day (stored in the workout log). */
   notes?: string
+  /** Shared id linking exercises performed back-to-back as a superset. */
+  supersetGroupId?: string
+  /** Display label for the superset block (e.g. "A", "B"). */
+  supersetLabel?: string
+  /** Order within the superset pair (1 = first move, 2 = second). */
+  supersetOrder?: number
 }
 
 /** Single-day payload (with optional notes), or legacy flat exercise list */
@@ -27,6 +54,8 @@ export type WorkoutDay = {
   planName?: string
   /** Name of the folder the plan belonged to when assigned. */
   planFolderName?: string
+  /** Coaching notes from the assigned plan template (week focus, activity, etc.). */
+  planNotes?: string
 }
 
 export type WorkoutLogDay = Exercise[] | WorkoutDay
@@ -51,6 +80,49 @@ export function getDayPlanFolderName(dayEntry: WorkoutLogDay | undefined): strin
   return dayEntry.planFolderName
 }
 
+export function getDayPlanNotes(dayEntry: WorkoutLogDay | undefined): string | undefined {
+  if (dayEntry == null) return undefined
+  if (Array.isArray(dayEntry)) return undefined
+  return dayEntry.planNotes
+}
+
+/** Merge exercises with preserved day metadata (user notes, assigned plan, rest flag). */
+export function buildWorkoutDayEntry(
+  exercises: Exercise[],
+  existing: WorkoutLogDay | undefined,
+  options?: { userNotes?: string | null },
+): WorkoutDay | Exercise[] {
+  const prior = existing && !Array.isArray(existing) ? existing : undefined
+  const userNotes =
+    options?.userNotes === null
+      ? undefined
+      : options?.userNotes !== undefined
+        ? options.userNotes.trim() || undefined
+        : prior?.notes?.trim() || undefined
+
+  const planName = prior?.planName
+  const planFolderName = prior?.planFolderName
+  const planNotes = prior?.planNotes
+  const isRestDay = prior?.isRestDay === true && exercises.length === 0
+
+  const needsObject =
+    userNotes !== undefined ||
+    planName !== undefined ||
+    planFolderName !== undefined ||
+    planNotes !== undefined ||
+    isRestDay
+
+  if (!needsObject) return exercises
+
+  const entry: WorkoutDay = { exercises }
+  if (userNotes !== undefined) entry.notes = userNotes
+  if (planName) entry.planName = planName
+  if (planFolderName) entry.planFolderName = planFolderName
+  if (planNotes) entry.planNotes = planNotes
+  if (isRestDay) entry.isRestDay = true
+  return entry
+}
+
 export function isRestDayEntry(dayEntry: WorkoutLogDay | undefined): boolean {
   if (dayEntry == null) return false
   if (Array.isArray(dayEntry)) return false
@@ -65,9 +137,132 @@ export type TemplateExercise = {
   libraryId?: string
   sets: TemplateSet[]
   isCircuit?: boolean
+  /** Cardio / sports: duration-only (no weight). */
+  isCardio?: boolean
+  /** Core / ab exercises: optional per-set time and rep logging. */
+  isCore?: boolean
+  /** Target duration in minutes. */
+  targetDuration?: string
+  /** Goal hold/work time in seconds (core exercises). */
+  targetTimeSeconds?: string
+  /** Optional goal distance for distance-based cardio (numeric string; unit from settings). */
+  targetDistance?: string
   /** Optional targets for the workout log (same idea as live “Set goals”). */
   targetReps?: string
   targetWeight?: string
+  supersetGroupId?: string
+  supersetLabel?: string
+  supersetOrder?: number
+}
+
+/** Whether an exercise should use duration-only cardio UI and storage. */
+export function exerciseIsCardio(
+  ex: Pick<Exercise | TemplateExercise, 'isCardio' | 'libraryId'>,
+): boolean {
+  return ex.isCardio === true
+}
+
+/** Goal duration in minutes for cardio (explicit field, then legacy set target). */
+export function cardioTargetDurationMinutes(
+  ex: Pick<Exercise | TemplateExercise, 'targetDuration' | 'sets' | 'isCardio'>,
+): string {
+  const explicit = (ex.targetDuration ?? '').trim()
+  if (explicit) return explicit
+  const first = ex.sets[0]
+  if (!first) return ''
+  if ('targetReps' in first) return (first.targetReps ?? '').trim()
+  return ''
+}
+
+/** Logged duration in minutes for a cardio exercise (stored on the single set’s reps field). */
+export function cardioLoggedDurationMinutes(ex: Exercise): string {
+  return (ex.sets[0]?.reps ?? '').trim()
+}
+
+/** Goal distance for distance-based cardio. */
+export function cardioTargetDistance(
+  ex: Pick<Exercise | TemplateExercise, 'targetDistance'>,
+): string {
+  return (ex.targetDistance ?? '').trim()
+}
+
+/** Logged distance for distance-based cardio (stored on the single set’s weight field). */
+export function cardioLoggedDistance(ex: Exercise): string {
+  return (ex.sets[0]?.weight ?? '').trim()
+}
+
+/** User-entered calories for cardio (e.g. from a smart watch). */
+export function cardioLoggedCalories(ex: Pick<Exercise, 'loggedCalories'>): string {
+  return (ex.loggedCalories ?? '').trim()
+}
+
+/** Parsed custom cardio calories, or null when unset or invalid. */
+export function parseCardioLoggedCalories(ex: Pick<Exercise, 'loggedCalories'>): number | null {
+  const raw = cardioLoggedCalories(ex)
+  if (!raw) return null
+  const n = parseInt(raw, 10)
+  return !Number.isNaN(n) && n > 0 ? n : null
+}
+
+export function cardioExerciseComplete(ex: Exercise): boolean {
+  const d = cardioLoggedDurationMinutes(ex)
+  if (!d) return false
+  const n = parseInt(d, 10)
+  return !Number.isNaN(n) && n > 0
+}
+
+/** Parse seconds from goal text like "45 sec", "1 min", or "45-60 sec". */
+export function parseSecondsFromGoalText(text: string | undefined): number | null {
+  const t = (text ?? '').trim().toLowerCase()
+  if (!t) return null
+  const minMatch = t.match(/(\d+)\s*min/)
+  if (minMatch) {
+    const n = parseInt(minMatch[1]!, 10)
+    return !Number.isNaN(n) && n > 0 ? n * 60 : null
+  }
+  const secMatch = t.match(/(\d+)\s*sec/)
+  if (secMatch) {
+    const n = parseInt(secMatch[1]!, 10)
+    return !Number.isNaN(n) && n > 0 ? n : null
+  }
+  return null
+}
+
+/** Goal time in seconds for core exercises (explicit field, then legacy rep-goal text). */
+export function coreTargetTimeSeconds(
+  ex: Pick<Exercise | TemplateExercise, 'targetTimeSeconds' | 'targetReps'>,
+): string {
+  const explicit = (ex.targetTimeSeconds ?? '').trim()
+  if (explicit) return explicit
+  const parsed = parseSecondsFromGoalText(ex.targetReps)
+  return parsed != null ? String(parsed) : ''
+}
+
+export function parseSetDurationSeconds(set: Pick<SetLog, 'durationSeconds'>): number | null {
+  const t = (set.durationSeconds ?? '').trim()
+  if (!t) return null
+  const n = parseInt(t, 10)
+  return !Number.isNaN(n) && n > 0 ? n : null
+}
+
+export function parseSetRepsCount(set: Pick<SetLog, 'reps'>): number | null {
+  const t = set.reps.trim()
+  if (!t) return null
+  const n = parseInt(t, 10)
+  return !Number.isNaN(n) && n >= 1 ? n : null
+}
+
+/** A core set counts as logged when it has valid reps and/or duration. */
+export function coreSetLogged(set: Pick<SetLog, 'reps' | 'durationSeconds'>): boolean {
+  return parseSetRepsCount(set) != null || parseSetDurationSeconds(set) != null
+}
+
+export function formatDurationSecondsDisplay(seconds: number): string {
+  if (seconds < 60) return `${seconds} sec`
+  if (seconds % 60 === 0) return `${seconds / 60} min`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 export type WorkoutTemplate = {
@@ -76,6 +271,8 @@ export type WorkoutTemplate = {
   exercises: TemplateExercise[]
   isCircuit?: boolean
   folderId?: string | null
+  /** Week focus, activity description, and other coaching shown when viewing or assigning the plan. */
+  notes?: string
 }
 
 export type TemplateFolder = {

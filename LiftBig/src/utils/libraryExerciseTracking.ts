@@ -1,6 +1,20 @@
-import { getDayExercises, type Exercise, type SetLog, type WorkoutLog } from '@/types/workout'
+import {
+  getDayExercises,
+  setCountsTowardProgress,
+  cardioLoggedDurationMinutes,
+  type Exercise,
+  type SetLog,
+  type WorkoutLog,
+} from '@/types/workout'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { parseStoredLbs } from '@/utils/units'
+
+function parseDurationMinutes(raw: string): number | null {
+  const t = raw.trim()
+  if (!t) return null
+  const n = parseInt(t, 10)
+  return !Number.isNaN(n) && n > 0 ? n : null
+}
 
 function norm(s: string): string {
   return s.trim().toLowerCase()
@@ -42,6 +56,8 @@ function setHasAtLeastOneRep(set: SetLog): boolean {
 export type LibraryExerciseLogStats = {
   /** Heaviest load for a set with at least one recorded rep, across all history. */
   maxWeightLbs: number | null
+  /** Longest logged duration in minutes (cardio only). */
+  maxDurationMinutes: number | null
   /** First set of the most recent day this exercise was logged. */
   lastInitialSet: {
     dateKey: string
@@ -59,12 +75,23 @@ export function getLibraryExerciseLogStats(
   libraryExercise: LibraryExercise,
 ): LibraryExerciseLogStats {
   let maxWeightLbs: number | null = null
+  let maxDurationMinutes: number | null = null
+  const isCardio = libraryExercise.isCardio === true
 
   for (const dayEntry of Object.values(log)) {
     const exercises = getDayExercises(dayEntry)
     for (const ex of exercises) {
       if (!exerciseMatchesLibrary(ex, libraryExercise)) continue
+      if (isCardio || ex.isCardio) {
+        const mins = parseDurationMinutes(cardioLoggedDurationMinutes(ex))
+        if (mins != null) {
+          maxDurationMinutes =
+            maxDurationMinutes === null ? mins : Math.max(maxDurationMinutes, mins)
+        }
+        continue
+      }
       for (const set of ex.sets) {
+        if (!setCountsTowardProgress(set)) continue
         const w = parseStoredLbs(set.weight)
         if (Number.isNaN(w) || w <= 0) continue
         if (!setHasAtLeastOneRep(set)) continue
@@ -79,7 +106,7 @@ export function getLibraryExerciseLogStats(
     .reverse()
 
   if (datesWithExercise.length === 0) {
-    return { maxWeightLbs, lastInitialSet: null }
+    return { maxWeightLbs, maxDurationMinutes, lastInitialSet: null }
   }
 
   const latestKey = datesWithExercise[0]!
@@ -87,13 +114,27 @@ export function getLibraryExerciseLogStats(
     exerciseMatchesLibrary(e, libraryExercise),
   )
   if (!latestEx || latestEx.sets.length === 0) {
-    return { maxWeightLbs, lastInitialSet: null }
+    return { maxWeightLbs, maxDurationMinutes, lastInitialSet: null }
   }
 
-  const first = latestEx.sets[0]!
+  if (isCardio || latestEx.isCardio) {
+    const duration = cardioLoggedDurationMinutes(latestEx)
+    return {
+      maxWeightLbs,
+      maxDurationMinutes,
+      lastInitialSet: {
+        dateKey: latestKey,
+        repsDisplay: duration === '' ? '—' : duration,
+        weightLbs: null,
+      },
+    }
+  }
+
+  const first = latestEx.sets.find((s) => setCountsTowardProgress(s)) ?? latestEx.sets[0]!
   const firstW = parseStoredLbs(first.weight)
   return {
     maxWeightLbs,
+    maxDurationMinutes,
     lastInitialSet: {
       dateKey: latestKey,
       repsDisplay: first.reps.trim() === '' ? '—' : first.reps.trim(),

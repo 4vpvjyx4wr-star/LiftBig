@@ -1,5 +1,7 @@
-import { DEFAULT_SETTINGS, THEME_OPTIONS, type AppSettings, type ThemeId } from '@/composables/useSettings'
+import { DEFAULT_SETTINGS, sanitizeActiveTheme, type AppSettings } from '@/composables/useSettings'
 import { type WorkoutDay, type WorkoutLog, type WorkoutTemplate } from '@/types/workout'
+import { isDistanceUnit } from '@/utils/distances'
+import { sanitizeCustomThemes, type CustomTheme } from '@/utils/themePalette'
 import type { WeightUnit } from '@/utils/units'
 import {
   applyLiftbigRawStorageSnapshot,
@@ -33,13 +35,9 @@ export type LiftBigBackupFile = {
   liftbig_workouts: WorkoutLog
   liftbig_templates: WorkoutTemplate[]
   liftbig_settings: AppSettings
+  liftbig_custom_themes: CustomTheme[]
 }
 
-const THEME_IDS = new Set<string>(THEME_OPTIONS.map((o) => o.id))
-
-function isThemeId(v: unknown): v is ThemeId {
-  return typeof v === 'string' && THEME_IDS.has(v)
-}
 
 function isWeightUnit(v: unknown): v is WeightUnit {
   return v === 'lb' || v === 'kg'
@@ -50,11 +48,12 @@ function normalizeAverageSeconds(v: unknown, fallback: number): number {
   return Math.min(600, Math.max(5, Math.round(v)))
 }
 
-function normalizeSettings(raw: unknown): AppSettings {
+function normalizeSettings(raw: unknown, customThemes: CustomTheme[] = []): AppSettings {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_SETTINGS }
   const o = raw as Record<string, unknown>
-  const theme = isThemeId(o.theme) ? o.theme : DEFAULT_SETTINGS.theme
+  const theme = sanitizeActiveTheme(o.theme, customThemes)
   const weightUnit = isWeightUnit(o.weightUnit) ? o.weightUnit : DEFAULT_SETTINGS.weightUnit
+  const distanceUnit = isDistanceUnit(o.distanceUnit) ? o.distanceUnit : DEFAULT_SETTINGS.distanceUnit
   const averageRestSeconds = normalizeAverageSeconds(
     o.averageRestSeconds,
     DEFAULT_SETTINGS.averageRestSeconds,
@@ -63,7 +62,30 @@ function normalizeSettings(raw: unknown): AppSettings {
     o.averageLiftSeconds,
     DEFAULT_SETTINGS.averageLiftSeconds,
   )
-  return { theme, weightUnit, averageRestSeconds, averageLiftSeconds }
+  const rawBody = o.bodyWeightLbs
+  const bodyWeightLbs =
+    typeof rawBody === 'number' && Number.isFinite(rawBody) && rawBody > 0 ? rawBody : 0
+  const equipmentFilterPrefs = Array.isArray(o.equipmentFilterPrefs)
+    ? o.equipmentFilterPrefs.filter((x): x is string => typeof x === 'string')
+    : DEFAULT_SETTINGS.equipmentFilterPrefs
+  return {
+    ...DEFAULT_SETTINGS,
+    theme,
+    weightUnit,
+    distanceUnit,
+    averageRestSeconds,
+    averageLiftSeconds,
+    bodyWeightLbs,
+    dailyLiftReminderEnabled: o.dailyLiftReminderEnabled === true,
+    dailyLiftReminderTime:
+      typeof o.dailyLiftReminderTime === 'string'
+        ? o.dailyLiftReminderTime
+        : DEFAULT_SETTINGS.dailyLiftReminderTime,
+    doubleTapCopyWeight: o.doubleTapCopyWeight !== false,
+    autoAdvanceRepsToWeight: o.autoAdvanceRepsToWeight !== false,
+    timerSoundEnabled: o.timerSoundEnabled !== false,
+    equipmentFilterPrefs,
+  }
 }
 
 function normalizeTemplates(raw: unknown): WorkoutTemplate[] {
@@ -126,15 +148,18 @@ function legacyTypedFieldsToBundle(
   workoutsRaw: unknown,
   templatesRaw: unknown,
   settingsRaw: unknown,
+  customThemesRaw: unknown,
 ): Record<string, string> {
   const k = LIFTBIG_STORAGE_KEYS
   const w = normalizeWorkouts(workoutsRaw ?? {})
   const t = normalizeTemplates(templatesRaw ?? [])
-  const s = normalizeSettings(settingsRaw ?? DEFAULT_SETTINGS)
+  const customs = sanitizeCustomThemes(customThemesRaw ?? [])
+  const s = normalizeSettings(settingsRaw ?? DEFAULT_SETTINGS, customs)
   return {
     [k.workouts]: JSON.stringify(w),
     [k.templates]: JSON.stringify(t),
     [k.settings]: JSON.stringify(s),
+    [k.customThemes]: JSON.stringify(customs),
   }
 }
 
@@ -144,9 +169,10 @@ function mergeBundleWithLegacyTypedCandidates(
   workoutsRaw: unknown,
   templatesRaw: unknown,
   settingsRaw: unknown,
+  customThemesRaw: unknown,
 ): Record<string, string> {
   const k = LIFTBIG_STORAGE_KEYS
-  const legacy = legacyTypedFieldsToBundle(workoutsRaw, templatesRaw, settingsRaw)
+  const legacy = legacyTypedFieldsToBundle(workoutsRaw, templatesRaw, settingsRaw, customThemesRaw)
   const out = { ...base }
   if (workoutsRaw !== undefined && out[k.workouts] === undefined)
     out[k.workouts] = legacy[k.workouts]!
@@ -154,6 +180,8 @@ function mergeBundleWithLegacyTypedCandidates(
     out[k.templates] = legacy[k.templates]!
   if (settingsRaw !== undefined && out[k.settings] === undefined)
     out[k.settings] = legacy[k.settings]!
+  if (customThemesRaw !== undefined && out[k.customThemes] === undefined)
+    out[k.customThemes] = legacy[k.customThemes]!
   return out
 }
 
@@ -175,10 +203,22 @@ function parseTemplatesFromBundleString(raw: string | undefined): WorkoutTemplat
   }
 }
 
-function parseSettingsFromBundleString(raw: string | undefined): AppSettings {
+function parseCustomThemesFromBundleString(raw: string | undefined): CustomTheme[] {
+  if (raw === undefined || raw === '') return []
+  try {
+    return sanitizeCustomThemes(JSON.parse(raw))
+  } catch {
+    return []
+  }
+}
+
+function parseSettingsFromBundleString(
+  raw: string | undefined,
+  customThemes: CustomTheme[] = [],
+): AppSettings {
   if (raw === undefined || raw === '') return { ...DEFAULT_SETTINGS }
   try {
-    return normalizeSettings(JSON.parse(raw))
+    return normalizeSettings(JSON.parse(raw), customThemes)
   } catch {
     return { ...DEFAULT_SETTINGS }
   }
@@ -186,13 +226,15 @@ function parseSettingsFromBundleString(raw: string | undefined): AppSettings {
 
 function typedViewsFromBundle(bundle: Record<string, string>): Pick<
   LiftBigBackupFile,
-  'liftbig_workouts' | 'liftbig_templates' | 'liftbig_settings'
+  'liftbig_workouts' | 'liftbig_templates' | 'liftbig_settings' | 'liftbig_custom_themes'
 > {
   const k = LIFTBIG_STORAGE_KEYS
+  const liftbig_custom_themes = parseCustomThemesFromBundleString(bundle[k.customThemes])
   return {
     liftbig_workouts: parseWorkoutsFromBundleString(bundle[k.workouts]),
     liftbig_templates: parseTemplatesFromBundleString(bundle[k.templates]),
-    liftbig_settings: parseSettingsFromBundleString(bundle[k.settings]),
+    liftbig_settings: parseSettingsFromBundleString(bundle[k.settings], liftbig_custom_themes),
+    liftbig_custom_themes,
   }
 }
 
@@ -255,11 +297,13 @@ export function parseLiftBigBackupJson(text: string): ParseBackupResult {
   let workoutsRaw = o[k.workouts]
   let templatesRaw = o[k.templates]
   let settingsRaw = o[k.settings]
+  let customThemesRaw = o[k.customThemes] ?? o.liftbig_custom_themes
 
   if (
     workoutsRaw === undefined &&
     templatesRaw === undefined &&
     settingsRaw === undefined &&
+    customThemesRaw === undefined &&
     typeof o.data === 'object' &&
     o.data !== null
   ) {
@@ -268,10 +312,14 @@ export function parseLiftBigBackupJson(text: string): ParseBackupResult {
     workoutsRaw = inner[k.workouts]
     templatesRaw = inner[k.templates]
     settingsRaw = inner[k.settings]
+    customThemesRaw = inner[k.customThemes] ?? inner.liftbig_custom_themes
   }
 
   const hasTypedLegacy =
-    workoutsRaw !== undefined || templatesRaw !== undefined || settingsRaw !== undefined
+    workoutsRaw !== undefined ||
+    templatesRaw !== undefined ||
+    settingsRaw !== undefined ||
+    customThemesRaw !== undefined
 
   const bundleEmpty = !bundle || Object.keys(bundle).length === 0
 
@@ -285,13 +333,19 @@ export function parseLiftBigBackupJson(text: string): ParseBackupResult {
 
   let mergedBundle: Record<string, string>
   if (bundleEmpty) {
-    mergedBundle = legacyTypedFieldsToBundle(workoutsRaw, templatesRaw, settingsRaw)
+    mergedBundle = legacyTypedFieldsToBundle(
+      workoutsRaw,
+      templatesRaw,
+      settingsRaw,
+      customThemesRaw,
+    )
   } else {
     mergedBundle = mergeBundleWithLegacyTypedCandidates(
       bundle as Record<string, string>,
       workoutsRaw,
       templatesRaw,
       settingsRaw,
+      customThemesRaw,
     )
   }
 

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
+import { useWorkoutSetLoggingFocusConsumer } from '@/composables/useWorkoutSetLoggingFocus'
 import type { SetLog } from '@/types/workout'
 import { finiteGoalRepMaxForScroll, REP_QUICK_PICK_DESCENDING } from '@/utils/progressiveOverload'
+import { haptic } from '@/utils/haptics'
+import { createDoubleTapDetector } from '@/utils/doubleTap'
+import CoreDurationInput from '@/components/workout/CoreDurationInput.vue'
 import {
   displayInputToStoredLbsString,
   parseStoredLbs,
@@ -15,6 +19,8 @@ const REPS_MENU_TARGET_VISIBLE_INDEX = 2
 const props = defineProps<{
   set: SetLog
   index: number
+  /** Id of the next set in the same exercise (for auto-advance focus). */
+  nextSetId?: string
   targetReps?: string
   /** First set: goal weight (stored lb string) — scroll picker to this row. */
   targetWeightStored?: string
@@ -22,14 +28,40 @@ const props = defineProps<{
   priorSetWeightStored?: string
   /** Sets after the first: prior row’s reps — reps picker scroll centers on this when opening. */
   priorSetReps?: string
+  /** Core exercises: show optional time column. */
+  showDuration?: boolean
+  /** Goal time in seconds for the duration input placeholder. */
+  targetDurationSeconds?: string
+  /** Sets after the first: prior row’s logged duration (seconds). */
+  priorSetDurationSeconds?: string
 }>()
 
 const emit = defineEmits<{
-  update: [field: 'reps' | 'weight', value: string]
+  update: [field: 'reps' | 'weight' | 'durationSeconds', value: string]
+  toggleWarmup: []
   delete: []
+  advanceToNextWeight: []
 }>()
 
+const isWarmup = computed(() => props.set.isWarmup === true)
+
+function isWorkingSetComplete(set: SetLog): boolean {
+  return set.reps.trim() !== '' && set.weight.trim() !== ''
+}
+
+watch(
+  () => [props.set.reps, props.set.weight, props.set.isWarmup] as const,
+  ([reps, weight, warmup], prev) => {
+    if (warmup === true) return
+    const wasComplete = prev ? prev[0].trim() !== '' && prev[1].trim() !== '' : false
+    if (isWorkingSetComplete({ ...props.set, reps, weight }) && !wasComplete) {
+      haptic('success')
+    }
+  },
+)
+
 const settings = inject(settingsInjectionKey)!
+const setLoggingFocus = useWorkoutSetLoggingFocusConsumer()
 const weightUnit = computed(() => settings.weightUnit.value)
 const showWeightMenu = ref(false)
 const showRepsMenu = ref(false)
@@ -195,7 +227,19 @@ function onWeightInput(raw: string) {
   emit('update', 'weight', displayInputToStoredLbsString(raw, weightUnit.value))
 }
 
+function syncSetLoggingFocus() {
+  const el = document.activeElement
+  const inputFocused =
+    el instanceof HTMLElement && el.matches('[data-workout-set-input]')
+  if (showWeightMenu.value || showRepsMenu.value || inputFocused) {
+    setLoggingFocus?.enter()
+  } else {
+    setLoggingFocus?.leave(0)
+  }
+}
+
 async function onWeightFocus() {
+  setLoggingFocus?.enter()
   cancelWeightMenuHide()
   showWeightMenu.value = true
   await nextTick()
@@ -205,6 +249,7 @@ async function onWeightFocus() {
 }
 
 async function onRepsFocus() {
+  setLoggingFocus?.enter()
   cancelRepsMenuHide()
   showRepsMenu.value = true
   await nextTick()
@@ -212,6 +257,10 @@ async function onRepsFocus() {
     alignRepsMenuScroll()
   })
 }
+
+watch([showWeightMenu, showRepsMenu], () => {
+  syncSetLoggingFocus()
+})
 
 watch(
   () =>
@@ -249,6 +298,7 @@ function hideWeightMenuSoon() {
   weightMenuHideTimer = window.setTimeout(() => {
     weightMenuHideTimer = null
     showWeightMenu.value = false
+    syncSetLoggingFocus()
   }, MENU_HIDE_AFTER_BLUR_MS)
 }
 
@@ -257,6 +307,7 @@ function hideRepsMenuSoon() {
   repsMenuHideTimer = window.setTimeout(() => {
     repsMenuHideTimer = null
     showRepsMenu.value = false
+    syncSetLoggingFocus()
   }, MENU_HIDE_AFTER_BLUR_MS)
 }
 
@@ -278,30 +329,97 @@ function selectWeightOption(rawDisplay: string) {
   cancelWeightMenuHide()
   onWeightInput(rawDisplay)
   showWeightMenu.value = false
+  syncSetLoggingFocus()
 }
 
 function selectRepsOption(raw: string) {
   cancelRepsMenuHide()
   emit('update', 'reps', raw)
   showRepsMenu.value = false
+  syncSetLoggingFocus()
+  maybeAdvanceAfterReps(raw)
+}
+
+function onRepsBlur() {
+  hideRepsMenuSoon()
+  maybeAdvanceAfterReps(props.set.reps)
+}
+
+function maybeAdvanceAfterReps(repsValue: string) {
+  if (!settings.autoAdvanceRepsToWeight.value) return
+  if (!props.nextSetId) return
+  if (!repsValue.trim()) return
+  window.setTimeout(() => emit('advanceToNextWeight'), MENU_HIDE_AFTER_BLUR_MS + 40)
+}
+
+function onWeightDoubleTap() {
+  if (!settings.doubleTapCopyWeight.value) return
+  if (props.index <= 0) return
+  const prior = (props.priorSetWeightStored ?? '').trim()
+  if (!prior) return
+  haptic('tap')
+  emit('update', 'weight', prior)
+}
+
+function onRepsDoubleTap() {
+  if (!settings.doubleTapCopyWeight.value) return
+  if (props.index <= 0) return
+  const prior = (props.priorSetReps ?? '').trim()
+  if (!prior) return
+  haptic('tap')
+  emit('update', 'reps', prior)
+}
+
+const weightDoubleTap = createDoubleTapDetector(onWeightDoubleTap)
+const repsDoubleTap = createDoubleTapDetector(onRepsDoubleTap)
+
+function handleWeightTap(e: MouseEvent) {
+  if (weightDoubleTap.registerTap()) e.preventDefault()
+}
+
+function handleRepsTap(e: MouseEvent) {
+  if (repsDoubleTap.registerTap()) e.preventDefault()
 }
 </script>
 
 <template>
-  <div class="relative mb-2 flex min-w-0 items-center gap-2">
-    <div class="flex w-16 shrink-0 flex-col items-center">
-      <span class="text-[11px] font-semibold text-muted">Set {{ index + 1 }}</span>
-      <span v-if="targetReps" class="mt-0.5 text-[9px] font-bold text-primary">{{ targetReps }}</span>
+  <div
+    class="relative mb-2 flex min-w-0 items-center gap-2"
+    :class="isWarmup ? 'rounded-lg bg-amber-500/10 px-1 -mx-1' : ''"
+  >
+    <div class="flex w-14 shrink-0 flex-col items-center">
+      <button
+        type="button"
+        class="rounded px-1 py-0.5 text-[11px] font-semibold transition-colors hover:bg-card-inner"
+        :class="isWarmup ? 'text-amber-400' : 'text-muted hover:text-foreground'"
+        :aria-pressed="isWarmup"
+        :title="
+          isWarmup
+            ? 'Warmup set — excluded from progress. Tap to mark as working set.'
+            : 'Tap to mark as warmup (excluded from progress)'
+        "
+        @click="emit('toggleWarmup')"
+      >
+        {{ isWarmup ? 'Warmup' : `Set ${index + 1}` }}
+      </button>
+      <span
+        v-if="targetReps && !isWarmup"
+        class="mt-0.5 text-[9px] font-bold text-primary"
+      >{{ targetReps }}</span>
     </div>
     <div class="relative min-w-0 flex-1 basis-0">
       <input
         :value="storedLbsStringToDisplay(set.weight, weightUnit)"
         type="text"
         inputmode="decimal"
-        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+        data-touch-input
+        data-workout-set-input
+        :data-set-weight="set.id"
+        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="weightUnit === 'lb' ? 'lb' : 'kg'"
         @focus="onWeightFocus"
-        @blur="hideWeightMenuSoon"
+        @blur="hideWeightMenuSoon(); weightDoubleTap.reset()"
+        @click="handleWeightTap"
         @input="onWeightInput(($event.target as HTMLInputElement).value)"
       />
       <div
@@ -338,10 +456,13 @@ function selectRepsOption(raw: string) {
         :value="set.reps"
         type="text"
         inputmode="numeric"
-        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-[15px] text-foreground outline-none focus:border-primary"
+        data-touch-input
+        data-workout-set-input
+        class="min-w-0 w-full rounded-lg border border-border bg-card-inner px-2 py-1.5 text-center text-base text-foreground outline-none focus:border-primary"
         :placeholder="repsPlaceholder"
         @focus="onRepsFocus"
-        @blur="hideRepsMenuSoon"
+        @blur="onRepsBlur(); repsDoubleTap.reset()"
+        @click="handleRepsTap"
         @input="emit('update', 'reps', ($event.target as HTMLInputElement).value)"
       />
       <div
@@ -362,6 +483,14 @@ function selectRepsOption(raw: string) {
           {{ opt }}
         </button>
       </div>
+    </div>
+    <div v-if="showDuration" class="relative min-w-0 flex-1 basis-0">
+      <CoreDurationInput
+        :model-value="set.durationSeconds ?? ''"
+        :target-duration-seconds="targetDurationSeconds"
+        placeholder="Time"
+        @update:model-value="emit('update', 'durationSeconds', $event)"
+      />
     </div>
     <button
       type="button"
