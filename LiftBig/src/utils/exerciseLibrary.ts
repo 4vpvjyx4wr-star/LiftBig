@@ -1,3 +1,5 @@
+import { EXERCISE_TUTORIAL_URLS } from './exerciseTutorials'
+
 export const MUSCLE_GROUPS = [
   'chest',
   'back',
@@ -26,6 +28,8 @@ export type LibraryExercise = {
   tips?: string[]
   /** Short coaching checkpoints users can scan before each set (posture, rhythm, safety). */
   cues?: string[]
+  /** Short-form YouTube tutorial focused on form and cues. */
+  tutorialUrl?: string
 }
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
@@ -45,8 +49,10 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
 const byId = new Map<string, LibraryExercise>()
 
 function reg(ex: LibraryExercise): LibraryExercise {
-  byId.set(ex.id, ex)
-  return ex
+  const tutorialUrl = ex.tutorialUrl ?? EXERCISE_TUTORIAL_URLS[ex.id]
+  const entry = tutorialUrl ? { ...ex, tutorialUrl } : ex
+  byId.set(entry.id, entry)
+  return entry
 }
 
 export const EXERCISE_LIBRARY: LibraryExercise[] = [

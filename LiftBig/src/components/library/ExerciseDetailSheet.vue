@@ -7,6 +7,7 @@ import {
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { MUSCLE_GROUP_LABELS } from '@/utils/exerciseLibrary'
 import { hasUserLoggedLibraryExercise } from '@/utils/libraryExerciseTracking'
+import { youtubeEmbedUrl } from '@/utils/youtube'
 
 const props = defineProps<{
   open: boolean
@@ -23,6 +24,11 @@ const favorites = inject(libraryFavoritesInjectionKey)!
 const isLogged = computed(() =>
   props.exercise ? hasUserLoggedLibraryExercise(workouts.log.value, props.exercise) : false,
 )
+
+const tutorialEmbedUrl = computed(() => {
+  const url = props.exercise?.tutorialUrl
+  return url ? youtubeEmbedUrl(url) : null
+})
 
 function toggleFavorite() {
   if (!props.exercise) return
@@ -101,6 +107,31 @@ function toggleFavorite() {
             {{ tag }}
           </span>
         </div>
+
+        <section v-if="tutorialEmbedUrl && exercise.tutorialUrl" class="mt-6">
+          <h4 class="text-xs font-bold uppercase tracking-wide text-muted">Form tutorial</h4>
+          <div
+            class="mt-2 overflow-hidden rounded-xl border border-border bg-black aspect-video"
+          >
+            <iframe
+              :src="tutorialEmbedUrl"
+              :title="`${exercise.name} form tutorial`"
+              class="h-full w-full"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            />
+          </div>
+          <a
+            :href="exercise.tutorialUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-foreground"
+          >
+            <i class="fa-brands fa-youtube" aria-hidden="true" />
+            Open on YouTube
+          </a>
+        </section>
 
         <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">How to perform</h4>
         <ol class="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
