@@ -1,0 +1,27 @@
+---
+description: LiftBig production context — web app only, not Expo Go
+alwaysApply: true
+---
+
+# LiftBig agent context
+
+Read `CONTEXT.md` at the repo root before planning or implementing changes.
+
+## Production only
+
+- **Live site:** https://liftbig.julianmcgookin.com
+- **Stack:** Vue 3 + Vite PWA; static output in `dist/`
+- **Deploy:** Cloudflare Pages from `main`, output directory `dist`
+- **Patches:** `web/patches/` + `npm run build:web`
+
+## Do not use Expo Go
+
+- We are **not** on Expo Go. Do not plan features for Expo Go or assume the Expo dev client is the product.
+- The `app/` folder is legacy Expo/React Native and does **not** power the live URL.
+- Do not add or change `app/(tabs)/*` for user-facing features unless explicitly requested for mobile.
+
+## Implementation default
+
+1. Change `web/patches/` or production bundles → rebuild with `npm run build:web`
+2. Commit `dist/` and push to `main`
+3. Verify on the live URL
