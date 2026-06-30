@@ -2519,6 +2519,233 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Relax shoulders and jaw.',
     ],
   }),
+  reg({
+    id: 'machine-shoulder-press',
+    name: 'Machine Shoulder Press',
+    muscleGroups: ['shoulders', 'triceps'],
+    tags: ['machine', 'push', 'vertical press'],
+    equipment: 'Machine',
+    summary: 'Seated overhead press on a plate-loaded or selectorized shoulder-press machine.',
+    instructions: [
+      'Adjust the seat so the handles start at about shoulder height.',
+      'Sit tall with your back against the pad and grip the handles.',
+      'Press straight up until arms are nearly locked without shrugging.',
+      'Lower under control until elbows reach shoulder level.',
+    ],
+    tips: [
+      'Keep the movement smooth—avoid clanking the stack at the bottom.',
+      'Brace the core and keep ribs down to protect the lower back.',
+    ],
+    cues: [
+      'Back flat on the pad; press through the heels of your hands.',
+      'Stop the lockout just short of fully straight elbows.',
+      'Control the negative—no bouncing out of the bottom.',
+    ],
+  }),
+  reg({
+    id: 'back-extension',
+    name: 'Back Extension',
+    muscleGroups: ['back', 'glutes', 'hamstrings'],
+    tags: ['machine', 'hyperextension', 'posterior chain', 'lower back'],
+    equipment: 'Machine',
+    summary: 'Hip/torso extension on a 45° bench or seated machine to train the lower back, glutes, and hamstrings.',
+    instructions: [
+      'Set the pad at the hip crease (45° bench) or against the upper back (machine).',
+      'Start with the torso flexed forward or the pad forward.',
+      'Extend until the body forms a straight line—do not hyperextend the spine.',
+      'Lower under control back to the start.',
+    ],
+    tips: [
+      'Stop at a neutral, straight-body position rather than arching hard.',
+      'Add load by holding a plate or increasing the stack only when form is solid.',
+    ],
+    cues: [
+      'Hinge from the hips, not the lumbar spine.',
+      'Squeeze glutes at the top; spine stays long.',
+      'Smooth tempo—no jerking up or dropping down.',
+    ],
+  }),
+  reg({
+    id: 'assisted-dip',
+    name: 'Assisted Dip',
+    muscleGroups: ['chest', 'triceps', 'shoulders'],
+    tags: ['machine', 'push', 'assisted', 'bodyweight'],
+    equipment: 'Machine',
+    summary: 'Parallel-bar dip with a counterweight machine that offsets bodyweight (logged weight = assistance amount).',
+    instructions: [
+      'Set the assistance weight, then kneel or stand on the platform and grip the bars.',
+      'Start with arms extended and shoulders down away from the ears.',
+      'Lower until the upper arms are about parallel to the floor.',
+      'Press back up to lockout without shrugging.',
+    ],
+    tips: [
+      'A higher assistance number means more help (easier)—lower it as you get stronger.',
+      'Lean slightly forward to bias the chest, stay upright to bias triceps.',
+    ],
+    cues: [
+      'Shoulders packed down; elbows track back, not flared wide.',
+      'Controlled depth—no bouncing at the bottom.',
+      'Full lockout at the top without losing posture.',
+    ],
+  }),
+  reg({
+    id: 'machine-bicep-curl',
+    name: 'Machine Bicep Curl',
+    muscleGroups: ['biceps', 'forearms'],
+    tags: ['machine', 'curl', 'arms', 'isolation'],
+    equipment: 'Machine',
+    summary: 'Seated biceps curl on a preacher-style or selectorized curl machine.',
+    instructions: [
+      'Adjust the seat so the upper arms rest flat on the pad.',
+      'Grip the handles with elbows aligned to the machine pivot.',
+      'Curl until the biceps are fully contracted.',
+      'Lower under control to a near-straight arm position.',
+    ],
+    tips: [
+      'Keep the upper arms glued to the pad through the whole rep.',
+      'Avoid slamming the stack on the way down.',
+    ],
+    cues: [
+      'Elbows pinned to the pad; only the forearms move.',
+      'Squeeze at the top for a beat.',
+      'Resist the negative—do not let the weight drop.',
+    ],
+  }),
+  reg({
+    id: 'machine-triceps-extension',
+    name: 'Machine Triceps Extension',
+    muscleGroups: ['triceps'],
+    tags: ['machine', 'extension', 'arms', 'isolation'],
+    equipment: 'Machine',
+    summary: 'Seated triceps extension/press on a selectorized triceps machine.',
+    instructions: [
+      'Set the seat and grip the handles with elbows aligned to the pivot.',
+      'Keep the upper arms fixed and extend the elbows against resistance.',
+      'Reach a full but not locked-out extension.',
+      'Return under control without letting the elbows drift forward.',
+    ],
+    tips: [
+      'Keep shoulders down and back against the pad.',
+      'Lighten the load if the elbows hurt at full extension.',
+    ],
+    cues: [
+      'Upper arms still; drive through the heels of the hands.',
+      'Full extension, then a controlled return.',
+      'No shrugging or leaning to move the weight.',
+    ],
+  }),
+  reg({
+    id: 'dumbbell-shrug',
+    name: 'Dumbbell Shrug',
+    muscleGroups: ['back', 'forearms'],
+    tags: ['dumbbell', 'traps', 'isolation'],
+    equipment: 'Dumbbell',
+    summary: 'Standing shrug with a dumbbell in each hand to train the upper traps.',
+    instructions: [
+      'Stand tall with a dumbbell in each hand, arms straight at your sides.',
+      'Shrug the shoulders straight up toward the ears.',
+      'Pause at the top, then lower under control.',
+    ],
+    tips: [
+      'Lift straight up and down—avoid rolling the shoulders.',
+      'Use a controlled tempo and a brief squeeze at the top.',
+    ],
+    cues: [
+      'Arms stay long; let the traps do the work.',
+      'Shrug to the ears, pause, then lower fully.',
+      'Keep the chin level and core braced.',
+    ],
+  }),
+  reg({
+    id: 'hip-abductor-machine',
+    name: 'Hip Abductor Machine',
+    muscleGroups: ['glutes'],
+    tags: ['machine', 'glute med', 'isolation'],
+    equipment: 'Machine',
+    summary: 'Seated outward leg press against pads to target the gluteus medius and outer hips.',
+    instructions: [
+      'Sit with the outer thighs against the pads and feet on the rests.',
+      'Press the knees outward against resistance as far as comfortable.',
+      'Pause at the end range, then return under control.',
+    ],
+    tips: [
+      'Lean slightly forward to bias the upper glute, upright for the lower glute.',
+      'Avoid using momentum to fling the pads open.',
+    ],
+    cues: [
+      'Drive the knees apart from the side glutes.',
+      'Pause and squeeze at full abduction.',
+      'Smooth, controlled return—no slamming.',
+    ],
+  }),
+  reg({
+    id: 'captains-chair-knee-raise',
+    name: "Captain's Chair Knee Raise",
+    muscleGroups: ['core'],
+    tags: ['captains chair', 'lower abs', 'hanging variation'],
+    equipment: 'Machine',
+    summary: 'Knee raise from the captain’s chair (vertical bench) with forearms on the pads.',
+    instructions: [
+      'Rest the forearms on the pads and grip the handles; let the legs hang.',
+      'Press the lower back lightly into the pad and brace the core.',
+      'Raise the knees toward the chest by curling the pelvis up.',
+      'Lower the legs under control without swinging.',
+    ],
+    tips: [
+      'Curl the hips slightly at the top to involve the lower abs.',
+      'Avoid using momentum—keep the movement deliberate.',
+    ],
+    cues: [
+      'Initiate from the abs, not the hip flexors alone.',
+      'No swinging—control both up and down.',
+      'Exhale as the knees rise.',
+    ],
+  }),
+  reg({
+    id: 'captains-chair-leg-raise',
+    name: "Captain's Chair Leg Raise",
+    muscleGroups: ['core'],
+    tags: ['captains chair', 'lower abs', 'hanging variation'],
+    equipment: 'Machine',
+    summary: 'Straight(er)-leg raise from the captain’s chair for greater lower-ab loading.',
+    instructions: [
+      'Rest the forearms on the pads and grip the handles; let the legs hang.',
+      'Brace the core and keep the legs relatively straight.',
+      'Raise the legs toward hip height (or higher) by curling the pelvis up.',
+      'Lower under control without arching or swinging.',
+    ],
+    tips: [
+      'Bend the knees slightly if straight legs strain the hip flexors or back.',
+      'Quality range beats swinging the legs high with momentum.',
+    ],
+    cues: [
+      'Posterior pelvic tilt at the top—abs do the lifting.',
+      'Slow negative; no rocking.',
+      'Keep shoulders packed on the pads.',
+    ],
+  }),
+  reg({
+    id: 'sit-up',
+    name: 'Sit-Up',
+    muscleGroups: ['core'],
+    tags: ['bodyweight', 'abs', 'flexion'],
+    equipment: 'Bodyweight',
+    summary: 'Classic full sit-up curling the torso all the way up from the floor.',
+    instructions: [
+      'Lie on your back with knees bent and feet flat (anchored if needed).',
+      'Curl the torso up until the chest approaches the thighs.',
+      'Lower under control until the shoulder blades touch the floor.',
+    ],
+    tips: [
+      'Lead with the rib cage toward the pelvis rather than yanking the neck.',
+      'Add a plate on the chest to load the movement when bodyweight is easy.',
+    ],
+    cues: [
+      'Chin a fist-width from the chest; hands light behind the head.',
+      'Exhale on the way up.',
+      'Control the descent—no flopping back down.',
+    ],
+  }),
 ]
 
 import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
@@ -2716,6 +2943,59 @@ registerExerciseAliases('machine-pullover', ['machine pullover', 'pullover machi
 registerExerciseAliases('cable-side-crunch', ['cable side crunches', 'side cable crunch', 'standing cable side crunch'])
 registerExerciseAliases('weighted-decline-situp', ['weighted decline sit up', 'decline weighted situp', 'decline sit up weighted'])
 registerExerciseAliases('dead-bug', ['dead bugs', 'deadbug'])
+registerExerciseAliases('machine-shoulder-press', [
+  'machine shoulder press',
+  'shoulder press machine',
+  'seated shoulder press machine',
+])
+registerExerciseAliases('back-extension', [
+  'back extension',
+  'back extensions',
+  'hyperextension',
+  'hyper extension',
+  '45 degree back extension',
+])
+registerExerciseAliases('assisted-dip', [
+  'assisted dip',
+  'assisted dips',
+  'machine assisted dip',
+])
+registerExerciseAliases('machine-bicep-curl', [
+  'machine bicep curl',
+  'machine bicep curls',
+  'bicep curl machine',
+  'machine biceps curl',
+])
+registerExerciseAliases('machine-triceps-extension', [
+  'machine tricep extension',
+  'machine triceps extension',
+  'tricep extension machine',
+  'triceps extension machine',
+  'seated tricep extension machine',
+])
+registerExerciseAliases('dumbbell-shrug', [
+  'dumbbell shrug',
+  'dumbbell shrugs',
+  'db shrug',
+  'db shrugs',
+])
+registerExerciseAliases('hip-abductor-machine', [
+  'hip abductor',
+  'hip abductors',
+  'hip abduction machine',
+  'abductor machine',
+])
+registerExerciseAliases('captains-chair-knee-raise', [
+  'captains chair knee raise',
+  'captains chair knee raises',
+  'captain s chair knee raise',
+])
+registerExerciseAliases('captains-chair-leg-raise', [
+  'captains chair leg raise',
+  'captains chair leg raises',
+  'captain s chair leg raise',
+])
+registerExerciseAliases('sit-up', ['sit up', 'sit ups', 'situp', 'situps'])
 
 /** Body-region terms only — not movement keywords like "push" or "curl". */
 const BODY_REGION_ALIASES: Record<string, MuscleGroup[]> = {

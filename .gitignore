@@ -50,3 +50,9 @@ Desktop.ini
 *.sw?
 *.swp
 *~
+
+*.data.txt
+*.data.json
+
+scripts-gen-cody.mjs
+scripts-validate-cody.mjs
