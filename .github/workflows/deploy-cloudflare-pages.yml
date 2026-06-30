@@ -36,7 +36,7 @@ jobs:
       - name: Verify library Max/Avg patches
         run: |
           grep -q 'maxSet' dist/assets/libraryExerciseTracking-CAhSe-yn.js
-          grep -q 'formatTileMax' dist/assets/LibraryBrowser-BlmrAKrd.js
+          grep -q '},"Avg"' dist/assets/LibraryBrowser-BlmrAKrd.js
           test "$(wc -c < dist/assets/LibraryBrowser-BlmrAKrd.js)" -gt 15000
 
       - name: Upload dist artifact
