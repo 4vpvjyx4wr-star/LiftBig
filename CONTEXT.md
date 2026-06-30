@@ -26,6 +26,13 @@ The live site is a **Vue 3 + Vite** progressive web app (PWA), not the Expo/Reac
 
 Deployment is via **Cloudflare Pages** from the `main` branch with build output directory **`dist`**.
 
+If changes are in GitHub but not on the live site, Cloudflare is not deploying this repo yet. Fix:
+
+1. In [Cloudflare Pages](https://dash.cloudflare.com/) → **liftbig** → connect **4vpvjyx4wr-star/LiftBig**, branch `main`, output directory `dist` (build command optional: `npm run build:web`).
+2. Or add GitHub repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` so `.github/workflows/deploy-cloudflare-pages.yml` uploads `dist/` on each push.
+3. After deploy, open `https://liftbig.julianmcgookin.com/version.json` — it should list `library-tile-max-avg`.
+4. On a phone with the PWA installed: fully close the app, reopen, or clear site data if tiles still look old (service worker cache).
+
 ## Expo / React Native (legacy)
 
 The `app/` directory is an **older Expo/React Native client**. It is **not** what powers liftbig.julianmcgookin.com.

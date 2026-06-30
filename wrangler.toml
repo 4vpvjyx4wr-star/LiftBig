@@ -1,3 +1,8 @@
 name = "liftbig"
 compatibility_date = "2024-06-01"
 pages_build_output_dir = "dist"
+
+# Cloudflare Pages: connect GitHub repo 4vpvjyx4wr-star/LiftBig, branch main,
+# build command: npm run build:web (or leave empty to deploy committed dist/),
+# output directory: dist
+# Also set GitHub secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID for Actions deploy.
