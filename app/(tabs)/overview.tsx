@@ -99,7 +99,7 @@ export default function OverviewScreen() {
     },
   })).current;
 
-  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(1);
+  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe();
 
   const deleteWorkout = (dateKey: string) => {
     Alert.alert("Delete Workout", "Remove all exercises for this day?", [

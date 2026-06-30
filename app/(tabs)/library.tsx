@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { seedDefaultPlans } from "../../utils/defaultPlans";
 import {
   formatSetStat,
   getLibraryLiftNames,
@@ -29,37 +30,40 @@ type LiftTileData = {
   hasHistory: boolean;
 };
 
-const LiftTile = React.memo(function LiftTile({ item }: { item: LiftTileData }) (
+const LiftTile = React.memo(function LiftTile({ item }: { item: LiftTileData }) {
+  return (
   <View style={s.liftTile}>
     <Text style={s.liftName} numberOfLines={2}>
       {item.name}
     </Text>
     <View style={s.statsRow}>
       <View style={s.statBlock}>
-        <Text style={s.statLabel}>Max</Text>
+        <Text style={s.statLabel}>MAX</Text>
         <Text style={[s.statValue, !item.maxLabel && s.statEmpty]}>
           {item.maxLabel ?? "—"}
         </Text>
       </View>
       <View style={s.statDivider} />
       <View style={s.statBlock}>
-        <Text style={s.statLabel}>Avg</Text>
+        <Text style={s.statLabel}>AVG</Text>
         <Text style={[s.statValue, !item.avgLabel && s.statEmpty]}>
           {item.avgLabel ?? "—"}
         </Text>
       </View>
     </View>
   </View>
-));
+  );
+});
 
 export default function LibraryScreen() {
   const [workouts, setWorkouts] = useState<WorkoutLog>({});
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [search, setSearch] = useState("");
-  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(3);
+  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe();
 
   useFocusEffect(
     useCallback(() => {
+      seedDefaultPlans();
       Promise.all([
         AsyncStorage.getItem(WORKOUTS_KEY),
         AsyncStorage.getItem(TEMPLATES_KEY),
@@ -93,41 +97,47 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={["top"]}>
-      <Animated.View style={[s.header, { transform: [{ translateX: tabX }] }]} {...tabPan}>
-        <Text style={s.appName}>LIFTBIG</Text>
-        <Text style={s.appTagline}>Exercise Library</Text>
-      </Animated.View>
+      <Animated.View
+        style={[s.content, { transform: [{ translateX: tabX }] }]}
+        {...tabPan}
+      >
+        <View style={s.header}>
+          <Text style={s.appName}>LIFTBIG</Text>
+          <Text style={s.appTagline}>Exercise Library</Text>
+        </View>
 
-      <View style={s.searchWrap}>
-        <TextInput
-          style={s.searchInput}
-          placeholder="Search lifts..."
-          placeholderTextColor={MUTED}
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
+        <View style={s.searchWrap}>
+          <TextInput
+            style={s.searchInput}
+            placeholder="Search lifts..."
+            placeholderTextColor={MUTED}
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+
+        <FlatList
+          style={s.list}
+          data={tiles}
+          keyExtractor={(item) => item.name}
+          numColumns={2}
+          columnWrapperStyle={s.row}
+          contentContainerStyle={s.listContent}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Text style={s.emptyIcon}>📚</Text>
+              <Text style={s.emptyText}>No lifts found.</Text>
+              <Text style={s.emptySubtext}>
+                Lifts appear here from your plans and workout history.
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => <LiftTile item={item} />}
         />
-      </View>
-
-      <FlatList
-        data={tiles}
-        keyExtractor={(item) => item.name}
-        numColumns={2}
-        columnWrapperStyle={s.row}
-        contentContainerStyle={s.listContent}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <Text style={s.emptyIcon}>📚</Text>
-            <Text style={s.emptyText}>No lifts found.</Text>
-            <Text style={s.emptySubtext}>
-              Lifts appear here from your plans and workout history.
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => <LiftTile item={item} />}
-      />
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -141,6 +151,7 @@ const MUTED = "#4A5A7A";
 
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
+  content: { flex: 1 },
   header: { paddingHorizontal: 20, paddingTop: 2, paddingBottom: 6 },
   appName: { fontSize: 36, fontWeight: "900", color: ORANGE, letterSpacing: 4 },
   appTagline: { fontSize: 10, color: MUTED, letterSpacing: 2, marginTop: 0 },
@@ -157,6 +168,7 @@ const s = StyleSheet.create({
     fontSize: 15,
   },
 
+  list: { flex: 1 },
   listContent: { paddingHorizontal: 12, paddingBottom: 100 },
   row: { gap: 10, marginBottom: 10 },
 
@@ -167,7 +179,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     padding: 12,
-    minHeight: 110,
+    minHeight: 118,
     justifyContent: "space-between",
   },
   liftName: {
@@ -183,18 +195,19 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: BORDER,
     paddingTop: 8,
+    marginTop: "auto",
   },
   statBlock: { flex: 1, alignItems: "center" },
-  statDivider: { width: 1, height: 28, backgroundColor: BORDER },
+  statDivider: { width: 1, height: 30, backgroundColor: BORDER },
   statLabel: {
     color: MUTED,
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.8,
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  statValue: { color: ORANGE, fontSize: 12, fontWeight: "800" },
-  statEmpty: { color: MUTED, fontWeight: "600" },
+  statValue: { color: ORANGE, fontSize: 13, fontWeight: "800" },
+  statEmpty: { color: MUTED, fontWeight: "600", fontSize: 12 },
 
   empty: { alignItems: "center", marginTop: 80, paddingHorizontal: 30 },
   emptyIcon: { fontSize: 44 },
