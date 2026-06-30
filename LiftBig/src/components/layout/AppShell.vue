@@ -82,8 +82,7 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
       class="sticky top-0 z-50 w-full shrink-0 border-b border-border bg-header-bg/95 backdrop-blur-sm supports-[backdrop-filter]:bg-header-bg/80"
     >
       <div
-        class="mx-auto flex max-w-lg items-center justify-between gap-3 px-3 py-3"
-        :style="{ paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))' }"
+        class="mx-auto flex max-w-lg items-center justify-between gap-3 px-3 py-3 pt-safe-top"
       >
         <div class="min-w-0 flex-1">
           <h1 class="truncate text-2xl font-black tracking-[0.2em] text-primary sm:text-3xl">

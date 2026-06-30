@@ -604,7 +604,7 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
     </Teleport>
 
     <header
-      class="sticky top-0 z-30 flex items-start justify-between gap-2 border-b border-border bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm"
+      class="sticky top-0 z-30 flex items-start justify-between gap-2 border-b border-border bg-background/95 px-4 pb-3 pt-safe-top-lg backdrop-blur-sm"
     >
       <div class="min-w-0">
         <RouterLink
