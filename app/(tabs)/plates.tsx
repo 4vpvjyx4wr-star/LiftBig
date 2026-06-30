@@ -106,7 +106,7 @@ export default function PlatesScreen() {
   const [targetInput, setTargetInput] = useState("");
   const [barWeight, setBarWeight] = useState(45);
   const [result, setResult] = useState<{ plates: number[]; remainder: number } | null>(null);
-  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(3);
+  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(4);
 
   const calculate = () => {
     const target = parseFloat(targetInput);

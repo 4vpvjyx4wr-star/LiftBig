@@ -1,7 +1,7 @@
 // app/utils/progressiveOverload.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type SetLog = { reps: string; weight: string };
+export type SetLog = { reps: string; weight: string; isWarmup?: boolean };
 export type ExerciseLog = { id: string; name: string; sets: SetLog[] };
 export type WorkoutLog = { [dateKey: string]: ExerciseLog[] };
 
@@ -96,7 +96,7 @@ export async function getSuggestedWeight(
     // Look at the most recent session
     const lastSession = history[0];
     const completedSets = lastSession.sets.filter(
-      (s) => s.reps !== "" && s.weight !== ""
+      (s) => s.reps !== "" && s.weight !== "" && !s.isWarmup
     );
     if (completedSets.length === 0) {
       return { suggestedWeight: currentGoalWeight, reason: "No completed sets found" };

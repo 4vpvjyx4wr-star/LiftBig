@@ -13,12 +13,14 @@ const TAB_ICONS: Record<string, string> = {
   index: "🏠",
   overview: "📅",
   plans: "📋",
+  library: "📚",
   plates: "🏅",
 };
 const TAB_LABELS: Record<string, string> = {
   index: "HOME",
   overview: "CALENDAR",
   plans: "PLANS",
+  library: "LIBRARY",
   plates: "PLATES",
 };
 
@@ -125,6 +127,7 @@ export default function TabLayout() {
         <Tabs.Screen name="index"    options={{ title: "HOME" }} />
         <Tabs.Screen name="overview" options={{ title: "CALENDAR" }} />
         <Tabs.Screen name="plans"    options={{ title: "PLANS" }} />
+        <Tabs.Screen name="library"  options={{ title: "LIBRARY" }} />
         <Tabs.Screen name="plates"   options={{ title: "PLATES" }} />
         <Tabs.Screen name="workout-log" options={{ href: null }} />
       </Tabs>
