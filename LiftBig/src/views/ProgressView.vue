@@ -39,13 +39,15 @@ const activeNames = computed(() =>
 
 const filteredExerciseNames = computed(() => {
   const q = exerciseQuery.value.trim().toLowerCase()
-  if (!q) return exerciseNames.value
+  // Show every option when the box is empty or still holds the current selection,
+  // so focusing the field reveals the full list rather than just the picked name.
+  if (!q || exerciseQuery.value === selectedExercise.value) return exerciseNames.value
   return exerciseNames.value.filter((name) => name.toLowerCase().includes(q))
 })
 
 const filteredCardioNames = computed(() => {
   const q = cardioQuery.value.trim().toLowerCase()
-  if (!q) return cardioNames.value
+  if (!q || cardioQuery.value === selectedCardio.value) return cardioNames.value
   return cardioNames.value.filter((name) => name.toLowerCase().includes(q))
 })
 
@@ -244,7 +246,7 @@ function fmtLbs(lbs: number): string {
             autocomplete="off"
             class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
             placeholder="Search logged exercises..."
-            @focus="showSuggestions = true"
+            @focus="showSuggestions = true; ($event.target as HTMLInputElement).select()"
             @blur="hideSuggestionsSoon"
             @keydown.enter.prevent="confirmExerciseQuery"
           />
@@ -319,7 +321,7 @@ function fmtLbs(lbs: number): string {
             autocomplete="off"
             class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
             placeholder="Search logged cardio..."
-            @focus="showCardioSuggestions = true"
+            @focus="showCardioSuggestions = true; ($event.target as HTMLInputElement).select()"
             @blur="hideCardioSuggestionsSoon"
             @keydown.enter.prevent="confirmCardioQuery"
           />
