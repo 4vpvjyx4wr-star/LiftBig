@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:web": "node scripts/sync-web-dist.mjs && cd web && npm ci && npm run build",
+    "build:web": "node scripts/sync-web-dist.mjs && cd web && npm ci && npm run build && cd .. && node scripts/stamp-dist-version.mjs",
     "build:web:patch": "cd web && npm run build"
   },
   "dependencies": {
