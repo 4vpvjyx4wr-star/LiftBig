@@ -12,6 +12,7 @@ import { useLibraryFavorites } from '@/composables/useLibraryFavorites'
 import { useTemplates } from '@/composables/useTemplates'
 import { useSettings } from '@/composables/useSettings'
 import { maybeFireDailyLiftNotification } from '@/utils/dailyLiftReminder'
+import { clearBackupRestorePending, isBackupRestorePending } from '@/utils/liftbigBackup'
 
 const workouts = useLocalWorkouts()
 const templates = useTemplates()
@@ -35,6 +36,7 @@ function checkDailyLiftReminder() {
 
 /** Workouts autosave is debounced; flush before the tab goes away so nothing is lost on close. */
 function flushWorkoutsToDisk() {
+  if (isBackupRestorePending()) return
   workouts.flush()
 }
 
@@ -43,6 +45,7 @@ function onDocumentVisibilityChange() {
 }
 
 onMounted(() => {
+  clearBackupRestorePending()
   if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
     void navigator.storage.persist().catch(() => {})
   }

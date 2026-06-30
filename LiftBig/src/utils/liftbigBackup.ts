@@ -22,6 +22,39 @@ export {
 /** Bump when backup JSON shape changes in a breaking way */
 export const LIFTBIG_BACKUP_FORMAT_VERSION = 2
 
+/**
+ * Set on backup restore before reload so pagehide/visibility autosave does not
+ * write stale in-memory state over the imported localStorage snapshot.
+ */
+export const LIFTBIG_SKIP_UNLOAD_FLUSH_KEY = 'liftbig_skip_unload_flush'
+
+export function markBackupRestorePending(): void {
+  if (typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.setItem(LIFTBIG_SKIP_UNLOAD_FLUSH_KEY, '1')
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function clearBackupRestorePending(): void {
+  if (typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.removeItem(LIFTBIG_SKIP_UNLOAD_FLUSH_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isBackupRestorePending(): boolean {
+  if (typeof sessionStorage === 'undefined') return false
+  try {
+    return sessionStorage.getItem(LIFTBIG_SKIP_UNLOAD_FLUSH_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 export type LiftBigBackupFile = {
   formatVersion: number
   exportedAt: string
@@ -371,4 +404,5 @@ export function parseLiftBigBackupJson(text: string): ParseBackupResult {
 export function applyLiftBigBackupToStorage(payload: LiftBigBackupFile): void {
   clearLiftbigPrefixedStorage()
   applyLiftbigRawStorageSnapshot(payload.liftbig_local_storage)
+  markBackupRestorePending()
 }
