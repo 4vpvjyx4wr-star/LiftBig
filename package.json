@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:web": "node scripts/sync-web-dist.mjs && cd web && npm ci && npm run build",
+    "build:web:patch": "cd web && npm run build"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

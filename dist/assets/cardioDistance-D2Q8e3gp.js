@@ -1,0 +1,1 @@
+import{u as e}from"./workout-Dl4ULJf6.js";var t=new Set([`walking`,`treadmill-walking`,`running`,`treadmill-running`,`stairmaster`,`swimming`,`hiking`,`indoor-cycling`,`outdoor-cycling`,`rowing-machine`,`elliptical`,`cross-country-skiing`,`kayaking`,`golf-walking`,`roller-skating`]);function n(n){return!e(n)||!n.libraryId?!1:t.has(n.libraryId)}export{n as t};

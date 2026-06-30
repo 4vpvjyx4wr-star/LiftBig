@@ -1,0 +1,13 @@
+{
+  "name": "liftbig-web-patches",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run copy:tracking && node scripts/patch-library-browser.mjs",
+    "copy:tracking": "cp patches/libraryExerciseTracking-CAhSe-yn.js ../dist/assets/libraryExerciseTracking-CAhSe-yn.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
