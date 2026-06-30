@@ -21,7 +21,7 @@ import { seedDefaultPlans } from "../../utils/defaultPlans";
 import { getSuggestedWeight } from "../../utils/progressiveOverload";
 
 // --- Types ---
-type SetLog = { id: string; reps: string; weight: string; checked?: boolean };
+type SetLog = { id: string; reps: string; weight: string; checked?: boolean; isWarmup?: boolean };
 type Exercise = {
   id: string;
   name: string;
@@ -220,20 +220,28 @@ const WeightInput = React.memo(({
 
 // ─── Normal Set Row ───────────────────────────────────────────────────────────
 const SetRow = React.memo(({
-  set, index, targetReps, previousWeight, onUpdate, onDelete,
+  set, index, targetReps, previousWeight, onUpdate, onToggleWarmup, onDelete,
 }: {
   set: SetLog;
   index: number;
   targetReps?: string;
   previousWeight?: string;
   onUpdate: (field: "reps" | "weight", value: string) => void;
+  onToggleWarmup: () => void;
   onDelete: () => void;
 }) => (
-  <View style={s.setRow}>
+  <View style={[s.setRow, set.isWarmup && s.setRowWarmup]}>
     <View style={s.setLabelCol}>
       <Text style={s.setLabelNum}>Set {index + 1}</Text>
       {targetReps && <Text style={s.setLabelTarget}>{targetReps}</Text>}
     </View>
+    <TouchableOpacity
+      style={[s.warmupBtn, set.isWarmup && s.warmupBtnActive]}
+      onPress={onToggleWarmup}
+      activeOpacity={0.7}
+    >
+      <Text style={[s.warmupBtnText, set.isWarmup && s.warmupBtnTextActive]}>W</Text>
+    </TouchableOpacity>
     <TextInput
       style={s.setInput}
       placeholder="Reps"
@@ -257,6 +265,7 @@ const SetRow = React.memo(({
 ), (prev, next) =>
   prev.set.reps === next.set.reps &&
   prev.set.weight === next.set.weight &&
+  prev.set.isWarmup === next.set.isWarmup &&
   prev.index === next.index &&
   prev.targetReps === next.targetReps &&
   prev.previousWeight === next.previousWeight
@@ -264,11 +273,12 @@ const SetRow = React.memo(({
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 const ExerciseCard = React.memo(({
-  exercise, onAddSet, onUpdateSet, onToggleCircuitSet, onDeleteSet, onDeleteExercise,
+  exercise, onAddSet, onUpdateSet, onToggleWarmup, onToggleCircuitSet, onDeleteSet, onDeleteExercise,
 }: {
   exercise: Exercise;
   onAddSet: () => void;
   onUpdateSet: (setId: string, field: "reps" | "weight", value: string) => void;
+  onToggleWarmup: (setId: string) => void;
   onToggleCircuitSet: (setId: string) => void;
   onDeleteSet: (setId: string) => void;
   onDeleteExercise: () => void;
@@ -331,6 +341,7 @@ const ExerciseCard = React.memo(({
         <>
           <View style={s.setHeaderRow}>
             <Text style={[s.setHeaderLabel, { width: 64 }]}> </Text>
+            <Text style={[s.setHeaderLabel, { width: 28 }]}> </Text>
             <Text style={s.setHeaderLabel}>Reps</Text>
             <Text style={s.setHeaderLabel}>Weight</Text>
             <Text style={[s.setHeaderLabel, { width: 36 }]}> </Text>
@@ -343,6 +354,7 @@ const ExerciseCard = React.memo(({
               targetReps={exercise.targetReps}
               previousWeight={index > 0 ? exercise.sets[index - 1].weight : undefined}
               onUpdate={(field, value) => onUpdateSet(set.id, field, value)}
+              onToggleWarmup={() => onToggleWarmup(set.id)}
               onDelete={() => onDeleteSet(set.id)}
             />
           ))}
@@ -361,6 +373,7 @@ const ExerciseCardWrapper = React.memo(({
   addSet,
   updateSet,
   toggleCircuitSet,
+  toggleWarmup,
   deleteSet,
   deleteExercise,
 }: {
@@ -368,6 +381,7 @@ const ExerciseCardWrapper = React.memo(({
   addSet: (id: string) => void;
   updateSet: (id: string, setId: string, field: "reps" | "weight", value: string) => void;
   toggleCircuitSet: (id: string, setId: string) => void;
+  toggleWarmup: (id: string, setId: string) => void;
   deleteSet: (id: string, setId: string) => void;
   deleteExercise: (id: string) => void;
 }) => {
@@ -375,6 +389,8 @@ const ExerciseCardWrapper = React.memo(({
   const onAddSet = useCallback(() => addSet(item.id), [item.id, addSet]);
   const onUpdateSet = useCallback((setId: string, field: "reps" | "weight", value: string) =>
     updateSet(item.id, setId, field, value), [item.id, updateSet]);
+  const onToggleWarmup = useCallback((setId: string) =>
+    toggleWarmup(item.id, setId), [item.id, toggleWarmup]);
   const onToggleCircuitSet = useCallback((setId: string) =>
     toggleCircuitSet(item.id, setId), [item.id, toggleCircuitSet]);
   const onDeleteSet = useCallback((setId: string) =>
@@ -387,6 +403,7 @@ const ExerciseCardWrapper = React.memo(({
       exercise={item}
       onAddSet={onAddSet}
       onUpdateSet={onUpdateSet}
+      onToggleWarmup={onToggleWarmup}
       onToggleCircuitSet={onToggleCircuitSet}
       onDeleteSet={onDeleteSet}
       onDeleteExercise={onDeleteExercise}
@@ -462,6 +479,17 @@ export default function WorkoutLogScreen() {
     }));
   }, []);
 
+  const toggleWarmup = useCallback((exerciseId: string, setId: string) => {
+    setExercises((prev) => prev.map((ex) => {
+      if (ex.id !== exerciseId) return ex;
+      return {
+        ...ex,
+        sets: ex.sets.map((s) => s.id === setId ? { ...s, isWarmup: !s.isWarmup } : s),
+      };
+    }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
   const deleteSet = useCallback((exerciseId: string, setId: string) => {
     setExercises((prev) => prev.map((ex) =>
       ex.id !== exerciseId ? ex : { ...ex, sets: ex.sets.filter((s) => s.id !== setId) }
@@ -521,6 +549,7 @@ export default function WorkoutLogScreen() {
               addSet={addSet}
               updateSet={updateSet}
               toggleCircuitSet={toggleCircuitSet}
+              toggleWarmup={toggleWarmup}
               deleteSet={deleteSet}
               deleteExercise={deleteExercise}
             />
@@ -645,10 +674,23 @@ const s = StyleSheet.create({
   setHeaderRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
   setHeaderLabel: { flex: 1, color: MUTED, fontSize: 10, textAlign: "center" },
 
-  setRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 8 },
+  setRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 },
+  setRowWarmup: { opacity: 0.65 },
   setLabelCol: { width: 64, alignItems: "center" },
   setLabelNum: { color: MUTED, fontSize: 11, fontWeight: "600" },
   setLabelTarget: { color: ORANGE, fontSize: 9, marginTop: 1 },
+  warmupBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  warmupBtnActive: { backgroundColor: "#2A1A10", borderColor: ORANGE },
+  warmupBtnText: { color: MUTED, fontSize: 11, fontWeight: "800" },
+  warmupBtnTextActive: { color: ORANGE },
   setInput: {
     flex: 1, backgroundColor: "#0D1526", borderRadius: 8,
     borderWidth: 1, borderColor: BORDER, color: WHITE,

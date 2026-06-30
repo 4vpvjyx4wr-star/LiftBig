@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { Animated, Dimensions, PanResponder } from "react-native";
 
 const { width: W } = Dimensions.get("window");
-const TABS = ["/", "/overview", "/plans", "/plates"] as const;
+const TABS = ["/", "/overview", "/plans", "/library", "/plates"] as const;
 
 export function useTabSwipe(tabIndex: number) {
   const router = useRouter();
