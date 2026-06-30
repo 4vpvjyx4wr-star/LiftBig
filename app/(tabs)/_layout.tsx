@@ -2,27 +2,12 @@ import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs, useRouter } from "expo-router";
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { DASHBOARD_TABS, getTabMeta } from "../../utils/tabConfig";
 
 const BG = "#0A0F1E";
 const ORANGE = "#F4501E";
 const MUTED = "#4A5A7A";
-const WHITE = "#F0F4FF";
 const BORDER = "#1E2A45";
-
-const TAB_ICONS: Record<string, string> = {
-  index: "🏠",
-  overview: "📅",
-  plans: "📋",
-  library: "📚",
-  plates: "🏅",
-};
-const TAB_LABELS: Record<string, string> = {
-  index: "HOME",
-  overview: "CALENDAR",
-  plans: "PLANS",
-  library: "LIBRARY",
-  plates: "PLATES",
-};
 
 function toDateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -33,11 +18,15 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const router = useRouter();
   const todayKey = toDateKey(new Date());
 
-  const visibleRoutes = state.routes.filter((r) => r.name !== "workout-log");
-  const leftRoutes  = visibleRoutes.slice(0, 2);
-  const rightRoutes = visibleRoutes.slice(2);
+  const orderedRoutes = DASHBOARD_TABS
+    .map((tab) => state.routes.find((r) => r.name === tab.name))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r));
+
+  const leftRoutes  = orderedRoutes.slice(0, 2);
+  const rightRoutes = orderedRoutes.slice(2);
 
   const renderTab = (route: (typeof state.routes)[0]) => {
+    const meta = getTabMeta(route.name);
     const isFocused = state.routes[state.index]?.name === route.name;
     return (
       <TouchableOpacity
@@ -47,10 +36,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         activeOpacity={0.7}
       >
         <Text style={{ fontSize: 22, color: isFocused ? ORANGE : MUTED }}>
-          {TAB_ICONS[route.name]}
+          {meta?.icon ?? "•"}
         </Text>
         <Text style={[tb.label, { color: isFocused ? ORANGE : MUTED }]}>
-          {TAB_LABELS[route.name]}
+          {meta?.label ?? route.name}
         </Text>
       </TouchableOpacity>
     );
@@ -60,7 +49,6 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     <View style={[tb.bar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 10 }]}>
       <View style={tb.side}>{leftRoutes.map(renderTab)}</View>
 
-      {/* ── Center TODAY button ── */}
       <View style={tb.centerWrapper}>
         <TouchableOpacity
           style={tb.centerBtn}
@@ -104,7 +92,6 @@ const tb = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 10,
-    // Lift above the bar
     transform: [{ translateY: -10 }],
   },
   centerIcon: { fontSize: 26 },
@@ -119,16 +106,15 @@ export default function TabLayout() {
         tabBar={(props) => <CustomTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          // Smooth crossfade between tabs
           animation: "fade",
           sceneStyle: { backgroundColor: BG },
         }}
       >
-        <Tabs.Screen name="index"    options={{ title: "HOME" }} />
-        <Tabs.Screen name="overview" options={{ title: "CALENDAR" }} />
-        <Tabs.Screen name="plans"    options={{ title: "PLANS" }} />
-        <Tabs.Screen name="library"  options={{ title: "LIBRARY" }} />
-        <Tabs.Screen name="plates"   options={{ title: "PLATES" }} />
+        <Tabs.Screen name="index"      options={{ title: "HOME" }} />
+        <Tabs.Screen name="overview"   options={{ title: "CALENDAR" }} />
+        <Tabs.Screen name="plans"      options={{ title: "PLANS" }} />
+        <Tabs.Screen name="library"    options={{ title: "LIBRARY" }} />
+        <Tabs.Screen name="plates"     options={{ title: "PLATES" }} />
         <Tabs.Screen name="workout-log" options={{ href: null }} />
       </Tabs>
     </>

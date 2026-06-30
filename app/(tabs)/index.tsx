@@ -170,7 +170,7 @@ export default function CalendarScreen() {
   ).current;
 
   // ── Tab swipe (on header) ──
-  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(0);
+  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe();
 
   // ── Delete workout ──
   const deleteWorkout = (dateKey: string) => {

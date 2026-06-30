@@ -120,7 +120,7 @@ export default function PlansScreen() {
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
   const [planName, setPlanName] = useState("");
   const [exercises, setExercises] = useState<TemplateExercise[]>([blankExercise()]);
-  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe(2);
+  const { translateX: tabX, panHandlers: tabPan } = useTabSwipe();
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
