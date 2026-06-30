@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
+import CardioProgressChart from '@/components/progress/CardioProgressChart.vue'
+import ProgressChart from '@/components/progress/ProgressChart.vue'
 import {
   libraryFavoritesInjectionKey,
+  settingsInjectionKey,
   workoutsInjectionKey,
 } from '@/composables/injectionKeys'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
-import { MUSCLE_GROUP_LABELS } from '@/utils/exerciseLibrary'
+import { MUSCLE_GROUP_LABELS, exerciseTagIsPplSplit } from '@/utils/exerciseLibrary'
+import { collectLibraryCardioHistory } from '@/utils/cardioProgress'
+import {
+  collectLibraryExerciseHistory,
+  projectFutureStrength,
+} from '@/utils/exerciseProgress'
 import { hasUserLoggedLibraryExercise } from '@/utils/libraryExerciseTracking'
+import { formatWeightWithUnit } from '@/utils/units'
 import { youtubeEmbedUrl } from '@/utils/youtube'
 
 const props = defineProps<{
@@ -20,15 +29,62 @@ const emit = defineEmits<{
 
 const workouts = inject(workoutsInjectionKey)!
 const favorites = inject(libraryFavoritesInjectionKey)!
+const settings = inject(settingsInjectionKey)!
+const weightUnit = computed(() => settings.weightUnit.value)
+const distanceUnit = computed(() => settings.distanceUnit.value)
 
 const isLogged = computed(() =>
   props.exercise ? hasUserLoggedLibraryExercise(workouts.log.value, props.exercise) : false,
+)
+
+const isCardio = computed(() => props.exercise?.isCardio === true)
+
+const strengthHistory = computed(() =>
+  props.exercise && !isCardio.value
+    ? collectLibraryExerciseHistory(workouts.log.value, props.exercise)
+    : [],
+)
+
+const cardioHistory = computed(() =>
+  props.exercise && isCardio.value
+    ? collectLibraryCardioHistory(workouts.log.value, props.exercise)
+    : [],
+)
+
+const futureProjection = computed(() =>
+  props.exercise && strengthHistory.value.length > 0
+    ? projectFutureStrength(strengthHistory.value, props.exercise.name)
+    : [],
+)
+
+const lastStrengthSession = computed(() =>
+  strengthHistory.value.length
+    ? strengthHistory.value[strengthHistory.value.length - 1]!
+    : null,
+)
+
+const lastCardioSession = computed(() =>
+  cardioHistory.value.length ? cardioHistory.value[cardioHistory.value.length - 1]! : null,
+)
+
+const projectedEnd = computed(() =>
+  futureProjection.value.length
+    ? futureProjection.value[futureProjection.value.length - 1]!.projectedMaxWeightLbs
+    : null,
+)
+
+const hasProgressData = computed(() =>
+  isCardio.value ? cardioHistory.value.length > 0 : strengthHistory.value.length > 0,
 )
 
 const tutorialEmbedUrl = computed(() => {
   const url = props.exercise?.tutorialUrl
   return url ? youtubeEmbedUrl(url) : null
 })
+
+function fmtLbs(lbs: number): string {
+  return formatWeightWithUnit(lbs, weightUnit.value, 1)
+}
 
 function toggleFavorite() {
   if (!props.exercise) return
@@ -102,11 +158,110 @@ function toggleFavorite() {
           <span
             v-for="tag in exercise.tags ?? []"
             :key="tag"
-            class="rounded-full border border-primary/40 bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold text-primary"
+            class="rounded-full border px-2.5 py-0.5 text-[11px] font-bold"
+            :class="
+              exerciseTagIsPplSplit(exercise, tag)
+                ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
+                : 'border-primary/40 bg-primary/15 text-primary'
+            "
           >
             {{ tag }}
           </span>
         </div>
+
+        <section v-if="isLogged" class="mt-6">
+          <h4 class="text-xs font-bold uppercase tracking-wide text-muted">Your progress</h4>
+
+          <template v-if="!isCardio">
+            <div
+              v-if="hasProgressData"
+              class="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-3"
+            >
+              <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
+                <div class="text-[10px] font-bold uppercase text-muted">Sessions</div>
+                <div class="mt-1 text-lg font-black text-foreground">
+                  {{ strengthHistory.length }}
+                </div>
+              </div>
+              <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
+                <div class="text-[10px] font-bold uppercase text-muted">Latest max</div>
+                <div class="mt-1 text-lg font-black text-foreground">
+                  {{ lastStrengthSession ? fmtLbs(lastStrengthSession.maxWeightLbs) : '—' }}
+                </div>
+              </div>
+              <div
+                class="col-span-2 rounded-xl border border-border bg-card-inner px-3 py-3 sm:col-span-1"
+              >
+                <div class="text-[10px] font-bold uppercase text-muted">Projected (10 sessions)</div>
+                <div class="mt-1 text-lg font-black text-primary">
+                  {{ projectedEnd != null ? fmtLbs(projectedEnd) : '—' }}
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="mt-3 rounded-2xl border border-border bg-card-inner px-4 py-6 text-center"
+            >
+              <p class="text-sm font-semibold text-foreground">No progress data yet</p>
+              <p class="mt-2 text-xs text-muted">
+                Log sets with weight and reps to see your strength chart here.
+              </p>
+            </div>
+
+            <div class="mt-3">
+              <ProgressChart
+                :history="strengthHistory"
+                :future="futureProjection"
+                :weight-unit="weightUnit"
+              />
+            </div>
+          </template>
+
+          <template v-else>
+            <div
+              v-if="hasProgressData"
+              class="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-3"
+            >
+              <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
+                <div class="text-[10px] font-bold uppercase text-muted">Sessions</div>
+                <div class="mt-1 text-lg font-black text-foreground">{{ cardioHistory.length }}</div>
+              </div>
+              <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
+                <div class="text-[10px] font-bold uppercase text-muted">Latest duration</div>
+                <div class="mt-1 text-lg font-black text-foreground">
+                  {{ lastCardioSession ? `${lastCardioSession.durationMinutes} min` : '—' }}
+                </div>
+              </div>
+              <div
+                class="col-span-2 rounded-xl border border-border bg-card-inner px-3 py-3 sm:col-span-1"
+              >
+                <div class="text-[10px] font-bold uppercase text-muted">Latest pace</div>
+                <div class="mt-1 text-lg font-black text-primary">
+                  {{
+                    lastCardioSession?.paceMinutesPerUnit != null
+                      ? `${lastCardioSession.paceMinutesPerUnit} min/unit`
+                      : '—'
+                  }}
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-else
+              class="mt-3 rounded-2xl border border-border bg-card-inner px-4 py-6 text-center"
+            >
+              <p class="text-sm font-semibold text-foreground">No cardio data yet</p>
+              <p class="mt-2 text-xs text-muted">
+                Log duration (and distance when available) to see your chart here.
+              </p>
+            </div>
+
+            <div class="mt-3">
+              <CardioProgressChart :history="cardioHistory" :distance-unit="distanceUnit" />
+            </div>
+          </template>
+        </section>
 
         <section v-if="tutorialEmbedUrl && exercise.tutorialUrl" class="mt-6">
           <h4 class="text-xs font-bold uppercase tracking-wide text-muted">Form tutorial</h4>

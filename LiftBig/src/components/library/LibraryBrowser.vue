@@ -8,12 +8,26 @@ import {
 import {
   MUSCLE_GROUPS,
   MUSCLE_GROUP_LABELS,
+  PPL_SPLITS,
+  PPL_SPLIT_LABELS,
+  LIBRARY_TRAIT_FILTERS,
+  LIBRARY_TRAIT_FILTER_LABELS,
+  exerciseMatchesPplSplit,
+  exerciseMatchesTraitFilters,
+  exerciseTagIsPplSplit,
   listLibraryEquipmentTypes,
   searchLibrary,
   type LibraryExercise,
   type LibraryFilterGroup,
+  type LibraryTraitFilter,
+  type PplSplit,
 } from '@/utils/exerciseLibrary'
 import { formatDisplayDate } from '@/utils/dateKey'
+import { cardioListStats, collectLibraryCardioHistory } from '@/utils/cardioProgress'
+import {
+  collectLibraryExerciseHistory,
+  strengthListStats,
+} from '@/utils/exerciseProgress'
 import {
   getLibraryExerciseLogStats,
   hasUserLoggedLibraryExercise,
@@ -39,10 +53,32 @@ const weightUnit = computed(() => settings.weightUnit.value)
 
 const searchQuery = ref('')
 const selectedGroup = ref<LibraryFilterGroup>('all')
+const selectedPplSplit = ref<PplSplit | 'all'>('all')
+const activeTraits = ref<LibraryTraitFilter[]>([])
 const equipmentTypes = listLibraryEquipmentTypes()
 
 function setGroup(g: LibraryFilterGroup) {
   selectedGroup.value = g
+}
+
+function setPplSplit(split: PplSplit | 'all') {
+  selectedPplSplit.value = split
+}
+
+function isTraitActive(trait: LibraryTraitFilter): boolean {
+  return activeTraits.value.includes(trait)
+}
+
+function toggleTrait(trait: LibraryTraitFilter) {
+  if (activeTraits.value.includes(trait)) {
+    activeTraits.value = activeTraits.value.filter((t) => t !== trait)
+  } else {
+    activeTraits.value = [...activeTraits.value, trait]
+  }
+}
+
+function clearTraits() {
+  activeTraits.value = []
 }
 
 function isEquipmentSelected(eq: string): boolean {
@@ -63,6 +99,24 @@ function isLogged(ex: LibraryExercise): boolean {
 
 function logStats(ex: LibraryExercise) {
   return getLibraryExerciseLogStats(workouts.log.value, ex)
+}
+
+function quickStatLabels(ex: LibraryExercise): { sessions: number; avg14: string; max: string } {
+  if (ex.isCardio) {
+    const s = cardioListStats(collectLibraryCardioHistory(workouts.log.value, ex))
+    return {
+      sessions: s.sessions,
+      avg14: s.avg14DayDurationMinutes == null ? '—' : `${Math.round(s.avg14DayDurationMinutes)} min`,
+      max: s.maxDurationMinutes == null ? '—' : `${s.maxDurationMinutes} min`,
+    }
+  }
+  const s = strengthListStats(collectLibraryExerciseHistory(workouts.log.value, ex))
+  return {
+    sessions: s.sessions,
+    avg14:
+      s.avg14DayMaxLbs == null ? '—' : formatWeightWithUnit(s.avg14DayMaxLbs, weightUnit.value, 1),
+    max: s.maxLbs == null ? '—' : formatWeightWithUnit(s.maxLbs, weightUnit.value, 1),
+  }
 }
 
 function maxWeightLabel(ex: LibraryExercise): string {
@@ -124,6 +178,12 @@ const filtered = computed(() => {
       return eq && allowed.has(eq)
     })
   }
+  if (selectedPplSplit.value !== 'all') {
+    list = list.filter((ex) => exerciseMatchesPplSplit(ex, selectedPplSplit.value))
+  }
+  if (activeTraits.value.length > 0) {
+    list = list.filter((ex) => exerciseMatchesTraitFilters(ex, activeTraits.value))
+  }
   if (props.scope === 'favorites') {
     list = list.filter((ex) => favorites.isFavorite(ex.id))
   } else if (props.scope === 'logged') {
@@ -143,6 +203,8 @@ const emptyHint = computed(() => {
 })
 
 /** Horizontal chip strip: vertical wheel → scroll (desktop / fine pointer only). Touch swipe unchanged. */
+const pplSplitStripRef = ref<HTMLElement | null>(null)
+const traitStripRef = ref<HTMLElement | null>(null)
 const muscleGroupStripRef = ref<HTMLElement | null>(null)
 
 function normalizeWheelDeltaY(el: HTMLElement, e: WheelEvent): number {
@@ -156,10 +218,8 @@ function normalizeWheelDeltaY(el: HTMLElement, e: WheelEvent): number {
   }
 }
 
-function onMuscleGroupStripWheel(e: WheelEvent) {
+function onHorizontalStripWheel(el: HTMLElement | null, e: WheelEvent) {
   if (!window.matchMedia('(pointer: fine)').matches) return
-
-  const el = muscleGroupStripRef.value
   if (!el || el.scrollWidth <= el.clientWidth + 1) return
 
   const dy = normalizeWheelDeltaY(el, e)
@@ -172,13 +232,27 @@ function onMuscleGroupStripWheel(e: WheelEvent) {
   el.scrollLeft = next
 }
 
+function onPplSplitStripWheel(e: WheelEvent) {
+  onHorizontalStripWheel(pplSplitStripRef.value, e)
+}
+
+function onTraitStripWheel(e: WheelEvent) {
+  onHorizontalStripWheel(traitStripRef.value, e)
+}
+
+function onMuscleGroupStripWheel(e: WheelEvent) {
+  onHorizontalStripWheel(muscleGroupStripRef.value, e)
+}
+
 onMounted(() => {
-  const el = muscleGroupStripRef.value
-  if (!el) return
-  el.addEventListener('wheel', onMuscleGroupStripWheel, { passive: false })
+  pplSplitStripRef.value?.addEventListener('wheel', onPplSplitStripWheel, { passive: false })
+  traitStripRef.value?.addEventListener('wheel', onTraitStripWheel, { passive: false })
+  muscleGroupStripRef.value?.addEventListener('wheel', onMuscleGroupStripWheel, { passive: false })
 })
 
 onBeforeUnmount(() => {
+  pplSplitStripRef.value?.removeEventListener('wheel', onPplSplitStripWheel)
+  traitStripRef.value?.removeEventListener('wheel', onTraitStripWheel)
   muscleGroupStripRef.value?.removeEventListener('wheel', onMuscleGroupStripWheel)
 })
 </script>
@@ -223,6 +297,70 @@ onBeforeUnmount(() => {
         @click="toggleEquipment(eq)"
       >
         {{ eq }}
+      </button>
+    </div>
+
+    <div
+      ref="pplSplitStripRef"
+      class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <button
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          selectedPplSplit === 'all'
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="setPplSplit('all')"
+      >
+        All splits
+      </button>
+      <button
+        v-for="split in PPL_SPLITS"
+        :key="split"
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          selectedPplSplit === split
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="setPplSplit(split)"
+      >
+        {{ PPL_SPLIT_LABELS[split] }}
+      </button>
+    </div>
+
+    <div
+      ref="traitStripRef"
+      class="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <button
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          activeTraits.length === 0
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="clearTraits"
+      >
+        All types
+      </button>
+      <button
+        v-for="trait in LIBRARY_TRAIT_FILTERS"
+        :key="trait"
+        type="button"
+        class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide"
+        :class="
+          isTraitActive(trait)
+            ? 'border-primary bg-primary text-foreground'
+            : 'border-border bg-card-inner text-muted'
+        "
+        @click="toggleTrait(trait)"
+      >
+        {{ LIBRARY_TRAIT_FILTER_LABELS[trait] }}
       </button>
     </div>
 
@@ -367,11 +505,36 @@ onBeforeUnmount(() => {
               <span
                 v-for="tag in ex.tags ?? []"
                 :key="tag"
-                class="rounded border border-primary/35 bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary"
+                class="rounded border px-1.5 py-0.5 text-[10px] font-bold"
+                :class="
+                  exerciseTagIsPplSplit(ex, tag)
+                    ? 'border-violet-500/40 bg-violet-500/10 text-violet-300'
+                    : 'border-primary/35 bg-primary/10 text-primary'
+                "
               >
                 {{ tag }}
               </span>
             </div>
+            <template v-if="isLogged(ex)">
+              <div
+                v-for="stats in [quickStatLabels(ex)]"
+                :key="'stats'"
+                class="mt-2 grid grid-cols-3 gap-1.5 rounded-lg border border-border/60 bg-background/50 px-2 py-2 text-center"
+              >
+                <div>
+                  <div class="text-[9px] font-bold uppercase tracking-wide text-muted">Sessions</div>
+                  <div class="mt-0.5 text-sm font-black text-foreground">{{ stats.sessions }}</div>
+                </div>
+                <div>
+                  <div class="text-[9px] font-bold uppercase tracking-wide text-muted">14d avg</div>
+                  <div class="mt-0.5 text-sm font-black text-foreground">{{ stats.avg14 }}</div>
+                </div>
+                <div>
+                  <div class="text-[9px] font-bold uppercase tracking-wide text-muted">Max</div>
+                  <div class="mt-0.5 text-sm font-black text-foreground">{{ stats.max }}</div>
+                </div>
+              </div>
+            </template>
           </button>
           <button
             type="button"

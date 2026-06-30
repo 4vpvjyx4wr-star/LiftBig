@@ -1,387 +1,412 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
-import CardioProgressChart from '@/components/progress/CardioProgressChart.vue'
-import ProgressChart from '@/components/progress/ProgressChart.vue'
-import WeeklyVolumeSummary from '@/components/progress/WeeklyVolumeSummary.vue'
+import { computed, inject, ref } from 'vue'
+import ProgressStatGrid, { type StatTile } from '@/components/progress/ProgressStatGrid.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import {
-  collectCardioHistory,
-  listCardioExerciseNamesFromLog,
-} from '@/utils/cardioProgress'
-import {
-  collectExerciseHistory,
-  listExerciseNamesFromLog,
-  projectFutureStrength,
-} from '@/utils/exerciseProgress'
+  computeTrainingStats,
+  formatAllTimeLabel,
+  formatMonthLabel,
+  formatTodayLabel,
+  formatWeekLabel,
+  getAllTimeRange,
+  getMonthRangeForDate,
+  getPreviousMonthRange,
+  getPreviousWeekRange,
+  getTodayRange,
+  getWeekRangeForDate,
+  trainingStatsDelta,
+} from '@/utils/trainingStats'
+import { planDurationAssumptionsFromSeconds } from '@/utils/planDuration'
 import { formatWeightWithUnit } from '@/utils/units'
 
 const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
+
 const weightUnit = computed(() => settings.weightUnit.value)
-const distanceUnit = computed(() => settings.distanceUnit.value)
+const statsOptions = computed(() => ({
+  bodyWeightLbs: settings.bodyWeightLbs.value,
+  planAssumptions: planDurationAssumptionsFromSeconds(
+    settings.averageLiftSeconds.value,
+    settings.averageRestSeconds.value,
+  ),
+}))
 
-const progressMode = ref<'strength' | 'cardio'>('strength')
+const todayRange = computed(() => getTodayRange())
+const thisWeekRange = computed(() => getWeekRangeForDate())
+const lastWeekRange = computed(() => getPreviousWeekRange(thisWeekRange.value))
+const thisMonthRange = computed(() => getMonthRangeForDate())
+const lastMonthRange = computed(() => getPreviousMonthRange(thisMonthRange.value))
+const allTimeRange = computed(() => getAllTimeRange(workouts.log.value))
 
-const exerciseNames = computed(() => listExerciseNamesFromLog(workouts.log.value))
-const cardioNames = computed(() => listCardioExerciseNamesFromLog(workouts.log.value))
-
-const exerciseQuery = ref('')
-const selectedExercise = ref('')
-const showSuggestions = ref(false)
-
-const cardioQuery = ref('')
-const selectedCardio = ref('')
-const showCardioSuggestions = ref(false)
-
-const activeNames = computed(() =>
-  progressMode.value === 'cardio' ? cardioNames.value : exerciseNames.value,
+const todayStats = computed(() =>
+  computeTrainingStats(workouts.log.value, todayRange.value, statsOptions.value),
+)
+const thisWeekStats = computed(() =>
+  computeTrainingStats(workouts.log.value, thisWeekRange.value, statsOptions.value),
+)
+const lastWeekStats = computed(() =>
+  computeTrainingStats(workouts.log.value, lastWeekRange.value, statsOptions.value),
+)
+const thisMonthStats = computed(() =>
+  computeTrainingStats(workouts.log.value, thisMonthRange.value, statsOptions.value),
+)
+const lastMonthStats = computed(() =>
+  computeTrainingStats(workouts.log.value, lastMonthRange.value, statsOptions.value),
+)
+const allTimeStats = computed(() =>
+  computeTrainingStats(workouts.log.value, allTimeRange.value, statsOptions.value),
 )
 
-const filteredExerciseNames = computed(() => {
-  const q = exerciseQuery.value.trim().toLowerCase()
-  // Show every option when the box is empty or still holds the current selection,
-  // so focusing the field reveals the full list rather than just the picked name.
-  if (!q || exerciseQuery.value === selectedExercise.value) return exerciseNames.value
-  return exerciseNames.value.filter((name) => name.toLowerCase().includes(q))
+const weekDelta = computed(() => trainingStatsDelta(thisWeekStats.value, lastWeekStats.value))
+const monthDelta = computed(() => trainingStatsDelta(thisMonthStats.value, lastMonthStats.value))
+
+type HistoricalTab = 'last-week' | 'last-month' | 'all-time'
+const historicalTab = ref<HistoricalTab>('last-week')
+
+const historicalStats = computed(() => {
+  if (historicalTab.value === 'last-week') return lastWeekStats.value
+  if (historicalTab.value === 'last-month') return lastMonthStats.value
+  return allTimeStats.value
 })
 
-const filteredCardioNames = computed(() => {
-  const q = cardioQuery.value.trim().toLowerCase()
-  if (!q || cardioQuery.value === selectedCardio.value) return cardioNames.value
-  return cardioNames.value.filter((name) => name.toLowerCase().includes(q))
+const historicalLabel = computed(() => {
+  if (historicalTab.value === 'last-week') return formatWeekLabel(lastWeekRange.value)
+  if (historicalTab.value === 'last-month') return formatMonthLabel(lastMonthRange.value)
+  return formatAllTimeLabel(allTimeRange.value)
 })
 
-watch(
-  exerciseNames,
-  (names) => {
-    if (names.length === 0) {
-      selectedExercise.value = ''
-      exerciseQuery.value = ''
-      return
-    }
-    if (!selectedExercise.value || !names.includes(selectedExercise.value)) {
-      const first = names[0]!
-      selectedExercise.value = first
-      exerciseQuery.value = first
-    }
-  },
-  { immediate: true },
-)
+function fmtTonnage(lbs: number): string {
+  if (lbs <= 0) return '—'
+  return formatWeightWithUnit(lbs, weightUnit.value, 0)
+}
 
-watch(
-  cardioNames,
-  (names) => {
-    if (names.length === 0) {
-      selectedCardio.value = ''
-      cardioQuery.value = ''
-      return
-    }
-    if (!selectedCardio.value || !names.includes(selectedCardio.value)) {
-      const first = names[0]!
-      selectedCardio.value = first
-      cardioQuery.value = first
-    }
-  },
-  { immediate: true },
-)
+function fmtWeight(lbs: number): string {
+  if (lbs <= 0) return '—'
+  return formatWeightWithUnit(lbs, weightUnit.value, 0)
+}
 
-watch(progressMode, (mode) => {
-  if (mode === 'cardio' && cardioNames.value.length === 0) {
-    progressMode.value = 'strength'
-  }
+function fmtDeltaCount(n: number, prefix = 'vs prior'): string {
+  if (n === 0) return `${prefix} —`
+  const sign = n > 0 ? '↑' : '↓'
+  return `${prefix} ${sign}${Math.abs(n)}`
+}
+
+function fmtTonnageDelta(n: number, prefix = 'vs prior'): string {
+  if (n === 0) return `${prefix} —`
+  const sign = n > 0 ? '↑' : '↓'
+  return `${prefix} ${sign}${formatWeightWithUnit(Math.abs(n), weightUnit.value, 0)}`
+}
+
+function deltaPositive(n: number): boolean | null {
+  if (n === 0) return null
+  return n > 0
+}
+
+function fmtCardio(minutes: number): string {
+  if (minutes <= 0) return '—'
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+function fmtCalories(n: number | null): string {
+  if (n == null || n <= 0) return '—'
+  return `~${n.toLocaleString()}`
+}
+
+function fmtCore(seconds: number): string {
+  if (seconds <= 0) return '—'
+  if (seconds < 60) return `${seconds}s`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
+}
+
+const todayTiles = computed((): StatTile[] => {
+  const s = todayStats.value
+  return [
+    { key: 'sets', label: 'Sets', value: String(s.totalSets) },
+    { key: 'reps', label: 'Reps', value: s.totalReps > 0 ? s.totalReps.toLocaleString() : '—' },
+    { key: 'tonnage', label: 'Tonnage', value: fmtTonnage(s.tonnageLbs) },
+    {
+      key: 'exercises',
+      label: 'Exercises',
+      value: s.uniqueExercises > 0 ? String(s.uniqueExercises) : '—',
+    },
+    {
+      key: 'heaviest',
+      label: 'Heaviest',
+      value: fmtWeight(s.heaviestSetLbs),
+      hint: s.heaviestSetLabel ?? undefined,
+    },
+    { key: 'cardio', label: 'Cardio', value: fmtCardio(s.cardioMinutes) },
+    { key: 'prs', label: 'PRs today', value: s.personalBests > 0 ? String(s.personalBests) : '—' },
+    {
+      key: 'muscles',
+      label: 'Muscle groups',
+      value: s.uniqueMuscleGroups > 0 ? String(s.uniqueMuscleGroups) : '—',
+    },
+  ]
 })
 
-function pickExercise(name: string) {
-  selectedExercise.value = name
-  exerciseQuery.value = name
-  showSuggestions.value = false
-}
+const weekTiles = computed((): StatTile[] => {
+  const s = thisWeekStats.value
+  const d = weekDelta.value
+  return [
+    {
+      key: 'sets',
+      label: 'Sets',
+      value: String(s.totalSets),
+      delta: fmtDeltaCount(d.sets),
+      deltaPositive: deltaPositive(d.sets),
+    },
+    {
+      key: 'reps',
+      label: 'Reps',
+      value: s.totalReps > 0 ? s.totalReps.toLocaleString() : '—',
+      delta: fmtDeltaCount(d.reps),
+      deltaPositive: deltaPositive(d.reps),
+    },
+    {
+      key: 'tonnage',
+      label: 'Tonnage',
+      value: fmtTonnage(s.tonnageLbs),
+      delta: fmtTonnageDelta(d.tonnageLbs),
+      deltaPositive: deltaPositive(d.tonnageLbs),
+    },
+    {
+      key: 'days',
+      label: 'Days',
+      value: String(s.trainedDays),
+      delta: fmtDeltaCount(d.days),
+      deltaPositive: deltaPositive(d.days),
+    },
+    {
+      key: 'exercises',
+      label: 'Exercises',
+      value: s.uniqueExercises > 0 ? String(s.uniqueExercises) : '—',
+      delta: fmtDeltaCount(d.uniqueExercises),
+      deltaPositive: deltaPositive(d.uniqueExercises),
+    },
+    {
+      key: 'cardio',
+      label: 'Cardio',
+      value: fmtCardio(s.cardioMinutes),
+      delta: fmtDeltaCount(d.cardioMinutes, 'vs prior'),
+      deltaPositive: deltaPositive(d.cardioMinutes),
+    },
+    {
+      key: 'prs',
+      label: 'PRs',
+      value: s.personalBests > 0 ? String(s.personalBests) : '—',
+      delta: fmtDeltaCount(d.personalBests),
+      deltaPositive: deltaPositive(d.personalBests),
+    },
+    {
+      key: 'avg',
+      label: 'Avg sets/day',
+      value: s.avgSetsPerTrainingDay > 0 ? String(s.avgSetsPerTrainingDay) : '—',
+    },
+    {
+      key: 'top',
+      label: 'Top focus',
+      value: s.topMuscleGroup ?? '—',
+    },
+    {
+      key: 'calories',
+      label: 'Est. burn',
+      value: fmtCalories(s.estimatedCalories),
+    },
+  ]
+})
 
-function confirmExerciseQuery() {
-  const q = exerciseQuery.value.trim()
-  if (!q) return
-  const exact = exerciseNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
-  if (exact) {
-    pickExercise(exact)
-    return
-  }
-  const matches = filteredExerciseNames.value
-  if (matches.length === 1) {
-    pickExercise(matches[0]!)
-    return
-  }
-  selectedExercise.value = q
-  showSuggestions.value = false
-}
+const monthTiles = computed((): StatTile[] => {
+  const s = thisMonthStats.value
+  const d = monthDelta.value
+  return [
+    {
+      key: 'sets',
+      label: 'Sets',
+      value: String(s.totalSets),
+      delta: fmtDeltaCount(d.sets, 'vs last mo'),
+      deltaPositive: deltaPositive(d.sets),
+    },
+    {
+      key: 'reps',
+      label: 'Reps',
+      value: s.totalReps > 0 ? s.totalReps.toLocaleString() : '—',
+      delta: fmtDeltaCount(d.reps, 'vs last mo'),
+      deltaPositive: deltaPositive(d.reps),
+    },
+    {
+      key: 'tonnage',
+      label: 'Tonnage',
+      value: fmtTonnage(s.tonnageLbs),
+      delta: fmtTonnageDelta(d.tonnageLbs, 'vs last mo'),
+      deltaPositive: deltaPositive(d.tonnageLbs),
+    },
+    {
+      key: 'days',
+      label: 'Days',
+      value: String(s.trainedDays),
+      delta: fmtDeltaCount(d.days, 'vs last mo'),
+      deltaPositive: deltaPositive(d.days),
+    },
+    {
+      key: 'consistency',
+      label: 'Consistency',
+      value: s.consistencyPct != null ? `${s.consistencyPct}%` : '—',
+    },
+    {
+      key: 'exercises',
+      label: 'Exercises',
+      value: s.uniqueExercises > 0 ? String(s.uniqueExercises) : '—',
+    },
+    {
+      key: 'prs',
+      label: 'PRs',
+      value: s.personalBests > 0 ? String(s.personalBests) : '—',
+    },
+    {
+      key: 'cardio',
+      label: 'Cardio',
+      value: fmtCardio(s.cardioMinutes),
+    },
+    {
+      key: 'core',
+      label: 'Core time',
+      value: fmtCore(s.coreHoldSeconds),
+    },
+    {
+      key: 'calories',
+      label: 'Est. burn',
+      value: fmtCalories(s.estimatedCalories),
+    },
+  ]
+})
 
-function hideSuggestionsSoon() {
-  window.setTimeout(() => {
-    showSuggestions.value = false
-    const q = exerciseQuery.value.trim()
-    if (!q) return
-    const exact = exerciseNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
-    if (exact) pickExercise(exact)
-  }, 120)
-}
+const historicalTiles = computed((): StatTile[] => {
+  const s = historicalStats.value
+  return [
+    { key: 'sets', label: 'Sets', value: String(s.totalSets) },
+    {
+      key: 'reps',
+      label: 'Reps',
+      value: s.totalReps > 0 ? s.totalReps.toLocaleString() : '—',
+    },
+    { key: 'tonnage', label: 'Tonnage', value: fmtTonnage(s.tonnageLbs) },
+    { key: 'days', label: 'Training days', value: String(s.trainedDays) },
+    {
+      key: 'exercises',
+      label: 'Exercises',
+      value: s.uniqueExercises > 0 ? String(s.uniqueExercises) : '—',
+    },
+    { key: 'cardio', label: 'Cardio', value: fmtCardio(s.cardioMinutes) },
+    {
+      key: 'heaviest',
+      label: 'Heaviest lift',
+      value: fmtWeight(s.heaviestSetLbs),
+      hint: s.heaviestSetLabel ?? undefined,
+    },
+    { key: 'prs', label: 'PRs', value: s.personalBests > 0 ? String(s.personalBests) : '—' },
+    {
+      key: 'circuits',
+      label: 'Circuits',
+      value: s.circuitSets > 0 ? String(s.circuitSets) : '—',
+    },
+    { key: 'calories', label: 'Est. burn', value: fmtCalories(s.estimatedCalories) },
+  ]
+})
 
-function pickCardio(name: string) {
-  selectedCardio.value = name
-  cardioQuery.value = name
-  showCardioSuggestions.value = false
-}
-
-function confirmCardioQuery() {
-  const q = cardioQuery.value.trim()
-  if (!q) return
-  const exact = cardioNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
-  if (exact) {
-    pickCardio(exact)
-    return
-  }
-  const matches = filteredCardioNames.value
-  if (matches.length === 1) {
-    pickCardio(matches[0]!)
-    return
-  }
-  selectedCardio.value = q
-  showCardioSuggestions.value = false
-}
-
-function hideCardioSuggestionsSoon() {
-  window.setTimeout(() => {
-    showCardioSuggestions.value = false
-    const q = cardioQuery.value.trim()
-    if (!q) return
-    const exact = cardioNames.value.find((name) => name.toLowerCase() === q.toLowerCase())
-    if (exact) pickCardio(exact)
-  }, 120)
-}
-
-const history = computed(() =>
-  selectedExercise.value
-    ? collectExerciseHistory(workouts.log.value, selectedExercise.value)
-    : [],
-)
-
-const cardioHistory = computed(() =>
-  selectedCardio.value
-    ? collectCardioHistory(workouts.log.value, selectedCardio.value)
-    : [],
-)
-
-const lastCardioSession = computed(() =>
-  cardioHistory.value.length ? cardioHistory.value[cardioHistory.value.length - 1]! : null,
-)
-
-const futureProjection = computed(() =>
-  selectedExercise.value && history.value.length > 0
-    ? projectFutureStrength(history.value, selectedExercise.value)
-    : [],
-)
-
-const lastSession = computed(() =>
-  history.value.length ? history.value[history.value.length - 1]! : null,
-)
-
-const projectedEnd = computed(() =>
-  futureProjection.value.length
-    ? futureProjection.value[futureProjection.value.length - 1]!.projectedMaxWeightLbs
-    : null,
-)
-
-function fmtLbs(lbs: number): string {
-  return formatWeightWithUnit(lbs, weightUnit.value, 1)
-}
+const historicalTabs: { id: HistoricalTab; label: string }[] = [
+  { id: 'last-week', label: 'Last week' },
+  { id: 'last-month', label: 'Last month' },
+  { id: 'all-time', label: 'All time' },
+]
 </script>
 
 <template>
   <div class="pb-6">
     <h1 class="mb-1 text-2xl font-black tracking-tight text-foreground">Progress</h1>
     <p class="mb-4 text-sm leading-relaxed text-muted">
-      Track strength or cardio over time. Strength charts project future max using your recent trend.
+      Training snapshots from your journal — today, this week, and beyond. Open any logged exercise
+      in the Library for strength and cardio charts.
     </p>
 
-    <div
-      v-if="exerciseNames.length > 0 || cardioNames.length > 0"
-      class="mb-4 flex rounded-xl border border-border bg-card p-1"
-    >
-      <button
-        type="button"
-        class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
-        :class="progressMode === 'strength' ? 'bg-primary text-foreground' : 'text-muted'"
-        :disabled="exerciseNames.length === 0"
-        @click="progressMode = 'strength'"
-      >
-        Strength
-      </button>
-      <button
-        type="button"
-        class="flex-1 rounded-lg py-2.5 text-sm font-bold transition-colors"
-        :class="progressMode === 'cardio' ? 'bg-primary text-foreground' : 'text-muted'"
-        :disabled="cardioNames.length === 0"
-        @click="progressMode = 'cardio'"
-      >
-        Cardio
-      </button>
-    </div>
-
-    <template v-if="activeNames.length === 0">
-      <div class="rounded-2xl border border-border bg-card-inner px-4 py-10 text-center">
-        <p class="text-sm font-semibold text-foreground">No exercises logged yet</p>
-        <p class="mt-2 text-xs text-muted">
-          Complete workouts with named exercises to track strength and reps here.
-        </p>
+    <!-- Today -->
+    <section class="mb-5 rounded-2xl border border-border bg-card-inner p-4">
+      <div class="mb-3 flex items-baseline justify-between gap-2">
+        <h2 class="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">
+          <i class="fa-solid fa-sun text-primary" aria-hidden="true" />
+          Today
+        </h2>
+        <span class="text-[11px] font-semibold text-muted">{{ formatTodayLabel() }}</span>
       </div>
-    </template>
+      <ProgressStatGrid :tiles="todayTiles" :columns="4" />
+    </section>
 
-    <template v-else-if="progressMode === 'strength'">
-      <label class="mb-3 block">
-        <span class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">
-          Exercise
-        </span>
-        <div class="relative">
-          <input
-            v-model="exerciseQuery"
-            type="search"
-            autocomplete="off"
-            class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
-            placeholder="Search logged exercises..."
-            @focus="showSuggestions = true; ($event.target as HTMLInputElement).select()"
-            @blur="hideSuggestionsSoon"
-            @keydown.enter.prevent="confirmExerciseQuery"
-          />
-          <div
-            v-if="showSuggestions && filteredExerciseNames.length > 0"
-            class="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg"
-            @mousedown.prevent
-          >
-            <button
-              v-for="name in filteredExerciseNames"
-              :key="name"
-              type="button"
-              class="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-card-inner"
-              @click="pickExercise(name)"
-            >
-              {{ name }}
-            </button>
-          </div>
-        </div>
-      </label>
+    <!-- This week -->
+    <section class="mb-5 rounded-2xl border border-border bg-card-inner p-4">
+      <div class="mb-3 flex items-baseline justify-between gap-2">
+        <h2 class="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">
+          <i class="fa-solid fa-calendar-week text-primary" aria-hidden="true" />
+          This week
+        </h2>
+        <span class="text-[11px] font-semibold text-muted">{{ formatWeekLabel(thisWeekRange) }}</span>
+      </div>
+      <ProgressStatGrid :tiles="weekTiles" :columns="5" />
+      <p class="mt-3 text-[10px] leading-snug text-muted">
+        Sun–Sat totals. Deltas compare to last week. PRs are new all-time max weights logged this
+        week.
+      </p>
+    </section>
+
+    <!-- This month -->
+    <section class="mb-5 rounded-2xl border border-border bg-card-inner p-4">
+      <div class="mb-3 flex items-baseline justify-between gap-2">
+        <h2 class="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">
+          <i class="fa-solid fa-calendar text-primary" aria-hidden="true" />
+          This month
+        </h2>
+        <span class="text-[11px] font-semibold text-muted">{{ formatMonthLabel(thisMonthRange) }}</span>
+      </div>
+      <ProgressStatGrid :tiles="monthTiles" :columns="5" />
+      <p class="mt-3 text-[10px] leading-snug text-muted">
+        Consistency is training days divided by calendar days elapsed this month.
+      </p>
+    </section>
+
+    <!-- Historical switcher -->
+    <section class="mb-5 rounded-2xl border border-border bg-card-inner p-4">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">
+          <i class="fa-solid fa-clock-rotate-left text-primary" aria-hidden="true" />
+          Archive
+        </h2>
+        <span class="text-[11px] font-semibold text-muted">{{ historicalLabel }}</span>
+      </div>
 
       <div
-        v-if="history.length > 0"
-        class="mb-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-3"
+        class="mb-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
-          <div class="text-[10px] font-bold uppercase text-muted">Sessions</div>
-          <div class="mt-1 text-lg font-black text-foreground">{{ history.length }}</div>
-        </div>
-        <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
-          <div class="text-[10px] font-bold uppercase text-muted">Latest max</div>
-          <div class="mt-1 text-lg font-black text-foreground">
-            {{ lastSession ? fmtLbs(lastSession.maxWeightLbs) : '—' }}
-          </div>
-        </div>
-        <div
-          class="col-span-2 rounded-xl border border-border bg-card-inner px-3 py-3 sm:col-span-1"
+        <button
+          v-for="tab in historicalTabs"
+          :key="tab.id"
+          type="button"
+          class="shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold tracking-wide transition-colors"
+          :class="
+            historicalTab === tab.id
+              ? 'border-primary bg-primary text-foreground'
+              : 'border-border bg-card text-muted'
+          "
+          @click="historicalTab = tab.id"
         >
-          <div class="text-[10px] font-bold uppercase text-muted">Projected (10 sessions)</div>
-          <div class="mt-1 text-lg font-black text-primary">
-            {{ projectedEnd != null ? fmtLbs(projectedEnd) : '—' }}
-          </div>
-        </div>
+          {{ tab.label }}
+        </button>
       </div>
 
-      <div
-        v-else-if="selectedExercise"
-        class="mb-4 rounded-2xl border border-border bg-card-inner px-4 py-8 text-center"
-      >
-        <p class="text-sm font-semibold text-foreground">No progress data for this exercise</p>
-        <p class="mt-2 text-xs text-muted">
-          Log sets with weight and reps for “{{ selectedExercise }}” to see charts here.
-        </p>
-      </div>
-
-      <ProgressChart
-        :history="history"
-        :future="futureProjection"
-        :weight-unit="weightUnit"
-      />
-    </template>
-
-    <template v-else>
-      <label class="mb-3 block">
-        <span class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">
-          Cardio activity
-        </span>
-        <div class="relative">
-          <input
-            v-model="cardioQuery"
-            type="search"
-            autocomplete="off"
-            class="w-full rounded-xl border border-border bg-card px-3 py-3 text-base font-bold text-foreground outline-none focus:border-primary"
-            placeholder="Search logged cardio..."
-            @focus="showCardioSuggestions = true; ($event.target as HTMLInputElement).select()"
-            @blur="hideCardioSuggestionsSoon"
-            @keydown.enter.prevent="confirmCardioQuery"
-          />
-          <div
-            v-if="showCardioSuggestions && filteredCardioNames.length > 0"
-            class="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg"
-            @mousedown.prevent
-          >
-            <button
-              v-for="name in filteredCardioNames"
-              :key="name"
-              type="button"
-              class="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-card-inner"
-              @click="pickCardio(name)"
-            >
-              {{ name }}
-            </button>
-          </div>
-        </div>
-      </label>
-
-      <div
-        v-if="cardioHistory.length > 0"
-        class="mb-4 grid grid-cols-2 gap-2 text-center sm:grid-cols-3"
-      >
-        <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
-          <div class="text-[10px] font-bold uppercase text-muted">Sessions</div>
-          <div class="mt-1 text-lg font-black text-foreground">{{ cardioHistory.length }}</div>
-        </div>
-        <div class="rounded-xl border border-border bg-card-inner px-3 py-3">
-          <div class="text-[10px] font-bold uppercase text-muted">Latest duration</div>
-          <div class="mt-1 text-lg font-black text-foreground">
-            {{ lastCardioSession ? `${lastCardioSession.durationMinutes} min` : '—' }}
-          </div>
-        </div>
-        <div class="col-span-2 rounded-xl border border-border bg-card-inner px-3 py-3 sm:col-span-1">
-          <div class="text-[10px] font-bold uppercase text-muted">Latest pace</div>
-          <div class="mt-1 text-lg font-black text-primary">
-            {{
-              lastCardioSession?.paceMinutesPerUnit != null
-                ? `${lastCardioSession.paceMinutesPerUnit} min/unit`
-                : '—'
-            }}
-          </div>
-        </div>
-      </div>
-
-      <div
-        v-else-if="selectedCardio"
-        class="mb-4 rounded-2xl border border-border bg-card-inner px-4 py-8 text-center"
-      >
-        <p class="text-sm font-semibold text-foreground">No cardio data for this activity</p>
-        <p class="mt-2 text-xs text-muted">
-          Log duration (and distance when available) for “{{ selectedCardio }}”.
-        </p>
-      </div>
-
-      <CardioProgressChart :history="cardioHistory" :distance-unit="distanceUnit" />
-    </template>
-
-    <WeeklyVolumeSummary class="mt-5" />
+      <ProgressStatGrid :tiles="historicalTiles" :columns="5" />
+    </section>
   </div>
 </template>

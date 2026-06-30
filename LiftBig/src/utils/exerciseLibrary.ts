@@ -38,6 +38,233 @@ export type LibraryExercise = {
 
 export type LibraryFilterGroup = MuscleGroup | 'all' | 'cardio'
 
+export type PplSplit = 'push' | 'pull' | 'legs' | 'core'
+
+export const PPL_SPLITS: PplSplit[] = ['push', 'pull', 'legs', 'core']
+
+export const PPL_SPLIT_LABELS: Record<PplSplit, string> = {
+  push: 'Push',
+  pull: 'Pull',
+  legs: 'Legs',
+  core: 'Core',
+}
+
+
+const LEG_MUSCLES: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'calves']
+
+const TAG_ACRONYMS = new Set(['LISS', 'HIIT', 'RFE', 'SUP', 'OLY'])
+
+/** Title-case a tag label; keeps short acronyms uppercase. */
+export function formatTagProperCase(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) return trimmed
+
+  return trimmed
+    .split(/\s+/)
+    .map((word) => {
+      if (TAG_ACRONYMS.has(word.toUpperCase())) return word.toUpperCase()
+      return word
+        .split(/([-/])/)
+        .map((seg) => {
+          if (seg === '-' || seg === '/') return seg
+          if (!seg) return seg
+          if (TAG_ACRONYMS.has(seg.toUpperCase())) return seg.toUpperCase()
+          return seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase()
+        })
+        .join('')
+    })
+    .join(' ')
+}
+
+function tagKey(tag: string): string {
+  return tag.trim().toLowerCase()
+}
+
+function tagsInclude(tags: readonly string[], needle: string): boolean {
+  const n = tagKey(needle)
+  return tags.some((t) => tagKey(t) === n)
+}
+
+function libraryHasTag(ex: LibraryExercise, needle: string): boolean {
+  return (ex.tags ?? []).some((t) => tagKey(t) === tagKey(needle))
+}
+
+/** True when a displayed tag is a PPL split label for this exercise. */
+export function exerciseTagIsPplSplit(ex: LibraryExercise, tag: string): boolean {
+  if (ex.isCardio) return false
+  const k = tagKey(tag)
+  return inferPplSplits(ex).some((s) => tagKey(PPL_SPLIT_LABELS[s]) === k)
+}
+
+function isIsolationLift(ex: LibraryExercise): boolean {
+  if (ex.isCardio) return false
+  const name = ex.name.toLowerCase()
+  if (tagsInclude(ex.tags ?? [], 'isolation')) return true
+  if (tagsInclude(ex.tags ?? [], 'compound')) return false
+  if (
+    /\b(curl|extension|fly|flye|raise|pushdown|kickback|pullover|crunch|plank)\b/.test(name)
+  ) {
+    return true
+  }
+  if (ex.muscleGroups.length === 1 && !ex.muscleGroups.includes('core')) return true
+  return false
+}
+
+function inferMovementTypeTag(ex: LibraryExercise): string | null {
+  if (ex.isCardio) return null
+  if (tagsInclude(ex.tags ?? [], 'compound') || tagsInclude(ex.tags ?? [], 'isolation')) {
+    return null
+  }
+  return isIsolationLift(ex) ? 'Isolation' : 'Compound'
+}
+
+const MUSCLE_TAG_SYNONYMS: Partial<Record<MuscleGroup, string[]>> = {
+  shoulders: ['delt', 'shoulder'],
+  back: ['lat', 'row', 'trap', 'pull'],
+  chest: ['pec', 'fly'],
+  biceps: ['curl', 'bicep'],
+  triceps: ['tricep', 'pushdown'],
+  quads: ['quad', 'leg extension'],
+  hamstrings: ['ham', 'rdl'],
+  glutes: ['glute', 'thrust'],
+  calves: ['calf'],
+  core: ['ab', 'abs', 'plank', 'crunch'],
+  forearms: ['forearm', 'grip'],
+}
+
+function tagCoversMuscle(tag: string, mg: MuscleGroup): boolean {
+  const k = tagKey(tag)
+  const label = tagKey(MUSCLE_GROUP_LABELS[mg])
+  if (k === label || k.includes(label) || label.includes(k)) return true
+  return (MUSCLE_TAG_SYNONYMS[mg] ?? []).some((s) => k.includes(s))
+}
+
+function inferBodyPartTags(ex: LibraryExercise, existing: readonly string[]): string[] {
+  if (ex.isCardio) return []
+  const out: string[] = []
+  for (const mg of ex.muscleGroups) {
+    const label = MUSCLE_GROUP_LABELS[mg]
+    if (existing.some((t) => tagCoversMuscle(t, mg))) continue
+    if (out.some((t) => tagKey(t) === tagKey(label))) continue
+    out.push(label)
+  }
+  return out
+}
+
+function buildExerciseTags(ex: LibraryExercise): string[] {
+  const merged: string[] = []
+  const seen = new Set<string>()
+
+  const add = (raw: string) => {
+    const formatted = formatTagProperCase(raw)
+    const key = tagKey(formatted)
+    if (!key || seen.has(key)) return
+    seen.add(key)
+    merged.push(formatted)
+  }
+
+  for (const t of ex.tags ?? []) add(t)
+
+  if (ex.equipment?.trim()) add(ex.equipment.trim())
+
+  if (ex.isCardio) add('Cardio')
+
+  for (const split of inferPplSplits(ex)) add(PPL_SPLIT_LABELS[split])
+
+  const movement = inferMovementTypeTag(ex)
+  if (movement) add(movement)
+
+  for (const label of inferBodyPartTags(ex, merged)) add(label)
+
+  return merged
+}
+
+/** Push / pull / legs / core classification for PPL-style browsing and plans. */
+export function inferPplSplits(ex: LibraryExercise): PplSplit[] {
+  if (ex.isCardio) return []
+
+  const mg = ex.muscleGroups
+  const splits = new Set<PplSplit>()
+
+  if (mg.some((m) => LEG_MUSCLES.includes(m))) splits.add('legs')
+  if (
+    mg.includes('back') ||
+    mg.includes('biceps') ||
+    libraryHasTag(ex, 'pull') ||
+    libraryHasTag(ex, 'pull-up')
+  ) {
+    splits.add('pull')
+  }
+  if (mg.includes('chest') || mg.includes('triceps') || libraryHasTag(ex, 'push')) {
+    splits.add('push')
+  }
+  if (
+    mg.includes('shoulders') &&
+    !mg.includes('back') &&
+    !mg.includes('core') &&
+    !mg.some((m) => LEG_MUSCLES.includes(m))
+  ) {
+    splits.add('push')
+  }
+
+  const nameLower = ex.name.toLowerCase()
+  const coreByName =
+    /\b(plank|crunch|ab |abs|core|hollow|dead bug|pallof|leg raise|sit-?up|rollout|bird dog|side bend|woodchop|russian twist|v-?up|mountain climber|cable crunch|pike)\b/.test(
+      nameLower,
+    )
+  const primaryWithoutCore = mg.filter((m) => m !== 'core')
+  const corePrimary =
+    ex.repBasedCore === true ||
+    (mg.includes('core') && primaryWithoutCore.length === 0) ||
+    coreByName
+
+  if (corePrimary) splits.add('core')
+  else if (mg.includes('core') && splits.size === 0) splits.add('core')
+
+  if (splits.size === 0 && mg.includes('forearms')) splits.add('pull')
+
+  return PPL_SPLITS.filter((s) => splits.has(s))
+}
+
+export function exerciseMatchesPplSplit(ex: LibraryExercise, split: PplSplit | 'all'): boolean {
+  if (split === 'all') return true
+  return inferPplSplits(ex).includes(split)
+}
+
+export type LibraryTraitFilter = 'compound' | 'machine'
+
+export const LIBRARY_TRAIT_FILTERS: LibraryTraitFilter[] = ['compound', 'machine']
+
+export const LIBRARY_TRAIT_FILTER_LABELS: Record<LibraryTraitFilter, string> = {
+  compound: 'Compound',
+  machine: 'Machine',
+}
+
+/** Strength exercise tagged as a compound movement (after library registration). */
+export function exerciseIsCompound(ex: LibraryExercise): boolean {
+  if (ex.isCardio) return false
+  return libraryHasTag(ex, 'compound')
+}
+
+/** Selectorized, plate-loaded, or other gym machine work. */
+export function exerciseUsesMachine(ex: LibraryExercise): boolean {
+  const eq = (ex.equipment ?? '').trim().toLowerCase()
+  if (eq === 'machine') return true
+  return libraryHasTag(ex, 'machine')
+}
+
+export function exerciseMatchesTraitFilters(
+  ex: LibraryExercise,
+  traits: readonly LibraryTraitFilter[],
+): boolean {
+  if (traits.length === 0) return true
+  for (const trait of traits) {
+    if (trait === 'compound' && !exerciseIsCompound(ex)) return false
+    if (trait === 'machine' && !exerciseUsesMachine(ex)) return false
+  }
+  return true
+}
+
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   chest: 'Chest',
   back: 'Back',
@@ -55,8 +282,9 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
 const byId = new Map<string, LibraryExercise>()
 
 function reg(ex: LibraryExercise): LibraryExercise {
-  const tutorialUrl = ex.tutorialUrl ?? EXERCISE_TUTORIAL_URLS[ex.id]
-  const entry = tutorialUrl ? { ...ex, tutorialUrl } : ex
+  const tagged = { ...ex, tags: buildExerciseTags(ex) }
+  const tutorialUrl = tagged.tutorialUrl ?? EXERCISE_TUTORIAL_URLS[tagged.id]
+  const entry = tutorialUrl ? { ...tagged, tutorialUrl } : tagged
   byId.set(entry.id, entry)
   return entry
 }
