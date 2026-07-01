@@ -6,7 +6,15 @@ import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import PlanShuffleModal from '@/components/plans/PlanShuffleModal.vue'
 import SchedulePlanCalendarSheet from '@/components/plans/SchedulePlanCalendarSheet.vue'
-import { settingsInjectionKey, templatesInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import {
+  planFavoritesInjectionKey,
+  settingsInjectionKey,
+  templatesInjectionKey,
+  workoutsInjectionKey,
+} from '@/composables/injectionKeys'
+import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
+import { loadJsonWithRecovery } from '@/utils/storage'
+import type { ExperienceLevel } from '@/types/planCatalog'
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
 import { addDaysToDateKey, isValidDateKey, todayKey } from '@/utils/dateKey'
 import {
@@ -20,6 +28,12 @@ import {
   planDurationAssumptionsFromSeconds,
 } from '@/utils/planDuration'
 import { sortFolderPlans } from '@/utils/folderPlanSort'
+import {
+  EXPERIENCE_CATEGORY_LABELS,
+  ALL_PLAN_CATALOG,
+  catalogEntryById,
+} from '@/utils/guidedPlans/guidedPlanCatalog'
+import { scheduledDateForPlanIndex, scheduleCatalogEntry } from '@/utils/schedulePlanProgram'
 import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { haptic } from '@/utils/haptics'
 import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
@@ -27,6 +41,7 @@ import { formatWeightWithUnit, parseStoredLbs } from '@/utils/units'
 const templates = inject(templatesInjectionKey)!
 const workouts = inject(workoutsInjectionKey)!
 const settings = inject(settingsInjectionKey)!
+const planFavorites = inject(planFavoritesInjectionKey)!
 const weightUnit = computed(() => settings.weightUnit.value)
 const durationAssumptions = computed(() =>
   planDurationAssumptionsFromSeconds(settings.averageLiftSeconds.value, settings.averageRestSeconds.value),
@@ -138,15 +153,51 @@ const allPlansSectionList = computed(() => planList.value.slice())
 
 const allPlansSearchQuery = ref('')
 const allPlansExpanded = ref(false)
+const categoryFilter = ref<ExperienceLevel | null>(null)
+
+const CATEGORY_CHIPS: ExperienceLevel[] = ['beginner', 'intermediate', 'experienced', 'liftaholic']
+
+const pickAPlanRecap = computed(() => {
+  const raw = loadJsonWithRecovery<unknown>(LIFTBIG_STORAGE_KEYS.pickAPlan, null, {
+    legacyKeys: LIFTBIG_LEGACY_STORAGE_KEY_ALIASES.pickAPlan,
+  })
+  if (!raw || typeof raw !== 'object') return null
+  const title = (raw as { lastTopMatchTitle?: string }).lastTopMatchTitle
+  return typeof title === 'string' && title.length > 0 ? title : null
+})
+
+const favoriteCatalogEntries = computed(() =>
+  planFavorites.favoriteIds.value
+    .map((id) => catalogEntryById(id))
+    .filter((e): e is NonNullable<typeof e> => e != null),
+)
+
+function templateMatchesCategory(template: WorkoutTemplate, category: ExperienceLevel): boolean {
+  return ALL_PLAN_CATALOG.some((entry) => {
+    if (entry.category !== category) return false
+    if (entry.templateId === template.id) return true
+    if (entry.folderId && template.folderId === entry.folderId) return true
+    return false
+  })
+}
+
+function toggleCategoryFilter(category: ExperienceLevel) {
+  categoryFilter.value = categoryFilter.value === category ? null : category
+}
 
 function toggleAllPlans() {
   allPlansExpanded.value = !allPlansExpanded.value
 }
 
 const allPlansSectionFiltered = computed(() => {
+  let list = allPlansSectionList.value
+  const cat = categoryFilter.value
+  if (cat) {
+    list = list.filter((template) => templateMatchesCategory(template, cat))
+  }
   const q = allPlansSearchQuery.value.trim().toLowerCase()
-  if (!q) return allPlansSectionList.value
-  return allPlansSectionList.value.filter((template) => {
+  if (!q) return list
+  return list.filter((template) => {
     if (template.name.toLowerCase().includes(q)) return true
     return template.exercises.some((ex) => ex.name.toLowerCase().includes(q))
   })
@@ -567,11 +618,6 @@ onUnmounted(() => {
   destroyAllPlansViewSortables()
 })
 
-function scheduledDateForPlanIndex(startDateKey: string, planIndex: number, restEvery: number): string {
-  if (restEvery <= 0) return addDaysToDateKey(startDateKey, planIndex)
-  return addDaysToDateKey(startDateKey, planIndex + Math.floor(planIndex / restEvery))
-}
-
 function sortedFolderPlans(folderId: string): WorkoutTemplate[] {
   return sortFolderPlans(planList.value.filter((item) => item.folderId === folderId))
 }
@@ -652,14 +698,41 @@ function assignFolderPlansToCalendar(folderId: string) {
     }
   }
 
-  for (const restKey of restDateKeys) {
-    if (workouts.getDay(restKey).length === 0 && !workouts.isRestDay(restKey)) {
-      workouts.markRestDay(restKey)
-    }
-  }
+  const ok = scheduleCatalogEntry(
+    workouts,
+    {
+      id: `folder-assign-${folderId}`,
+      title: folderName,
+      description: '',
+      experienceLevels: ['beginner'],
+      goals: ['strength'],
+      days: plans.length,
+      duration: 'standard',
+      equipment: ['commercialGym'],
+      styles: ['balanced'],
+      volumeScore: 5,
+      difficulty: 'Beginner',
+      estimatedMinutes: 45,
+      primaryMuscles: [],
+      progressionStyle: '',
+      goalTag: folderName,
+      scheduleMode: 'folder',
+      folderId,
+      category: 'beginner',
+    },
+    planList.value,
+    folders.value,
+    {
+      startDateKey,
+      daysPerWeek: plans.length,
+      folderName,
+      restEveryWorkoutDays: restEvery,
+    },
+  )
 
-  for (const slot of workoutAssignments) {
-    workouts.assignPlanToDate(slot.dateKey, slot.plan, folderName)
+  if (!ok) {
+    window.alert('Could not assign folder plans to the calendar.')
+    return
   }
 
   window.alert(
@@ -736,6 +809,55 @@ function onPlansRestSecondsChange(ev: Event) {
         </div>
       </div>
     </header>
+
+    <RouterLink
+      to="/pick-plan"
+      class="mb-4 block rounded-xl border border-primary bg-primary/10 px-4 py-4 transition-colors hover:bg-primary/15"
+    >
+      <div class="flex items-start gap-3">
+        <span class="text-2xl" aria-hidden="true">🎯</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-base font-extrabold text-foreground">Pick a Plan</p>
+          <p class="mt-0.5 text-sm text-muted">Answer a few questions and we'll recommend the best programs for you.</p>
+          <p v-if="pickAPlanRecap" class="mt-2 text-xs font-semibold text-primary">
+            Your last match: {{ pickAPlanRecap }}
+          </p>
+        </div>
+        <i class="fa-solid fa-chevron-right mt-1 text-muted" aria-hidden="true" />
+      </div>
+    </RouterLink>
+
+    <div v-if="favoriteCatalogEntries.length" class="mb-4">
+      <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted">Saved plans</p>
+      <div class="flex flex-wrap gap-2">
+        <RouterLink
+          v-for="entry in favoriteCatalogEntries"
+          :key="entry.id"
+          to="/pick-plan"
+          class="rounded-full border border-border bg-card-inner px-3 py-1.5 text-xs font-bold text-foreground hover:border-primary"
+        >
+          <i class="fa-solid fa-star mr-1 text-primary" aria-hidden="true" />
+          {{ entry.title }}
+        </RouterLink>
+      </div>
+    </div>
+
+    <div class="mb-3 flex flex-wrap gap-2">
+      <button
+        v-for="cat in CATEGORY_CHIPS"
+        :key="cat"
+        type="button"
+        class="rounded-full border px-3 py-1.5 text-xs font-bold transition-colors"
+        :class="
+          categoryFilter === cat
+            ? 'border-primary bg-primary/15 text-primary'
+            : 'border-border text-muted hover:border-primary/50'
+        "
+        @click="toggleCategoryFilter(cat)"
+      >
+        {{ EXPERIENCE_CATEGORY_LABELS[cat] }}
+      </button>
+    </div>
 
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <button

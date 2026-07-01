@@ -21,6 +21,8 @@ export const LIFTBIG_STORAGE_KEYS = {
   settings: 'liftbig_settings',
   customThemes: 'liftbig_custom_themes',
   libraryFavorites: 'liftbig_library_favorites',
+  planFavorites: 'liftbig_plan_favorites',
+  pickAPlan: 'liftbig_pick_a_plan',
 } as const
 
 /**
@@ -34,6 +36,8 @@ export const LIFTBIG_LEGACY_STORAGE_KEY_ALIASES: Partial<
   templates: Object.freeze(['templates', 'liftbig_plans']),
   settings: Object.freeze(['settings']),
   libraryFavorites: Object.freeze(['liftbig_favorites', 'favorites']),
+  planFavorites: Object.freeze(['liftbig_plan_favs']),
+  pickAPlan: Object.freeze(['liftbig_pick_plan']),
 }
 
 export type LiftBigStorageSlot = keyof typeof LIFTBIG_STORAGE_KEYS

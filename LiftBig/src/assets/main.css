@@ -87,6 +87,22 @@ body::-webkit-scrollbar {
   border-radius: 0.75rem;
 }
 
+/* Pick a Plan: horizontal step transitions */
+.pick-plan-slide-enter-active,
+.pick-plan-slide-leave-active {
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+.pick-plan-slide-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+.pick-plan-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
 /* Nested scroll areas (sheets, lists): hide track without disabling scroll */
 * {
   scrollbar-width: none;

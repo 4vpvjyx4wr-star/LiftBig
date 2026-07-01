@@ -6,9 +6,13 @@ import {
   templatesInjectionKey,
   settingsInjectionKey,
   libraryFavoritesInjectionKey,
+  planFavoritesInjectionKey,
+  pickAPlanStateInjectionKey,
 } from '@/composables/injectionKeys'
 import { useLocalWorkouts } from '@/composables/useLocalWorkouts'
 import { useLibraryFavorites } from '@/composables/useLibraryFavorites'
+import { usePlanFavorites } from '@/composables/usePlanFavorites'
+import { usePickAPlanState } from '@/composables/usePickAPlanState'
 import { useTemplates } from '@/composables/useTemplates'
 import { useSettings } from '@/composables/useSettings'
 import { maybeFireDailyLiftNotification } from '@/utils/dailyLiftReminder'
@@ -18,11 +22,15 @@ const workouts = useLocalWorkouts()
 const templates = useTemplates()
 const settings = useSettings()
 const libraryFavorites = useLibraryFavorites()
+const planFavorites = usePlanFavorites()
+const pickAPlanState = usePickAPlanState()
 
 provide(workoutsInjectionKey, workouts)
 provide(templatesInjectionKey, templates)
 provide(settingsInjectionKey, settings)
 provide(libraryFavoritesInjectionKey, libraryFavorites)
+provide(planFavoritesInjectionKey, planFavorites)
+provide(pickAPlanStateInjectionKey, pickAPlanState)
 
 let dailyReminderInterval: ReturnType<typeof setInterval> | null = null
 

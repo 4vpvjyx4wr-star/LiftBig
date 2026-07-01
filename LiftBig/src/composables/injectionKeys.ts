@@ -1,5 +1,7 @@
 import type { InjectionKey, Ref } from 'vue'
 import type { LibraryFavoritesApi } from '@/composables/useLibraryFavorites'
+import type { PlanFavoritesApi } from '@/composables/usePlanFavorites'
+import type { PickAPlanStateApi } from '@/composables/usePickAPlanState'
 import type { SettingsApi } from '@/composables/useSettings'
 import type { Exercise, TemplateFolder, WorkoutLog, WorkoutTemplate } from '@/types/workout'
 
@@ -45,3 +47,7 @@ export const settingsInjectionKey: InjectionKey<SettingsApi> = Symbol('settings'
 
 export const libraryFavoritesInjectionKey: InjectionKey<LibraryFavoritesApi> =
   Symbol('libraryFavorites')
+
+export const planFavoritesInjectionKey: InjectionKey<PlanFavoritesApi> = Symbol('planFavorites')
+
+export const pickAPlanStateInjectionKey: InjectionKey<PickAPlanStateApi> = Symbol('pickAPlanState')

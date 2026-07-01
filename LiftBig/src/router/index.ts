@@ -69,6 +69,11 @@ const router = createRouter({
         }
       },
     },
+    {
+      path: '/pick-plan',
+      name: 'pickPlan',
+      component: () => import('@/views/PickAPlanView.vue'),
+    },
   ],
 })
 
