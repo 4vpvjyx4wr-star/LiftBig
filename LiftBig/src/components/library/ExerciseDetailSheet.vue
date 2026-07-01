@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, onBeforeUnmount, watch } from 'vue'
 import CardioProgressChart from '@/components/progress/CardioProgressChart.vue'
 import ProgressChart from '@/components/progress/ProgressChart.vue'
 import {
@@ -90,31 +90,66 @@ function toggleFavorite() {
   if (!props.exercise) return
   favorites.toggle(props.exercise.id)
 }
+
+let bodyOverflowRestore = ''
+
+function lockBodyScroll() {
+  bodyOverflowRestore = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+}
+
+function unlockBodyScroll() {
+  document.body.style.overflow = bodyOverflowRestore
+}
+
+watch(
+  () => props.open && props.exercise,
+  (shouldLock) => {
+    if (shouldLock) lockBodyScroll()
+    else unlockBodyScroll()
+  },
+)
+
+onBeforeUnmount(() => {
+  unlockBodyScroll()
+})
 </script>
 
 <template>
   <Teleport to="body">
     <div
       v-if="open && exercise"
-      class="fixed inset-0 z-50 flex flex-col justify-end bg-black/65"
+      class="fixed inset-0 z-[70] flex flex-col justify-end"
       role="dialog"
       aria-modal="true"
       aria-labelledby="exercise-detail-title"
       @click.self="emit('close')"
     >
       <div
-        class="max-h-[85vh] overflow-y-auto rounded-t-2xl border border-border border-b-0 bg-card px-4 pb-8 pt-2"
+        class="absolute inset-0 bg-black/65"
+        aria-hidden="true"
+        @click="emit('close')"
+        @wheel.prevent
+        @touchmove.prevent
+      />
+      <div
+        class="relative flex max-h-[85vh] min-h-0 w-full flex-col rounded-t-2xl border border-border border-b-0 bg-card"
         @click.stop
       >
-        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
-        <button
-          type="button"
-          class="mb-2 text-xs font-bold text-muted hover:text-primary"
-          @click="emit('close')"
-        >
-          Close
-        </button>
+        <div class="shrink-0 border-b border-border px-4 pb-2 pt-2">
+          <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+          <button
+            type="button"
+            class="text-xs font-bold text-muted hover:text-primary"
+            @click="emit('close')"
+          >
+            Close
+          </button>
+        </div>
 
+        <div
+          class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
         <div class="flex flex-wrap items-start justify-between gap-2">
           <h3 id="exercise-detail-title" class="text-xl font-extrabold text-foreground">
             {{ exercise.name }}
@@ -314,6 +349,7 @@ function toggleFavorite() {
             </li>
           </ul>
         </template>
+        </div>
       </div>
     </div>
   </Teleport>

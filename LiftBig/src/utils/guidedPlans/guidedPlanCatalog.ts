@@ -31,27 +31,31 @@ import {
   LIFTBIG_EXTREME_FOLDER_ID,
   MASS_MONSTER_FOLDER_ID,
 } from './liftaholicPlans'
-import {
-  GUIDED_BEGINNER_FOLDER,
-  GUIDED_EXPERIENCED_FOLDER,
-  GUIDED_INTERMEDIATE_FOLDER,
-  GUIDED_LIFTAHOLIC_FOLDER,
-} from './guidedPlanFolders'
+import { CATALOG_SCHEDULE_IDS, catalogFolderForEntry } from './weeklyPrograms'
+import { EXPANSION_PLAN_CATALOG_RAW } from './catalogExpansion'
 
-const B = GUIDED_BEGINNER_FOLDER.id
-const I = GUIDED_INTERMEDIATE_FOLDER.id
-const E = GUIDED_EXPERIENCED_FOLDER.id
-const L = GUIDED_LIFTAHOLIC_FOLDER.id
+/** Apply dedicated weekly folder + schedule template IDs to a catalog entry */
+function withWeeklyProgram(entry: PlanCatalogEntry): PlanCatalogEntry {
+  const scheduleTemplateIds = CATALOG_SCHEDULE_IDS[entry.id]
+  if (!scheduleTemplateIds?.length) return entry
+  return {
+    ...entry,
+    scheduleMode: 'folder',
+    folderId: catalogFolderForEntry(entry.id),
+    scheduleTemplateIds,
+    templateId: undefined,
+  }
+}
 
 /** Curated programs from the Pick a Plan spec */
-export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
+const CURATED_PLAN_CATALOG_RAW: PlanCatalogEntry[] = [
   {
     id: 'catalog-beginner-full-body-3d',
     title: 'Beginner Full Body (3d)',
     description: 'Simple full-body sessions three times per week. Perfect for learning movement patterns.',
     experienceLevels: ['beginner'],
     goals: ['strength', 'size', 'liftBig', 'weightLoss'],
-    days: 3,
+    days: [2, 3, 4],
     duration: 'standard',
     equipment: ['commercialGym', 'homeGym', 'planetFitness'],
     styles: ['balanced', 'minimalist'],
@@ -117,9 +121,9 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     description: 'Circuit training plus cardio to burn calories while keeping muscle.',
     experienceLevels: ['beginner'],
     goals: ['weightLoss'],
-    days: [3, 4],
+    days: [2, 3, 4, 5],
     duration: ['quick', 'standard'],
-    equipment: ['commercialGym', 'planetFitness', 'homeGym'],
+    equipment: ['commercialGym', 'planetFitness', 'homeGym', 'dumbbellsOnly', 'minimalEquipment'],
     styles: ['supersets', 'athletic'],
     volumeScore: 4,
     difficulty: 'Beginner',
@@ -157,7 +161,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     description: 'Full-body dumbbell training for home or minimal equipment setups.',
     experienceLevels: ['beginner'],
     goals: ['strength', 'size', 'liftBig'],
-    days: [3, 4],
+    days: [2, 3, 4],
     duration: ['quick', 'standard'],
     equipment: ['dumbbellsOnly', 'homeGym', 'minimalEquipment'],
     styles: ['minimalist', 'balanced'],
@@ -188,7 +192,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Double progression',
     goalTag: 'Hypertrophy',
     scheduleMode: 'folder',
-    folderId: I,
+    folderId: INTERMEDIATE_UL_HYPERTROPHY_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-int-ul-upper-a',
       'guided-int-ul-lower-a',
@@ -214,7 +218,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Weekly overload',
     goalTag: 'Classic split',
     scheduleMode: 'folder',
-    folderId: I,
+    folderId: INTERMEDIATE_PPL_FOLDER_ID,
     scheduleTemplateIds: ['guided-int-push', 'guided-int-pull', 'guided-int-legs'],
     category: 'intermediate',
   },
@@ -235,7 +239,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Strength + volume waves',
     goalTag: 'Powerbuilding',
     scheduleMode: 'folder',
-    folderId: I,
+    folderId: INTERMEDIATE_POWERBUILDING_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-int-pb-upper',
       'guided-int-pb-lower',
@@ -250,9 +254,9 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     description: 'Recomposition-focused training with moderate volume and cardio finishers.',
     experienceLevels: ['intermediate', 'beginner'],
     goals: ['weightLoss', 'size'],
-    days: [3, 4],
+    days: [2, 3, 4, 5],
     duration: ['quick', 'standard'],
-    equipment: ['commercialGym', 'planetFitness', 'homeGym'],
+    equipment: ['commercialGym', 'planetFitness', 'homeGym', 'dumbbellsOnly', 'minimalEquipment'],
     styles: ['balanced', 'athletic'],
     volumeScore: 5,
     difficulty: 'Intermediate',
@@ -321,7 +325,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Volume periodization',
     goalTag: 'Aesthetics',
     scheduleMode: 'folder',
-    folderId: E,
+    folderId: AESTHETIC_VTAPER_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-exp-vtaper-push',
       'guided-exp-vtaper-pull',
@@ -346,7 +350,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Wave loading',
     goalTag: 'High volume',
     scheduleMode: 'folder',
-    folderId: E,
+    folderId: HIGH_VOLUME_PPL_FOLDER_ID,
     scheduleTemplateIds: ['guided-exp-hv-push', 'guided-exp-hv-pull', 'guided-exp-hv-legs'],
     category: 'experienced',
   },
@@ -367,7 +371,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Specialization blocks',
     goalTag: 'Arms focus',
     scheduleMode: 'folder',
-    folderId: E,
+    folderId: UPPER_LOWER_ARMS_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-exp-ula-upper',
       'guided-exp-ula-lower',
@@ -392,7 +396,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Block periodization',
     goalTag: 'Strength + size',
     scheduleMode: 'folder',
-    folderId: E,
+    folderId: POWERBUILDING_ADVANCED_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-exp-pb-squat',
       'guided-exp-pb-bench',
@@ -407,8 +411,8 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     description: 'Superset-friendly cut phase with cardio finishers to lean out.',
     experienceLevels: ['experienced', 'intermediate'],
     goals: ['weightLoss'],
-    days: [3, 4, 5],
-    duration: ['quick', 'standard'],
+    days: [2, 3, 4, 5, 6],
+    duration: ['quick', 'standard', 'long'],
     equipment: ['commercialGym', 'planetFitness'],
     styles: ['supersets', 'athletic'],
     volumeScore: 6,
@@ -427,7 +431,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     description: 'Strength-first full body with heavy compounds. Repeat 3–4× per week.',
     experienceLevels: ['experienced', 'intermediate'],
     goals: ['strength', 'liftBig'],
-    days: [3, 4],
+    days: [2, 3, 4, 5],
     duration: ['standard', 'long'],
     equipment: ['commercialGym', 'planetFitness', 'homeGym'],
     styles: ['compound', 'balanced'],
@@ -458,7 +462,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'High-frequency overload',
     goalTag: 'Maximum volume',
     scheduleMode: 'folder',
-    folderId: L,
+    folderId: LIFTBIG_EXTREME_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-la-extreme-push',
       'guided-la-extreme-pull',
@@ -483,7 +487,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Volume blocks',
     goalTag: 'Mass building',
     scheduleMode: 'folder',
-    folderId: L,
+    folderId: ARNOLD_PPL_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-la-arnold-chest-back',
       'guided-la-arnold-shoulders-arms',
@@ -508,7 +512,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Twice-daily volume',
     goalTag: 'Extreme frequency',
     scheduleMode: 'folder',
-    folderId: L,
+    folderId: DOUBLE_SPLIT_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-la-ds-am-upper',
       'guided-la-ds-pm-upper',
@@ -534,7 +538,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Specialization overload',
     goalTag: 'Mass building',
     scheduleMode: 'folder',
-    folderId: L,
+    folderId: MASS_MONSTER_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-la-mass-chest',
       'guided-la-mass-back',
@@ -580,7 +584,7 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     progressionStyle: 'Aesthetic specialization',
     goalTag: 'Aesthetics',
     scheduleMode: 'folder',
-    folderId: L,
+    folderId: ADVANCED_AESTHETICS_FOLDER_ID,
     scheduleTemplateIds: [
       'guided-la-aesthetics-upper-a',
       'guided-la-aesthetics-lower',
@@ -588,10 +592,14 @@ export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] = [
     ],
     category: 'liftaholic',
   },
+  ...EXPANSION_PLAN_CATALOG_RAW,
 ]
 
+export const CURATED_PLAN_CATALOG: PlanCatalogEntry[] =
+  CURATED_PLAN_CATALOG_RAW.map(withWeeklyProgram)
+
 /** Retrofit existing seeded programs into the catalog */
-export const RETROFIT_PLAN_CATALOG: PlanCatalogEntry[] = [
+const RETROFIT_PLAN_CATALOG_RAW: PlanCatalogEntry[] = [
   {
     id: 'catalog-sbd-strength',
     title: 'SBD Strength',
@@ -654,8 +662,11 @@ export const RETROFIT_PLAN_CATALOG: PlanCatalogEntry[] = [
   },
 ]
 
+export const RETROFIT_PLAN_CATALOG: PlanCatalogEntry[] =
+  RETROFIT_PLAN_CATALOG_RAW.map(withWeeklyProgram)
+
 /** Broad fallbacks per experience tier — wide metadata for coverage */
-export const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] = [
+const FALLBACK_PLAN_CATALOG_RAW: PlanCatalogEntry[] = [
   {
     id: 'catalog-fallback-beginner',
     title: 'Flexible Beginner',
@@ -684,7 +695,7 @@ export const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] = [
     goals: ['strength', 'size', 'weightLoss', 'liftBig'],
     days: [3, 4, 5, 6],
     duration: ['quick', 'standard', 'long'],
-    equipment: ['commercialGym', 'planetFitness', 'homeGym'],
+    equipment: ['commercialGym', 'planetFitness', 'homeGym', 'dumbbellsOnly', 'minimalEquipment'],
     styles: ['balanced', 'bodybuilding', 'compound'],
     volumeScore: 6,
     difficulty: 'Intermediate',
@@ -704,7 +715,7 @@ export const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] = [
     goals: ['strength', 'size', 'weightLoss', 'liftBig'],
     days: [3, 4, 5, 6],
     duration: ['standard', 'long'],
-    equipment: ['commercialGym', 'planetFitness', 'homeGym'],
+    equipment: ['commercialGym', 'planetFitness', 'homeGym', 'dumbbellsOnly', 'minimalEquipment'],
     styles: ['balanced', 'compound', 'bodybuilding'],
     volumeScore: 7,
     difficulty: 'Advanced',
@@ -737,6 +748,9 @@ export const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] = [
     category: 'liftaholic',
   },
 ]
+
+export const FALLBACK_PLAN_CATALOG: PlanCatalogEntry[] =
+  FALLBACK_PLAN_CATALOG_RAW.map(withWeeklyProgram)
 
 export const ALL_PLAN_CATALOG: PlanCatalogEntry[] = [
   ...CURATED_PLAN_CATALOG,

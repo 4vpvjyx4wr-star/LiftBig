@@ -1,12 +1,16 @@
 import type { WorkoutTemplate } from '@/types/workout'
+import { catalogFolderId } from './catalogFolders'
 import { GUIDED_INTERMEDIATE_FOLDER } from './guidedPlanFolders'
 import { dayTemplate, repeatTemplate, te } from './planHelpers'
 
 const F = GUIDED_INTERMEDIATE_FOLDER.id
+const F_UL = catalogFolderId('intermediate-ul-hypertrophy')
+const F_PPL = catalogFolderId('intermediate-ppl')
+const F_PB = catalogFolderId('powerbuilding-4d')
 
-export const INTERMEDIATE_UL_HYPERTROPHY_FOLDER_ID = 'guided-intermediate-ul-hypertrophy'
-export const INTERMEDIATE_PPL_FOLDER_ID = 'guided-intermediate-ppl'
-export const INTERMEDIATE_POWERBUILDING_FOLDER_ID = 'guided-intermediate-powerbuilding-4d'
+export const INTERMEDIATE_UL_HYPERTROPHY_FOLDER_ID = catalogFolderId('intermediate-ul-hypertrophy')
+export const INTERMEDIATE_PPL_FOLDER_ID = catalogFolderId('intermediate-ppl')
+export const INTERMEDIATE_POWERBUILDING_FOLDER_ID = catalogFolderId('powerbuilding-4d')
 export const LEAN_MUSCLE_BUILDER_ID = 'guided-lean-muscle-builder'
 export const BUSY_PROFESSIONAL_ID = 'guided-busy-professional'
 export const MACHINE_HYPERTROPHY_ID = 'guided-machine-hypertrophy'
@@ -15,7 +19,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-ul-upper-a',
     'Upper Hypertrophy A',
-    F,
+    F_UL,
     [
       te('guided-int-ul-upper-a', 'bench', 'Barbell Bench Press', 4, '8-10', '135', false, 'bench-press'),
       te('guided-int-ul-upper-a', 'row', 'Barbell Row', 4, '8-10', '115', false, 'barbell-row'),
@@ -28,7 +32,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-ul-lower-a',
     'Lower Hypertrophy A',
-    F,
+    F_UL,
     [
       te('guided-int-ul-lower-a', 'squat', 'Barbell Back Squat', 4, '8-10', '185', false, 'squat'),
       te('guided-int-ul-lower-a', 'rdl', 'Romanian Deadlift', 3, '10-12', '135', false, 'romanian-deadlift'),
@@ -40,7 +44,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-ul-upper-b',
     'Upper Hypertrophy B',
-    F,
+    F_UL,
     [
       te('guided-int-ul-upper-b', 'oh-press', 'Overhead Press', 4, '8-10', '85', false, 'overhead-press'),
       te('guided-int-ul-upper-b', 'pull-up', 'Pull-Ups', 4, '6-10', '0', false, 'pull-up'),
@@ -53,7 +57,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-ul-lower-b',
     'Lower Hypertrophy B',
-    F,
+    F_UL,
     [
       te('guided-int-ul-lower-b', 'deadlift', 'Conventional Deadlift', 4, '5-8', '225', false, 'deadlift'),
       te('guided-int-ul-lower-b', 'split-squat', 'Bulgarian Split Squat', 3, '10-12', '30', false, 'bulgarian-split-squat'),
@@ -65,7 +69,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-push',
     'Push',
-    F,
+    F_PPL,
     [
       te('guided-int-push', 'bench', 'Barbell Bench Press', 4, '8-10', '155', false, 'bench-press'),
       te('guided-int-push', 'oh-press', 'Overhead Press', 3, '8-10', '85', false, 'overhead-press'),
@@ -77,7 +81,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-pull',
     'Pull',
-    F,
+    F_PPL,
     [
       te('guided-int-pull', 'deadlift', 'Conventional Deadlift', 4, '5-6', '275', false, 'deadlift'),
       te('guided-int-pull', 'pull-up', 'Pull-Ups', 4, '6-10', '0', false, 'pull-up'),
@@ -89,7 +93,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-legs',
     'Legs',
-    F,
+    F_PPL,
     [
       te('guided-int-legs', 'squat', 'Barbell Back Squat', 4, '6-8', '205', false, 'squat'),
       te('guided-int-legs', 'rdl', 'Romanian Deadlift', 3, '8-10', '155', false, 'romanian-deadlift'),
@@ -101,7 +105,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-pb-upper',
     'Powerbuilding Upper',
-    F,
+    F_PB,
     [
       te('guided-int-pb-upper', 'bench', 'Barbell Bench Press', 5, '5', '175', false, 'bench-press'),
       te('guided-int-pb-upper', 'row', 'Barbell Row', 4, '8', '135', false, 'barbell-row'),
@@ -113,7 +117,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-pb-lower',
     'Powerbuilding Lower',
-    F,
+    F_PB,
     [
       te('guided-int-pb-lower', 'squat', 'Barbell Back Squat', 5, '5', '225', false, 'squat'),
       te('guided-int-pb-lower', 'rdl', 'Romanian Deadlift', 4, '8', '185', false, 'romanian-deadlift'),
@@ -125,7 +129,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-pb-push',
     'Powerbuilding Push',
-    F,
+    F_PB,
     [
       te('guided-int-pb-push', 'oh-press', 'Overhead Press', 5, '5', '95', false, 'overhead-press'),
       te('guided-int-pb-push', 'incline-bench', 'Incline Barbell Bench', 4, '8', '135', false, 'incline-bench-press'),
@@ -136,7 +140,7 @@ export const INTERMEDIATE_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-int-pb-pull',
     'Powerbuilding Pull',
-    F,
+    F_PB,
     [
       te('guided-int-pb-pull', 'deadlift', 'Conventional Deadlift', 5, '3', '315', false, 'deadlift'),
       te('guided-int-pb-pull', 'pull-up', 'Weighted Pull-Ups', 4, '6-8', '25', false, 'pull-up'),

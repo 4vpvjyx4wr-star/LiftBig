@@ -20,8 +20,7 @@ describe('planRecommendation', () => {
   }
 
   const beginnerEntry =
-    ALL_PLAN_CATALOG.find((e) => e.id === 'catalog-beginner-full-body-3d') ??
-    ALL_PLAN_CATALOG.find((e) => e.category === 'beginner' && e.scheduleMode === 'repeat')!
+    ALL_PLAN_CATALOG.find((e) => e.id === 'catalog-beginner-full-body-3d')!
 
   it('scores experience match at +50', () => {
     const score = scoreCatalogEntry(beginnerEntry, fullAnswers)
@@ -37,7 +36,7 @@ describe('planRecommendation', () => {
 
   it('gives partial credit for near-miss days', () => {
     const exact = scoreCatalogEntry(beginnerEntry, { ...fullAnswers, daysPerWeek: 3 })
-    const near = scoreCatalogEntry(beginnerEntry, { ...fullAnswers, daysPerWeek: 4 })
+    const near = scoreCatalogEntry(beginnerEntry, { ...fullAnswers, daysPerWeek: 5 })
     expect(exact).toBeGreaterThan(near)
     expect(near).toBeGreaterThan(0)
   })

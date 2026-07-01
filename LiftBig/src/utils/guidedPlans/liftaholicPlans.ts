@@ -1,21 +1,27 @@
 import type { WorkoutTemplate } from '@/types/workout'
+import { catalogFolderId } from './catalogFolders'
 import { GUIDED_LIFTAHOLIC_FOLDER } from './guidedPlanFolders'
 import { dayTemplate, repeatTemplate, te } from './planHelpers'
 
 const F = GUIDED_LIFTAHOLIC_FOLDER.id
+const F_EXTREME = catalogFolderId('liftbig-extreme')
+const F_ARNOLD = catalogFolderId('arnold-ppl')
+const F_DS = catalogFolderId('double-split')
+const F_MASS = catalogFolderId('mass-monster')
+const F_AESTH = catalogFolderId('advanced-aesthetics')
 
-export const LIFTBIG_EXTREME_FOLDER_ID = 'guided-liftbig-extreme'
-export const ARNOLD_PPL_FOLDER_ID = 'guided-arnold-ppl'
-export const DOUBLE_SPLIT_FOLDER_ID = 'guided-double-split'
-export const MASS_MONSTER_FOLDER_ID = 'guided-mass-monster'
+export const LIFTBIG_EXTREME_FOLDER_ID = catalogFolderId('liftbig-extreme')
+export const ARNOLD_PPL_FOLDER_ID = catalogFolderId('arnold-ppl')
+export const DOUBLE_SPLIT_FOLDER_ID = catalogFolderId('double-split')
+export const MASS_MONSTER_FOLDER_ID = catalogFolderId('mass-monster')
 export const HIGH_FREQ_FB_ID = 'guided-high-freq-full-body'
-export const ADVANCED_AESTHETICS_FOLDER_ID = 'guided-advanced-aesthetics'
+export const ADVANCED_AESTHETICS_FOLDER_ID = catalogFolderId('advanced-aesthetics')
 
 export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-extreme-push',
     'Extreme Push',
-    F,
+    F_EXTREME,
     [
       te('guided-la-extreme-push', 'bench', 'Barbell Bench Press', 6, '6-8', '225', false, 'bench-press'),
       te('guided-la-extreme-push', 'oh-press', 'Overhead Press', 5, '6-8', '135', false, 'overhead-press'),
@@ -29,7 +35,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-extreme-pull',
     'Extreme Pull',
-    F,
+    F_EXTREME,
     [
       te('guided-la-extreme-pull', 'deadlift', 'Conventional Deadlift', 5, '3-5', '405', false, 'deadlift'),
       te('guided-la-extreme-pull', 'pull-up', 'Weighted Pull-Ups', 6, '6-10', '45', false, 'pull-up'),
@@ -43,7 +49,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-extreme-legs',
     'Extreme Legs',
-    F,
+    F_EXTREME,
     [
       te('guided-la-extreme-legs', 'squat', 'Barbell Back Squat', 6, '5-8', '315', false, 'squat'),
       te('guided-la-extreme-legs', 'rdl', 'Romanian Deadlift', 5, '8-10', '275', false, 'romanian-deadlift'),
@@ -56,7 +62,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-arnold-chest-back',
     'Chest & Back',
-    F,
+    F_ARNOLD,
     [
       te('guided-la-arnold-chest-back', 'bench', 'Barbell Bench Press', 5, '8-10', '225', false, 'bench-press'),
       te('guided-la-arnold-chest-back', 'incline-db', 'Incline Dumbbell Press', 4, '10-12', '60', false, 'incline-dumbbell-press'),
@@ -69,7 +75,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-arnold-shoulders-arms',
     'Shoulders & Arms',
-    F,
+    F_ARNOLD,
     [
       te('guided-la-arnold-shoulders-arms', 'oh-press', 'Overhead Press', 5, '8-10', '135', false, 'overhead-press'),
       te('guided-la-arnold-shoulders-arms', 'lateral', 'Lateral Raise', 6, '15-20', '30', false, 'lateral-raise'),
@@ -82,7 +88,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-arnold-legs',
     'Legs',
-    F,
+    F_ARNOLD,
     [
       te('guided-la-arnold-legs', 'squat', 'Barbell Back Squat', 6, '6-8', '315', false, 'squat'),
       te('guided-la-arnold-legs', 'rdl', 'Romanian Deadlift', 4, '8-10', '275', false, 'romanian-deadlift'),
@@ -94,7 +100,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-ds-am-upper',
     'AM Upper',
-    F,
+    F_DS,
     [
       te('guided-la-ds-am-upper', 'bench', 'Barbell Bench Press', 4, '6-8', '225', false, 'bench-press'),
       te('guided-la-ds-am-upper', 'row', 'Barbell Row', 4, '8-10', '185', false, 'barbell-row'),
@@ -105,7 +111,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-ds-pm-upper',
     'PM Upper',
-    F,
+    F_DS,
     [
       te('guided-la-ds-pm-upper', 'incline-db', 'Incline Dumbbell Press', 4, '10-12', '60', false, 'incline-dumbbell-press'),
       te('guided-la-ds-pm-upper', 'pulldown', 'Lat Pulldown', 4, '10-12', '130', false, 'lat-pulldown'),
@@ -116,7 +122,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-ds-am-lower',
     'AM Lower',
-    F,
+    F_DS,
     [
       te('guided-la-ds-am-lower', 'squat', 'Barbell Back Squat', 5, '5-8', '315', false, 'squat'),
       te('guided-la-ds-am-lower', 'rdl', 'Romanian Deadlift', 4, '8-10', '275', false, 'romanian-deadlift'),
@@ -126,7 +132,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-ds-pm-lower',
     'PM Lower',
-    F,
+    F_DS,
     [
       te('guided-la-ds-pm-lower', 'leg-press', 'Leg Press', 5, '12-15', '630', false, 'leg-press'),
       te('guided-la-ds-pm-lower', 'split-squat', 'Bulgarian Split Squat', 4, '10-12', '50', false, 'bulgarian-split-squat'),
@@ -137,7 +143,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-mass-chest',
     'Mass Chest',
-    F,
+    F_MASS,
     [
       te('guided-la-mass-chest', 'bench', 'Barbell Bench Press', 6, '8-10', '225', false, 'bench-press'),
       te('guided-la-mass-chest', 'incline-db', 'Incline Dumbbell Press', 5, '10-12', '60', false, 'incline-dumbbell-press'),
@@ -149,7 +155,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-mass-back',
     'Mass Back',
-    F,
+    F_MASS,
     [
       te('guided-la-mass-back', 'deadlift', 'Conventional Deadlift', 5, '4-6', '405', false, 'deadlift'),
       te('guided-la-mass-back', 'pull-up', 'Weighted Pull-Ups', 6, '6-10', '45', false, 'pull-up'),
@@ -161,7 +167,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-mass-legs',
     'Mass Legs',
-    F,
+    F_MASS,
     [
       te('guided-la-mass-legs', 'squat', 'Barbell Back Squat', 6, '6-8', '315', false, 'squat'),
       te('guided-la-mass-legs', 'rdl', 'Romanian Deadlift', 5, '8-10', '275', false, 'romanian-deadlift'),
@@ -174,7 +180,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-mass-shoulders',
     'Mass Shoulders',
-    F,
+    F_MASS,
     [
       te('guided-la-mass-shoulders', 'oh-press', 'Overhead Press', 6, '6-8', '135', false, 'overhead-press'),
       te('guided-la-mass-shoulders', 'lateral', 'Lateral Raise', 6, '15-20', '30', false, 'lateral-raise'),
@@ -200,7 +206,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-aesthetics-upper-a',
     'Aesthetics Upper A',
-    F,
+    F_AESTH,
     [
       te('guided-la-aesthetics-upper-a', 'incline-db', 'Incline Dumbbell Press', 5, '8-10', '60', false, 'incline-dumbbell-press'),
       te('guided-la-aesthetics-upper-a', 'pull-up', 'Pull-Ups', 5, '8-12', '0', false, 'pull-up'),
@@ -212,7 +218,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-aesthetics-lower',
     'Aesthetics Lower',
-    F,
+    F_AESTH,
     [
       te('guided-la-aesthetics-lower', 'squat', 'Barbell Back Squat', 5, '6-8', '275', false, 'squat'),
       te('guided-la-aesthetics-lower', 'rdl', 'Romanian Deadlift', 4, '8-10', '225', false, 'romanian-deadlift'),
@@ -224,7 +230,7 @@ export const LIFTAHOLIC_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-la-aesthetics-upper-b',
     'Aesthetics Upper B',
-    F,
+    F_AESTH,
     [
       te('guided-la-aesthetics-upper-b', 'oh-press', 'Overhead Press', 5, '6-8', '135', false, 'overhead-press'),
       te('guided-la-aesthetics-upper-b', 'row', 'Chest Supported Row', 5, '8-10', '120', false, 'chest-supported-row'),

@@ -1,13 +1,18 @@
 import type { WorkoutTemplate } from '@/types/workout'
+import { catalogFolderId } from './catalogFolders'
 import { GUIDED_EXPERIENCED_FOLDER } from './guidedPlanFolders'
 import { dayTemplate, repeatTemplate, te } from './planHelpers'
 
 const F = GUIDED_EXPERIENCED_FOLDER.id
+const F_VTAPER = catalogFolderId('aesthetic-v-taper')
+const F_HVPPL = catalogFolderId('high-volume-ppl')
+const F_ULA = catalogFolderId('upper-lower-arms')
+const F_PB_ADV = catalogFolderId('powerbuilding-advanced')
 
-export const AESTHETIC_VTAPER_FOLDER_ID = 'guided-aesthetic-v-taper'
-export const HIGH_VOLUME_PPL_FOLDER_ID = 'guided-high-volume-ppl'
-export const UPPER_LOWER_ARMS_FOLDER_ID = 'guided-upper-lower-arms'
-export const POWERBUILDING_ADVANCED_FOLDER_ID = 'guided-powerbuilding-advanced'
+export const AESTHETIC_VTAPER_FOLDER_ID = catalogFolderId('aesthetic-v-taper')
+export const HIGH_VOLUME_PPL_FOLDER_ID = catalogFolderId('high-volume-ppl')
+export const UPPER_LOWER_ARMS_FOLDER_ID = catalogFolderId('upper-lower-arms')
+export const POWERBUILDING_ADVANCED_FOLDER_ID = catalogFolderId('powerbuilding-advanced')
 export const SUMMER_CUT_ID = 'guided-summer-cut'
 export const STRENGTH_HYBRID_ID = 'guided-strength-hybrid'
 
@@ -15,7 +20,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-vtaper-push',
     'V-Taper Push',
-    F,
+    F_VTAPER,
     [
       te('guided-exp-vtaper-push', 'oh-press', 'Overhead Press', 4, '6-8', '115', false, 'overhead-press'),
       te('guided-exp-vtaper-push', 'incline-db', 'Incline Dumbbell Press', 4, '8-10', '55', false, 'incline-dumbbell-press'),
@@ -27,7 +32,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-vtaper-pull',
     'V-Taper Pull',
-    F,
+    F_VTAPER,
     [
       te('guided-exp-vtaper-pull', 'pull-up', 'Weighted Pull-Ups', 5, '6-10', '35', false, 'pull-up'),
       te('guided-exp-vtaper-pull', 'row', 'Barbell Row', 4, '8-10', '155', false, 'barbell-row'),
@@ -39,7 +44,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-vtaper-legs',
     'V-Taper Legs',
-    F,
+    F_VTAPER,
     [
       te('guided-exp-vtaper-legs', 'squat', 'Barbell Back Squat', 4, '6-8', '245', false, 'squat'),
       te('guided-exp-vtaper-legs', 'rdl', 'Romanian Deadlift', 3, '8-10', '185', false, 'romanian-deadlift'),
@@ -51,7 +56,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-hv-push',
     'High Volume Push',
-    F,
+    F_HVPPL,
     [
       te('guided-exp-hv-push', 'bench', 'Barbell Bench Press', 5, '8-10', '185', false, 'bench-press'),
       te('guided-exp-hv-push', 'oh-press', 'Overhead Press', 4, '8-10', '105', false, 'overhead-press'),
@@ -64,7 +69,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-hv-pull',
     'High Volume Pull',
-    F,
+    F_HVPPL,
     [
       te('guided-exp-hv-pull', 'deadlift', 'Conventional Deadlift', 4, '5-6', '335', false, 'deadlift'),
       te('guided-exp-hv-pull', 'pull-up', 'Pull-Ups', 5, '8-12', '0', false, 'pull-up'),
@@ -77,7 +82,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-hv-legs',
     'High Volume Legs',
-    F,
+    F_HVPPL,
     [
       te('guided-exp-hv-legs', 'squat', 'Barbell Back Squat', 5, '6-8', '265', false, 'squat'),
       te('guided-exp-hv-legs', 'rdl', 'Romanian Deadlift', 4, '8-10', '205', false, 'romanian-deadlift'),
@@ -90,7 +95,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-ula-upper',
     'Upper + Arms',
-    F,
+    F_ULA,
     [
       te('guided-exp-ula-upper', 'bench', 'Barbell Bench Press', 4, '6-8', '195', false, 'bench-press'),
       te('guided-exp-ula-upper', 'row', 'Barbell Row', 4, '8-10', '155', false, 'barbell-row'),
@@ -103,7 +108,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-ula-lower',
     'Lower',
-    F,
+    F_ULA,
     [
       te('guided-exp-ula-lower', 'squat', 'Barbell Back Squat', 5, '5-8', '255', false, 'squat'),
       te('guided-exp-ula-lower', 'rdl', 'Romanian Deadlift', 4, '8-10', '205', false, 'romanian-deadlift'),
@@ -115,7 +120,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-ula-arms',
     'Arms Day',
-    F,
+    F_ULA,
     [
       te('guided-exp-ula-arms', 'curl', 'Incline Dumbbell Curl', 4, '10-12', '30', false, 'incline-dumbbell-curl'),
       te('guided-exp-ula-arms', 'hammer', 'Hammer Curl', 4, '10-12', '30', false, 'hammer-curl'),
@@ -128,7 +133,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-pb-squat',
     'Squat Focus',
-    F,
+    F_PB_ADV,
     [
       te('guided-exp-pb-squat', 'squat', 'Barbell Back Squat', 6, '3-5', '285', false, 'squat'),
       te('guided-exp-pb-squat', 'front-squat', 'Front Squat', 4, '6-8', '185', false, 'front-squat'),
@@ -139,7 +144,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-pb-bench',
     'Bench Focus',
-    F,
+    F_PB_ADV,
     [
       te('guided-exp-pb-bench', 'bench', 'Barbell Bench Press', 6, '3-5', '225', false, 'bench-press'),
       te('guided-exp-pb-bench', 'incline-bench', 'Incline Barbell Bench', 4, '6-8', '165', false, 'incline-bench-press'),
@@ -150,7 +155,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-pb-deadlift',
     'Deadlift Focus',
-    F,
+    F_PB_ADV,
     [
       te('guided-exp-pb-deadlift', 'deadlift', 'Conventional Deadlift', 6, '2-4', '365', false, 'deadlift'),
       te('guided-exp-pb-deadlift', 'rdl', 'Romanian Deadlift', 4, '8', '225', false, 'romanian-deadlift'),
@@ -161,7 +166,7 @@ export const EXPERIENCED_GUIDED_PLANS: WorkoutTemplate[] = [
   dayTemplate(
     'guided-exp-pb-accessory',
     'Accessory Day',
-    F,
+    F_PB_ADV,
     [
       te('guided-exp-pb-accessory', 'incline-db', 'Incline Dumbbell Press', 4, '10-12', '55', false, 'incline-dumbbell-press'),
       te('guided-exp-pb-accessory', 'lat-pulldown', 'Lat Pulldown', 4, '10-12', '120', false, 'lat-pulldown'),

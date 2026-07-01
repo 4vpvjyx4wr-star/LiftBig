@@ -1,11 +1,12 @@
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
+import { catalogFolderId } from './catalogFolders'
 import { GUIDED_BEGINNER_FOLDER } from './guidedPlanFolders'
 import { te } from './guidedPlanHelpers'
 
 const F = GUIDED_BEGINNER_FOLDER.id
 
 export const BEGINNER_FULL_BODY_ID = 'plan-guided-beg-fullbody'
-export const BEGINNER_UPPER_LOWER_FOLDER_ID = 'folder-guided-beg-upper-lower'
+export const BEGINNER_UPPER_LOWER_FOLDER_ID = catalogFolderId('beginner-upper-lower-4d')
 export const BUSY_BEGINNER_ID = 'plan-guided-beg-busy'
 export const BEGINNER_WEIGHT_LOSS_ID = 'plan-guided-beg-weight-loss'
 export const PLANET_FITNESS_STARTER_ID = 'plan-guided-beg-planet-fitness'
@@ -131,6 +132,6 @@ export const BEGINNER_PLANS: WorkoutTemplate[] = [
 
 export const BEGINNER_UPPER_LOWER_FOLDER: TemplateFolder = {
   id: BEGINNER_UPPER_LOWER_FOLDER_ID,
-  name: 'Beginner Upper/Lower (4d)',
+  name: 'Beginner Upper Lower (4d)',
   purpose: 'Four-day upper/lower split for beginners building a strength base.',
 }
