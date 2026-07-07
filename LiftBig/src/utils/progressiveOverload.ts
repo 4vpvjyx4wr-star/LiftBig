@@ -1,7 +1,7 @@
 import { getDayExercises, setCountsTowardProgress, type Exercise, type WorkoutLog } from '@/types/workout'
 import { collectExerciseHistory } from '@/utils/exerciseProgress'
 import type { WeightUnit } from '@/utils/units'
-import { formatDeltaFromLbs, parseStoredLbs } from '@/utils/units'
+import { parseStoredLbs } from '@/utils/units'
 
 type SetLogLike = { reps: string; weight: string; isWarmup?: boolean }
 
@@ -286,7 +286,6 @@ export function predictWorkoutGoals(
     ignoreStoredGoalWeight?: boolean
   } = {},
 ): PredictedGoals {
-  const displayUnit = options.displayUnit ?? 'lb'
   const currentReps = (options.currentTargetReps ?? '').trim()
   const currentWeight = options.ignoreStoredGoalWeight
     ? 0
@@ -321,7 +320,6 @@ export function predictWorkoutGoals(
       inferRepGoalFromHistory(history.map((h) => h.maxReps))
 
   const targetRepsForWeight = repCountForWeightGoal(repGoal)
-  const { max: repMax, min: repMin } = parseRepRange(repGoal)
 
   let baseWeight = 0
   let repScaledFromHistory = false

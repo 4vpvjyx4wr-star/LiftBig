@@ -8,7 +8,6 @@ import { generateFallbackRecommendations } from '@/utils/guidedPlanGenerator'
 import {
   ALL_PLAN_CATALOG,
   CURATED_PLAN_CATALOG,
-  FALLBACK_PLAN_CATALOG,
   RETROFIT_PLAN_CATALOG,
 } from '@/utils/guidedPlans/guidedPlanCatalog'
 import type { PlanCatalogEntry } from '@/types/planCatalog'

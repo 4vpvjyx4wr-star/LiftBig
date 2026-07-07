@@ -66,8 +66,8 @@ const weightUnit = computed(() => settings.weightUnit.value)
 const showWeightMenu = ref(false)
 const showRepsMenu = ref(false)
 
-let weightMenuHideTimer: ReturnType<typeof setTimeout> | null = null
-let repsMenuHideTimer: ReturnType<typeof setTimeout> | null = null
+let weightMenuHideTimer: number | null = null
+let repsMenuHideTimer: number | null = null
 
 /** Long enough for iOS to fire the synthetic click after the input blurs. */
 const MENU_HIDE_AFTER_BLUR_MS = 380

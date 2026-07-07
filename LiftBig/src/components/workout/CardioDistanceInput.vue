@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 const showMenu = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
-let menuHideTimer: ReturnType<typeof setTimeout> | null = null
+let menuHideTimer: number | null = null
 const MENU_HIDE_AFTER_BLUR_MS = 380
 
 const unitLabel = computed(() => distanceUnitLabel(props.distanceUnit))

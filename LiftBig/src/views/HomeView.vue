@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
 const dailyReminderDismissTick = ref(0)
 
 const dailyReminder = computed(() => {
-  dailyReminderDismissTick.value
+  void dailyReminderDismissTick.value
   return evaluateDailyLiftReminder(
     workoutLogPlain.value,
     settings.dailyLiftReminderEnabled.value,

@@ -63,7 +63,7 @@ function formatStoredLbsForDisplay(s: string | undefined): string {
 /** Same wording as plan-assigned exercises: "Goal: N × reps" with optional "@ weight". */
 const goalSummaryLine = computed(() => {
   if (props.exercise.isCircuit) return ''
-  weightUnit.value
+  void weightUnit.value
   const n = props.exercise.sets.length
   const reps = (props.exercise.targetReps ?? '').trim()
   const w = (props.exercise.targetWeight ?? '').trim()

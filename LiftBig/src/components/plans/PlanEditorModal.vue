@@ -233,8 +233,9 @@ function addFromLibrary(ex: LibraryExercise) {
 function removeExercise(index: number) {
   const removed = exercises.value[index]
   if (removed) {
-    const { [removed.id]: _, ...rest } = goalsEditorOpen.value
-    goalsEditorOpen.value = rest
+    const next = { ...goalsEditorOpen.value }
+    delete next[removed.id]
+    goalsEditorOpen.value = next
   }
   exercises.value = exercises.value.filter((_, i) => i !== index)
 }

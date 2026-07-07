@@ -2,7 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import MonthGrid from '@/components/calendar/MonthGrid.vue'
 import MonthNav from '@/components/calendar/MonthNav.vue'
-import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
+import { workoutsInjectionKey } from '@/composables/injectionKeys'
 import { useMonthCalendar } from '@/composables/useMonthCalendar'
 import { formatDisplayDate } from '@/utils/dateKey'
 
@@ -17,7 +17,6 @@ const emit = defineEmits<{
 }>()
 
 const workouts = inject(workoutsInjectionKey)!
-const settings = inject(settingsInjectionKey)!
 
 const viewYear = ref(new Date().getFullYear())
 const viewMonth = ref(new Date().getMonth())

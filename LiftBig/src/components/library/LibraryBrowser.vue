@@ -518,7 +518,7 @@ onBeforeUnmount(() => {
             <template v-if="isLogged(ex)">
               <div
                 v-for="stats in [quickStatLabels(ex)]"
-                :key="'stats'"
+                :key="stats.sessions"
                 class="mt-2 grid grid-cols-3 gap-1.5 rounded-lg border border-border/60 bg-background/50 px-2 py-2 text-center"
               >
                 <div>

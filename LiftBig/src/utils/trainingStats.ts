@@ -107,22 +107,6 @@ function setCountsAsCompleted(set: SetLog, exercise: Exercise): boolean {
   return set.reps.trim() !== '' && set.weight.trim() !== ''
 }
 
-function repsFromSet(set: SetLog, exercise: Exercise): number {
-  if (exercise.isCircuit || exerciseIsCardio(exercise)) return 0
-  const r = parseInt(set.reps.trim(), 10)
-  return Number.isNaN(r) || r < 1 ? 0 : r
-}
-
-function tonnageFromSet(set: SetLog, exercise: Exercise): number {
-  if (!setCountsTowardProgress(set)) return 0
-  if (exercise.isCircuit || exerciseIsCardio(exercise) || exercise.isCore) return 0
-  const w = parseStoredLbs(set.weight)
-  const r = parseInt(set.reps.trim(), 10)
-  if (Number.isNaN(w) || w <= 0 || Number.isNaN(r) || r <= 0) return 0
-  if (set.reps.trim() === '' || set.weight.trim() === '') return 0
-  return w * r
-}
-
 function exerciseKey(ex: Exercise): string {
   const id = (ex.libraryId ?? '').trim()
   if (id) return `id:${id}`

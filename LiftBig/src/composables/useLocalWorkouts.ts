@@ -196,7 +196,7 @@ export function useLocalWorkouts() {
       return
     }
 
-    let next = { ...log.value }
+    const next = { ...log.value }
     const endKey = endOfMonthKeyFor(startDateKey)
     let current = startDateKey
     let offset = 0
