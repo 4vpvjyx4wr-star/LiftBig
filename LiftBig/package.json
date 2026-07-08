@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "run-s lint test build",
-    "prepare": "cd .. && husky"
+    "prepare": "node ./scripts/install-git-hooks.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
@@ -37,7 +37,6 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-oxlint": "~1.60.0",
     "eslint-plugin-vue": "~10.8.0",
-    "husky": "^9.1.7",
     "jiti": "^2.6.1",
     "npm-run-all2": "^8.0.4",
     "oxlint": "~1.60.0",

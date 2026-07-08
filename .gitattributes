@@ -1,3 +1,2 @@
-# Husky/git hooks and shell scripts must use LF so POSIX sh can run them on Windows.
-.husky/** text eol=lf
-*.sh text eol=lf
+# Git hooks must use LF so Node shebang hooks run on Windows (GitHub Desktop, Git for Windows).
+.githooks/** text eol=lf
