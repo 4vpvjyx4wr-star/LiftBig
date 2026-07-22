@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LibraryBrowser from '@/components/library/LibraryBrowser.vue'
 import type { Exercise } from '@/types/workout'
 import { getComparableLibraryExercises, type LibraryExercise } from '@/utils/exerciseLibrary'
@@ -14,9 +14,27 @@ const emit = defineEmits<{
   pick: [exercise: LibraryExercise]
 }>()
 
+const similarSearchQuery = ref('')
+
+watch(
+  () => props.show,
+  (open) => {
+    if (open) similarSearchQuery.value = ''
+  },
+)
+
 const comparables = computed(() =>
   props.exercise ? getComparableLibraryExercises(props.exercise) : [],
 )
+
+const filteredComparables = computed(() => {
+  const q = similarSearchQuery.value.trim().toLowerCase()
+  if (!q) return comparables.value
+  return comparables.value.filter((ex) => {
+    const hay = `${ex.name} ${ex.equipment ?? ''} ${(ex.tags ?? []).join(' ')}`.toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 function onSelect(ex: LibraryExercise) {
   emit('pick', ex)
@@ -54,8 +72,17 @@ function onSelect(ex: LibraryExercise) {
           <h4 class="text-[11px] font-bold uppercase tracking-wide text-muted">
             Similar movements
           </h4>
+          <label class="mt-2 block">
+            <span class="sr-only">Search similar movements</span>
+            <input
+              v-model="similarSearchQuery"
+              type="search"
+              placeholder="Search similar movements…"
+              class="w-full rounded-lg border border-border bg-card-inner px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none"
+            />
+          </label>
           <ul class="mt-2 space-y-1">
-            <li v-for="ex in comparables" :key="ex.id">
+            <li v-for="ex in filteredComparables" :key="ex.id">
               <button
                 type="button"
                 class="flex w-full items-center justify-between rounded-lg border border-border bg-card-inner px-3 py-2.5 text-left text-sm font-semibold text-foreground hover:border-primary/60"
@@ -64,6 +91,12 @@ function onSelect(ex: LibraryExercise) {
                 <span>{{ ex.name }}</span>
                 <span class="ml-2 shrink-0 text-[11px] text-muted">{{ ex.equipment ?? '' }}</span>
               </button>
+            </li>
+            <li
+              v-if="filteredComparables.length === 0"
+              class="rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted"
+            >
+              No similar movements match “{{ similarSearchQuery.trim() }}”.
             </li>
           </ul>
         </section>

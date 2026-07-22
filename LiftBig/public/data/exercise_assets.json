@@ -1,0 +1,1896 @@
+[
+  {
+    "id": "bench-press",
+    "name": "Barbell Bench Press",
+    "thumbnail": "/assets/exercises/bench-press.png",
+    "animation": "/assets/exercises/gifs/bench-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "incline-dumbbell-press",
+    "name": "Incline Dumbbell Press",
+    "thumbnail": "/assets/exercises/incline-dumbbell-press.png",
+    "animation": "/assets/exercises/gifs/incline-dumbbell-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "flat-dumbbell-press",
+    "name": "Flat Dumbbell Press",
+    "thumbnail": "/assets/exercises/flat-dumbbell-press.png",
+    "animation": "/assets/exercises/gifs/flat-dumbbell-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC BY 2.0)"
+  },
+  {
+    "id": "pull-up",
+    "name": "Pull-Up",
+    "thumbnail": "/assets/exercises/pull-up.png",
+    "animation": "/assets/exercises/gifs/pull-up.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "lat-pulldown",
+    "name": "Lat Pulldown",
+    "thumbnail": "/assets/exercises/lat-pulldown.png",
+    "animation": "/assets/exercises/gifs/lat-pulldown.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "barbell-row",
+    "name": "Barbell Row",
+    "thumbnail": "/assets/exercises/barbell-row.png",
+    "animation": "/assets/exercises/gifs/barbell-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dumbbell-row",
+    "name": "Dumbbell Row",
+    "thumbnail": "/assets/exercises/dumbbell-row.png",
+    "animation": "/assets/exercises/gifs/dumbbell-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "chest-supported-row",
+    "name": "Chest Supported Row",
+    "thumbnail": "/assets/exercises/chest-supported-row.png",
+    "animation": "/assets/exercises/gifs/chest-supported-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "seated-cable-row",
+    "name": "Seated Cable Row",
+    "thumbnail": "/assets/exercises/seated-cable-row.png",
+    "animation": "/assets/exercises/gifs/seated-cable-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "face-pull",
+    "name": "Face Pull",
+    "thumbnail": "/assets/exercises/face-pull.png",
+    "animation": "/assets/exercises/gifs/face-pull.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "overhead-press",
+    "name": "Overhead Press",
+    "thumbnail": "/assets/exercises/overhead-press.png",
+    "animation": "/assets/exercises/gifs/overhead-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "lateral-raise",
+    "name": "Lateral Raise",
+    "thumbnail": "/assets/exercises/lateral-raise.png",
+    "animation": "/assets/exercises/gifs/lateral-raise.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "rear-delt-fly",
+    "name": "Rear Delt Fly",
+    "thumbnail": "/assets/exercises/rear-delt-fly.png",
+    "animation": "/assets/exercises/gifs/rear-delt-fly.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "tricep-pushdown",
+    "name": "Tricep Pushdown",
+    "thumbnail": "/assets/exercises/tricep-pushdown.png",
+    "animation": "/assets/exercises/gifs/tricep-pushdown.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "overhead-tricep-extension",
+    "name": "Overhead Tricep Extension",
+    "thumbnail": "/assets/exercises/overhead-tricep-extension.png",
+    "animation": "/assets/exercises/gifs/overhead-tricep-extension.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "barbell-curl",
+    "name": "Barbell Curl",
+    "thumbnail": "/assets/exercises/barbell-curl.png",
+    "animation": "/assets/exercises/gifs/barbell-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "hammer-curl",
+    "name": "Hammer Curl",
+    "thumbnail": "/assets/exercises/hammer-curl.png",
+    "animation": "/assets/exercises/gifs/hammer-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "incline-cable-curl",
+    "name": "Incline Cable Curl",
+    "thumbnail": "/assets/exercises/incline-cable-curl.png",
+    "animation": "/assets/exercises/gifs/incline-cable-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "incline-dumbbell-curl",
+    "name": "Incline Dumbbell Curl",
+    "thumbnail": "/assets/exercises/incline-dumbbell-curl.png",
+    "animation": "/assets/exercises/gifs/incline-dumbbell-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "cable-curl",
+    "name": "Cable Curl",
+    "thumbnail": "/assets/exercises/cable-curl.png",
+    "animation": "/assets/exercises/gifs/cable-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "squat",
+    "name": "Barbell Back Squat",
+    "thumbnail": "/assets/exercises/squat.png",
+    "animation": "/assets/exercises/gifs/squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "leg-press",
+    "name": "Leg Press",
+    "thumbnail": "/assets/exercises/leg-press.png",
+    "animation": "/assets/exercises/gifs/leg-press.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "leg-extension",
+    "name": "Leg Extension",
+    "thumbnail": "/assets/exercises/leg-extension.png",
+    "animation": "/assets/exercises/gifs/leg-extension.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dumbbell-romanian-deadlift",
+    "name": "Dumbbell Romanian Deadlift",
+    "thumbnail": "/assets/exercises/dumbbell-romanian-deadlift.png",
+    "animation": "/assets/exercises/gifs/dumbbell-romanian-deadlift.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "romanian-deadlift",
+    "name": "Romanian Deadlift (RDL)",
+    "thumbnail": "/assets/exercises/romanian-deadlift.png",
+    "animation": "/assets/exercises/gifs/romanian-deadlift.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "deadlift",
+    "name": "Conventional Deadlift",
+    "thumbnail": "/assets/exercises/deadlift.png",
+    "animation": "/assets/exercises/gifs/deadlift.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (Public domain)"
+  },
+  {
+    "id": "seated-leg-curl",
+    "name": "Seated Leg Curl",
+    "thumbnail": "/assets/exercises/seated-leg-curl.png",
+    "animation": "/assets/exercises/gifs/seated-leg-curl.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "machine-chest-press",
+    "name": "Machine Chest Press",
+    "thumbnail": "/assets/exercises/machine-chest-press.png",
+    "animation": "/assets/exercises/gifs/machine-chest-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "hamstring-curl",
+    "name": "Hamstring Curl",
+    "thumbnail": "/assets/exercises/hamstring-curl.png",
+    "animation": "/assets/exercises/gifs/hamstring-curl.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "calf-raise",
+    "name": "Calf Raise",
+    "thumbnail": "/assets/exercises/calf-raise.png",
+    "animation": "/assets/exercises/gifs/calf-raise.gif",
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "walking-lunge",
+    "name": "Walking Lunge",
+    "thumbnail": "/assets/exercises/walking-lunge.png",
+    "animation": "/assets/exercises/gifs/walking-lunge.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "goblet-squat",
+    "name": "Goblet Squat",
+    "thumbnail": "/assets/exercises/goblet-squat.png",
+    "animation": "/assets/exercises/gifs/goblet-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "push-up",
+    "name": "Push-Up",
+    "thumbnail": "/assets/exercises/push-up.png",
+    "animation": "/assets/exercises/gifs/push-up.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "cable-crunch",
+    "name": "Cable Crunch",
+    "thumbnail": "/assets/exercises/cable-crunch.png",
+    "animation": "/assets/exercises/gifs/cable-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "cable-woodchop",
+    "name": "Cable Woodchop",
+    "thumbnail": "/assets/exercises/cable-woodchop.png",
+    "animation": "/assets/exercises/gifs/cable-woodchop.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "machine-fly",
+    "name": "Machine Fly / Pec Deck",
+    "thumbnail": "/assets/exercises/machine-fly.png",
+    "animation": "/assets/exercises/gifs/machine-fly.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC BY 3.0)"
+  },
+  {
+    "id": "cable-fly",
+    "name": "Cable Fly",
+    "thumbnail": "/assets/exercises/cable-fly.png",
+    "animation": "/assets/exercises/gifs/cable-fly.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "low-to-high-cable-fly",
+    "name": "Low-to-High Cable Fly",
+    "thumbnail": "/assets/exercises/low-to-high-cable-fly.png",
+    "animation": "/assets/exercises/gifs/low-to-high-cable-fly.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "cable-lateral-raise",
+    "name": "Cable Lateral Raise",
+    "thumbnail": "/assets/exercises/cable-lateral-raise.png",
+    "animation": "/assets/exercises/gifs/cable-lateral-raise.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "lean-away-cable-lateral-raise",
+    "name": "Lean-Away Cable Lateral Raise",
+    "thumbnail": "/assets/exercises/lean-away-cable-lateral-raise.png",
+    "animation": "/assets/exercises/gifs/lean-away-cable-lateral-raise.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "leaning-dumbbell-lateral-raise",
+    "name": "Leaning Dumbbell Lateral Raise",
+    "thumbnail": "/assets/exercises/leaning-dumbbell-lateral-raise.png",
+    "animation": "/assets/exercises/gifs/leaning-dumbbell-lateral-raise.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "lateral-raise-partial",
+    "name": "Lateral Raise Partial",
+    "thumbnail": "/assets/exercises/lateral-raise-partial.png",
+    "animation": "/assets/exercises/gifs/lateral-raise-partial.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "assisted-pull-up",
+    "name": "Assisted Pull-Up",
+    "thumbnail": "/assets/exercises/assisted-pull-up.png",
+    "animation": "/assets/exercises/gifs/assisted-pull-up.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "rear-delt-cable-fly",
+    "name": "Rear Delt Cable Fly",
+    "thumbnail": "/assets/exercises/rear-delt-cable-fly.png",
+    "animation": "/assets/exercises/gifs/rear-delt-cable-fly.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "neutral-grip-lat-pulldown",
+    "name": "Neutral Grip Lat Pulldown",
+    "thumbnail": "/assets/exercises/neutral-grip-lat-pulldown.png",
+    "animation": "/assets/exercises/gifs/neutral-grip-lat-pulldown.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "chest-supported-lat-row",
+    "name": "Chest Supported Lat-Focused Row",
+    "thumbnail": "/assets/exercises/chest-supported-lat-row.png",
+    "animation": "/assets/exercises/gifs/chest-supported-lat-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "single-arm-lat-pulldown",
+    "name": "Single Arm Lat Pulldown",
+    "thumbnail": "/assets/exercises/single-arm-lat-pulldown.png",
+    "animation": "/assets/exercises/gifs/single-arm-lat-pulldown.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "overhead-cable-tricep-extension",
+    "name": "Overhead Cable Tricep Extension",
+    "thumbnail": "/assets/exercises/overhead-cable-tricep-extension.png",
+    "animation": "/assets/exercises/gifs/overhead-cable-tricep-extension.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "overhead-dumbbell-tricep-extension",
+    "name": "Overhead Dumbbell Tricep Extension",
+    "thumbnail": "/assets/exercises/overhead-dumbbell-tricep-extension.png",
+    "animation": "/assets/exercises/gifs/overhead-dumbbell-tricep-extension.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dumbbell-curl",
+    "name": "Dumbbell Curl",
+    "thumbnail": "/assets/exercises/dumbbell-curl.png",
+    "animation": "/assets/exercises/gifs/dumbbell-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "standing-dumbbell-shoulder-press",
+    "name": "Standing Dumbbell Shoulder Press",
+    "thumbnail": "/assets/exercises/standing-dumbbell-shoulder-press.png",
+    "animation": "/assets/exercises/gifs/standing-dumbbell-shoulder-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Core"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "decline-reverse-crunch",
+    "name": "Decline Reverse Crunch",
+    "thumbnail": "/assets/exercises/decline-reverse-crunch.png",
+    "animation": "/assets/exercises/gifs/decline-reverse-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "weighted-crunch",
+    "name": "Weighted Crunch",
+    "thumbnail": "/assets/exercises/weighted-crunch.png",
+    "animation": "/assets/exercises/gifs/weighted-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "side-plank",
+    "name": "Side Plank",
+    "thumbnail": "/assets/exercises/side-plank.png",
+    "animation": "/assets/exercises/gifs/side-plank.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dead-bug",
+    "name": "Dead Bug",
+    "thumbnail": "/assets/exercises/dead-bug.png",
+    "animation": "/assets/exercises/gifs/dead-bug.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "cable-side-crunch",
+    "name": "Cable Side Crunch",
+    "thumbnail": "/assets/exercises/cable-side-crunch.png",
+    "animation": "/assets/exercises/gifs/cable-side-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "weighted-decline-situp",
+    "name": "Weighted Decline Sit-Up",
+    "thumbnail": "/assets/exercises/weighted-decline-situp.png",
+    "animation": "/assets/exercises/gifs/weighted-decline-situp.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "machine-pullover",
+    "name": "Machine Pullover",
+    "thumbnail": "/assets/exercises/machine-pullover.png",
+    "animation": "/assets/exercises/gifs/machine-pullover.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Chest"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "bicycle-crunch",
+    "name": "Bicycle Crunch",
+    "thumbnail": "/assets/exercises/bicycle-crunch.png",
+    "animation": "/assets/exercises/gifs/bicycle-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "incline-machine-press",
+    "name": "Incline Machine Press",
+    "thumbnail": "/assets/exercises/incline-machine-press.png",
+    "animation": "/assets/exercises/gifs/incline-machine-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "hip-thrust",
+    "name": "Hip Thrust",
+    "thumbnail": "/assets/exercises/hip-thrust.png",
+    "animation": "/assets/exercises/gifs/hip-thrust.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "plank",
+    "name": "Plank",
+    "thumbnail": "/assets/exercises/plank.png",
+    "animation": "/assets/exercises/gifs/plank.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "ab-machine-crunch",
+    "name": "Ab Machine / Crunch",
+    "thumbnail": "/assets/exercises/ab-machine-crunch.png",
+    "animation": "/assets/exercises/gifs/ab-machine-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "reverse-crunch",
+    "name": "Reverse Crunch",
+    "thumbnail": "/assets/exercises/reverse-crunch.png",
+    "animation": "/assets/exercises/gifs/reverse-crunch.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "leg-raise",
+    "name": "Hanging Leg Raise",
+    "thumbnail": "/assets/exercises/leg-raise.png",
+    "animation": "/assets/exercises/gifs/leg-raise.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Quads"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "arnold-press",
+    "name": "Arnold Press",
+    "thumbnail": "/assets/exercises/arnold-press.png",
+    "animation": "/assets/exercises/gifs/arnold-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "bulgarian-split-squat",
+    "name": "Bulgarian Split Squat",
+    "thumbnail": "/assets/exercises/bulgarian-split-squat.png",
+    "animation": "/assets/exercises/gifs/bulgarian-split-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "t-bar-row",
+    "name": "T-Bar Row",
+    "thumbnail": "/assets/exercises/t-bar-row.png",
+    "animation": "/assets/exercises/gifs/t-bar-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "pendlay-row",
+    "name": "Pendlay Row",
+    "thumbnail": "/assets/exercises/pendlay-row.png",
+    "animation": "/assets/exercises/gifs/pendlay-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "skull-crusher",
+    "name": "Skull Crusher (Lying Triceps Extension)",
+    "thumbnail": "/assets/exercises/skull-crusher.png",
+    "animation": "/assets/exercises/gifs/skull-crusher.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "preacher-curl",
+    "name": "Preacher Curl",
+    "thumbnail": "/assets/exercises/preacher-curl.png",
+    "animation": "/assets/exercises/gifs/preacher-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "good-morning",
+    "name": "Good Morning",
+    "thumbnail": "/assets/exercises/good-morning.png",
+    "animation": "/assets/exercises/gifs/good-morning.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "nordic-hamstring-curl",
+    "name": "Nordic Hamstring Curl",
+    "thumbnail": "/assets/exercises/nordic-hamstring-curl.png",
+    "animation": "/assets/exercises/gifs/nordic-hamstring-curl.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "chest-dip",
+    "name": "Chest Dip",
+    "thumbnail": "/assets/exercises/chest-dip.png",
+    "animation": "/assets/exercises/gifs/chest-dip.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "farmers-walk",
+    "name": "Farmer's Carry",
+    "thumbnail": "/assets/exercises/farmers-walk.png",
+    "animation": "/assets/exercises/gifs/farmers-walk.gif",
+    "primaryMuscles": [
+      "Forearms"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "barbell-shrug",
+    "name": "Barbell Shrug",
+    "thumbnail": "/assets/exercises/barbell-shrug.png",
+    "animation": "/assets/exercises/gifs/barbell-shrug.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "pallof-press",
+    "name": "Pallof Press",
+    "thumbnail": "/assets/exercises/pallof-press.png",
+    "animation": "/assets/exercises/gifs/pallof-press.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC BY-SA 4.0)"
+  },
+  {
+    "id": "cable-pull-through",
+    "name": "Cable Pull-Through",
+    "thumbnail": "/assets/exercises/cable-pull-through.png",
+    "animation": "/assets/exercises/gifs/cable-pull-through.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "sumo-deadlift",
+    "name": "Sumo Deadlift",
+    "thumbnail": "/assets/exercises/sumo-deadlift.png",
+    "animation": "/assets/exercises/gifs/sumo-deadlift.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "kettlebell-swing",
+    "name": "Kettlebell Swing",
+    "thumbnail": "/assets/exercises/kettlebell-swing.png",
+    "animation": "/assets/exercises/gifs/kettlebell-swing.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "inverted-row",
+    "name": "Inverted Row",
+    "thumbnail": "/assets/exercises/inverted-row.png",
+    "animation": "/assets/exercises/gifs/inverted-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "front-squat",
+    "name": "Front Squat",
+    "thumbnail": "/assets/exercises/front-squat.png",
+    "animation": "/assets/exercises/gifs/front-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Core",
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "decline-bench-press",
+    "name": "Decline Barbell Bench Press",
+    "thumbnail": "/assets/exercises/decline-bench-press.png",
+    "animation": "/assets/exercises/gifs/decline-bench-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "smith-machine-squat",
+    "name": "Smith Machine Squat",
+    "thumbnail": "/assets/exercises/smith-machine-squat.png",
+    "animation": "/assets/exercises/gifs/smith-machine-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC BY 2.0)"
+  },
+  {
+    "id": "zercher-squat",
+    "name": "Zercher Squat",
+    "thumbnail": "/assets/exercises/zercher-squat.png",
+    "animation": "/assets/exercises/gifs/zercher-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "seated-dumbbell-shoulder-press",
+    "name": "Seated Dumbbell Shoulder Press",
+    "thumbnail": "/assets/exercises/seated-dumbbell-shoulder-press.png",
+    "animation": "/assets/exercises/gifs/seated-dumbbell-shoulder-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "reverse-fly-machine",
+    "name": "Reverse Pec Deck / Reverse Fly Machine",
+    "thumbnail": "/assets/exercises/reverse-fly-machine.png",
+    "animation": "/assets/exercises/gifs/reverse-fly-machine.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "lat-prayer-stretch-cable",
+    "name": "Straight-Arm Pulldown",
+    "thumbnail": "/assets/exercises/lat-prayer-stretch-cable.png",
+    "animation": "/assets/exercises/gifs/lat-prayer-stretch-cable.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "pike-push-up",
+    "name": "Pike Push-Up",
+    "thumbnail": "/assets/exercises/pike-push-up.png",
+    "animation": "/assets/exercises/gifs/pike-push-up.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Chest"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "bodyweight-squat",
+    "name": "Bodyweight Squat",
+    "thumbnail": "/assets/exercises/bodyweight-squat.png",
+    "animation": "/assets/exercises/gifs/bodyweight-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (Public domain)"
+  },
+  {
+    "id": "glute-bridge",
+    "name": "Glute Bridge",
+    "thumbnail": "/assets/exercises/glute-bridge.png",
+    "animation": "/assets/exercises/gifs/glute-bridge.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "burpee",
+    "name": "Burpee",
+    "thumbnail": "/assets/exercises/burpee.png",
+    "animation": "/assets/exercises/gifs/burpee.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Quads",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "mountain-climber",
+    "name": "Mountain Climber",
+    "thumbnail": "/assets/exercises/mountain-climber.png",
+    "animation": "/assets/exercises/gifs/mountain-climber.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Quads"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "hollow-body-hold",
+    "name": "Hollow Body Hold",
+    "thumbnail": "/assets/exercises/hollow-body-hold.png",
+    "animation": "/assets/exercises/gifs/hollow-body-hold.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "hanging-knee-raise",
+    "name": "Hanging Knee Raise",
+    "thumbnail": "/assets/exercises/hanging-knee-raise.png",
+    "animation": "/assets/exercises/gifs/hanging-knee-raise.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "ab-wheel-rollout",
+    "name": "Ab Wheel Rollout",
+    "thumbnail": "/assets/exercises/ab-wheel-rollout.png",
+    "animation": "/assets/exercises/gifs/ab-wheel-rollout.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "plank-shoulder-tap",
+    "name": "Plank with Shoulder Taps",
+    "thumbnail": "/assets/exercises/plank-shoulder-tap.png",
+    "animation": "/assets/exercises/gifs/plank-shoulder-tap.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "hip-90-90-switch",
+    "name": "90/90 Hip Switches",
+    "thumbnail": "/assets/exercises/hip-90-90-switch.png",
+    "animation": "/assets/exercises/gifs/hip-90-90-switch.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Core"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "cat-cow-child-pose",
+    "name": "Cat-Cow to Child\u2019s Pose",
+    "thumbnail": "/assets/exercises/cat-cow-child-pose.png",
+    "animation": "/assets/exercises/gifs/cat-cow-child-pose.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "worlds-greatest-stretch",
+    "name": "World\u2019s Greatest Stretch",
+    "thumbnail": "/assets/exercises/worlds-greatest-stretch.png",
+    "animation": "/assets/exercises/gifs/worlds-greatest-stretch.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Hamstrings",
+      "Core"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "frog-stretch",
+    "name": "Frog Stretch",
+    "thumbnail": "/assets/exercises/frog-stretch.png",
+    "animation": "/assets/exercises/gifs/frog-stretch.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Quads"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "glute-kickback",
+    "name": "Glute Kickback",
+    "thumbnail": "/assets/exercises/glute-kickback.png",
+    "animation": "/assets/exercises/gifs/glute-kickback.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "banded-clamshell",
+    "name": "Seated or Banded Clamshell",
+    "thumbnail": "/assets/exercises/banded-clamshell.png",
+    "animation": "/assets/exercises/gifs/banded-clamshell.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "sumo-squat",
+    "name": "Sumo Squat (Plie Squat)",
+    "thumbnail": "/assets/exercises/sumo-squat.png",
+    "animation": "/assets/exercises/gifs/sumo-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "deadbug",
+    "name": "Deadbug",
+    "thumbnail": "/assets/exercises/deadbug.png",
+    "animation": "/assets/exercises/gifs/deadbug.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "jump-squat",
+    "name": "Jump Squat",
+    "thumbnail": "/assets/exercises/jump-squat.png",
+    "animation": "/assets/exercises/gifs/jump-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "russian-twist",
+    "name": "Russian Twist",
+    "thumbnail": "/assets/exercises/russian-twist.png",
+    "animation": "/assets/exercises/gifs/russian-twist.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "pop-squat",
+    "name": "Pop Squat",
+    "thumbnail": "/assets/exercises/pop-squat.png",
+    "animation": "/assets/exercises/gifs/pop-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "foam-roll-lower-body",
+    "name": "Foam Rolling (Quads, IT Band, Glutes)",
+    "thumbnail": "/assets/exercises/foam-roll-lower-body.png",
+    "animation": "/assets/exercises/gifs/foam-roll-lower-body.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "hamstring-stretch-hold",
+    "name": "Hamstring Stretch (Long Hold)",
+    "thumbnail": "/assets/exercises/hamstring-stretch-hold.png",
+    "animation": "/assets/exercises/gifs/hamstring-stretch-hold.gif",
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "hip-flexor-stretch",
+    "name": "Hip Flexor Stretch (Long Hold)",
+    "thumbnail": "/assets/exercises/hip-flexor-stretch.png",
+    "animation": "/assets/exercises/gifs/hip-flexor-stretch.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "downward-dog-cobra-flow",
+    "name": "Downward Dog to Cobra Flow",
+    "thumbnail": "/assets/exercises/downward-dog-cobra-flow.png",
+    "animation": "/assets/exercises/gifs/downward-dog-cobra-flow.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Hamstrings"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "pigeon-pose",
+    "name": "Pigeon Pose",
+    "thumbnail": "/assets/exercises/pigeon-pose.png",
+    "animation": "/assets/exercises/gifs/pigeon-pose.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "low-lunge-hip-flexor-stretch",
+    "name": "Low Lunge Hip Flexor Stretch",
+    "thumbnail": "/assets/exercises/low-lunge-hip-flexor-stretch.png",
+    "animation": "/assets/exercises/gifs/low-lunge-hip-flexor-stretch.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "lying-spinal-twist",
+    "name": "Lying Spinal Twist",
+    "thumbnail": "/assets/exercises/lying-spinal-twist.png",
+    "animation": "/assets/exercises/gifs/lying-spinal-twist.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "deep-static-stretch-lower",
+    "name": "Deep Static Stretch (Hips & Lower Back)",
+    "thumbnail": "/assets/exercises/deep-static-stretch-lower.png",
+    "animation": "/assets/exercises/gifs/deep-static-stretch-lower.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "machine-shoulder-press",
+    "name": "Machine Shoulder Press",
+    "thumbnail": "/assets/exercises/machine-shoulder-press.png",
+    "animation": "/assets/exercises/gifs/machine-shoulder-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "back-extension",
+    "name": "Back Extension",
+    "thumbnail": "/assets/exercises/back-extension.png",
+    "animation": "/assets/exercises/gifs/back-extension.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Hamstrings"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC0)"
+  },
+  {
+    "id": "assisted-dip",
+    "name": "Assisted Dip",
+    "thumbnail": "/assets/exercises/assisted-dip.png",
+    "animation": "/assets/exercises/gifs/assisted-dip.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "machine-bicep-curl",
+    "name": "Machine Bicep Curl",
+    "thumbnail": "/assets/exercises/machine-bicep-curl.png",
+    "animation": "/assets/exercises/gifs/machine-bicep-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "machine-triceps-extension",
+    "name": "Machine Triceps Extension",
+    "thumbnail": "/assets/exercises/machine-triceps-extension.png",
+    "animation": "/assets/exercises/gifs/machine-triceps-extension.gif",
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dumbbell-shrug",
+    "name": "Dumbbell Shrug",
+    "thumbnail": "/assets/exercises/dumbbell-shrug.png",
+    "animation": "/assets/exercises/gifs/dumbbell-shrug.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "hip-abductor-machine",
+    "name": "Hip Abductor Machine",
+    "thumbnail": "/assets/exercises/hip-abductor-machine.png",
+    "animation": "/assets/exercises/gifs/hip-abductor-machine.gif",
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "captains-chair-knee-raise",
+    "name": "Captain's Chair Knee Raise",
+    "thumbnail": "/assets/exercises/captains-chair-knee-raise.png",
+    "animation": "/assets/exercises/gifs/captains-chair-knee-raise.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "captains-chair-leg-raise",
+    "name": "Captain's Chair Leg Raise",
+    "thumbnail": "/assets/exercises/captains-chair-leg-raise.png",
+    "animation": "/assets/exercises/gifs/captains-chair-leg-raise.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "sit-up",
+    "name": "Sit-Up",
+    "thumbnail": "/assets/exercises/sit-up.png",
+    "animation": "/assets/exercises/gifs/sit-up.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "hack-squat",
+    "name": "Hack Squat",
+    "thumbnail": "/assets/exercises/hack-squat.png",
+    "animation": "/assets/exercises/gifs/hack-squat.gif",
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "kelso-shrug",
+    "name": "Kelso Shrug",
+    "thumbnail": "/assets/exercises/kelso-shrug.png",
+    "animation": "/assets/exercises/gifs/kelso-shrug.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "smith-machine-bench-press",
+    "name": "Smith Machine Bench Press",
+    "thumbnail": "/assets/exercises/smith-machine-bench-press.png",
+    "animation": "/assets/exercises/gifs/smith-machine-bench-press.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "smith-machine-incline-bench",
+    "name": "Smith Machine Incline Bench Press",
+    "thumbnail": "/assets/exercises/smith-machine-incline-bench.png",
+    "animation": "/assets/exercises/gifs/smith-machine-incline-bench.gif",
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "smith-machine-overhead-press",
+    "name": "Smith Machine Overhead Press",
+    "thumbnail": "/assets/exercises/smith-machine-overhead-press.png",
+    "animation": "/assets/exercises/gifs/smith-machine-overhead-press.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ],
+    "source": "wikimedia",
+    "licenseNote": "Wikimedia Commons (CC BY-SA 4.0)"
+  },
+  {
+    "id": "smith-machine-row",
+    "name": "Smith Machine Bent-Over Row",
+    "thumbnail": "/assets/exercises/smith-machine-row.png",
+    "animation": "/assets/exercises/gifs/smith-machine-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "ez-bar-curl",
+    "name": "EZ Bar Curl",
+    "thumbnail": "/assets/exercises/ez-bar-curl.png",
+    "animation": "/assets/exercises/gifs/ez-bar-curl.gif",
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "dragon-flag",
+    "name": "Dragon Flag",
+    "thumbnail": "/assets/exercises/dragon-flag.png",
+    "animation": "/assets/exercises/gifs/dragon-flag.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "weighted-russian-twist",
+    "name": "Weighted Russian Twist",
+    "thumbnail": "/assets/exercises/weighted-russian-twist.png",
+    "animation": "/assets/exercises/gifs/weighted-russian-twist.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "rkc-plank",
+    "name": "RKC Plank",
+    "thumbnail": "/assets/exercises/rkc-plank.png",
+    "animation": "/assets/exercises/gifs/rkc-plank.gif",
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "renegade-row",
+    "name": "Renegade Row",
+    "thumbnail": "/assets/exercises/renegade-row.png",
+    "animation": "/assets/exercises/gifs/renegade-row.gif",
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core",
+      "Shoulders"
+    ],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  },
+  {
+    "id": "iyt-raises",
+    "name": "IYT Raises",
+    "thumbnail": "/assets/exercises/iyt-raises.png",
+    "animation": "/assets/exercises/gifs/iyt-raises.gif",
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ],
+    "source": "silhouette",
+    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+  },
+  {
+    "id": "standing-calf-raise",
+    "name": "Standing Calf Raise",
+    "thumbnail": "/assets/exercises/standing-calf-raise.png",
+    "animation": "/assets/exercises/gifs/standing-calf-raise.gif",
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": [],
+    "source": "exercisedb-oss",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
+  }
+]

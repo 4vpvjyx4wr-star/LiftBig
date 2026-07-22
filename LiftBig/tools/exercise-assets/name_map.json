@@ -1,0 +1,1721 @@
+{
+  "Barbell Bench Press": {
+    "id": "bench-press",
+    "edbQueries": [
+      "barbell bench press",
+      "bench press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Incline Dumbbell Press": {
+    "id": "incline-dumbbell-press",
+    "edbQueries": [
+      "dumbbell incline bench press",
+      "incline dumbbell press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ]
+  },
+  "Flat Dumbbell Press": {
+    "id": "flat-dumbbell-press",
+    "edbQueries": [
+      "flat dumbbell press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Pull-Up": {
+    "id": "pull-up",
+    "edbQueries": [
+      "pull-up",
+      "pull up",
+      "assisted pull-up"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Lat Pulldown": {
+    "id": "lat-pulldown",
+    "edbQueries": [
+      "cable lat pulldown",
+      "lat pulldown",
+      "pulldown"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Barbell Row": {
+    "id": "barbell-row",
+    "edbQueries": [
+      "barbell row",
+      "row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ]
+  },
+  "Dumbbell Row": {
+    "id": "dumbbell-row",
+    "edbQueries": [
+      "dumbbell row",
+      "row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ]
+  },
+  "Chest Supported Row": {
+    "id": "chest-supported-row",
+    "edbQueries": [
+      "dumbbell incline row",
+      "barbell incline row",
+      "chest supported dumbbell row",
+      "incline row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Seated Cable Row": {
+    "id": "seated-cable-row",
+    "edbQueries": [
+      "cable seated row",
+      "seated cable row",
+      "seated row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Face Pull": {
+    "id": "face-pull",
+    "edbQueries": [
+      "face pull",
+      "cable face pull",
+      "rope face pull"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Overhead Press": {
+    "id": "overhead-press",
+    "edbQueries": [
+      "barbell standing military press",
+      "smith standing military press",
+      "dumbbell shoulder press",
+      "lever military press",
+      "military press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ]
+  },
+  "Lateral Raise": {
+    "id": "lateral-raise",
+    "edbQueries": [
+      "dumbbell lateral raise",
+      "cable lateral raise",
+      "lever lateral raise"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": []
+  },
+  "Rear Delt Fly": {
+    "id": "rear-delt-fly",
+    "edbQueries": [
+      "rear delt fly"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Tricep Pushdown": {
+    "id": "tricep-pushdown",
+    "edbQueries": [
+      "cable pushdown",
+      "triceps pushdown"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Overhead Tricep Extension": {
+    "id": "overhead-tricep-extension",
+    "edbQueries": [
+      "cable overhead triceps extension",
+      "dumbbell seated overhead triceps extension",
+      "overhead triceps extension"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Barbell Curl": {
+    "id": "barbell-curl",
+    "edbQueries": [
+      "barbell curl",
+      "ez barbell curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Hammer Curl": {
+    "id": "hammer-curl",
+    "edbQueries": [
+      "dumbbell hammer curl",
+      "hammer curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Incline Cable Curl": {
+    "id": "incline-cable-curl",
+    "edbQueries": [
+      "incline cable curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Incline Dumbbell Curl": {
+    "id": "incline-dumbbell-curl",
+    "edbQueries": [
+      "incline dumbbell curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Cable Curl": {
+    "id": "cable-curl",
+    "edbQueries": [
+      "cable curl",
+      "curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Barbell Back Squat": {
+    "id": "squat",
+    "edbQueries": [
+      "barbell full squat",
+      "barbell squat",
+      "barbell back squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ]
+  },
+  "Leg Press": {
+    "id": "leg-press",
+    "edbQueries": [
+      "sled 45 leg press",
+      "leg press",
+      "smith leg press"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Leg Extension": {
+    "id": "leg-extension",
+    "edbQueries": [
+      "lever leg extension",
+      "leg extension",
+      "seated leg extension"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": []
+  },
+  "Dumbbell Romanian Deadlift": {
+    "id": "dumbbell-romanian-deadlift",
+    "edbQueries": [
+      "dumbbell romanian deadlift",
+      "romanian deadlift"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ]
+  },
+  "Romanian Deadlift (RDL)": {
+    "id": "romanian-deadlift",
+    "edbQueries": [
+      "barbell romanian deadlift",
+      "dumbbell romanian deadlift",
+      "romanian deadlift"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ]
+  },
+  "Conventional Deadlift": {
+    "id": "deadlift",
+    "edbQueries": [
+      "barbell deadlift",
+      "conventional deadlift"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ]
+  },
+  "Seated Leg Curl": {
+    "id": "seated-leg-curl",
+    "edbQueries": [
+      "seated leg curl"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": []
+  },
+  "Machine Chest Press": {
+    "id": "machine-chest-press",
+    "edbQueries": [
+      "machine chest press",
+      "chest press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ]
+  },
+  "Hamstring Curl": {
+    "id": "hamstring-curl",
+    "edbQueries": [
+      "lever lying leg curl",
+      "seated leg curl",
+      "leg curl"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": []
+  },
+  "Calf Raise": {
+    "id": "calf-raise",
+    "edbQueries": [
+      "calf raise"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  },
+  "Walking Lunge": {
+    "id": "walking-lunge",
+    "edbQueries": [
+      "walking lunge",
+      "dumbbell walking lunge"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Goblet Squat": {
+    "id": "goblet-squat",
+    "edbQueries": [
+      "goblet squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ]
+  },
+  "Push-Up": {
+    "id": "push-up",
+    "edbQueries": [
+      "push-up",
+      "push up"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Cable Crunch": {
+    "id": "cable-crunch",
+    "edbQueries": [
+      "cable crunch",
+      "crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Cable Woodchop": {
+    "id": "cable-woodchop",
+    "edbQueries": [
+      "cable woodchop",
+      "woodchop"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Machine Fly / Pec Deck": {
+    "id": "machine-fly",
+    "edbQueries": [
+      "machine fly / pec deck",
+      "fly / pec deck",
+      "machine fly"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": []
+  },
+  "Cable Fly": {
+    "id": "cable-fly",
+    "edbQueries": [
+      "cable fly",
+      "fly"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": []
+  },
+  "Low-to-High Cable Fly": {
+    "id": "low-to-high-cable-fly",
+    "edbQueries": [
+      "low-to-high cable fly",
+      "low to high cable fly"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Cable Lateral Raise": {
+    "id": "cable-lateral-raise",
+    "edbQueries": [
+      "cable lateral raise",
+      "lateral raise"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": []
+  },
+  "Lean-Away Cable Lateral Raise": {
+    "id": "lean-away-cable-lateral-raise",
+    "edbQueries": [
+      "lean-away cable lateral raise",
+      "lean away cable lateral raise"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": []
+  },
+  "Leaning Dumbbell Lateral Raise": {
+    "id": "leaning-dumbbell-lateral-raise",
+    "edbQueries": [
+      "leaning dumbbell lateral raise"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": []
+  },
+  "Lateral Raise Partial": {
+    "id": "lateral-raise-partial",
+    "edbQueries": [
+      "lateral raise partial"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": []
+  },
+  "Assisted Pull-Up": {
+    "id": "assisted-pull-up",
+    "edbQueries": [
+      "assisted pull-up",
+      "assisted pull up"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Rear Delt Cable Fly": {
+    "id": "rear-delt-cable-fly",
+    "edbQueries": [
+      "rear delt cable fly"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Neutral Grip Lat Pulldown": {
+    "id": "neutral-grip-lat-pulldown",
+    "edbQueries": [
+      "neutral grip lat pulldown"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Chest Supported Lat-Focused Row": {
+    "id": "chest-supported-lat-row",
+    "edbQueries": [
+      "chest supported lat-focused row",
+      "chest supported lat row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Single Arm Lat Pulldown": {
+    "id": "single-arm-lat-pulldown",
+    "edbQueries": [
+      "single arm lat pulldown"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Overhead Cable Tricep Extension": {
+    "id": "overhead-cable-tricep-extension",
+    "edbQueries": [
+      "overhead cable tricep extension"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Overhead Dumbbell Tricep Extension": {
+    "id": "overhead-dumbbell-tricep-extension",
+    "edbQueries": [
+      "overhead dumbbell tricep extension"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Dumbbell Curl": {
+    "id": "dumbbell-curl",
+    "edbQueries": [
+      "dumbbell curl",
+      "curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Standing Dumbbell Shoulder Press": {
+    "id": "standing-dumbbell-shoulder-press",
+    "edbQueries": [
+      "standing dumbbell shoulder press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Core"
+    ]
+  },
+  "Decline Reverse Crunch": {
+    "id": "decline-reverse-crunch",
+    "edbQueries": [
+      "decline reverse crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Weighted Crunch": {
+    "id": "weighted-crunch",
+    "edbQueries": [
+      "weighted crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Side Plank": {
+    "id": "side-plank",
+    "edbQueries": [
+      "side plank"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Dead Bug": {
+    "id": "dead-bug",
+    "edbQueries": [
+      "dead bug"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Cable Side Crunch": {
+    "id": "cable-side-crunch",
+    "edbQueries": [
+      "cable side crunch",
+      "side crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Weighted Decline Sit-Up": {
+    "id": "weighted-decline-situp",
+    "edbQueries": [
+      "weighted decline sit-up",
+      "weighted decline situp"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Machine Pullover": {
+    "id": "machine-pullover",
+    "edbQueries": [
+      "machine pullover",
+      "pullover"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Chest"
+    ]
+  },
+  "Bicycle Crunch": {
+    "id": "bicycle-crunch",
+    "edbQueries": [
+      "bicycle crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Incline Machine Press": {
+    "id": "incline-machine-press",
+    "edbQueries": [
+      "incline machine press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ]
+  },
+  "Hip Thrust": {
+    "id": "hip-thrust",
+    "edbQueries": [
+      "hip thrust"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ]
+  },
+  "Plank": {
+    "id": "plank",
+    "edbQueries": [
+      "plank",
+      "front plank",
+      "weighted plank"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Ab Machine / Crunch": {
+    "id": "ab-machine-crunch",
+    "edbQueries": [
+      "ab machine / crunch",
+      "ab machine crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Reverse Crunch": {
+    "id": "reverse-crunch",
+    "edbQueries": [
+      "reverse crunch"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Hanging Leg Raise": {
+    "id": "leg-raise",
+    "edbQueries": [
+      "hanging leg raise",
+      "hanging knee raise",
+      "captain chair leg raise"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Quads"
+    ]
+  },
+  "Arnold Press": {
+    "id": "arnold-press",
+    "edbQueries": [
+      "arnold press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ]
+  },
+  "Bulgarian Split Squat": {
+    "id": "bulgarian-split-squat",
+    "edbQueries": [
+      "bulgarian split squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "T-Bar Row": {
+    "id": "t-bar-row",
+    "edbQueries": [
+      "t-bar row",
+      "t bar row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps",
+      "Forearms"
+    ]
+  },
+  "Pendlay Row": {
+    "id": "pendlay-row",
+    "edbQueries": [
+      "pendlay row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Skull Crusher (Lying Triceps Extension)": {
+    "id": "skull-crusher",
+    "edbQueries": [
+      "skull crusher (lying triceps extension)",
+      "skull crusher"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Preacher Curl": {
+    "id": "preacher-curl",
+    "edbQueries": [
+      "preacher curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Good Morning": {
+    "id": "good-morning",
+    "edbQueries": [
+      "good morning"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Back"
+    ]
+  },
+  "Nordic Hamstring Curl": {
+    "id": "nordic-hamstring-curl",
+    "edbQueries": [
+      "nordic hamstring curl"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": []
+  },
+  "Chest Dip": {
+    "id": "chest-dip",
+    "edbQueries": [
+      "chest dip"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Farmer's Carry": {
+    "id": "farmers-walk",
+    "edbQueries": [
+      "farmer's carry",
+      "farmers walk"
+    ],
+    "primaryMuscles": [
+      "Forearms"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Core"
+    ]
+  },
+  "Barbell Shrug": {
+    "id": "barbell-shrug",
+    "edbQueries": [
+      "barbell shrug",
+      "shrug"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Pallof Press": {
+    "id": "pallof-press",
+    "edbQueries": [
+      "pallof press"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Cable Pull-Through": {
+    "id": "cable-pull-through",
+    "edbQueries": [
+      "cable pull-through",
+      "pull-through",
+      "cable pull through"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ]
+  },
+  "Sumo Deadlift": {
+    "id": "sumo-deadlift",
+    "edbQueries": [
+      "sumo deadlift"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ]
+  },
+  "Kettlebell Swing": {
+    "id": "kettlebell-swing",
+    "edbQueries": [
+      "kettlebell swing",
+      "swing"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Shoulders"
+    ]
+  },
+  "Inverted Row": {
+    "id": "inverted-row",
+    "edbQueries": [
+      "inverted row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "Front Squat": {
+    "id": "front-squat",
+    "edbQueries": [
+      "barbell clean-grip front squat",
+      "smith front squat",
+      "kettlebell front squat",
+      "front squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Core",
+      "Glutes"
+    ]
+  },
+  "Decline Barbell Bench Press": {
+    "id": "decline-bench-press",
+    "edbQueries": [
+      "decline barbell bench press",
+      "decline bench press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Smith Machine Squat": {
+    "id": "smith-machine-squat",
+    "edbQueries": [
+      "smith machine squat",
+      "machine squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Zercher Squat": {
+    "id": "zercher-squat",
+    "edbQueries": [
+      "zercher squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ]
+  },
+  "Seated Dumbbell Shoulder Press": {
+    "id": "seated-dumbbell-shoulder-press",
+    "edbQueries": [
+      "seated dumbbell shoulder press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ]
+  },
+  "Reverse Pec Deck / Reverse Fly Machine": {
+    "id": "reverse-fly-machine",
+    "edbQueries": [
+      "reverse pec deck / reverse fly machine",
+      "reverse fly machine"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Straight-Arm Pulldown": {
+    "id": "lat-prayer-stretch-cable",
+    "edbQueries": [
+      "straight-arm pulldown",
+      "lat prayer stretch cable"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": []
+  },
+  "Pike Push-Up": {
+    "id": "pike-push-up",
+    "edbQueries": [
+      "pike push-up",
+      "pike push up"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Chest"
+    ]
+  },
+  "Bodyweight Squat": {
+    "id": "bodyweight-squat",
+    "edbQueries": [
+      "bodyweight squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Core"
+    ]
+  },
+  "Glute Bridge": {
+    "id": "glute-bridge",
+    "edbQueries": [
+      "glute bridge"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Core"
+    ]
+  },
+  "Burpee": {
+    "id": "burpee",
+    "edbQueries": [
+      "burpee"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Quads",
+      "Core"
+    ]
+  },
+  "Mountain Climber": {
+    "id": "mountain-climber",
+    "edbQueries": [
+      "mountain climber"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Quads"
+    ]
+  },
+  "Hollow Body Hold": {
+    "id": "hollow-body-hold",
+    "edbQueries": [
+      "hollow body hold"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Hanging Knee Raise": {
+    "id": "hanging-knee-raise",
+    "edbQueries": [
+      "hanging knee raise"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Ab Wheel Rollout": {
+    "id": "ab-wheel-rollout",
+    "edbQueries": [
+      "ab wheel rollout"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Plank with Shoulder Taps": {
+    "id": "plank-shoulder-tap",
+    "edbQueries": [
+      "plank with shoulder taps",
+      "plank shoulder tap"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "90/90 Hip Switches": {
+    "id": "hip-90-90-switch",
+    "edbQueries": [
+      "90/90 hip switches",
+      "hip 90 90 switch"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Core"
+    ]
+  },
+  "Cat-Cow to Child\u2019s Pose": {
+    "id": "cat-cow-child-pose",
+    "edbQueries": [
+      "cat-cow to child\u2019s pose",
+      "cat cow child pose"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core"
+    ]
+  },
+  "World\u2019s Greatest Stretch": {
+    "id": "worlds-greatest-stretch",
+    "edbQueries": [
+      "world\u2019s greatest stretch",
+      "worlds greatest stretch"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Hamstrings",
+      "Core"
+    ]
+  },
+  "Frog Stretch": {
+    "id": "frog-stretch",
+    "edbQueries": [
+      "frog stretch"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Quads"
+    ]
+  },
+  "Glute Kickback": {
+    "id": "glute-kickback",
+    "edbQueries": [
+      "glute kickback"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": []
+  },
+  "Seated or Banded Clamshell": {
+    "id": "banded-clamshell",
+    "edbQueries": [
+      "seated or banded clamshell",
+      "banded clamshell"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": []
+  },
+  "Sumo Squat (Plie Squat)": {
+    "id": "sumo-squat",
+    "edbQueries": [
+      "sumo squat (plie squat)",
+      "sumo squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Deadbug": {
+    "id": "deadbug",
+    "edbQueries": [
+      "deadbug"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Jump Squat": {
+    "id": "jump-squat",
+    "edbQueries": [
+      "jump squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Russian Twist": {
+    "id": "russian-twist",
+    "edbQueries": [
+      "russian twist"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Pop Squat": {
+    "id": "pop-squat",
+    "edbQueries": [
+      "pop squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Foam Rolling (Quads, IT Band, Glutes)": {
+    "id": "foam-roll-lower-body",
+    "edbQueries": [
+      "foam rolling (quads, it band, glutes)",
+      "foam roll lower body"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Hamstring Stretch (Long Hold)": {
+    "id": "hamstring-stretch-hold",
+    "edbQueries": [
+      "hamstring stretch (long hold)",
+      "hamstring stretch hold"
+    ],
+    "primaryMuscles": [
+      "Hamstrings"
+    ],
+    "secondaryMuscles": []
+  },
+  "Hip Flexor Stretch (Long Hold)": {
+    "id": "hip-flexor-stretch",
+    "edbQueries": [
+      "hip flexor stretch (long hold)",
+      "hip flexor stretch"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Downward Dog to Cobra Flow": {
+    "id": "downward-dog-cobra-flow",
+    "edbQueries": [
+      "downward dog to cobra flow",
+      "downward dog cobra flow"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Hamstrings"
+    ]
+  },
+  "Pigeon Pose": {
+    "id": "pigeon-pose",
+    "edbQueries": [
+      "pigeon pose"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings"
+    ]
+  },
+  "Low Lunge Hip Flexor Stretch": {
+    "id": "low-lunge-hip-flexor-stretch",
+    "edbQueries": [
+      "low lunge hip flexor stretch"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Lying Spinal Twist": {
+    "id": "lying-spinal-twist",
+    "edbQueries": [
+      "lying spinal twist"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core"
+    ]
+  },
+  "Deep Static Stretch (Hips & Lower Back)": {
+    "id": "deep-static-stretch-lower",
+    "edbQueries": [
+      "deep static stretch (hips & lower back)",
+      "deep static stretch lower"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": [
+      "Hamstrings",
+      "Back"
+    ]
+  },
+  "Machine Shoulder Press": {
+    "id": "machine-shoulder-press",
+    "edbQueries": [
+      "machine shoulder press",
+      "shoulder press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ]
+  },
+  "Back Extension": {
+    "id": "back-extension",
+    "edbQueries": [
+      "back extension"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Hamstrings"
+    ]
+  },
+  "Assisted Dip": {
+    "id": "assisted-dip",
+    "edbQueries": [
+      "assisted dip"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Machine Bicep Curl": {
+    "id": "machine-bicep-curl",
+    "edbQueries": [
+      "machine bicep curl",
+      "bicep curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Machine Triceps Extension": {
+    "id": "machine-triceps-extension",
+    "edbQueries": [
+      "machine triceps extension",
+      "triceps extension"
+    ],
+    "primaryMuscles": [
+      "Triceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Dumbbell Shrug": {
+    "id": "dumbbell-shrug",
+    "edbQueries": [
+      "dumbbell shrug",
+      "shrug"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Hip Abductor Machine": {
+    "id": "hip-abductor-machine",
+    "edbQueries": [
+      "hip abductor machine"
+    ],
+    "primaryMuscles": [
+      "Glutes"
+    ],
+    "secondaryMuscles": []
+  },
+  "Captain's Chair Knee Raise": {
+    "id": "captains-chair-knee-raise",
+    "edbQueries": [
+      "captain's chair knee raise",
+      "captains chair knee raise"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Captain's Chair Leg Raise": {
+    "id": "captains-chair-leg-raise",
+    "edbQueries": [
+      "captain's chair leg raise",
+      "captains chair leg raise"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Sit-Up": {
+    "id": "sit-up",
+    "edbQueries": [
+      "sit-up",
+      "sit up"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Hack Squat": {
+    "id": "hack-squat",
+    "edbQueries": [
+      "hack squat"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Kelso Shrug": {
+    "id": "kelso-shrug",
+    "edbQueries": [
+      "kelso shrug"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Smith Machine Bench Press": {
+    "id": "smith-machine-bench-press",
+    "edbQueries": [
+      "smith machine bench press",
+      "machine bench press"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Triceps",
+      "Shoulders"
+    ]
+  },
+  "Smith Machine Incline Bench Press": {
+    "id": "smith-machine-incline-bench",
+    "edbQueries": [
+      "smith machine incline bench press",
+      "machine incline bench press",
+      "smith machine incline bench"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders",
+      "Triceps"
+    ]
+  },
+  "Smith Machine Overhead Press": {
+    "id": "smith-machine-overhead-press",
+    "edbQueries": [
+      "smith machine overhead press",
+      "machine overhead press"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Triceps"
+    ]
+  },
+  "Smith Machine Bent-Over Row": {
+    "id": "smith-machine-row",
+    "edbQueries": [
+      "smith machine bent-over row",
+      "machine bent-over row",
+      "smith machine row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Biceps"
+    ]
+  },
+  "EZ Bar Curl": {
+    "id": "ez-bar-curl",
+    "edbQueries": [
+      "ez bar curl",
+      "curl"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": []
+  },
+  "Dragon Flag": {
+    "id": "dragon-flag",
+    "edbQueries": [
+      "dragon flag"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Weighted Russian Twist": {
+    "id": "weighted-russian-twist",
+    "edbQueries": [
+      "weighted russian twist"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "RKC Plank": {
+    "id": "rkc-plank",
+    "edbQueries": [
+      "rkc plank"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": []
+  },
+  "Renegade Row": {
+    "id": "renegade-row",
+    "edbQueries": [
+      "renegade row"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Core",
+      "Shoulders"
+    ]
+  },
+  "IYT Raises": {
+    "id": "iyt-raises",
+    "edbQueries": [
+      "iyt raises"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Standing Calf Raise": {
+    "id": "standing-calf-raise",
+    "edbQueries": [
+      "barbell standing calf raise",
+      "lever standing calf raise",
+      "standing calf raise"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  }
+}

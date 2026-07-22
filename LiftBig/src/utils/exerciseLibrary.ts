@@ -209,7 +209,7 @@ export function inferPplSplits(ex: LibraryExercise): PplSplit[] {
 
   const nameLower = ex.name.toLowerCase()
   const coreByName =
-    /\b(plank|crunch|ab |abs|core|hollow|dead bug|pallof|leg raise|sit-?up|rollout|bird dog|side bend|woodchop|russian twist|v-?up|mountain climber|cable crunch|pike)\b/.test(
+    /\b(plank|crunch|ab |abs|core|hollow|dead bug|pallof|leg raise|sit-?up|rollout|bird dog|side bend|woodchop|russian twist|v-?up|mountain climber|cable crunch|pike|dragon flag|renegade)\b/.test(
       nameLower,
     )
   const primaryWithoutCore = mg.filter((m) => m !== 'core')
@@ -2974,6 +2974,306 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Control the descent—no flopping back down.',
     ],
   }),
+  reg({
+    id: 'hack-squat',
+    name: 'Hack Squat',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['machine', 'compound', 'squat pattern'],
+    equipment: 'Machine',
+    summary:
+      'Machine squat with the back supported against a pad—quad-dominant leg drive with less balance demand than a free squat.',
+    instructions: [
+      'Place back and shoulders firmly against the pads; feet shoulder-width on the platform.',
+      'Release the safeties; lower by bending the knees until thighs are near parallel (or as deep as you own).',
+      'Drive through the mid-foot to stand without locking out aggressively.',
+    ],
+    tips: [
+      'Keep the lower back glued to the pad—if it peels off, move feet slightly forward.',
+      'Adjust foot height to bias quads (lower) vs glutes (higher).',
+    ],
+    cues: [
+      'Back stays on the pad the whole set.',
+      'Knees track over toes; heels stay down.',
+      'Control the bottom; drive through the whole foot.',
+    ],
+  }),
+  reg({
+    id: 'kelso-shrug',
+    name: 'Kelso Shrug',
+    muscleGroups: ['back', 'shoulders'],
+    tags: ['isolation', 'scapular', 'traps'],
+    equipment: 'Dumbbell',
+    summary:
+      'Chest-supported scapular retraction with locked elbows—mid-trap and rhomboid isolation often paired after rows as a mechanical drop set.',
+    instructions: [
+      'Lie chest-down on an incline bench (~30–45°) holding dumbbells with arms hanging straight.',
+      'Without bending the elbows, retract the shoulder blades hard as if pinching a pencil between them.',
+      'Squeeze briefly at the top, then let the scapulae protract under control.',
+    ],
+    tips: [
+      'Keep elbows locked—any bend turns this into a row.',
+      'Use the same weight as your preceding chest-supported row when programmed as a drop set.',
+    ],
+    cues: [
+      'Elbows stay straight.',
+      'Pinch shoulder blades back and slightly down.',
+      'Slow lower—don’t dump the weights.',
+    ],
+  }),
+  reg({
+    id: 'smith-machine-bench-press',
+    name: 'Smith Machine Bench Press',
+    muscleGroups: ['chest', 'triceps', 'shoulders'],
+    tags: ['machine', 'press', 'guided'],
+    equipment: 'Machine',
+    summary:
+      'Flat bench press on a fixed vertical (or slight-angle) Smith track—stable pressing when you want guided path or safer failure.',
+    instructions: [
+      'Set the bench so the bar path meets mid-to-lower chest; feet flat.',
+      'Unrack; lower with control to the chest with elbows ~45° from the torso.',
+      'Press to lockout without shrugging; re-rack with safeties set.',
+    ],
+    tips: [
+      'Still retract the scapulae—machine guidance does not replace setup.',
+      'Set safeties just below your bottom position.',
+    ],
+    cues: [
+      'Shoulder blades pinched on the bench.',
+      'Bar touches lower chest; wrists stacked.',
+      'Drive feet into the floor; press smoothly.',
+    ],
+  }),
+  reg({
+    id: 'smith-machine-incline-bench',
+    name: 'Smith Machine Incline Bench Press',
+    muscleGroups: ['chest', 'shoulders', 'triceps'],
+    tags: ['machine', 'press', 'upper chest', 'guided'],
+    equipment: 'Machine',
+    summary:
+      'Incline press on the Smith machine—upper-chest emphasis with a guided bar path.',
+    instructions: [
+      'Set bench to ~30–45° under the Smith bar; eyes under the unracked bar.',
+      'Unrack; lower in a slight arc toward the upper chest.',
+      'Press up without flaring elbows excessively; re-rack carefully.',
+    ],
+    tips: [
+      'Prefer ~30° if front delts take over at steeper inclines.',
+      'Keep glutes and upper back glued to the pad.',
+    ],
+    cues: [
+      'Scapulae retracted; chest up.',
+      'Bar path to upper chest, not the neck.',
+      'Control the touch; drive evenly.',
+    ],
+  }),
+  reg({
+    id: 'smith-machine-overhead-press',
+    name: 'Smith Machine Overhead Press',
+    muscleGroups: ['shoulders', 'triceps'],
+    tags: ['machine', 'press', 'guided'],
+    equipment: 'Machine',
+    summary:
+      'Seated or standing overhead press on the Smith track—stable vertical pressing for delts and triceps.',
+    instructions: [
+      'Sit or stand so the bar path clears the face; brace the core.',
+      'Unrack at shoulder height; press overhead to lockout without excessive lean.',
+      'Lower under control to the top of the chest / chin line.',
+    ],
+    tips: [
+      'Keep ribs down—don’t turn it into a standing backbend.',
+      'Use a seat with back support if balance is limiting.',
+    ],
+    cues: [
+      'Brace hard before each press.',
+      'Bar travels close to the face, then slightly back.',
+      'Lock out without shrugging into the ears.',
+    ],
+  }),
+  reg({
+    id: 'smith-machine-row',
+    name: 'Smith Machine Bent-Over Row',
+    muscleGroups: ['back', 'biceps'],
+    tags: ['machine', 'row', 'guided'],
+    equipment: 'Machine',
+    summary:
+      'Bent-over row using the Smith bar—guided path for upper-back thickness when free-bar rows feel unstable.',
+    instructions: [
+      'Hinge at the hips with a flat back; grip the bar slightly wider than shoulders.',
+      'Pull the bar toward the lower ribs / upper abs; squeeze the shoulder blades.',
+      'Lower under control without rounding the lumbar spine.',
+    ],
+    tips: [
+      'Keep the torso angle consistent—don’t stand up as you fatigue.',
+      'Lead with the elbows, not a shrug.',
+    ],
+    cues: [
+      'Hinge and brace; spine neutral.',
+      'Elbows drive back; chest stays over the bar.',
+      'Control the eccentric.',
+    ],
+  }),
+  reg({
+    id: 'ez-bar-curl',
+    name: 'EZ Bar Curl',
+    muscleGroups: ['biceps'],
+    tags: ['isolation', 'arms'],
+    equipment: 'Barbell',
+    summary:
+      'Standing curl with an EZ (cambered) bar—wrist-friendlier alternative to a straight barbell curl.',
+    instructions: [
+      'Grip the inner (or preferred) camber with elbows near the sides.',
+      'Curl the bar up while keeping upper arms mostly still; squeeze at the top.',
+      'Lower to near full extension under control without swinging.',
+    ],
+    tips: [
+      'If wrists hurt on a straight bar, the EZ camber usually helps.',
+      'Avoid turning the curl into a front raise—elbows stay by the ribs.',
+    ],
+    cues: [
+      'Elbows pinned near the sides.',
+      'Wrists neutral on the camber.',
+      'Control the negative; no hip swing.',
+    ],
+  }),
+  reg({
+    id: 'dragon-flag',
+    name: 'Dragon Flag',
+    muscleGroups: ['core'],
+    tags: ['advanced', 'isometric', 'anti-extension'],
+    equipment: 'Bodyweight',
+    summary:
+      'Advanced core drill: hold a rigid body line from the shoulders while lowering and raising the hips off a bench.',
+    instructions: [
+      'Lie on a bench and grip a stable edge behind the head; elbows tucked.',
+      'Brace glutes and abs hard; lift into a straight line from shoulders to toes.',
+      'Lower under control (tuck progressions first); raise without piked hips.',
+    ],
+    tips: [
+      'Master hollow holds and tucked negatives before full reps.',
+      'Squeeze glutes so the hips don’t sag before the feet.',
+    ],
+    cues: [
+      'Load the shoulders, not the neck.',
+      'Body stays as one rigid plank.',
+      'Slow eccentrics beat sloppy full reps.',
+    ],
+  }),
+  reg({
+    id: 'weighted-russian-twist',
+    name: 'Weighted Russian Twist',
+    muscleGroups: ['core'],
+    tags: ['rotation', 'weighted', 'obliques'],
+    equipment: 'Dumbbell',
+    summary:
+      'Seated torso rotation holding a dumbbell, plate, or medicine ball—loaded oblique endurance.',
+    instructions: [
+      'Sit with knees bent; hold a weight at the chest; lean back slightly with a tall chest.',
+      'Rotate the rib cage side to side, moving the weight with the torso.',
+      'Touch the weight toward the floor beside each hip with control.',
+    ],
+    tips: [
+      'Rotate from the torso—don’t just swing the arms.',
+      'Feet lifted increases demand; keep heels down to regress.',
+    ],
+    cues: [
+      'Chest tall; ribs controlled.',
+      'Weight follows the torso.',
+      'Equal range left and right.',
+    ],
+    repBasedCore: true,
+  }),
+  reg({
+    id: 'rkc-plank',
+    name: 'RKC Plank',
+    muscleGroups: ['core'],
+    tags: ['isometric', 'hardstyle', 'anti-extension'],
+    equipment: 'Bodyweight',
+    summary:
+      'Hardstyle plank: maximal full-body tension for short holds (quality over long duration).',
+    instructions: [
+      'Forearm plank with elbows slightly ahead of the shoulders; feet close.',
+      'Squeeze glutes, quads, and fists; brace as if about to be punched.',
+      'Pull elbows toward toes and toes toward elbows without moving—hold 10–45 sec.',
+    ],
+    tips: [
+      'If you can hold easily past ~45–60 sec, you are not creating enough tension.',
+      'Posteriorly tilt the pelvis slightly (tuck the tail) to feel the abs more.',
+    ],
+    cues: [
+      'Crush the floor; rip it in half.',
+      'Glutes on; ribs down.',
+      'Short, brutal holds—not a long passive hang.',
+    ],
+  }),
+  reg({
+    id: 'renegade-row',
+    name: 'Renegade Row',
+    muscleGroups: ['back', 'core', 'shoulders'],
+    tags: ['compound', 'anti-rotation', 'dumbbell'],
+    equipment: 'Dumbbell',
+    summary:
+      'Plank-position single-arm row—upper-back pulling plus anti-rotation core demand.',
+    instructions: [
+      'High plank gripping hex dumbbells; feet wide for stability.',
+      'Row one dumbbell to the hip while keeping hips square to the floor.',
+      'Lower with control and alternate sides.',
+    ],
+    tips: [
+      'Widen the feet if hips twist; narrow them to progress.',
+      'Hex dumbbells are more stable than round bells.',
+    ],
+    cues: [
+      'Hips square—no see-saw.',
+      'Row elbow to the hip; brace the planted arm.',
+      'Plank line from head to heels.',
+    ],
+  }),
+  reg({
+    id: 'iyt-raises',
+    name: 'IYT Raises',
+    muscleGroups: ['shoulders', 'back'],
+    tags: ['isolation', 'scapular', 'prehab'],
+    equipment: 'Dumbbell',
+    summary:
+      'Light scapular raise sequence forming I, Y, and T arm shapes—rear delt and mid/lower trap prehab.',
+    instructions: [
+      'Hinge forward or lie prone; thumbs point up; use very light weights (or none).',
+      'Raise arms into an I (overhead), then a Y (45°), then a T (straight out)—or cycle all three each rep.',
+      'Lead with the shoulder blades; lower slowly between positions.',
+    ],
+    tips: [
+      'If upper traps take over, lighten the load and think “down and back.”',
+      'Keep the neck long—don’t crane the chin.',
+    ],
+    cues: [
+      'Thumbs to the sky.',
+      'Squeeze scapulae before the arms rise.',
+      'Soft elbows; no swinging.',
+    ],
+  }),
+  reg({
+    id: 'standing-calf-raise',
+    name: 'Standing Calf Raise',
+    muscleGroups: ['calves'],
+    tags: ['isolation', 'lower body'],
+    equipment: 'Machine',
+    summary:
+      'Standing plantarflexion under load—gastrocnemius-focused calf builder (machine or free-standing).',
+    instructions: [
+      'Place the balls of the feet on the platform; hips under the pads or bar.',
+      'Lower the heels for a full stretch, then rise onto the toes.',
+      'Pause briefly at the top; control the eccentric.',
+    ],
+    tips: [
+      'Full stretch and full squeeze beat partial bouncing.',
+      'Soft knees if you want more soleus; straighter knees bias gastroc.',
+    ],
+    cues: [
+      'Even pressure through big and little toe.',
+      'Hips stay stacked; no bouncing.',
+      'Slow lower every rep.',
+    ],
+  }),
 ]
 
 import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
@@ -3076,26 +3376,41 @@ export function findLibraryExerciseByName(name: string | undefined): LibraryExer
  * Library exercises that share at least one muscle group with the given exercise,
  * excluding the exercise itself. Sorted by number of overlapping muscle groups (desc),
  * then name. Used for “swap to a comparable movement” in the workout log.
+ * Optional `preferredSwapLibraryIds` are pinned to the top (plan “or” alternatives).
  */
 export function getComparableLibraryExercises(exercise: {
   libraryId?: string
   name: string
   isCardio?: boolean
+  preferredSwapLibraryIds?: string[]
 }): LibraryExercise[] {
   const base =
     (exercise.libraryId && getLibraryExercise(exercise.libraryId)) ||
     findLibraryExerciseByName(exercise.name)
   if (!base) return []
 
+  const preferredIds = (exercise.preferredSwapLibraryIds ?? []).filter(
+    (id) => id && id !== base.id,
+  )
+  const preferred = preferredIds
+    .map((id) => getLibraryExercise(id))
+    .filter((ex): ex is LibraryExercise => !!ex)
+
   if (base.isCardio || exercise.isCardio) {
-    return EXERCISE_LIBRARY.filter((ex) => ex.isCardio === true && ex.id !== base.id).sort(
-      (a, b) => a.name.localeCompare(b.name),
-    )
+    const rest = EXERCISE_LIBRARY.filter(
+      (ex) =>
+        ex.isCardio === true &&
+        ex.id !== base.id &&
+        !preferredIds.includes(ex.id),
+    ).sort((a, b) => a.name.localeCompare(b.name))
+    return [...preferred, ...rest]
   }
 
   const baseGroups = new Set(base.muscleGroups)
-  return EXERCISE_LIBRARY.filter((ex) => {
+  const preferredIdSet = new Set(preferredIds)
+  const rest = EXERCISE_LIBRARY.filter((ex) => {
     if (ex.id === base.id) return false
+    if (preferredIdSet.has(ex.id)) return false
     return ex.muscleGroups.some((g) => baseGroups.has(g))
   }).sort((a, b) => {
     const overlap = (ex: LibraryExercise) =>
@@ -3104,6 +3419,7 @@ export function getComparableLibraryExercises(exercise: {
     if (d !== 0) return d
     return a.name.localeCompare(b.name)
   })
+  return [...preferred, ...rest]
 }
 
 /** Lowercase alphanumeric only — "Push-Up" and "pushups" both become "pushup". */
@@ -3158,6 +3474,28 @@ registerExerciseAliases('tricep-pushdown', [
   'triceps pushdown',
   'rope pushdown',
   'cable pushdown',
+])
+registerExerciseAliases('hack-squat', ['hack squat', 'hacksquat', 'hack squats'])
+registerExerciseAliases('kelso-shrug', ['kelso shrug', 'kelso shrugs', 'prone shrug'])
+registerExerciseAliases('ez-bar-curl', ['ez curl', 'ez bar curl', 'easy bar curl', 'cambered bar curl'])
+registerExerciseAliases('dragon-flag', ['dragon flags', 'dragonflag'])
+registerExerciseAliases('rkc-plank', ['rkc plank', 'hardstyle plank', 'hard style plank'])
+registerExerciseAliases('renegade-row', ['renegade rows', 'renegade row'])
+registerExerciseAliases('iyt-raises', ['iyt', 'iyt raise', 'i y t', 'tyi', 'prone iyt'])
+registerExerciseAliases('smith-machine-bench-press', [
+  'smith bench',
+  'smith machine bench',
+  'smith machine bench press',
+])
+registerExerciseAliases('smith-machine-incline-bench', [
+  'smith incline',
+  'smith machine incline',
+  'smith incline bench',
+])
+registerExerciseAliases('standing-calf-raise', ['standing calf raise', 'standing calf raises'])
+registerExerciseAliases('weighted-russian-twist', [
+  'weighted russian twist',
+  'weighted russian twists',
 ])
 registerExerciseAliases('dumbbell-curl', ['bicep curl', 'biceps curl', 'db curl', 'dumbbell curl'])
 registerExerciseAliases('lateral-raise', ['lat raise', 'side raise', 'lateral raises'])

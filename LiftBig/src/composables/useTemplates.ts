@@ -16,6 +16,7 @@ import {
   LEGACY_JOEY_SUMMER_FOLDER_NAME,
 } from '@/utils/joeySummerCutSplitPlans'
 import { reorderSeededFolderPlans } from '@/utils/folderPlanSort'
+import { JOEY_FALL_BULK_FOLDER, JOEY_FALL_BULK_PLANS } from '@/utils/joeyFallBulk'
 import { JOEY_SUMMER_PLAN2_FOLDER, JOEY_SUMMER_PLAN2_PLANS } from '@/utils/joeySummerPlan2'
 import {
   ALL_GUIDED_FOLDERS,
@@ -117,6 +118,25 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...folders, ...cloneFolders([JOEY_SUMMER_PLAN2_FOLDER])]
 
+  const hasFallBulkFolder = folders.some((folder) => folder.id === JOEY_FALL_BULK_FOLDER.id)
+  folders = hasFallBulkFolder
+    ? folders.map((folder) =>
+        folder.id === JOEY_FALL_BULK_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_FALL_BULK_FOLDER.name,
+              purpose: JOEY_FALL_BULK_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...folders, ...cloneFolders([JOEY_FALL_BULK_FOLDER])]
+
+  // Keep Joey Fall Bulk first in the Plans folder list for all users.
+  folders = [
+    ...folders.filter((folder) => folder.id === JOEY_FALL_BULK_FOLDER.id),
+    ...folders.filter((folder) => folder.id !== JOEY_FALL_BULK_FOLDER.id),
+  ]
+
   for (const guidedFolder of ALL_GUIDED_FOLDERS) {
     const hasGuided = folders.some((folder) => folder.id === guidedFolder.id)
     folders = hasGuided
@@ -134,6 +154,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   const missingBunsPlans = BUNS_AND_THIGHS_PLANS.filter((template) => !existingIds.has(template.id))
   const missingCutSplitPlans = JOEY_CUT_SPLIT_PLANS.filter((template) => !existingIds.has(template.id))
   const missingSummerPlan2Plans = JOEY_SUMMER_PLAN2_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingFallBulkPlans = JOEY_FALL_BULK_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
   const missingGuidedPlans = ALL_GUIDED_PLANS.filter((template) => !existingIds.has(template.id))
   const missingPlans = [
@@ -142,6 +163,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
     ...missingBunsPlans,
     ...missingCutSplitPlans,
     ...missingSummerPlan2Plans,
+    ...missingFallBulkPlans,
     ...missingDefaultPlans,
     ...missingGuidedPlans,
   ]
@@ -151,6 +173,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
     ...BUNS_AND_THIGHS_PLANS.map((plan) => [plan.id, plan] as const),
     ...JOEY_CUT_SPLIT_PLANS.map((plan) => [plan.id, plan] as const),
     ...JOEY_SUMMER_PLAN2_PLANS.map((plan) => [plan.id, plan] as const),
+    ...JOEY_FALL_BULK_PLANS.map((plan) => [plan.id, plan] as const),
     ...ALL_GUIDED_PLANS.map((plan) => [plan.id, plan] as const),
   ])
   templates = templates.map((template) => {
@@ -159,6 +182,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   })
 
   templates = reorderSeededFolderPlans(templates, JOEY_SUMMER_PLAN2_FOLDER.id, JOEY_SUMMER_PLAN2_PLANS)
+  templates = reorderSeededFolderPlans(templates, JOEY_FALL_BULK_FOLDER.id, JOEY_FALL_BULK_PLANS)
 
   return { templates, folders }
 }

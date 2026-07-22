@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import CardioProgressChart from '@/components/progress/CardioProgressChart.vue'
 import ProgressChart from '@/components/progress/ProgressChart.vue'
 import {
@@ -7,6 +7,8 @@ import {
   settingsInjectionKey,
   workoutsInjectionKey,
 } from '@/composables/injectionKeys'
+import type { ExerciseAsset } from '@/utils/exerciseAssets'
+import { ensureExerciseAsset } from '@/utils/exerciseAssets'
 import type { LibraryExercise } from '@/utils/exerciseLibrary'
 import { MUSCLE_GROUP_LABELS, exerciseTagIsPplSplit } from '@/utils/exerciseLibrary'
 import { collectLibraryCardioHistory } from '@/utils/cardioProgress'
@@ -81,6 +83,28 @@ const tutorialEmbedUrl = computed(() => {
   const url = props.exercise?.tutorialUrl
   return url ? youtubeEmbedUrl(url) : null
 })
+
+const formAsset = ref<ExerciseAsset | null>(null)
+
+const formMediaSrc = computed(() => {
+  const asset = formAsset.value
+  if (!asset) return null
+  return asset.animation || asset.thumbnail || null
+})
+
+const showFormTutorial = computed(
+  () => Boolean(formMediaSrc.value || (tutorialEmbedUrl.value && props.exercise?.tutorialUrl)),
+)
+
+watch(
+  () => [props.open, props.exercise?.id] as const,
+  async ([open, id]) => {
+    formAsset.value = null
+    if (!open || !id || props.exercise?.isCardio) return
+    formAsset.value = await ensureExerciseAsset(id)
+  },
+  { immediate: true },
+)
 
 function fmtLbs(lbs: number): string {
   return formatWeightWithUnit(lbs, weightUnit.value, 1)
@@ -298,10 +322,26 @@ onBeforeUnmount(() => {
           </template>
         </section>
 
-        <section v-if="tutorialEmbedUrl && exercise.tutorialUrl" class="mt-6">
+        <section v-if="showFormTutorial" class="mt-6">
           <h4 class="text-xs font-bold uppercase tracking-wide text-muted">Form tutorial</h4>
+
           <div
-            class="mt-2 overflow-hidden rounded-xl border border-border bg-black aspect-video"
+            v-if="formMediaSrc"
+            class="mt-2 mx-auto flex max-w-[320px] justify-center overflow-hidden rounded-xl border border-border bg-[#F8F9FA]"
+          >
+            <img
+              :src="formMediaSrc"
+              :alt="`${exercise.name} form illustration`"
+              class="h-auto w-full max-w-[320px] object-contain"
+              width="320"
+              height="320"
+              loading="lazy"
+            />
+          </div>
+
+          <div
+            v-if="tutorialEmbedUrl && exercise.tutorialUrl"
+            class="mt-3 overflow-hidden rounded-xl border border-border bg-black aspect-video"
           >
             <iframe
               :src="tutorialEmbedUrl"
@@ -313,6 +353,7 @@ onBeforeUnmount(() => {
             />
           </div>
           <a
+            v-if="exercise.tutorialUrl"
             :href="exercise.tutorialUrl"
             target="_blank"
             rel="noopener noreferrer"

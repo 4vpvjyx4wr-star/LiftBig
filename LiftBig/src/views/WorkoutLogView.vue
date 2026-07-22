@@ -497,6 +497,12 @@ function applySwapExerciseReplacement(lib: LibraryExercise) {
   const isCore = !isCardio && resolveExerciseIsCore({ libraryId: lib.id, name: lib.name })
   exercises.value = exercises.value.map((ex) => {
     if (ex.id !== id) return ex
+    const priorPreferred = ex.preferredSwapLibraryIds ?? []
+    const priorLibraryId = ex.libraryId
+    const nextPreferred = [
+      ...(priorLibraryId && priorLibraryId !== lib.id ? [priorLibraryId] : []),
+      ...priorPreferred.filter((pid) => pid !== lib.id && pid !== priorLibraryId),
+    ]
     const swapped: Exercise = {
       ...ex,
       name: lib.name,
@@ -508,6 +514,7 @@ function applySwapExerciseReplacement(lib: LibraryExercise) {
       targetTimeSeconds: isCore ? ex.targetTimeSeconds : undefined,
       targetReps: isCardio ? undefined : ex.targetReps,
       targetWeight: isCardio ? undefined : ex.targetWeight,
+      preferredSwapLibraryIds: nextPreferred.length > 0 ? nextPreferred : undefined,
       sets: isCardio
         ? [{ id: ex.sets[0]?.id ?? newId(), reps: ex.sets[0]?.reps ?? '', weight: '' }]
         : ex.sets,

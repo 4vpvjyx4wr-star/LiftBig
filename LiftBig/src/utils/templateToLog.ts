@@ -26,6 +26,7 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     supersetGroupId: ex.supersetGroupId,
     supersetLabel: ex.supersetLabel,
     supersetOrder: ex.supersetOrder,
+    preferredSwapLibraryIds: ex.preferredSwapLibraryIds,
     sets: ex.sets.map((s) => {
       if (ex.isCircuit) {
         return {
@@ -77,6 +78,7 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
       supersetGroupId: tex.supersetGroupId,
       supersetLabel: tex.supersetLabel,
       supersetOrder: tex.supersetOrder,
+      preferredSwapLibraryIds: tex.preferredSwapLibraryIds,
       sets: tex.sets.map((ts) => {
         if (tex.isCircuit) {
           return {

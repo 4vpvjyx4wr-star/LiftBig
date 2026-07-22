@@ -42,6 +42,11 @@ export type Exercise = {
   supersetLabel?: string
   /** Order within the superset pair (1 = first move, 2 = second). */
   supersetOrder?: number
+  /**
+   * Library ids to pin at the top of the swap “similar movements” list
+   * (e.g. plan “or” alternatives for quick hot-swap).
+   */
+  preferredSwapLibraryIds?: string[]
 }
 
 /** Single-day payload (with optional notes), or legacy flat exercise list */
@@ -153,6 +158,11 @@ export type TemplateExercise = {
   supersetGroupId?: string
   supersetLabel?: string
   supersetOrder?: number
+  /**
+   * Library ids to pin at the top of the swap “similar movements” list
+   * (e.g. plan “or” alternatives for quick hot-swap).
+   */
+  preferredSwapLibraryIds?: string[]
 }
 
 /** Whether an exercise should use duration-only cardio UI and storage. */
