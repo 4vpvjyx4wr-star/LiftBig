@@ -191,6 +191,34 @@ def _content_bbox(image: Image.Image, bg_thresh: int = 18) -> tuple[int, int, in
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
+def is_nearly_blank(
+    image: Image.Image,
+    *,
+    bg_dist: float = 10.0,
+    blank_frac_thresh: float = 0.97,
+    min_std: float = 8.0,
+) -> bool:
+    """
+    Detect empty / near-uniform #F8F9FA frames (failed scrapes, empty squares).
+    True means the image should be rejected and regenerated.
+    """
+    arr = np.asarray(image.convert("RGB")).astype(np.float32)
+    if arr.size == 0:
+        return True
+    bg = np.array(BG_RGB, dtype=np.float32)
+    dist = np.abs(arr - bg).mean(axis=2)
+    blank_frac = float((dist < bg_dist).mean())
+    std = float(arr.std())
+    if blank_frac >= blank_frac_thresh:
+        return True
+    if std < min_std and blank_frac >= 0.90:
+        return True
+    content_px = int((dist >= bg_dist).sum())
+    if content_px < 400:
+        return True
+    return False
+
+
 def union_content_bbox(frames: list[Image.Image]) -> tuple[int, int, int, int]:
     """Stable crop box: union of content across all frames (same crop every frame)."""
     if not frames:

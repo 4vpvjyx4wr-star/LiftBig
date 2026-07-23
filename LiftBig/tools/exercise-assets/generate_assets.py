@@ -2,7 +2,7 @@
 """
 LiftBig exercise illustration asset pipeline.
 
-Fetches free ExerciseDB OSS / Wikimedia media, applies the LiftBig visual theme,
+Fetches free ExerciseDB OSS media, applies the LiftBig visual theme,
 and writes PNG thumbnails, looping GIFs, and exercise_assets.json into the app public/ folder.
 """
 
@@ -20,6 +20,7 @@ from pipeline.muscles import split_primary_secondary
 from pipeline.process import (
     create_looping_gif,
     create_thumbnail,
+    is_nearly_blank,
     load_frames_from_bytes,
     process_frame,
     process_frames,
@@ -34,6 +35,58 @@ DEFAULT_MAP = ROOT / "name_map.json"
 DEFAULT_OUT = ROOT.parent.parent / "public"  # LiftBig/public
 
 
+def _theme_frames(frames_raw: list, *, use_rembg: bool) -> list:
+    try:
+        return process_frames(frames_raw, use_rembg=use_rembg)
+    except Exception as exc:
+        print(f"    batch process error: {exc}; falling back per-frame", file=sys.stderr)
+        themed = []
+        for i, fr in enumerate(frames_raw):
+            try:
+                themed.append(process_frame(fr, use_rembg=use_rembg and i == 0))
+            except Exception as frame_exc:
+                print(f"    frame {i} process error: {frame_exc}", file=sys.stderr)
+                themed.append(process_frame(fr, use_rembg=False))
+        return themed
+
+
+def _fetch_themed(
+    name: str,
+    queries: list[str],
+    *,
+    use_rembg: bool,
+    allow_wikimedia: bool,
+) -> tuple[list, str, str, SearchResult | None]:
+    """Return (themed_frames, source, license_note, result). Empty themed → caller uses silhouette."""
+    result = search_exercise_image(
+        name, edb_queries=queries, allow_wikimedia=allow_wikimedia
+    )
+    if result is None:
+        return [], "silhouette", "Generated LiftBig silhouette (no third-party media)", None
+
+    print(f"    source={result.source}  {result.title}")
+    try:
+        data = download_asset(result.url)
+        frames_raw = load_frames_from_bytes(data)
+    except Exception as exc:
+        print(f"    download failed: {exc}", file=sys.stderr)
+        return [], "silhouette", "Generated LiftBig silhouette (no third-party media)", None
+
+    if not frames_raw:
+        return [], "silhouette", "Generated LiftBig silhouette (no third-party media)", None
+
+    themed = _theme_frames(frames_raw, use_rembg=use_rembg)
+    if not themed:
+        return [], "silhouette", "Generated LiftBig silhouette (no third-party media)", None
+
+    mid = themed[len(themed) // 2]
+    if is_nearly_blank(mid):
+        print("    rejected blank/near-empty media", file=sys.stderr)
+        return [], "silhouette", "Generated LiftBig silhouette (no third-party media)", None
+
+    return themed, result.source, result.license_note, result
+
+
 def build_asset_library(
     exercise_list: list[str],
     *,
@@ -42,6 +95,7 @@ def build_asset_library(
     only: set[str] | None = None,
     skip_gif: bool = False,
     use_rembg: bool = True,
+    allow_wikimedia: bool = False,
 ) -> list[dict]:
     """
     End-to-end generation for each exercise name in exercise_list.
@@ -85,51 +139,38 @@ def build_asset_library(
             continue
 
         print(f"==> {name} ({eid})")
-        queries = meta.get("edbQueries") or [name]
+        queries = list(meta.get("edbQueries") or [name])
         primary, secondary = split_primary_secondary(
             meta.get("primaryMuscles"),
             meta.get("secondaryMuscles"),
         )
 
-        result: SearchResult | None = search_exercise_image(name, edb_queries=queries)
-        source = "silhouette"
-        license_note = "Generated LiftBig silhouette (no third-party media)"
-        frames_raw = []
+        themed, source, license_note, result = _fetch_themed(
+            name,
+            queries,
+            use_rembg=use_rembg,
+            allow_wikimedia=allow_wikimedia,
+        )
 
-        if result is not None:
-            print(f"    source={result.source}  {result.title}")
-            try:
-                data = download_asset(result.url)
-                frames_raw = load_frames_from_bytes(data)
-                source = result.source
-                license_note = result.license_note
-                attributions.append(
-                    f"- **{eid}** ({name}): {result.source} — {result.title} — "
-                    f"{result.license_note}"
-                    + (f" — {result.author}" if result.author else "")
-                    + f" — {result.url}"
-                )
-            except Exception as exc:
-                print(f"    download failed: {exc}; using silhouette", file=sys.stderr)
-                result = None
-
-        if not frames_raw:
+        if result is not None and themed:
+            attributions.append(
+                f"- **{eid}** ({name}): {result.source} — {result.title} — "
+                f"{result.license_note}"
+                + (f" — {result.author}" if result.author else "")
+                + f" — {result.url}"
+            )
+        else:
             print("    using silhouette fallback")
             sil = generate_silhouette(eid, primary_count=len(primary))
-            frames_raw = [sil.convert("RGBA")]
+            themed = [sil.convert("RGBA")]
+            # Soft pulse-ready RGB after theme path
+            themed = _theme_frames(themed, use_rembg=False)
+            if not themed or is_nearly_blank(themed[0]):
+                # Absolute last resort: raw silhouette RGB
+                themed = [sil.convert("RGB")]
+            source = "silhouette"
+            license_note = "Generated LiftBig silhouette (no third-party media)"
             attributions.append(f"- **{eid}** ({name}): silhouette fallback")
-
-        try:
-            themed = process_frames(frames_raw, use_rembg=use_rembg)
-        except Exception as exc:
-            print(f"    batch process error: {exc}; falling back per-frame", file=sys.stderr)
-            themed = []
-            for i, fr in enumerate(frames_raw):
-                try:
-                    themed.append(process_frame(fr, use_rembg=use_rembg and i == 0))
-                except Exception as frame_exc:
-                    print(f"    frame {i} process error: {frame_exc}", file=sys.stderr)
-                    themed.append(process_frame(fr, use_rembg=False))
 
         if not themed:
             print(f"    [error] no frames for {eid}", file=sys.stderr)
@@ -139,9 +180,17 @@ def build_asset_library(
         thumb_bbox = union_content_bbox(themed) if len(themed) > 1 else None
         mid = themed[len(themed) // 2]
         thumb = create_thumbnail(mid, bbox=thumb_bbox)
+        if is_nearly_blank(thumb):
+            print("    thumbnail still blank; forcing clearer silhouette", file=sys.stderr)
+            sil = generate_silhouette(eid, primary_count=max(1, len(primary)))
+            themed = [sil.convert("RGB")]
+            thumb = create_thumbnail(themed[0])
+            source = "silhouette"
+            license_note = "Generated LiftBig silhouette (no third-party media)"
+
         png_path = exercises_dir / f"{eid}.png"
         thumb.save(png_path, format="PNG", optimize=True)
-        print(f"    wrote {png_path.relative_to(out_dir)}")
+        print(f"    wrote {png_path.relative_to(out_dir)} ({png_path.stat().st_size} B)")
 
         anim_rel = None
         if not skip_gif:
@@ -167,7 +216,7 @@ def build_asset_library(
         }
         existing_by_id[eid] = entry
         manifest.append(entry)
-        time.sleep(0.5)
+        time.sleep(0.65)
 
     # Write full manifest (merged)
     if only and existing_by_id:
@@ -209,6 +258,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--skip-gif", action="store_true", help="Skip GIF generation")
     parser.add_argument("--no-rembg", action="store_true", help="Disable rembg background removal")
+    parser.add_argument(
+        "--allow-wikimedia",
+        action="store_true",
+        help="Allow Wikimedia photo fallback (off by default; prefer EDB illustrations)",
+    )
     args = parser.parse_args(argv)
 
     exercise_list = json.loads(args.list.read_text(encoding="utf-8"))
@@ -222,6 +276,7 @@ def main(argv: list[str] | None = None) -> int:
         only=only,
         skip_gif=args.skip_gif,
         use_rembg=not args.no_rembg,
+        allow_wikimedia=args.allow_wikimedia,
     )
     return 0
 

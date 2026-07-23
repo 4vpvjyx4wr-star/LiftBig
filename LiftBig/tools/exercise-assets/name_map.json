@@ -2,8 +2,7 @@
   "Barbell Bench Press": {
     "id": "bench-press",
     "edbQueries": [
-      "barbell bench press",
-      "bench press"
+      "barbell bench press"
     ],
     "primaryMuscles": [
       "Chest"
@@ -30,7 +29,8 @@
   "Flat Dumbbell Press": {
     "id": "flat-dumbbell-press",
     "edbQueries": [
-      "flat dumbbell press"
+      "dumbbell bench press",
+      "dumbbell decline bench press"
     ],
     "primaryMuscles": [
       "Chest"
@@ -44,8 +44,8 @@
     "id": "pull-up",
     "edbQueries": [
       "pull-up",
-      "pull up",
-      "assisted pull-up"
+      "wide grip pull-up",
+      "weighted pull-up"
     ],
     "primaryMuscles": [
       "Back"
@@ -71,8 +71,8 @@
   "Barbell Row": {
     "id": "barbell-row",
     "edbQueries": [
-      "barbell row",
-      "row"
+      "barbell bent over row",
+      "barbell reverse grip bent over row"
     ],
     "primaryMuscles": [
       "Back"
@@ -85,8 +85,8 @@
   "Dumbbell Row": {
     "id": "dumbbell-row",
     "edbQueries": [
-      "dumbbell row",
-      "row"
+      "dumbbell bent over row",
+      "dumbbell one arm bent-over row"
     ],
     "primaryMuscles": [
       "Back"
@@ -128,9 +128,9 @@
   "Face Pull": {
     "id": "face-pull",
     "edbQueries": [
-      "face pull",
-      "cable face pull",
-      "rope face pull"
+      "cable rear delt row (with rope)",
+      "cable standing rear delt row (with rope)",
+      "cable kneeling rear delt row (with rope) (male)"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -159,8 +159,7 @@
     "id": "lateral-raise",
     "edbQueries": [
       "dumbbell lateral raise",
-      "cable lateral raise",
-      "lever lateral raise"
+      "dumbbell side lateral raise"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -170,7 +169,8 @@
   "Rear Delt Fly": {
     "id": "rear-delt-fly",
     "edbQueries": [
-      "rear delt fly"
+      "dumbbell rear delt raise",
+      "dumbbell bent over reverse fly"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -183,7 +183,8 @@
     "id": "tricep-pushdown",
     "edbQueries": [
       "cable pushdown",
-      "triceps pushdown"
+      "cable pushdown (with rope attachment)",
+      "cable triceps pushdown (v-bar)"
     ],
     "primaryMuscles": [
       "Triceps"
@@ -231,7 +232,9 @@
   "Incline Cable Curl": {
     "id": "incline-cable-curl",
     "edbQueries": [
-      "incline cable curl"
+      "cable incline biceps curl",
+      "incline cable curl",
+      "cable curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -251,8 +254,7 @@
   "Cable Curl": {
     "id": "cable-curl",
     "edbQueries": [
-      "cable curl",
-      "curl"
+      "cable curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -278,8 +280,7 @@
     "id": "leg-press",
     "edbQueries": [
       "sled 45 leg press",
-      "leg press",
-      "smith leg press"
+      "sled 45 degrees one leg press"
     ],
     "primaryMuscles": [
       "Quads"
@@ -304,7 +305,7 @@
     "id": "dumbbell-romanian-deadlift",
     "edbQueries": [
       "dumbbell romanian deadlift",
-      "romanian deadlift"
+      "dumbbell stiff leg deadlift"
     ],
     "primaryMuscles": [
       "Hamstrings"
@@ -332,8 +333,7 @@
   "Conventional Deadlift": {
     "id": "deadlift",
     "edbQueries": [
-      "barbell deadlift",
-      "conventional deadlift"
+      "barbell deadlift"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -432,8 +432,9 @@
   "Cable Crunch": {
     "id": "cable-crunch",
     "edbQueries": [
-      "cable crunch",
-      "crunch"
+      "cable kneeling crunch",
+      "cable seated crunch",
+      "cable standing crunch"
     ],
     "primaryMuscles": [
       "Core"
@@ -444,7 +445,8 @@
     "id": "cable-woodchop",
     "edbQueries": [
       "cable woodchop",
-      "woodchop"
+      "cable standing up straight crossovers",
+      "cable rotational lift"
     ],
     "primaryMuscles": [
       "Core"
@@ -456,9 +458,7 @@
   "Machine Fly / Pec Deck": {
     "id": "machine-fly",
     "edbQueries": [
-      "machine fly / pec deck",
-      "fly / pec deck",
-      "machine fly"
+      "lever seated fly"
     ],
     "primaryMuscles": [
       "Chest"
@@ -468,8 +468,8 @@
   "Cable Fly": {
     "id": "cable-fly",
     "edbQueries": [
-      "cable fly",
-      "fly"
+      "cable standing fly",
+      "cable fly"
     ],
     "primaryMuscles": [
       "Chest"
@@ -479,8 +479,9 @@
   "Low-to-High Cable Fly": {
     "id": "low-to-high-cable-fly",
     "edbQueries": [
-      "low-to-high cable fly",
-      "low to high cable fly"
+      "cable low fly",
+      "cable standing up straight crossovers",
+      "cable fly"
     ],
     "primaryMuscles": [
       "Chest"
@@ -493,7 +494,7 @@
     "id": "cable-lateral-raise",
     "edbQueries": [
       "cable lateral raise",
-      "lateral raise"
+      "cable one arm lateral raise"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -503,8 +504,9 @@
   "Lean-Away Cable Lateral Raise": {
     "id": "lean-away-cable-lateral-raise",
     "edbQueries": [
-      "lean-away cable lateral raise",
-      "lean away cable lateral raise"
+      "cable one arm lateral raise",
+      "tough cable one arm lateral raise",
+      "cable lateral raise"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -514,7 +516,8 @@
   "Leaning Dumbbell Lateral Raise": {
     "id": "leaning-dumbbell-lateral-raise",
     "edbQueries": [
-      "leaning dumbbell lateral raise"
+      "dumbbell one arm lateral raise",
+      "dumbbell lateral raise"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -524,7 +527,8 @@
   "Lateral Raise Partial": {
     "id": "lateral-raise-partial",
     "edbQueries": [
-      "lateral raise partial"
+      "dumbbell lateral raise",
+      "dumbbell side lateral raise"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -547,7 +551,8 @@
   "Rear Delt Cable Fly": {
     "id": "rear-delt-cable-fly",
     "edbQueries": [
-      "rear delt cable fly"
+      "cable rear delt row (with rope)",
+      "cable reverse fly"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -571,8 +576,9 @@
   "Chest Supported Lat-Focused Row": {
     "id": "chest-supported-lat-row",
     "edbQueries": [
-      "chest supported lat-focused row",
-      "chest supported lat row"
+      "dumbbell incline row",
+      "chest supported row",
+      "dumbbell bent over row"
     ],
     "primaryMuscles": [
       "Back"
@@ -584,7 +590,8 @@
   "Single Arm Lat Pulldown": {
     "id": "single-arm-lat-pulldown",
     "edbQueries": [
-      "single arm lat pulldown"
+      "cable one arm lat pulldown",
+      "cable one arm pulldown"
     ],
     "primaryMuscles": [
       "Back"
@@ -616,8 +623,8 @@
   "Dumbbell Curl": {
     "id": "dumbbell-curl",
     "edbQueries": [
-      "dumbbell curl",
-      "curl"
+      "dumbbell biceps curl",
+      "dumbbell alternate biceps curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -629,7 +636,8 @@
   "Standing Dumbbell Shoulder Press": {
     "id": "standing-dumbbell-shoulder-press",
     "edbQueries": [
-      "standing dumbbell shoulder press"
+      "dumbbell shoulder press",
+      "dumbbell seated shoulder press (parallel grip)"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -642,7 +650,9 @@
   "Decline Reverse Crunch": {
     "id": "decline-reverse-crunch",
     "edbQueries": [
-      "decline reverse crunch"
+      "decline reverse crunch",
+      "reverse crunch",
+      "hanging pike"
     ],
     "primaryMuscles": [
       "Core"
@@ -729,7 +739,7 @@
   "Incline Machine Press": {
     "id": "incline-machine-press",
     "edbQueries": [
-      "incline machine press"
+      "lever incline chest press"
     ],
     "primaryMuscles": [
       "Chest"
@@ -742,7 +752,8 @@
   "Hip Thrust": {
     "id": "hip-thrust",
     "edbQueries": [
-      "hip thrust"
+      "barbell glute bridge",
+      "resistance band hip thrusts on knees (female)"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -768,8 +779,9 @@
   "Ab Machine / Crunch": {
     "id": "ab-machine-crunch",
     "edbQueries": [
-      "ab machine / crunch",
-      "ab machine crunch"
+      "lever seated crunch",
+      "lever seated crunch (chest pad)",
+      "cable seated crunch"
     ],
     "primaryMuscles": [
       "Core"
@@ -789,9 +801,8 @@
   "Hanging Leg Raise": {
     "id": "leg-raise",
     "edbQueries": [
-      "hanging leg raise",
-      "hanging knee raise",
-      "captain chair leg raise"
+      "hanging straight leg raise",
+      "hanging leg raise"
     ],
     "primaryMuscles": [
       "Core"
@@ -815,7 +826,9 @@
   "Bulgarian Split Squat": {
     "id": "bulgarian-split-squat",
     "edbQueries": [
-      "bulgarian split squat"
+      "dumbbell single leg split squat",
+      "suspended split squat",
+      "split squats"
     ],
     "primaryMuscles": [
       "Quads"
@@ -864,7 +877,8 @@
   "Preacher Curl": {
     "id": "preacher-curl",
     "edbQueries": [
-      "preacher curl"
+      "lever preacher curl",
+      "dumbbell preacher curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -889,7 +903,8 @@
   "Nordic Hamstring Curl": {
     "id": "nordic-hamstring-curl",
     "edbQueries": [
-      "nordic hamstring curl"
+      "inverse leg curl (on pull-up cable machine)",
+      "natural glute ham raise"
     ],
     "primaryMuscles": [
       "Hamstrings"
@@ -926,8 +941,7 @@
   "Barbell Shrug": {
     "id": "barbell-shrug",
     "edbQueries": [
-      "barbell shrug",
-      "shrug"
+      "barbell shrug"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -939,7 +953,8 @@
   "Pallof Press": {
     "id": "pallof-press",
     "edbQueries": [
-      "pallof press"
+      "band horizontal pallof press",
+      "band vertical pallof press"
     ],
     "primaryMuscles": [
       "Core"
@@ -992,7 +1007,9 @@
   "Inverted Row": {
     "id": "inverted-row",
     "edbQueries": [
-      "inverted row"
+      "inverted row",
+      "bodyweight inverted row",
+      "suspended row"
     ],
     "primaryMuscles": [
       "Back"
@@ -1034,8 +1051,7 @@
   "Smith Machine Squat": {
     "id": "smith-machine-squat",
     "edbQueries": [
-      "smith machine squat",
-      "machine squat"
+      "smith squat"
     ],
     "primaryMuscles": [
       "Quads"
@@ -1072,8 +1088,7 @@
   "Reverse Pec Deck / Reverse Fly Machine": {
     "id": "reverse-fly-machine",
     "edbQueries": [
-      "reverse pec deck / reverse fly machine",
-      "reverse fly machine"
+      "lever seated reverse fly"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -1110,7 +1125,8 @@
   "Bodyweight Squat": {
     "id": "bodyweight-squat",
     "edbQueries": [
-      "bodyweight squat"
+      "bodyweight squat",
+      "air squat"
     ],
     "primaryMuscles": [
       "Quads"
@@ -1123,7 +1139,8 @@
   "Glute Bridge": {
     "id": "glute-bridge",
     "edbQueries": [
-      "glute bridge"
+      "low glute bridge on floor",
+      "barbell glute bridge"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1163,7 +1180,9 @@
   "Hollow Body Hold": {
     "id": "hollow-body-hold",
     "edbQueries": [
-      "hollow body hold"
+      "hollow hold",
+      "hollow body hold",
+      "floor crunch"
     ],
     "primaryMuscles": [
       "Core"
@@ -1183,7 +1202,8 @@
   "Ab Wheel Rollout": {
     "id": "ab-wheel-rollout",
     "edbQueries": [
-      "ab wheel rollout"
+      "wheel rollerout",
+      "band assisted wheel rollerout"
     ],
     "primaryMuscles": [
       "Core"
@@ -1195,8 +1215,8 @@
   "Plank with Shoulder Taps": {
     "id": "plank-shoulder-tap",
     "edbQueries": [
-      "plank with shoulder taps",
-      "plank shoulder tap"
+      "kneeling plank tap shoulder (male)",
+      "intermediate style kneeling plank tap shoulder (male)"
     ],
     "primaryMuscles": [
       "Core"
@@ -1208,8 +1228,9 @@
   "90/90 Hip Switches": {
     "id": "hip-90-90-switch",
     "edbQueries": [
-      "90/90 hip switches",
-      "hip 90 90 switch"
+      "90 90 hip stretch",
+      "seated hip stretch",
+      "hip opener"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1222,8 +1243,9 @@
   "Cat-Cow to Child\u2019s Pose": {
     "id": "cat-cow-child-pose",
     "edbQueries": [
-      "cat-cow to child\u2019s pose",
-      "cat cow child pose"
+      "cat cow",
+      "cat stretch",
+      "child pose"
     ],
     "primaryMuscles": [
       "Back"
@@ -1262,7 +1284,9 @@
   "Glute Kickback": {
     "id": "glute-kickback",
     "edbQueries": [
-      "glute kickback"
+      "cable standing hip extension",
+      "lever hip extension v. 2",
+      "band bent-over hip extension"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1272,8 +1296,9 @@
   "Seated or Banded Clamshell": {
     "id": "banded-clamshell",
     "edbQueries": [
-      "seated or banded clamshell",
-      "banded clamshell"
+      "side lying clam",
+      "clamshell",
+      "side hip abduction"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1331,7 +1356,7 @@
   "Pop Squat": {
     "id": "pop-squat",
     "edbQueries": [
-      "pop squat"
+      "jump squat"
     ],
     "primaryMuscles": [
       "Quads"
@@ -1343,8 +1368,8 @@
   "Foam Rolling (Quads, IT Band, Glutes)": {
     "id": "foam-roll-lower-body",
     "edbQueries": [
-      "foam rolling (quads, it band, glutes)",
-      "foam roll lower body"
+      "foam roll",
+      "foam roller"
     ],
     "primaryMuscles": [
       "Quads"
@@ -1356,8 +1381,9 @@
   "Hamstring Stretch (Long Hold)": {
     "id": "hamstring-stretch-hold",
     "edbQueries": [
-      "hamstring stretch (long hold)",
-      "hamstring stretch hold"
+      "hamstring stretch",
+      "seated hamstring stretch",
+      "standing hamstring stretch"
     ],
     "primaryMuscles": [
       "Hamstrings"
@@ -1380,8 +1406,9 @@
   "Downward Dog to Cobra Flow": {
     "id": "downward-dog-cobra-flow",
     "edbQueries": [
-      "downward dog to cobra flow",
-      "downward dog cobra flow"
+      "downward facing dog",
+      "cobra stretch",
+      "upward facing dog"
     ],
     "primaryMuscles": [
       "Back"
@@ -1394,7 +1421,9 @@
   "Pigeon Pose": {
     "id": "pigeon-pose",
     "edbQueries": [
-      "pigeon pose"
+      "pigeon pose",
+      "hip stretch",
+      "figure four stretch"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1406,7 +1435,9 @@
   "Low Lunge Hip Flexor Stretch": {
     "id": "low-lunge-hip-flexor-stretch",
     "edbQueries": [
-      "low lunge hip flexor stretch"
+      "lunge stretch",
+      "hip flexor stretch",
+      "kneeling hip flexor stretch"
     ],
     "primaryMuscles": [
       "Quads"
@@ -1418,7 +1449,9 @@
   "Lying Spinal Twist": {
     "id": "lying-spinal-twist",
     "edbQueries": [
-      "lying spinal twist"
+      "lying spinal twist",
+      "supine twist",
+      "trunk rotation"
     ],
     "primaryMuscles": [
       "Back"
@@ -1430,8 +1463,9 @@
   "Deep Static Stretch (Hips & Lower Back)": {
     "id": "deep-static-stretch-lower",
     "edbQueries": [
-      "deep static stretch (hips & lower back)",
-      "deep static stretch lower"
+      "butterfly stretch",
+      "seated forward bend",
+      "hip flexor stretch"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1444,8 +1478,8 @@
   "Machine Shoulder Press": {
     "id": "machine-shoulder-press",
     "edbQueries": [
-      "machine shoulder press",
-      "shoulder press"
+      "lever shoulder press",
+      "lever shoulder press v. 2"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -1457,7 +1491,8 @@
   "Back Extension": {
     "id": "back-extension",
     "edbQueries": [
-      "back extension"
+      "hyperextension",
+      "hyperextension (on bench)"
     ],
     "primaryMuscles": [
       "Back"
@@ -1483,8 +1518,7 @@
   "Machine Bicep Curl": {
     "id": "machine-bicep-curl",
     "edbQueries": [
-      "machine bicep curl",
-      "bicep curl"
+      "lever preacher curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -1507,8 +1541,7 @@
   "Dumbbell Shrug": {
     "id": "dumbbell-shrug",
     "edbQueries": [
-      "dumbbell shrug",
-      "shrug"
+      "dumbbell shrug"
     ],
     "primaryMuscles": [
       "Back"
@@ -1520,7 +1553,8 @@
   "Hip Abductor Machine": {
     "id": "hip-abductor-machine",
     "edbQueries": [
-      "hip abductor machine"
+      "lever seated hip abduction",
+      "side hip abduction"
     ],
     "primaryMuscles": [
       "Glutes"
@@ -1575,7 +1609,8 @@
   "Kelso Shrug": {
     "id": "kelso-shrug",
     "edbQueries": [
-      "kelso shrug"
+      "dumbbell incline shrug",
+      "dumbbell shrug"
     ],
     "primaryMuscles": [
       "Back"
@@ -1616,8 +1651,7 @@
   "Smith Machine Overhead Press": {
     "id": "smith-machine-overhead-press",
     "edbQueries": [
-      "smith machine overhead press",
-      "machine overhead press"
+      "smith shoulder press"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -1654,7 +1688,9 @@
   "Dragon Flag": {
     "id": "dragon-flag",
     "edbQueries": [
-      "dragon flag"
+      "dragon flag",
+      "hanging pike",
+      "weighted hanging leg-hip raise"
     ],
     "primaryMuscles": [
       "Core"
@@ -1674,7 +1710,8 @@
   "RKC Plank": {
     "id": "rkc-plank",
     "edbQueries": [
-      "rkc plank"
+      "weighted front plank",
+      "front plank with twist"
     ],
     "primaryMuscles": [
       "Core"
@@ -1697,7 +1734,10 @@
   "IYT Raises": {
     "id": "iyt-raises",
     "edbQueries": [
-      "iyt raises"
+      "dumbbell incline t-raise",
+      "dumbbell lying rear lateral raise",
+      "dumbbell y raise",
+      "prone i y t raise"
     ],
     "primaryMuscles": [
       "Shoulders"

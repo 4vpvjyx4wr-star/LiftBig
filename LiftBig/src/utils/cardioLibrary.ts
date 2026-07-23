@@ -198,7 +198,7 @@ export const CARDIO_LIBRARY: LibraryExercise[] = [
     name: 'Rowing Machine',
     tags: ['indoor', 'full body', 'conditioning'],
     equipment: 'Rower',
-    summary: 'Concept2 or gym rowing ergometer.',
+    summary: 'Gym rowing ergometer.',
     instructions: [
       'Drive with legs first, then lean back and pull with arms.',
       'Return in reverse order: arms, body, legs.',
