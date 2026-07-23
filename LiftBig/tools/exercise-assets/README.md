@@ -10,15 +10,21 @@ Local Python pipeline that builds a cohesive exercise illustration library for t
 4. Applies the LiftBig theme (light background, grey athlete, blue muscle highlights)
 5. Writes optimized assets into the Vue app `public/` folder
 
-## Visual style
+## Visual style (design system — required)
 
 | Token | Value |
 |---|---|
 | Background | `#F8F9FA` |
+| Athlete / model | Grey anatomical model (not a photo of a real person) |
 | Primary muscle highlight | `#2563EB` |
 | Secondary muscle highlight | `#60A5FA` |
 | Thumbnail | 320×320 PNG, rounded corners |
-| Animation | Looping GIF, ~3–5s, &lt; 1.5 MB |
+| Animation | Looping GIF, ~3–5s, &lt; 1.5 MB, seamless loop, smooth stable crop |
+| Angle | ¾ view preferred |
+| Content | No text, logos, or watermarks |
+| Source preference | ExerciseDB OSS anatomical GIFs first; correct equipment matching; no stock photos |
+
+**Skip GIFs for:** cardio and sports (`isCardio: true`). Some mobility / stretch entries may intentionally omit a GIF (leave `animation: null` and clear thumbnail if the illustration slot should stay empty).
 
 ## Setup (Windows)
 
@@ -75,29 +81,33 @@ python generate_assets.py --skip-gif --out ..\..\public
 python generate_assets.py --no-rembg --out ..\..\public
 ```
 
-## Add new exercises later
+## Checklist: adding a library exercise (required standard)
 
-1. Add the display name to `exercise_list.json`
-2. Add a mapping in `name_map.json`:
+Whenever you add an exercise to the library, complete **all** of the following (GIF + YouTube are mandatory for gym / non-cardio lifts unless intentionally omitted for mobility):
 
-```json
-"My New Lift": {
-  "id": "my-new-lift",
-  "edbQueries": ["my new lift", "alternate name"],
-  "primaryMuscles": ["Chest"],
-  "secondaryMuscles": ["Triceps"]
-}
-```
+1. **Library entry** — add to `src/utils/exerciseLibrary.ts` (same kebab-case `id` everywhere).
+2. **YouTube tutorial** — add URL in `src/utils/exerciseTutorials.ts` (or the library field the app uses for tutorials).
+3. **Asset maps** — add to `name_map.json` + `exercise_list.json`, **or** run:
 
-Use the same kebab-case `id` as in `src/utils/exerciseLibrary.ts`.
+   ```powershell
+   python sync_from_library.py
+   ```
 
-3. Re-run:
+4. **Generate illustration** (gym / non-cardio):
+
+   ```powershell
+   python generate_assets.py --only {id} --out ..\..\public
+   ```
+
+   Prefer ExerciseDB OSS anatomical GIFs with correct equipment. Meet the design system criteria above. Cardio/sports skip GIFs. Some mobility may omit GIF intentionally (`animation: null`; clear thumbnail too if the Form illustration slot should stay empty).
+
+5. **Verify** — Form tutorial sheet shows GIF (or intentional empty slot) + YouTube via `/data/exercise_assets.json`. No broken `img` src (null/empty animation and thumbnail → no image block).
+
+### Copy an existing asset to another id
 
 ```powershell
-python generate_assets.py --only my-new-lift --out ..\..\public
+python _copy_asset.py source-id destination-id
 ```
-
-4. The Form tutorial sheet picks up assets automatically via `/data/exercise_assets.json`.
 
 ## License notes
 

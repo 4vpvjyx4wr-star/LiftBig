@@ -2,8 +2,8 @@
   {
     "id": "hip-90-90-switch",
     "name": "90/90 Hip Switches",
-    "thumbnail": "/assets/exercises/hip-90-90-switch.png",
-    "animation": "/assets/exercises/gifs/hip-90-90-switch.gif",
+    "thumbnail": null,
+    "animation": null,
     "primaryMuscles": [
       "Glutes"
     ],
@@ -139,7 +139,7 @@
     "secondaryMuscles": [
       "Forearms"
     ],
-    "source": "exercisedb-oss",
+    "source": "swapped-with:ez-bar-curl",
     "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {
@@ -195,8 +195,8 @@
       "Glutes",
       "Core"
     ],
-    "source": "silhouette",
-    "licenseNote": "Generated LiftBig silhouette (no third-party media)"
+    "source": "copied-from:jump-squat",
+    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {
     "id": "bulgarian-split-squat",
@@ -356,7 +356,7 @@
     "id": "cat-cow-child-pose",
     "name": "Cat-Cow to Child\u2019s Pose",
     "thumbnail": "/assets/exercises/cat-cow-child-pose.png",
-    "animation": "/assets/exercises/gifs/cat-cow-child-pose.gif",
+    "animation": null,
     "primaryMuscles": [
       "Back"
     ],
@@ -584,7 +584,7 @@
       "Biceps"
     ],
     "secondaryMuscles": [],
-    "source": "exercisedb-oss",
+    "source": "swapped-with:barbell-curl",
     "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {
@@ -634,7 +634,7 @@
   {
     "id": "foam-roll-lower-body",
     "name": "Foam Rolling (Quads, IT Band, Glutes)",
-    "thumbnail": "/assets/exercises/foam-roll-lower-body.png",
+    "thumbnail": null,
     "animation": null,
     "primaryMuscles": [
       "Quads"
@@ -1100,14 +1100,14 @@
     "secondaryMuscles": [
       "Shoulders"
     ],
-    "source": "copied-from:cable-fly",
+    "source": "exercisedb-oss",
     "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {
     "id": "lying-spinal-twist",
     "name": "Lying Spinal Twist",
-    "thumbnail": "/assets/exercises/lying-spinal-twist.png",
-    "animation": "/assets/exercises/gifs/lying-spinal-twist.gif",
+    "thumbnail": null,
+    "animation": null,
     "primaryMuscles": [
       "Back"
     ],
@@ -1183,7 +1183,7 @@
     "secondaryMuscles": [
       "Triceps"
     ],
-    "source": "exercisedb-oss",
+    "source": "copied-from:machine-chest-press",
     "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {

@@ -1,0 +1,49 @@
+---
+description: Required checklist when adding library exercises (GIF pipeline + YouTube)
+globs:
+  - "**/exerciseLibrary.ts"
+  - "**/exerciseTutorials.ts"
+  - "**/tools/exercise-assets/**"
+  - "**/exercise_assets.json"
+alwaysApply: false
+---
+
+# Library exercise assets (mandatory)
+
+When adding or changing a **library exercise**, treat form GIF + YouTube as the default standard — same bar as the existing LiftBig exercise-assets pipeline.
+
+## Required checklist
+
+1. Add the exercise to `LiftBig/src/utils/exerciseLibrary.ts` (stable kebab-case `id`).
+2. Add a YouTube tutorial URL (`exerciseTutorials.ts` / library tutorial field).
+3. Update asset maps: `tools/exercise-assets/name_map.json` + `exercise_list.json`, **or** run `python sync_from_library.py`.
+4. For gym / non-cardio exercises, generate the form illustration:
+
+   ```powershell
+   cd LiftBig\tools\exercise-assets
+   python generate_assets.py --only {id} --out ..\..\public
+   ```
+
+5. Confirm `public/data/exercise_assets.json` has valid paths (or intentional nulls) and the Form tutorial UI does not get a broken `img` src.
+
+Full pipeline docs: `LiftBig/tools/exercise-assets/README.md`.
+
+## When GIFs are required vs skipped
+
+- **Required:** gym / strength / machine / cable / free-weight library exercises (non-cardio).
+- **Skip GIFs:** cardio and sports (`isCardio: true`).
+- **Optional omit:** some mobility / stretch entries may intentionally have no GIF — set `animation: null` and clear `thumbnail` (null/empty) so the illustration slot stays empty; YouTube can still show.
+
+## Design system criteria (exact)
+
+- Background `#F8F9FA`; grey anatomical model; primary muscles `#2563EB`; secondary `#60A5FA`
+- No text, logos, or watermarks
+- ¾ angle preferred; 320×320 rounded PNG; GIF ~3–5s, &lt;1.5MB, seamless loop, smooth stable crop
+- Prefer ExerciseDB OSS anatomical GIFs; correct equipment matching; no stock photos
+- Exclude cardio/sports from GIFs
+
+## Do not ship
+
+- Broken image paths pointing at missing PNG/GIF files
+- Stock photos or watermarked media
+- Leaving a new gym exercise without both a tutorial URL and a form GIF (unless it is cardio/sports or an intentional mobility empty slot)

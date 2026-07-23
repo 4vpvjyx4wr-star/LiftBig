@@ -3,7 +3,8 @@ import { ref } from 'vue'
 export type ExerciseAsset = {
   id: string
   name: string
-  thumbnail: string
+  /** Empty string or null when no static illustration should be shown. */
+  thumbnail: string | null
   animation: string | null
   primaryMuscles: string[]
   secondaryMuscles: string[]

@@ -89,7 +89,9 @@ const formAsset = ref<ExerciseAsset | null>(null)
 const formMediaSrc = computed(() => {
   const asset = formAsset.value
   if (!asset) return null
-  return asset.animation || asset.thumbnail || null
+  const animation = asset.animation?.trim() || null
+  const thumbnail = asset.thumbnail?.trim() || null
+  return animation || thumbnail || null
 })
 
 const showFormTutorial = computed(

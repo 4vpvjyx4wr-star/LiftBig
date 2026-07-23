@@ -169,6 +169,7 @@
   "Rear Delt Fly": {
     "id": "rear-delt-fly",
     "edbQueries": [
+      "dumbbell reverse fly",
       "dumbbell rear delt raise",
       "dumbbell bent over reverse fly"
     ],
@@ -206,8 +207,7 @@
   "Barbell Curl": {
     "id": "barbell-curl",
     "edbQueries": [
-      "barbell curl",
-      "ez barbell curl"
+      "barbell curl"
     ],
     "primaryMuscles": [
       "Biceps"
@@ -480,8 +480,7 @@
     "id": "low-to-high-cable-fly",
     "edbQueries": [
       "cable low fly",
-      "cable standing up straight crossovers",
-      "cable fly"
+      "cable standing up straight crossovers"
     ],
     "primaryMuscles": [
       "Chest"
@@ -551,7 +550,8 @@
   "Rear Delt Cable Fly": {
     "id": "rear-delt-cable-fly",
     "edbQueries": [
-      "cable rear delt row (with rope)",
+      "cable standing cross-over high reverse fly",
+      "cable cross-over revers fly",
       "cable reverse fly"
     ],
     "primaryMuscles": [
@@ -636,8 +636,9 @@
   "Standing Dumbbell Shoulder Press": {
     "id": "standing-dumbbell-shoulder-press",
     "edbQueries": [
-      "dumbbell shoulder press",
-      "dumbbell seated shoulder press (parallel grip)"
+      "dumbbell standing overhead press",
+      "dumbbell standing palms in press",
+      "dumbbell standing alternate overhead press"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -1479,7 +1480,8 @@
     "id": "machine-shoulder-press",
     "edbQueries": [
       "lever shoulder press",
-      "lever shoulder press v. 2"
+      "lever shoulder press v. 2",
+      "lever shoulder press v. 3"
     ],
     "primaryMuscles": [
       "Shoulders"
@@ -1609,8 +1611,9 @@
   "Kelso Shrug": {
     "id": "kelso-shrug",
     "edbQueries": [
-      "dumbbell incline shrug",
-      "dumbbell shrug"
+      "dumbbell decline shrug",
+      "dumbbell decline shrug v. 2",
+      "dumbbell incline shrug"
     ],
     "primaryMuscles": [
       "Back"
@@ -1677,8 +1680,8 @@
   "EZ Bar Curl": {
     "id": "ez-bar-curl",
     "edbQueries": [
-      "ez bar curl",
-      "curl"
+      "ez barbell curl",
+      "ez bar curl"
     ],
     "primaryMuscles": [
       "Biceps"

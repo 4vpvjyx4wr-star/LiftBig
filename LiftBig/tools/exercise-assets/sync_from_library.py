@@ -172,6 +172,13 @@ def main(argv: list[str] | None = None) -> int:
     args.map_out.write_text(json.dumps(name_map, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {len(exercise_list)} non-cardio exercises -> {args.list_out}")
     print(f"Wrote name map -> {args.map_out}")
+    print()
+    print("Next steps (required for new library exercises):")
+    print("  1. Add YouTube tutorial URL in src/utils/exerciseTutorials.ts")
+    print("  2. Generate form GIF/PNG for each new gym id, e.g.:")
+    print("       python generate_assets.py --only {id} --out ..\\..\\public")
+    print("  3. Cardio/sports skip GIFs; some mobility may omit GIF intentionally.")
+    print("  See tools/exercise-assets/README.md checklist + design system criteria.")
     return 0
 
 
