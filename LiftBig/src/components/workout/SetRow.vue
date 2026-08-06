@@ -388,6 +388,8 @@ function maybeAdvanceAfterReps(repsValue: string) {
 
 function onWeightEnter(e: KeyboardEvent) {
   e.preventDefault()
+  cancelWeightMenuHide()
+  showWeightMenu.value = false
   maybeAdvanceAfterWeight(
     (e.target as HTMLInputElement).value || props.set.weight,
   )
