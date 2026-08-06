@@ -115,6 +115,7 @@ function normalizeSettings(raw: unknown, customThemes: CustomTheme[] = []): AppS
         ? o.dailyLiftReminderTime
         : DEFAULT_SETTINGS.dailyLiftReminderTime,
     doubleTapCopyWeight: o.doubleTapCopyWeight !== false,
+    autoAdvanceWeightToReps: o.autoAdvanceWeightToReps !== false,
     autoAdvanceRepsToWeight: o.autoAdvanceRepsToWeight !== false,
     timerSoundEnabled: o.timerSoundEnabled !== false,
     equipmentFilterPrefs,

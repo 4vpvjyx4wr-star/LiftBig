@@ -70,6 +70,8 @@ export type AppSettings = {
   dailyLiftReminderTime: string
   /** Double-tap reps or weight field to copy previous set's value. */
   doubleTapCopyWeight: boolean
+  /** After logging weight, focus that set's reps field. */
+  autoAdvanceWeightToReps: boolean
   /** After logging reps, focus the next set's weight field. */
   autoAdvanceRepsToWeight: boolean
   /** Short sound when rest timer completes. */
@@ -88,6 +90,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dailyLiftReminderEnabled: false,
   dailyLiftReminderTime: '17:00',
   doubleTapCopyWeight: true,
+  autoAdvanceWeightToReps: true,
   autoAdvanceRepsToWeight: true,
   timerSoundEnabled: true,
   equipmentFilterPrefs: [],
@@ -212,6 +215,9 @@ export function useSettings() {
   const doubleTapCopyWeight = ref<boolean>(
     loaded.doubleTapCopyWeight !== false,
   )
+  const autoAdvanceWeightToReps = ref<boolean>(
+    loaded.autoAdvanceWeightToReps !== false,
+  )
   const autoAdvanceRepsToWeight = ref<boolean>(
     loaded.autoAdvanceRepsToWeight !== false,
   )
@@ -237,6 +243,7 @@ export function useSettings() {
       dailyLiftReminderEnabled: dailyLiftReminderEnabled.value,
       dailyLiftReminderTime: sanitizeReminderTime(dailyLiftReminderTime.value),
       doubleTapCopyWeight: doubleTapCopyWeight.value,
+      autoAdvanceWeightToReps: autoAdvanceWeightToReps.value,
       autoAdvanceRepsToWeight: autoAdvanceRepsToWeight.value,
       timerSoundEnabled: timerSoundEnabled.value,
       equipmentFilterPrefs: sanitizeEquipmentFilterPrefs(equipmentFilterPrefs.value),
@@ -262,6 +269,7 @@ export function useSettings() {
       dailyLiftReminderEnabled,
       dailyLiftReminderTime,
       doubleTapCopyWeight,
+      autoAdvanceWeightToReps,
       autoAdvanceRepsToWeight,
       timerSoundEnabled,
       equipmentFilterPrefs,
@@ -335,6 +343,7 @@ export function useSettings() {
     dailyLiftReminderEnabled,
     dailyLiftReminderTime,
     doubleTapCopyWeight,
+    autoAdvanceWeightToReps,
     autoAdvanceRepsToWeight,
     timerSoundEnabled,
     equipmentFilterPrefs,
@@ -365,6 +374,9 @@ export function useSettings() {
     },
     setDoubleTapCopyWeight(enabled: boolean) {
       doubleTapCopyWeight.value = enabled
+    },
+    setAutoAdvanceWeightToReps(enabled: boolean) {
+      autoAdvanceWeightToReps.value = enabled
     },
     setAutoAdvanceRepsToWeight(enabled: boolean) {
       autoAdvanceRepsToWeight.value = enabled
