@@ -68,6 +68,7 @@ const showRepsMenu = ref(false)
 
 let weightMenuHideTimer: number | null = null
 let repsMenuHideTimer: number | null = null
+let weightAdvanceTimer: number | null = null
 
 /** Long enough for iOS to fire the synthetic click after the input blurs. */
 const MENU_HIDE_AFTER_BLUR_MS = 380
@@ -239,6 +240,7 @@ function syncSetLoggingFocus() {
 }
 
 async function onWeightFocus() {
+  cancelWeightAdvance()
   setLoggingFocus?.enter()
   cancelWeightMenuHide()
   showWeightMenu.value = true
@@ -330,7 +332,7 @@ function selectWeightOption(rawDisplay: string) {
   onWeightInput(rawDisplay)
   showWeightMenu.value = false
   syncSetLoggingFocus()
-  maybeAdvanceAfterWeight(rawDisplay)
+  maybeAdvanceAfterWeight(rawDisplay, { immediate: true })
 }
 
 function selectRepsOption(raw: string) {
@@ -341,10 +343,20 @@ function selectRepsOption(raw: string) {
   maybeAdvanceAfterReps(raw)
 }
 
-function onWeightBlur() {
+function onWeightBlur(e: FocusEvent) {
   hideWeightMenuSoon()
   weightDoubleTap.reset()
-  maybeAdvanceAfterWeight(props.set.weight)
+  // Enter / picker may have already moved focus to this set's reps.
+  const active = document.activeElement
+  if (
+    active instanceof HTMLElement &&
+    active.matches(`[data-set-reps="${props.set.id}"]`)
+  ) {
+    return
+  }
+  // Delayed: iOS may still deliver a synthetic click to the weight picker.
+  const typed = (e.target as HTMLInputElement).value
+  maybeAdvanceAfterWeight(typed.trim() ? typed : props.set.weight)
 }
 
 function onRepsBlur() {
@@ -352,21 +364,40 @@ function onRepsBlur() {
   maybeAdvanceAfterReps(props.set.reps)
 }
 
+function cancelWeightAdvance() {
+  if (weightAdvanceTimer != null) {
+    clearTimeout(weightAdvanceTimer)
+    weightAdvanceTimer = null
+  }
+}
+
 function focusRepsInput() {
-  void nextTick(() => {
+  const focus = () => {
     const el = document.querySelector(
       `[data-set-reps="${props.set.id}"]`,
     ) as HTMLInputElement | null
     el?.focus()
     el?.select()
-  })
+  }
+  // Prefer sync focus (keeps mobile keyboard alive after Enter / picker tap).
+  if (document.querySelector(`[data-set-reps="${props.set.id}"]`)) {
+    focus()
+    return
+  }
+  void nextTick(focus)
 }
 
-function maybeAdvanceAfterWeight(weightValue: string) {
+function maybeAdvanceAfterWeight(
+  weightValue: string,
+  opts?: { immediate?: boolean },
+) {
   if (!settings.autoAdvanceWeightToReps.value) return
   if (!weightValue.trim()) return
-  // Don't steal focus if the user already moved to another set input (e.g. tapped reps).
-  window.setTimeout(() => {
+  cancelWeightAdvance()
+
+  const run = () => {
+    weightAdvanceTimer = null
+    // Don't steal focus if the user already moved to another set input (e.g. tapped reps).
     const active = document.activeElement
     if (
       active instanceof HTMLElement &&
@@ -376,7 +407,13 @@ function maybeAdvanceAfterWeight(weightValue: string) {
       return
     }
     focusRepsInput()
-  }, MENU_HIDE_AFTER_BLUR_MS + 40)
+  }
+
+  if (opts?.immediate) {
+    run()
+    return
+  }
+  weightAdvanceTimer = window.setTimeout(run, MENU_HIDE_AFTER_BLUR_MS + 40)
 }
 
 function maybeAdvanceAfterReps(repsValue: string) {
@@ -392,6 +429,7 @@ function onWeightEnter(e: KeyboardEvent) {
   showWeightMenu.value = false
   maybeAdvanceAfterWeight(
     (e.target as HTMLInputElement).value || props.set.weight,
+    { immediate: true },
   )
 }
 
@@ -402,7 +440,7 @@ function onWeightDoubleTap() {
   if (!prior) return
   haptic('tap')
   emit('update', 'weight', prior)
-  maybeAdvanceAfterWeight(prior)
+  maybeAdvanceAfterWeight(prior, { immediate: true })
 }
 
 function onRepsDoubleTap() {
