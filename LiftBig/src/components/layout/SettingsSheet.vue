@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, ref, watch } from 'vue'
+import BuyMeACoffeeLink from '@/components/layout/BuyMeACoffeeLink.vue'
 import CustomThemeEditor from '@/components/layout/CustomThemeEditor.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
 import { THEME_OPTIONS } from '@/composables/useSettings'
@@ -250,6 +251,8 @@ watch(
         <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
         <h2 class="text-center text-lg font-extrabold text-foreground">Settings</h2>
         <p class="mb-5 text-center text-xs text-muted">Theme and units apply everywhere in the app.</p>
+
+        <BuyMeACoffeeLink />
 
         <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
           <div class="mb-2 flex items-center justify-between gap-2">
@@ -571,7 +574,7 @@ watch(
             />
           </label>
           <label class="flex items-center justify-between gap-3">
-            <span class="text-sm font-bold text-foreground">Auto-advance to next set's weight after reps</span>
+            <span class="text-sm font-bold text-foreground">Auto-advance: weight → reps → next set's weight</span>
             <input
               type="checkbox"
               class="h-5 w-5 rounded border-border"

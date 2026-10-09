@@ -609,6 +609,29 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
+    id: 'cable-hammer-curl',
+    name: 'Cable Hammer Curl (Rope)',
+    muscleGroups: ['biceps', 'forearms'],
+    tags: ['cable', 'neutral grip', 'brachialis'],
+    equipment: 'Cable',
+    summary:
+      'Neutral-grip rope curl from a low pulley—constant tension on the brachialis, biceps, and forearms.',
+    instructions: [
+      'Attach a rope to a low pulley; stand tall facing the stack with palms facing each other on the rope ends.',
+      'Keep elbows pinned at your sides and curl the rope toward the shoulders without swinging.',
+      'Optionally split the rope slightly at the top; lower under control to full elbow extension.',
+    ],
+    tips: [
+      'Step back just enough that the stack stays loaded at the bottom.',
+      'If the elbows drift forward, lighten the load—this is not a front raise.',
+    ],
+    cues: [
+      'Neutral grip the whole set—thumbs up, wrists straight.',
+      'Elbows stay glued to the ribs.',
+      'Squeeze at the top; don’t let the stack yank you forward.',
+    ],
+  }),
+  reg({
     id: 'incline-cable-curl',
     name: 'Incline Cable Curl',
     muscleGroups: ['biceps'],
@@ -1011,6 +1034,29 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Low pulleys, soft elbows—arc up and in.',
       'Squeeze upper chest at the top; shoulders stay down.',
       'Lower with control; don’t let handles yank you forward.',
+    ],
+  }),
+  reg({
+    id: 'incline-dumbbell-fly',
+    name: 'Incline Dumbbell Fly',
+    muscleGroups: ['chest', 'shoulders'],
+    tags: ['isolation', 'upper chest', 'fly'],
+    equipment: 'Dumbbell',
+    summary:
+      'Incline-bench fly with a fixed elbow bend—upper-chest stretch and squeeze without turning it into a press.',
+    instructions: [
+      'Set the bench ~15–30°; lie back with dumbbells over the upper chest, palms facing each other.',
+      'Keep a slight, fixed bend in the elbows and open the arms in a wide arc until you feel a stretch across the chest.',
+      'Sweep the dumbbells back together over the upper chest, squeezing the pecs—do not lock out or clap the weights.',
+    ],
+    tips: [
+      'Prefer a shallower incline if front delts take over.',
+      'Stop the stretch before the shoulders roll forward or the front of the shoulder pinches.',
+    ],
+    cues: [
+      'Shoulder blades stay packed on the pad.',
+      'Elbow angle stays the same—hug a tree, don’t press.',
+      'Arc over the upper chest, not toward the belly.',
     ],
   }),
   reg({
@@ -3560,6 +3606,18 @@ registerExerciseAliases('captains-chair-leg-raise', [
   'captains chair leg raise',
   'captains chair leg raises',
   'captain s chair leg raise',
+])
+registerExerciseAliases('incline-dumbbell-fly', [
+  'incline dumbbell fly',
+  'incline db fly',
+  'incline dumbbell chest fly',
+  'incline chest fly',
+])
+registerExerciseAliases('cable-hammer-curl', [
+  'cable hammer curl',
+  'rope hammer curl',
+  'cable hammer curl rope',
+  'rope cable hammer curl',
 ])
 registerExerciseAliases('sit-up', ['sit up', 'sit ups', 'situp', 'situps'])
 

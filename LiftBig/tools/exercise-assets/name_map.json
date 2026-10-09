@@ -229,6 +229,21 @@
       "Forearms"
     ]
   },
+  "Cable Hammer Curl (Rope)": {
+    "id": "cable-hammer-curl",
+    "edbQueries": [
+      "cable hammer curl",
+      "cable rope hammer curl",
+      "hammer curl",
+      "cable hammer curl (rope)"
+    ],
+    "primaryMuscles": [
+      "Biceps"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
   "Incline Cable Curl": {
     "id": "incline-cable-curl",
     "edbQueries": [
@@ -481,6 +496,20 @@
     "edbQueries": [
       "cable low fly",
       "cable standing up straight crossovers"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Incline Dumbbell Fly": {
+    "id": "incline-dumbbell-fly",
+    "edbQueries": [
+      "dumbbell incline fly",
+      "incline dumbbell fly",
+      "dumbbell incline fly v. 2"
     ],
     "primaryMuscles": [
       "Chest"

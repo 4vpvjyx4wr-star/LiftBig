@@ -25,6 +25,7 @@ export function logExercisesToTemplate(exercises: Exercise[]): TemplateExercise[
         isCardio: true,
         targetDuration: duration || undefined,
         targetDistance: distance || undefined,
+        targetRestSeconds: ex.targetRestSeconds,
         sets: [{ targetReps: duration, targetWeight: distance }],
       }
     }
@@ -42,6 +43,11 @@ export function logExercisesToTemplate(exercises: Exercise[]): TemplateExercise[
         name: ex.name,
         libraryId: ex.libraryId,
         isCircuit: true,
+        targetRestSeconds: ex.targetRestSeconds,
+        supersetGroupId: ex.supersetGroupId,
+        supersetLabel: ex.supersetLabel,
+        supersetOrder: ex.supersetOrder,
+        preferredSwapLibraryIds: ex.preferredSwapLibraryIds,
         sets: ex.sets.map((s) => ({
           targetReps: (s.reps ?? '').trim(),
           targetWeight: (s.weight ?? '').trim(),
@@ -63,6 +69,8 @@ export function logExercisesToTemplate(exercises: Exercise[]): TemplateExercise[
       supersetGroupId: ex.supersetGroupId,
       supersetLabel: ex.supersetLabel,
       supersetOrder: ex.supersetOrder,
+      preferredSwapLibraryIds: ex.preferredSwapLibraryIds,
+      targetRestSeconds: ex.targetRestSeconds,
       sets: ex.sets.map((s) => ({
         targetReps: (s.reps ?? '').trim() || repsGoal,
         targetWeight: (s.weight ?? '').trim() || weightGoal,

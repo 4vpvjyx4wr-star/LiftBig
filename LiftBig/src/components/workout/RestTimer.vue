@@ -8,6 +8,8 @@ const props = withDefaults(
     showActiveLauncher?: boolean
     showFloating?: boolean
     compact?: boolean
+    /** When the timer is idle, display and start from this duration (plan-prescribed rest). */
+    presetSeconds?: number
   }>(),
   {
     showLauncher: true,
@@ -22,6 +24,7 @@ const {
   MIN_SECONDS,
   MAX_SECONDS,
   duration,
+  remaining,
   running,
   pickerOpen,
   customSecondsInput,
@@ -33,11 +36,34 @@ const {
   bubbleClass,
   selectDur,
   applyCustomDuration,
+  applyIdlePreset,
   onPointerDown,
   onPointerUp,
   onClick,
   reset,
 } = useRestTimerState()
+
+const idleShowingPreset = computed(() => {
+  const preset = props.presetSeconds
+  if (preset == null || preset < MIN_SECONDS) return false
+  return !running.value && remaining.value === duration.value
+})
+
+const displayMins = computed(() =>
+  idleShowingPreset.value ? Math.floor((props.presetSeconds ?? 0) / 60) : mins.value,
+)
+
+const displaySecs = computed(() => {
+  const sec = idleShowingPreset.value ? (props.presetSeconds ?? 0) % 60 : remaining.value % 60
+  return String(sec).padStart(2, '0')
+})
+
+function onLauncherClick() {
+  if (props.presetSeconds != null && props.presetSeconds >= MIN_SECONDS) {
+    applyIdlePreset(props.presetSeconds)
+  }
+  onClick()
+}
 
 const showInlineLauncher = computed(
   () => props.showLauncher || (props.showActiveLauncher && isFloatingActive.value),
@@ -61,6 +87,15 @@ const labelClass = computed(() =>
     : 'mt-0.5 text-[10px] font-bold text-muted',
 )
 
+function formatTimerOption(d: number): string {
+  if (d < 60) return `${d} seconds`
+  if (d % 60 === 0) {
+    const m = d / 60
+    return `${m} minute${m === 1 ? '' : 's'}`
+  }
+  return `${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')}`
+}
+
 function cancelCurrentTimer() {
   reset()
   pickerOpen.value = false
@@ -79,10 +114,10 @@ onUnmounted(() => {
       @pointerdown="onPointerDown"
       @pointerup="onPointerUp"
       @pointerleave="onPointerUp"
-      @click="onClick"
+      @click="onLauncherClick"
     >
       <div :class="timeClass">
-        {{ mins }}:{{ secs }}
+        {{ displayMins }}:{{ displaySecs }}
       </div>
       <div :class="labelClass">
         <template v-if="isFinished">Done - tap to reset</template>
@@ -133,9 +168,7 @@ onUnmounted(() => {
           :class="duration === d ? 'bg-card text-foreground' : 'text-muted'"
           @click="selectDur(d)"
         >
-          <span class="text-[15px] font-bold">{{
-            d < 60 ? `${d} seconds` : `${d / 60} minute${d > 60 ? 's' : ''}`
-          }}</span>
+          <span class="text-[15px] font-bold">{{ formatTimerOption(d) }}</span>
           <span v-if="duration === d" class="font-extrabold text-primary">✓</span>
         </button>
         <div class="mt-3 border-t border-border pt-3">

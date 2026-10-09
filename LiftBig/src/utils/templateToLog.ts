@@ -27,6 +27,7 @@ export function cloneExercisesForCopy(source: Exercise[]): Exercise[] {
     supersetLabel: ex.supersetLabel,
     supersetOrder: ex.supersetOrder,
     preferredSwapLibraryIds: ex.preferredSwapLibraryIds,
+    targetRestSeconds: ex.targetRestSeconds,
     sets: ex.sets.map((s) => {
       if (ex.isCircuit) {
         return {
@@ -53,6 +54,7 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
         isCardio: true,
         targetDuration: durationGoal || undefined,
         targetDistance: (tex.targetDistance ?? '').trim() || undefined,
+        targetRestSeconds: tex.targetRestSeconds,
         sets: [{ id: newId(), reps: '', weight: '' }],
       }
     }
@@ -79,6 +81,7 @@ export function cloneTemplateToExercises(template: WorkoutTemplate): Exercise[] 
       supersetLabel: tex.supersetLabel,
       supersetOrder: tex.supersetOrder,
       preferredSwapLibraryIds: tex.preferredSwapLibraryIds,
+      targetRestSeconds: tex.targetRestSeconds,
       sets: tex.sets.map((ts) => {
         if (tex.isCircuit) {
           return {

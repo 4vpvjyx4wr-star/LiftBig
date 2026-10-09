@@ -47,6 +47,11 @@ export type Exercise = {
    * (e.g. plan “or” alternatives for quick hot-swap).
    */
   preferredSwapLibraryIds?: string[]
+  /**
+   * Prescribed rest after this lift or superset round, in seconds.
+   * When set, the workout log shows a rest timer defaulting to this duration.
+   */
+  targetRestSeconds?: number
 }
 
 /** Single-day payload (with optional notes), or legacy flat exercise list */
@@ -163,6 +168,20 @@ export type TemplateExercise = {
    * (e.g. plan “or” alternatives for quick hot-swap).
    */
   preferredSwapLibraryIds?: string[]
+  /**
+   * Prescribed rest after this lift or superset round, in seconds.
+   * When set, the workout log shows a rest timer defaulting to this duration.
+   */
+  targetRestSeconds?: number
+}
+
+/** Positive prescribed rest seconds, or null when the plan did not specify rest. */
+export function prescribedRestSeconds(
+  ex: Pick<Exercise | TemplateExercise, 'targetRestSeconds'>,
+): number | null {
+  const n = ex.targetRestSeconds
+  if (n == null || !Number.isFinite(n) || n <= 0) return null
+  return Math.round(n)
 }
 
 /** Whether an exercise should use duration-only cardio UI and storage. */
@@ -219,6 +238,20 @@ export function cardioExerciseComplete(ex: Exercise): boolean {
   if (!d) return false
   const n = parseInt(d, 10)
   return !Number.isNaN(n) && n > 0
+}
+
+/** True when every working set (or cardio duration) is logged — same rule as the workout card border. */
+export function exerciseIsComplete(
+  ex: Exercise,
+  opts?: { isCardio?: boolean; isCore?: boolean },
+): boolean {
+  const isCardio = opts?.isCardio ?? exerciseIsCardio(ex)
+  if (isCardio) return cardioExerciseComplete(ex)
+  if (ex.sets.length === 0) return false
+  const isCore = opts?.isCore ?? ex.isCore === true
+  if (isCore) return ex.sets.every((s) => coreSetLogged(s))
+  if (ex.isCircuit) return ex.sets.every((s) => Boolean(s.checked))
+  return ex.sets.every((s) => s.reps !== '' && s.weight !== '')
 }
 
 /** Parse seconds from goal text like "45 sec", "1 min", or "45-60 sec". */

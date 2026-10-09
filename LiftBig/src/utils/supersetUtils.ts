@@ -1,4 +1,4 @@
-import type { Exercise } from '@/types/workout'
+import { exerciseIsComplete, type Exercise } from '@/types/workout'
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
@@ -27,6 +27,10 @@ export function nextSupersetLabel(exercises: Exercise[]): string {
 
 export function exerciseInSuperset(ex: Pick<Exercise, 'supersetGroupId'>): boolean {
   return Boolean(ex.supersetGroupId?.trim())
+}
+
+export function supersetGroupIsComplete(exercises: Exercise[]): boolean {
+  return exercises.length > 0 && exercises.every((ex) => exerciseIsComplete(ex))
 }
 
 export function supersetBadgeLabel(

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import BuyMeACoffeeLink from '@/components/layout/BuyMeACoffeeLink.vue'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
 import RestTimer from '@/components/workout/RestTimer.vue'
 import { settingsInjectionKey, workoutsInjectionKey } from '@/composables/injectionKeys'
@@ -116,10 +117,11 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
             <div
               v-if="menuOpen"
               id="app-shell-menu"
-              class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),13rem)] rounded-2xl border border-border bg-menu-bg py-1 shadow-xl"
+              class="absolute right-0 top-[calc(100%+0.5rem)] z-[60] w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-border bg-menu-bg py-1 shadow-xl"
               role="menu"
               @click.stop
             >
+              <BuyMeACoffeeLink compact @navigate="closeMenu" />
               <RouterLink
                 v-slot="{ navigate, isActive }"
                 to="/plates"

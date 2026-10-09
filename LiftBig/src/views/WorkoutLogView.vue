@@ -2,6 +2,7 @@
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Sortable from 'sortablejs'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import BuyMeACoffeeLink from '@/components/layout/BuyMeACoffeeLink.vue'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
 import LibraryPickerModal from '@/components/library/LibraryPickerModal.vue'
 import ExerciseNameSuggestList from '@/components/library/ExerciseNameSuggestList.vue'
@@ -44,6 +45,7 @@ import {
   groupExercisesForDisplay,
   linkExercisesAsSuperset,
   moveDisplayItem,
+  supersetGroupIsComplete,
   swapSupersetPairOrder,
   unlinkSupersetGroup,
 } from '@/utils/supersetUtils'
@@ -645,10 +647,11 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
             <div
               v-if="menuOpen"
               id="workout-menu"
-              class="absolute right-0 z-50 mt-2 w-[13rem] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
+              class="absolute right-0 z-50 mt-2 w-[min(calc(100vw-1.5rem),17rem)] rounded-2xl border border-border bg-card-inner py-1 shadow-xl"
               role="menu"
               @click.stop
             >
+              <BuyMeACoffeeLink compact @navigate="closeMenu" />
               <RouterLink v-slot="{ navigate, isActive }" to="/plates" custom>
                 <button
                   type="button"
@@ -744,7 +747,12 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
         >
           <div v-if="item.kind === 'superset'" class="workout-sortable-item mb-3.5">
             <div
-              class="flex items-center justify-between gap-2 rounded-t-xl border-2 border-b-0 border-primary/45 bg-primary/5 px-2.5 py-1.5"
+              class="flex items-center justify-between gap-2 rounded-t-xl border-2 border-b-0 px-2.5 py-1.5 transition-colors duration-200"
+              :class="
+                supersetGroupIsComplete(item.exercises)
+                  ? 'border-success bg-primary/5'
+                  : 'border-primary/45 bg-primary/5'
+              "
             >
               <div class="flex min-w-0 items-center gap-2">
                 <span
@@ -767,7 +775,12 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
             <template v-for="(ex, index) in item.exercises" :key="ex.id">
               <div
                 v-if="index > 0"
-                class="flex items-center justify-center border-x-2 border-primary/45 bg-primary/10 px-2 py-1"
+                class="flex items-center justify-center border-x-2 px-2 py-1 transition-colors duration-200"
+                :class="
+                  supersetGroupIsComplete(item.exercises)
+                    ? 'border-success bg-primary/10'
+                    : 'border-primary/45 bg-primary/10'
+                "
               >
                 <button
                   type="button"
@@ -785,6 +798,7 @@ const sheetBodyWeightLbs = computed(() => settings.bodyWeightLbs.value)
                 :session-date-key="dateKey"
                 embedded-in-superset
                 :superset-position="index === 0 ? 'first' : 'last'"
+                :superset-group-complete="supersetGroupIsComplete(item.exercises)"
                 @add-set="addSet(ex.id)"
                 @update-set="(setId, field, v) => updateSet(ex.id, setId, field, v)"
                 @toggle-circuit-set="(setId) => toggleCircuitSet(ex.id, setId)"

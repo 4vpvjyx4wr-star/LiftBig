@@ -1,6 +1,6 @@
 # Exercise asset attributions
 
-Generated: 2026-07-23T03:31:33.620748+00:00
+Generated: 2026-08-26T19:18:44.355073+00:00
 
 ExerciseDB OSS media: non-commercial use; attribute AscendAPI (https://exercisedb.dev).
 Wikimedia Commons: see per-file license notes below.
@@ -11,3 +11,5 @@ Wikimedia Commons: see per-file license notes below.
 - **standing-dumbbell-shoulder-press** (Standing Dumbbell Shoulder Press): exercisedb-oss — dumbbell standing overhead press — Non-commercial; attribute AscendAPI / ExerciseDB OSS — AscendAPI — https://static.exercisedb.dev/media/A6wtbuL.gif
 - **machine-shoulder-press** (Machine Shoulder Press): exercisedb-oss — lever shoulder press — Non-commercial; attribute AscendAPI / ExerciseDB OSS — AscendAPI — https://static.exercisedb.dev/media/67n3r98.gif
 - **kelso-shrug** (Kelso Shrug): exercisedb-oss — dumbbell decline shrug — Non-commercial; attribute AscendAPI / ExerciseDB OSS — AscendAPI — https://static.exercisedb.dev/media/cwsAI4G.gif
+- **cable-hammer-curl** (Cable Hammer Curl (Rope)): exercisedb-oss — cable hammer curl (with rope) — Non-commercial; attribute AscendAPI / ExerciseDB OSS — AscendAPI — https://static.exercisedb.dev/media/HPlPoQA.gif
+- **incline-dumbbell-fly** (Incline Dumbbell Fly): exercisedb-oss — dumbbell incline fly — Non-commercial; attribute AscendAPI / ExerciseDB OSS — AscendAPI — https://static.exercisedb.dev/media/ESOd5Pl.gif

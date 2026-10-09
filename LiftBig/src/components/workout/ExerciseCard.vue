@@ -4,6 +4,7 @@ import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import CardioDistanceInput from '@/components/workout/CardioDistanceInput.vue'
 import CardioDurationInput from '@/components/workout/CardioDurationInput.vue'
 import CircuitSetRow from '@/components/workout/CircuitSetRow.vue'
+import RestTimer from '@/components/workout/RestTimer.vue'
 import SetRow from '@/components/workout/SetRow.vue'
 import { settingsInjectionKey } from '@/composables/injectionKeys'
 import type { Exercise, WorkoutLog } from '@/types/workout'
@@ -16,8 +17,10 @@ import {
   cardioTargetDurationMinutes,
   coreSetLogged,
   coreTargetTimeSeconds,
+  exerciseIsComplete,
   formatDurationSecondsDisplay,
   parseCardioLoggedCalories,
+  prescribedRestSeconds,
 } from '@/types/workout'
 import { cardioExerciseSupportsDistance } from '@/utils/cardioDistance'
 import { getLibraryExercise, resolveExerciseIsCardio, resolveExerciseIsCore, coreExerciseSupportsTimeLogging } from '@/utils/exerciseLibrary'
@@ -46,6 +49,8 @@ const props = defineProps<{
   canLinkWithNext?: boolean
   /** Other standalone exercises available to link with. */
   linkPartnerOptions?: { id: string; name: string }[]
+  /** Whole superset is logged — shared chrome uses the success border. */
+  supersetGroupComplete?: boolean
 }>()
 
 const settings = inject(settingsInjectionKey)!
@@ -201,6 +206,13 @@ const isCore = computed(
       name: props.exercise.name,
     }),
 )
+
+const restSeconds = computed(() => prescribedRestSeconds(props.exercise))
+const showPrescribedRestTimer = computed(() => {
+  if (restSeconds.value == null) return false
+  if (props.embeddedInSuperset && props.supersetPosition !== 'last') return false
+  return true
+})
 
 const showCoreTime = computed(() =>
   coreExerciseSupportsTimeLogging({
@@ -359,10 +371,9 @@ const completedSets = computed(() => {
   ).length
 })
 
-const allDone = computed(() => {
-  if (isCardio.value) return cardioExerciseComplete(props.exercise)
-  return completedSets.value === props.exercise.sets.length && props.exercise.sets.length > 0
-})
+const allDone = computed(() =>
+  exerciseIsComplete(props.exercise, { isCardio: isCardio.value, isCore: isCore.value }),
+)
 
 watch(allDone, (done, wasDone) => {
   if (done && !wasDone) haptic('celebrate')
@@ -407,7 +418,8 @@ function pickLinkPartner(partnerId: string) {
     :class="
       embeddedInSuperset
         ? [
-            'border-x-2 border-primary/45 bg-card p-3',
+            'border-x-2 bg-card p-3',
+            supersetGroupComplete ? 'border-success' : 'border-primary/45',
             supersetPosition === 'last' ? 'rounded-b-xl border-b-2' : 'mb-0 border-b-0',
           ]
         : [
@@ -801,6 +813,19 @@ function pickLinkPartner(partnerId: string) {
         + Add Set
       </button>
     </template>
+    </div>
+
+    <div
+      v-if="showPrescribedRestTimer && restSeconds != null"
+      class="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-2.5"
+    >
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-wide text-muted">Rest</p>
+        <p class="text-xs font-semibold text-foreground">
+          {{ formatDurationSecondsDisplay(restSeconds) }}
+        </p>
+      </div>
+      <RestTimer compact :show-floating="false" :preset-seconds="restSeconds" />
     </div>
 
     <ExerciseDetailSheet

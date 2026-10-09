@@ -7,7 +7,7 @@ import {
 import { playTimerDoneSound } from '@/utils/timerSound'
 import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 
-const TIMER_OPTIONS = [30, 60, 90, 120] as const
+const TIMER_OPTIONS = [30, 60, 75, 90, 120] as const
 
 const MIN_SECONDS = 5
 const MAX_SECONDS = 60 * 30
@@ -165,6 +165,14 @@ function toggle() {
   running.value = !running.value
 }
 
+/** If the shared timer is idle, set duration so the next start uses this rest. */
+function applyIdlePreset(seconds: number) {
+  if (running.value || remaining.value !== duration.value) return
+  const sec = clampSeconds(seconds)
+  duration.value = sec
+  remaining.value = sec
+}
+
 function onPointerDown() {
   longPressConsumed.value = false
   longPressTimer = setTimeout(() => {
@@ -221,9 +229,11 @@ export function useRestTimerState() {
     bubbleClass,
     selectDur,
     applyCustomDuration,
+    applyIdlePreset,
     onPointerDown,
     onPointerUp,
     onClick,
+    toggle,
     reset,
     clearTick,
   }
