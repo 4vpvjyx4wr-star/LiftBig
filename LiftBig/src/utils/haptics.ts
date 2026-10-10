@@ -1,4 +1,7 @@
-/** Light tactile feedback via the Vibration API (mobile browsers). */
+import { Capacitor } from '@capacitor/core'
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
+
+/** Tactile feedback. iPhone uses the Haptics plugin; mobile browsers use Vibration API. */
 
 type HapticPattern = 'tap' | 'success' | 'timerStart' | 'timerDone' | 'celebrate'
 
@@ -14,7 +17,29 @@ function canVibrate(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
 }
 
+function playNativeHaptic(pattern: HapticPattern): void {
+  const play = async () => {
+    if (pattern === 'timerDone') {
+      await Haptics.notification({ type: NotificationType.Warning })
+      await Haptics.vibrate({ duration: 400 })
+      return
+    }
+    if (pattern === 'success' || pattern === 'celebrate') {
+      await Haptics.notification({ type: NotificationType.Success })
+      return
+    }
+    await Haptics.impact({ style: pattern === 'timerStart' ? ImpactStyle.Medium : ImpactStyle.Light })
+  }
+  void play().catch(() => {
+    // Ignore unsupported or blocked vibration.
+  })
+}
+
 export function haptic(pattern: HapticPattern = 'tap'): void {
+  if (Capacitor.isNativePlatform()) {
+    playNativeHaptic(pattern)
+    return
+  }
   if (!canVibrate()) return
   try {
     navigator.vibrate(PATTERNS[pattern])

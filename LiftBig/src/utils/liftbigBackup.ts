@@ -115,10 +115,15 @@ function normalizeSettings(raw: unknown, customThemes: CustomTheme[] = []): AppS
         ? o.dailyLiftReminderTime
         : DEFAULT_SETTINGS.dailyLiftReminderTime,
     doubleTapCopyWeight: o.doubleTapCopyWeight !== false,
-    autoAdvanceWeightToReps: o.autoAdvanceWeightToReps !== false,
     autoAdvanceRepsToWeight: o.autoAdvanceRepsToWeight !== false,
     timerSoundEnabled: o.timerSoundEnabled !== false,
     equipmentFilterPrefs,
+    heightInches:
+      typeof o.heightInches === 'number' && Number.isFinite(o.heightInches) && o.heightInches > 0
+        ? o.heightInches
+        : 0,
+    appleHealthEnabled: o.appleHealthEnabled === true,
+    iCloudSyncEnabled: o.iCloudSyncEnabled === true,
   }
 }
 

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+  <iq:application entry="LiftBigApp" id="c3a1e7b24d584f0a9b6e2f7a1d8c0e44" type="watch-app" name="@Strings.AppName" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="4.2.0">
+    <iq:products>
+      <iq:product id="fenix7"/>
+      <iq:product id="fenix7s"/>
+      <iq:product id="fenix7x"/>
+      <iq:product id="fenix8"/>
+      <iq:product id="epix2"/>
+      <iq:product id="venu3"/>
+      <iq:product id="fr965"/>
+      <iq:product id="fr265"/>
+      <iq:product id="instinct2"/>
+    </iq:products>
+    <iq:permissions>
+      <iq:uses-permission id="Communications"/>
+    </iq:permissions>
+    <iq:languages>
+      <iq:language>eng</iq:language>
+    </iq:languages>
+  </iq:application>
+</iq:manifest>

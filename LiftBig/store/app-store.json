@@ -1,0 +1,18 @@
+{
+  "name": "LiftBig",
+  "priceUsd": "4.99",
+  "priceNote": "One-time paid download. Choose the $4.99 tier in App Store Connect. Updates to the journal are free.",
+  "subtitle": "Training journal",
+  "description": "LiftBig is a strength training journal for logging sets, reps, weight, plans, and progress on your iPhone. Your workouts stay on your device. You can import a backup exported from the LiftBig website, optionally sync across your devices with iCloud, and optionally write workouts to Apple Health.",
+  "disclaimer": "LiftBig is a workout log, not medical advice.",
+  "privacyPolicyPath": "/privacy.html",
+  "supportEmail": "liftbig.support@gmail.com",
+  "supportEmailNote": "Create this dedicated Gmail, or replace the address in public/privacy.html and App Store Connect, before submission.",
+  "appleDeveloperProgram": "Required. $99 per year. No other paid service is required to list the app.",
+  "smallBusinessProgram": "Enroll at no charge so Apple's commission is 15% of the $4.99.",
+  "pro": {
+    "shipsIn": "The release that adds the Apple Watch companion",
+    "productIds": ["liftbig.pro.yearly", "liftbig.pro.monthly"]
+  },
+  "reviewNotes": "LiftBig stores the training journal on device. iCloud sync and Apple Health are off until the user turns them on. The app does not require an account."
+}

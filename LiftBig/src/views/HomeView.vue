@@ -37,6 +37,7 @@ import {
 } from '@/utils/planDuration'
 import { getLibraryExercise, isFavoritesLibrarySearchQuery, resolveManualExerciseInput, type LibraryExercise } from '@/utils/exerciseLibrary'
 import { predictWorkoutGoals } from '@/utils/progressiveOverload'
+import AdaptivePlanCard from '@/components/progress/AdaptivePlanCard.vue'
 import { formatCircuitExerciseGoal } from '@/utils/circuitExerciseDisplay'
 import { supersetBadgeLabel } from '@/utils/supersetUtils'
 import { cardioTargetDurationMinutes, exerciseIsCardio } from '@/types/workout'
@@ -403,6 +404,7 @@ const liftHref = computed(() => `/workout/${today}`)
 
 <template>
   <div>
+    <AdaptivePlanCard />
     <div
       v-if="dailyReminder.shouldNudge"
       class="mb-4 flex items-start gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 py-3"

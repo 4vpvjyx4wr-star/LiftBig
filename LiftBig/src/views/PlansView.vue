@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { Capacitor } from '@capacitor/core'
 import Sortable from 'sortablejs'
+import MonthDatePicker from '@/components/calendar/MonthDatePicker.vue'
 import ExerciseDetailSheet from '@/components/library/ExerciseDetailSheet.vue'
 import PlanEditorModal from '@/components/plans/PlanEditorModal.vue'
 import PlanShuffleModal from '@/components/plans/PlanShuffleModal.vue'
@@ -16,7 +18,7 @@ import { LIFTBIG_LEGACY_STORAGE_KEY_ALIASES, LIFTBIG_STORAGE_KEYS } from '@/util
 import { loadJsonWithRecovery } from '@/utils/storage'
 import type { ExperienceLevel } from '@/types/planCatalog'
 import type { TemplateFolder, WorkoutTemplate } from '@/types/workout'
-import { addDaysToDateKey, isValidDateKey, todayKey } from '@/utils/dateKey'
+import { addDaysToDateKey, formatDisplayDate, isValidDateKey, todayKey } from '@/utils/dateKey'
 import {
   findLibraryExerciseByName,
   getLibraryExercise,
@@ -279,7 +281,7 @@ function onFolderStartDateInput(folderId: string, value: string) {
 }
 
 function openDatePicker(inputEl: HTMLInputElement | null) {
-  if (!inputEl) return
+  if (!inputEl || Capacitor.isNativePlatform()) return
   const maybe = inputEl as HTMLInputElement & { showPicker?: () => void }
   if (typeof maybe.showPicker === 'function') {
     maybe.showPicker()
@@ -287,6 +289,23 @@ function openDatePicker(inputEl: HTMLInputElement | null) {
   }
   inputEl.focus()
   inputEl.click()
+}
+
+const nativeDatePicker = Capacitor.isNativePlatform()
+const folderDatePickerId = ref<string | null>(null)
+
+function openFolderDatePicker(folderId: string) {
+  folderDatePickerId.value = folderId
+}
+
+function pickingFolderStartDate(): string {
+  return folderStartDateValue(folderDatePickerId.value ?? todayKey())
+}
+
+function onPickingFolderDate(dateKey: string) {
+  const folderId = folderDatePickerId.value
+  if (!folderId) return
+  onFolderStartDateInput(folderId, dateKey)
 }
 
 function folderRestEveryValue(folderId: string): number {
@@ -1162,7 +1181,16 @@ function onPlansRestSecondsChange(ev: Event) {
           <div class="rounded-lg border border-border bg-card-inner/40 p-2">
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <label class="text-[10px] font-bold uppercase tracking-wide text-muted">Start day</label>
+              <button
+                v-if="nativeDatePicker"
+                type="button"
+                class="rounded border border-border bg-card px-2 py-1 text-left text-xs font-bold text-foreground"
+                @click="openFolderDatePicker(entry.folder.id)"
+              >
+                {{ formatDisplayDate(folderStartDateValue(entry.folder.id)) }}
+              </button>
               <input
+                v-else
                 :value="folderStartDateValue(entry.folder.id)"
                 type="date"
                 class="rounded border border-border bg-card px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
@@ -1321,6 +1349,30 @@ function onPlansRestSecondsChange(ev: Event) {
       @close="closeScheduleSheet"
       @apply="onScheduleApply"
     />
+
+    <div
+      v-if="folderDatePickerId"
+      class="fixed inset-0 z-50 flex flex-col justify-end bg-black/65"
+      role="dialog"
+      aria-modal="true"
+      @click.self="folderDatePickerId = null"
+    >
+      <div class="max-h-[85vh] overflow-y-auto rounded-t-2xl border border-border border-b-0 bg-card px-4 pb-8 pt-2" @click.stop>
+        <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+        <h3 class="mb-3 text-center text-lg font-extrabold text-foreground">Start day</h3>
+        <MonthDatePicker
+          :model-value="pickingFolderStartDate()"
+          @update:model-value="onPickingFolderDate"
+        />
+        <button
+          type="button"
+          class="mt-4 w-full rounded-lg bg-primary py-3 text-sm font-extrabold text-foreground"
+          @click="folderDatePickerId = null"
+        >
+          Use this day
+        </button>
+      </div>
+    </div>
 
     <ExerciseDetailSheet
       :open="detailOpen"

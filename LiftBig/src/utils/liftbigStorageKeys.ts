@@ -23,6 +23,9 @@ export const LIFTBIG_STORAGE_KEYS = {
   libraryFavorites: 'liftbig_library_favorites',
   planFavorites: 'liftbig_plan_favorites',
   pickAPlan: 'liftbig_pick_a_plan',
+  dayStamps: 'liftbig_day_stamps',
+  snapshotWrittenAt: 'liftbig_snapshot_written_at',
+  importPromptDismissed: 'liftbig_import_prompt_dismissed',
 } as const
 
 /**

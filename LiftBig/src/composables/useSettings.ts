@@ -76,6 +76,12 @@ export type AppSettings = {
   timerSoundEnabled: boolean
   /** Selected equipment filters for library/swap (empty = show all). */
   equipmentFilterPrefs: string[]
+  /** Height in inches. 0 = not set. Shown in Settings; Apple Health can fill it. */
+  heightInches: number
+  /** Write logged workouts to Apple Health and read body weight and height. */
+  appleHealthEnabled: boolean
+  /** Sync the journal through the user's private iCloud container. */
+  iCloudSyncEnabled: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -91,6 +97,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoAdvanceRepsToWeight: true,
   timerSoundEnabled: true,
   equipmentFilterPrefs: [],
+  heightInches: 0,
+  appleHealthEnabled: false,
+  iCloudSyncEnabled: false,
 }
 
 const MIN_AVERAGE_SECONDS = 5
@@ -107,6 +116,11 @@ const MAX_BODY_WEIGHT_LBS = 700
 function sanitizeBodyWeightLbs(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 0
   return Math.min(MAX_BODY_WEIGHT_LBS, Math.max(MIN_BODY_WEIGHT_LBS, Math.round(value * 10) / 10))
+}
+
+function sanitizeHeightInches(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 0
+  return Math.min(96, Math.max(36, Math.round(value * 10) / 10))
 }
 
 const REMINDER_TIME_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/
@@ -219,6 +233,9 @@ export function useSettings() {
   const equipmentFilterPrefs = ref<string[]>(
     sanitizeEquipmentFilterPrefs(loaded.equipmentFilterPrefs),
   )
+  const heightInches = ref<number>(sanitizeHeightInches(loaded.heightInches ?? 0))
+  const appleHealthEnabled = ref<boolean>(loaded.appleHealthEnabled === true)
+  const iCloudSyncEnabled = ref<boolean>(loaded.iCloudSyncEnabled === true)
 
   function persistSettings() {
     saveJson(STORAGE_KEY, {
@@ -240,6 +257,9 @@ export function useSettings() {
       autoAdvanceRepsToWeight: autoAdvanceRepsToWeight.value,
       timerSoundEnabled: timerSoundEnabled.value,
       equipmentFilterPrefs: sanitizeEquipmentFilterPrefs(equipmentFilterPrefs.value),
+      heightInches: sanitizeHeightInches(heightInches.value),
+      appleHealthEnabled: appleHealthEnabled.value,
+      iCloudSyncEnabled: iCloudSyncEnabled.value,
     })
   }
 
@@ -265,6 +285,9 @@ export function useSettings() {
       autoAdvanceRepsToWeight,
       timerSoundEnabled,
       equipmentFilterPrefs,
+      heightInches,
+      appleHealthEnabled,
+      iCloudSyncEnabled,
     ],
     () => {
       averageRestSeconds.value = sanitizeAverageSeconds(
@@ -276,6 +299,7 @@ export function useSettings() {
         DEFAULT_SETTINGS.averageLiftSeconds,
       )
       bodyWeightLbs.value = sanitizeBodyWeightLbs(bodyWeightLbs.value)
+      heightInches.value = sanitizeHeightInches(heightInches.value)
       persistSettings()
       syncActiveTheme()
     },
@@ -338,6 +362,9 @@ export function useSettings() {
     autoAdvanceRepsToWeight,
     timerSoundEnabled,
     equipmentFilterPrefs,
+    heightInches,
+    appleHealthEnabled,
+    iCloudSyncEnabled,
     setTheme,
     addCustomTheme,
     updateCustomTheme,
@@ -356,6 +383,15 @@ export function useSettings() {
     },
     setBodyWeightLbs(value: number) {
       bodyWeightLbs.value = sanitizeBodyWeightLbs(value)
+    },
+    setHeightInches(value: number) {
+      heightInches.value = sanitizeHeightInches(value)
+    },
+    setAppleHealthEnabled(enabled: boolean) {
+      appleHealthEnabled.value = enabled
+    },
+    setICloudSyncEnabled(enabled: boolean) {
+      iCloudSyncEnabled.value = enabled
     },
     setDailyLiftReminderEnabled(enabled: boolean) {
       dailyLiftReminderEnabled.value = enabled

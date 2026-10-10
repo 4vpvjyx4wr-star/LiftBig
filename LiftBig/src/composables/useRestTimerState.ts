@@ -5,6 +5,7 @@ import {
   showTimerFinishedNotification,
 } from '@/utils/notifications'
 import { playTimerDoneSound } from '@/utils/timerSound'
+import { syncRestNotification } from '@/native/nativeNotifications'
 import { LIFTBIG_STORAGE_KEYS } from '@/utils/liftbigStorageKeys'
 
 const TIMER_OPTIONS = [30, 60, 75, 90, 120] as const
@@ -88,12 +89,14 @@ watch(running, (r) => {
   clearTick()
   if (!r) {
     endsAtMs = null
+    void syncRestNotification(false, null)
     return
   }
   endsAtMs = Date.now() + remaining.value * 1000
   alertedThisRun = false
   tickFromClock()
   intervalId = setInterval(tickFromClock, 1000)
+  void syncRestNotification(true, endsAtMs)
 })
 
 function clampSeconds(sec: number): number {
@@ -150,6 +153,11 @@ function reset() {
   remaining.value = duration.value
   running.value = false
   alertedThisRun = false
+}
+
+export function startRestForSeconds(seconds: number): void {
+  selectDur(seconds)
+  running.value = true
 }
 
 function toggle() {

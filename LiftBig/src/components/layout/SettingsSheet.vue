@@ -16,6 +16,9 @@ import {
 } from '@/utils/exerciseDuplicates'
 import type { DistanceUnit } from '@/utils/distances'
 import type { WeightUnit } from '@/utils/units'
+import { Capacitor } from '@capacitor/core'
+import { usePro } from '@/composables/usePro'
+import { PRIVACY_POLICY_PATH, SUPPORT_EMAIL } from '@/config/listing'
 
 const props = defineProps<{
   open: boolean
@@ -74,6 +77,27 @@ function commitBodyWeight() {
 }
 
 const bodyWeightDraft = ref('')
+const heightDraft = ref('')
+const nativeApp = Capacitor.isNativePlatform()
+const platform = Capacitor.getPlatform()
+const {
+  active: proActive,
+  statusMessage: proStatus,
+  purchase: purchasePro,
+  restore: restorePro,
+  yearlyId,
+  monthlyId,
+} = usePro()
+
+function syncHeightDraft() {
+  heightDraft.value =
+    settings.heightInches.value > 0 ? String(settings.heightInches.value) : ''
+}
+
+function commitHeight() {
+  const n = parseFloat(heightDraft.value)
+  settings.setHeightInches(Number.isFinite(n) ? n : 0)
+}
 
 const importInputRef = ref<HTMLInputElement | null>(null)
 const notificationPermission = ref<'unsupported' | NotificationPermission>(
@@ -89,6 +113,23 @@ function onImportFileChange(ev: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
+  emit('importBackup', file)
+}
+
+const backupPaste = ref('')
+
+function onBackupDrop(event: DragEvent) {
+  const file = event.dataTransfer?.files?.[0]
+  if (file) emit('importBackup', file)
+}
+
+function importPastedBackup() {
+  const text = backupPaste.value.trim()
+  if (!text) return
+  const active = document.activeElement
+  if (active instanceof HTMLElement) active.blur()
+  const file = new File([text], 'liftbig-backup.json', { type: 'application/json' })
+  backupPaste.value = ''
   emit('importBackup', file)
 }
 
@@ -119,9 +160,11 @@ watch(
     refreshNotificationPermission()
     if (open) {
       syncBodyWeightDraftFromProp()
+      syncHeightDraft()
       scrollActiveThemeIntoView()
     } else if (wasOpen) {
       commitBodyWeight()
+      commitHeight()
     }
   },
   { immediate: true },
@@ -481,6 +524,95 @@ watch(
               @blur="commitBodyWeight(); syncBodyWeightDraftFromProp()"
             />
           </label>
+          <label class="mt-3 block text-[11px] font-semibold text-muted">
+            Height (inches)
+            <input
+              v-model="heightDraft"
+              type="text"
+              inputmode="decimal"
+              data-touch-input
+              class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              placeholder="e.g. 70"
+              @blur="commitHeight()"
+            />
+          </label>
+          <p v-if="settings.heightInches.value > 0" class="mt-2 text-[11px] text-muted">
+            About {{ Math.floor(settings.heightInches.value / 12) }} ft
+            {{ Math.round(settings.heightInches.value % 12) }} in
+          </p>
+        </section>
+
+        <section v-if="platform !== 'web'" class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">
+            {{ platform === 'android' ? 'Health Connect' : 'Apple Health' }}
+          </h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            When allowed, LiftBig reads body weight and height, and writes workouts you log. Sleep, heart
+            rate, and medical records stay unread.
+          </p>
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">
+              {{ platform === 'android' ? 'Use Health Connect' : 'Use Apple Health' }}
+            </span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.appleHealthEnabled.value"
+              @change="settings.setAppleHealthEnabled(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+        </section>
+
+        <section v-if="platform === 'ios'" class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">iCloud sync</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Keep this journal in step across your devices with your private iCloud account. Off leaves the
+            data only on this iPhone.
+          </p>
+          <label class="flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Sync with iCloud</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.iCloudSyncEnabled.value"
+              @change="settings.setICloudSyncEnabled(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+        </section>
+
+        <section v-if="nativeApp" class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+          <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">LiftBig Pro</h3>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            The journal, Health, iCloud, and reminders stay with your purchase. Pro unlocks the Apple Watch
+            companion and adaptive planning.
+          </p>
+          <p v-if="proActive" class="text-sm font-bold text-foreground">Pro is active on this Apple ID.</p>
+          <div v-else class="flex flex-col gap-2">
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground"
+              @click="purchasePro(yearlyId)"
+            >
+              Yearly Pro
+            </button>
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border bg-card-inner py-3 text-sm font-bold text-foreground"
+              @click="purchasePro(monthlyId)"
+            >
+              Monthly Pro
+            </button>
+            <button
+              type="button"
+              class="w-full rounded-xl border border-border py-3 text-sm font-bold text-muted"
+              @click="restorePro()"
+            >
+              Restore purchases
+            </button>
+          </div>
+          <p v-if="proStatus" class="mt-2 text-[11px] leading-snug text-muted">
+            {{ proStatus }}
+          </p>
         </section>
 
         <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
@@ -529,8 +661,8 @@ watch(
         <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
           <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Daily lift reminder</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
-            Gentle nudge on Home when it's past your chosen time and you haven't logged today. Uses a system
-            notification when allowed; otherwise an in-app banner.
+            Gentle nudge on Home when it's past your chosen time and you haven't logged today. On iPhone
+            this is a normal notification at the time you set, including when LiftBig is closed.
           </p>
           <label class="mb-3 flex items-center justify-between gap-3">
             <span class="text-sm font-bold text-foreground">Enable daily nudge</span>
@@ -562,15 +694,6 @@ watch(
               class="h-5 w-5 rounded border-border"
               :checked="settings.doubleTapCopyWeight.value"
               @change="settings.setDoubleTapCopyWeight(($event.target as HTMLInputElement).checked)"
-            />
-          </label>
-          <label class="mb-3 flex items-center justify-between gap-3">
-            <span class="text-sm font-bold text-foreground">Auto-advance to reps after weight</span>
-            <input
-              type="checkbox"
-              class="h-5 w-5 rounded border-border"
-              :checked="settings.autoAdvanceWeightToReps.value"
-              @change="settings.setAutoAdvanceWeightToReps(($event.target as HTMLInputElement).checked)"
             />
           </label>
           <label class="flex items-center justify-between gap-3">
@@ -661,14 +784,19 @@ watch(
           </p>
         </section>
 
-        <section class="mb-4 rounded-2xl border border-border bg-card-inner p-4">
+        <section
+          class="mb-4 rounded-2xl border border-border bg-card-inner p-4"
+          @dragover.prevent
+          @drop.prevent="onBackupDrop"
+        >
           <h3 class="mb-1 text-[11px] font-extrabold uppercase tracking-wider text-foreground/80">Backup</h3>
           <p class="mb-3 text-[11px] leading-snug text-muted">
             Your journal is saved in this browser automatically (including after you close it or when the app is
             updated), using storage under <span class="font-mono text-[10px]">liftbig_*</span>. Export saves everything
             in that namespace today—workouts, plans, settings, custom themes, favorites—and future keys using that prefix are included
             automatically. Import replaces all of it on this device. Clearing site data, private browsing limits, or a
-            different browser won’t see the same data—use export if you might switch devices.
+            different browser won’t see the same data—use export if you might switch devices. On the iPhone
+            simulator, paste the backup text below. Do not add the file to the Xcode project.
           </p>
           <input
             ref="importInputRef"
@@ -696,9 +824,33 @@ watch(
               <i class="fa-solid fa-upload mr-2" aria-hidden="true" />
               Import backup…
             </button>
+            <label class="text-[11px] font-semibold text-muted">
+              Paste backup JSON
+              <textarea
+                v-model="backupPaste"
+                rows="4"
+                enterkeyhint="done"
+                data-touch-input
+                class="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 font-mono text-base text-foreground outline-none focus:border-primary"
+                placeholder="Paste the contents of the exported .json file"
+              />
+            </label>
+            <button
+              type="button"
+              class="w-full rounded-xl bg-primary py-3 text-sm font-bold text-foreground disabled:opacity-40"
+              :disabled="!backupPaste.trim()"
+              @click="importPastedBackup"
+            >
+              Import pasted backup
+            </button>
           </div>
         </section>
 
+        <p class="mb-3 text-[11px] leading-snug text-muted">
+          LiftBig is a workout log, not medical advice.
+          <a class="font-bold text-primary" :href="PRIVACY_POLICY_PATH">Privacy policy</a>
+          <span v-if="SUPPORT_EMAIL"> · {{ SUPPORT_EMAIL }}</span>
+        </p>
         <button
           type="button"
           class="mt-2 w-full rounded-xl border border-border py-3 text-sm font-bold text-foreground hover:bg-card-inner"

@@ -6,6 +6,17 @@
 const warnedQuota = { value: false }
 const SHADOW_SUFFIX = '__shadow'
 
+let storageChangeListener: (() => void) | null = null
+
+/** Native builds mirror liftbig_* writes to a private file. The website has no listener. */
+export function setStorageChangeListener(listener: (() => void) | null): void {
+  storageChangeListener = listener
+}
+
+function notifyStorageChange(): void {
+  storageChangeListener?.()
+}
+
 export function loadJson<T>(key: string, fallback: T): T {
   if (typeof localStorage === 'undefined') return fallback
   try {
@@ -61,6 +72,7 @@ export function saveJson(key: string, value: unknown): void {
     localStorage.setItem(key, raw)
     // Shadow copy helps recover from rare interrupted/corrupted writes across refreshes/updates.
     localStorage.setItem(`${key}${SHADOW_SUFFIX}`, raw)
+    notifyStorageChange()
   } catch (e) {
     if (!warnedQuota.value && e instanceof DOMException && e.name === 'QuotaExceededError') {
       warnedQuota.value = true

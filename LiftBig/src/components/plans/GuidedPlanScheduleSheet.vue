@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Capacitor } from '@capacitor/core'
+import MonthDatePicker from '@/components/calendar/MonthDatePicker.vue'
 import type { PlanCatalogEntry } from '@/types/planCatalog'
 import type { WorkoutTemplate } from '@/types/workout'
 import { isValidDateKey, todayKey } from '@/utils/dateKey'
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 const startDateInput = ref('')
 const restDaysPerWeek = ref(0)
 const restEveryWorkoutDays = ref(0)
+const nativeApp = Capacitor.isNativePlatform()
 
 const isFolderMode = computed(() => props.entry?.scheduleMode === 'folder')
 
@@ -87,7 +90,9 @@ function submit() {
         </p>
 
         <label class="mt-4 block text-[10px] font-bold uppercase tracking-wide text-muted">Start date</label>
+        <MonthDatePicker v-if="nativeApp" v-model="startDateInput" class="mt-2" />
         <input
+          v-else
           v-model="startDateInput"
           type="date"
           class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"

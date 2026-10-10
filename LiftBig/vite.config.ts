@@ -6,14 +6,21 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const nativeBuild = process.env.CAPACITOR === '1'
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __LIFTBIG_NATIVE__: JSON.stringify(nativeBuild),
+  },
   plugins: [
     tailwindcss(),
     vue(),
     vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: nativeBuild ? null : 'auto',
+      selfDestroying: nativeBuild,
       includeAssets: ['favicon.ico', 'pwa-192x192.svg', 'pwa-512x512.svg'],
       manifest: {
         name: 'LiftBig',

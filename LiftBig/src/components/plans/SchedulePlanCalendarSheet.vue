@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { Capacitor } from '@capacitor/core'
+import MonthDatePicker from '@/components/calendar/MonthDatePicker.vue'
 import type { WorkoutTemplate } from '@/types/workout'
 import { isValidDateKey, todayKey } from '@/utils/dateKey'
 import { estimatePlanDurationMinutes, formatPlanDurationEstimate } from '@/utils/planDuration'
@@ -17,6 +19,7 @@ const emit = defineEmits<{
 /** HTML date input value YYYY-MM-DD */
 const startDateInput = ref('')
 const restDaysPerWeek = ref(0)
+const nativeApp = Capacitor.isNativePlatform()
 
 watch(
   () => props.open,
@@ -62,7 +65,9 @@ function submit() {
         <p class="mt-1 text-center text-xs text-muted">{{ template.exercises.length }} exercises · {{ durationLabel() }}</p>
 
         <label class="mt-4 block text-[10px] font-bold uppercase tracking-wide text-muted">Start date</label>
+        <MonthDatePicker v-if="nativeApp" v-model="startDateInput" class="mt-2" />
         <input
+          v-else
           v-model="startDateInput"
           type="date"
           class="mt-1 w-full rounded-lg border border-border bg-card-inner px-3 py-2 text-foreground outline-none focus:border-primary"

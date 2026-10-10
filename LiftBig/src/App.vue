@@ -17,6 +17,8 @@ import { useTemplates } from '@/composables/useTemplates'
 import { useSettings } from '@/composables/useSettings'
 import { maybeFireDailyLiftNotification } from '@/utils/dailyLiftReminder'
 import { clearBackupRestorePending, isBackupRestorePending } from '@/utils/liftbigBackup'
+import ImportOnboardingSheet from '@/components/layout/ImportOnboardingSheet.vue'
+import { useNativeServices } from '@/native/useNativeServices'
 
 const workouts = useLocalWorkouts()
 const templates = useTemplates()
@@ -31,6 +33,8 @@ provide(settingsInjectionKey, settings)
 provide(libraryFavoritesInjectionKey, libraryFavorites)
 provide(planFavoritesInjectionKey, planFavorites)
 provide(pickAPlanStateInjectionKey, pickAPlanState)
+
+const { showImport, dismissImport, importWebsiteBackup } = useNativeServices(workouts, settings)
 
 let dailyReminderInterval: ReturnType<typeof setInterval> | null = null
 
@@ -72,4 +76,9 @@ onBeforeUnmount(() => {
 
 <template>
   <RouterView />
+  <ImportOnboardingSheet
+    v-if="showImport"
+    @dismiss="dismissImport()"
+    @import-file="importWebsiteBackup($event)"
+  />
 </template>
