@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+
+import '../date_key.dart';
+import '../journal/journal_repository.dart';
+import '../progress/lift_progress.dart';
+import '../theme.dart';
+
+class ProgressPage extends StatefulWidget {
+  const ProgressPage({
+    super.key,
+    required this.journal,
+    this.refreshToken = 0,
+  });
+
+  final JournalRepository journal;
+  final int refreshToken;
+
+  @override
+  State<ProgressPage> createState() => _ProgressPageState();
+}
+
+class _ProgressPageState extends State<ProgressPage> {
+  List<LiftSeries> _series = const [];
+  Set<String> _earned = const {};
+  String? _selected;
+  var _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(ProgressPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) _load();
+  }
+
+  Future<void> _load() async {
+    final days = await widget.journal.allDays();
+    if (!mounted) return;
+    final series = strengthSeries(days);
+    setState(() {
+      _series = series;
+      _earned = unlockedAchievements(days);
+      _selected = series.any((item) => item.name == _selected)
+          ? _selected
+          : (series.isEmpty ? null : series.first.name);
+      _loaded = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    LiftSeries? selected;
+    for (final item in _series) {
+      if (item.name == _selected) selected = item;
+    }
+    final earned = [
+      for (final item in achievements)
+        if (_earned.contains(item.id)) item,
+    ];
+    final locked = [
+      for (final item in achievements)
+        if (!_earned.contains(item.id)) item,
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        const Text(
+          'Lifts over time',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Working sets only. Warmup sets stay in the log and do not move these numbers.',
+          style: TextStyle(color: LiftBigColors.muted),
+        ),
+        const SizedBox(height: 12),
+        if (_series.isEmpty)
+          const Text(
+            'Log a working set to see a lift over time.',
+            style: TextStyle(color: LiftBigColors.muted),
+          )
+        else ...[
+          DropdownButton<String>(
+            isExpanded: true,
+            value: _selected,
+            dropdownColor: LiftBigColors.card,
+            items: [
+              for (final item in _series)
+                DropdownMenuItem(value: item.name, child: Text(item.name)),
+            ],
+            onChanged: (value) => setState(() => _selected = value),
+          ),
+          if (selected != null) ...[
+            const SizedBox(height: 12),
+            _WeightChart(sessions: selected.sessions),
+            const SizedBox(height: 8),
+            Text(
+              'Best ${selected.sessions.map((point) => point.maxWeightLbs).reduce((a, b) => a > b ? a : b).toStringAsFixed(0)} lb'
+              ' · ${selected.sessions.length} sessions',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            for (final point in selected.sessions.reversed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  '${formatDisplayDate(point.dateKey)} · ${point.maxWeightLbs.toStringAsFixed(0)} lb'
+                  ' · ${point.setCount} sets · ${point.volumeLbs.toStringAsFixed(0)} lb volume',
+                ),
+              ),
+          ],
+        ],
+        const SizedBox(height: 24),
+        Text(
+          'Achievements · ${earned.length} of ${achievements.length}',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        if (earned.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'None earned yet. A logged working day unlocks the first one.',
+              style: TextStyle(color: LiftBigColors.muted),
+            ),
+          ),
+        for (final item in earned) _AchievementTile(item: item, earned: true),
+        for (final item in locked) _AchievementTile(item: item, earned: false),
+      ],
+    );
+  }
+}
+
+class _WeightChart extends StatelessWidget {
+  const _WeightChart({required this.sessions});
+
+  final List<LiftSessionPoint> sessions;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxWeight = sessions
+        .map((point) => point.maxWeightLbs)
+        .reduce((a, b) => a > b ? a : b);
+    return SizedBox(
+      height: 120,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final point in sessions)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Tooltip(
+                  message:
+                      '${point.dateKey} · ${point.maxWeightLbs.toStringAsFixed(0)} lb',
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: FractionallySizedBox(
+                      heightFactor: maxWeight <= 0
+                          ? 0
+                          : (point.maxWeightLbs / maxWeight).clamp(0.08, 1),
+                      widthFactor: 1,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: LiftBigColors.primary,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  const _AchievementTile({required this.item, required this.earned});
+
+  final Achievement item;
+  final bool earned;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: earned ? const Color(0xFF163020) : LiftBigColors.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: earned ? LiftBigColors.success : LiftBigColors.border,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              earned ? Icons.emoji_events : Icons.emoji_events_outlined,
+              color: earned ? LiftBigColors.success : LiftBigColors.muted,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: earned
+                          ? LiftBigColors.foreground
+                          : LiftBigColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.description,
+                    style: const TextStyle(color: LiftBigColors.muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

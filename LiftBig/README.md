@@ -4,12 +4,10 @@ Vue 3 + Vite workout app.
 
 ## Git remotes and live deploys
 
-- **Canonical repo:** [codycon1/LiftBig](https://github.com/codycon1/LiftBig) (`origin`)
-- Plain `git push` updates **codycon1** and the live mirror so production stays in sync
-- On `npm install`, `scripts/install-git-hooks.mjs` re-applies this remote setup
-- Production deploy: [`.github/workflows/deploy-cloudflare.yml`](../.github/workflows/deploy-cloudflare.yml) on every push to `main`
-
-Cloudflare should use **codycon1/LiftBig**, root directory `LiftBig`, build `npm run build`, output `dist`. Add Actions secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (or `CLOUDFLARE_DEPLOY_HOOK`) on the codycon1 repo.
+- **Working repo:** [4vpvjyx4wr-star/LiftBig](https://github.com/4vpvjyx4wr-star/LiftBig) (`origin`)
+- Plain `git push` updates only that repo. It does not push to codycon1.
+- On `npm install`, `scripts/install-git-hooks.mjs` keeps `origin` on this account and removes a codycon1 push URL if one was left behind.
+- The older Cloudflare workflow still describes codycon1. Production deploys are not part of a push to this repo.
 
 ## Project Setup
 

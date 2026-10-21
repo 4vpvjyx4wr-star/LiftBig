@@ -25,46 +25,27 @@ const repoRoot = execSync('git rev-parse --show-toplevel', {
   encoding: 'utf8',
 }).trim()
 
-/** Canonical GitHub repo — all work ships here. */
-const CODYCON_ORIGIN = 'https://github.com/codycon1/LiftBig.git'
-/**
- * Live mirror (Cloudflare Pages Action / git integration historically pointed here).
- * Plain `git push` updates both so production always receives codycon1's main.
- */
-const LIVE_MIRROR = 'https://github.com/4vpvjyx4wr-star/LiftBig.git'
+/** Owner repo. Pushes stay here so this account can edit from Cursor on other devices. */
+const OWNER_ORIGIN = 'https://github.com/4vpvjyx4wr-star/LiftBig.git'
 
-// 1. Route git hooks to the version-controlled .githooks dir.
+// Route git hooks to the version-controlled .githooks dir.
 git('config core.hooksPath .githooks', { stdio: 'inherit' })
 
-// 2. Ensure `origin` fetch URL is always codycon1/LiftBig.
+// Never point origin at codycon1. That remote rejected edits from this account.
 const originUrl = tryGit('remote get-url origin')
 if (!originUrl) {
-  tryGit(`remote add origin ${CODYCON_ORIGIN}`)
-} else if (!originUrl.includes('codycon1/LiftBig')) {
-  git(`remote set-url origin ${CODYCON_ORIGIN}`, { stdio: 'inherit' })
+  git(`remote add origin ${OWNER_ORIGIN}`, { stdio: 'inherit' })
+} else if (originUrl.includes('codycon1/LiftBig')) {
+  git(`remote set-url origin ${OWNER_ORIGIN}`, { stdio: 'inherit' })
+  tryGit('remote set-url --delete --push origin')
 }
 
-// 3. Plain `git push` defaults to origin.
-git('config push.default current', { stdio: 'inherit' })
-git('config remote.pushDefault origin', { stdio: 'inherit' })
-
-// 4. origin pushes to BOTH remotes (codycon1 first, then live mirror).
-//    Clear any prior push URLs by resetting origin, then add both push targets.
-git(`remote set-url origin ${CODYCON_ORIGIN}`, { stdio: 'inherit' })
-tryGit(`remote set-url --add --push origin ${CODYCON_ORIGIN}`)
-tryGit(`remote set-url --add --push origin ${LIVE_MIRROR}`)
-
-const branch = tryGit('rev-parse --abbrev-ref HEAD')
-if (branch && branch !== 'HEAD') {
-  git(`config branch.${branch}.remote origin`, { stdio: 'inherit' })
-  git(`config branch.${branch}.merge refs/heads/${branch}`, { stdio: 'inherit' })
-}
-
-// 5. Keep `upstream` pointing at the live mirror for fetch/manual use.
-const remotes = (tryGit('remote') ?? '').split('\n').filter(Boolean)
-if (remotes.includes('upstream')) {
-  tryGit(`remote set-url upstream ${LIVE_MIRROR}`)
-  tryGit(`remote set-url --push upstream ${LIVE_MIRROR}`)
-} else {
-  tryGit(`remote add upstream ${LIVE_MIRROR}`)
+const pushUrls = (tryGit('remote get-url --push --all origin') ?? '')
+  .split('\n')
+  .map((url) => url.trim())
+  .filter(Boolean)
+for (const url of pushUrls) {
+  if (url.includes('codycon1/LiftBig')) {
+    tryGit(`remote set-url --delete --push origin ${url}`)
+  }
 }
