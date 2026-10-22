@@ -10,6 +10,7 @@ import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../sync/sync_controller.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 import '../utils/distance_units.dart';
 import '../utils/weight_units.dart';
 import 'rest_timer_scope.dart';
@@ -24,10 +25,12 @@ class SettingsPage extends StatefulWidget {
     super.key,
     required this.sync,
     required this.dailyReminder,
+    required this.themes,
   });
 
   final SyncController sync;
   final DailyLiftReminderScheduler dailyReminder;
+  final LiftBigThemeController themes;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -350,6 +353,12 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _selectTheme(String id) async {
+    widget.themes.select(id);
+    liftBigSelectionHaptic();
+    await widget.sync.journal.setColorThemeId(widget.themes.palette.id);
+  }
+
   Future<void> _saveAverageRest() async {
     final parsed = int.tryParse(_averageRest.text.trim());
     if (parsed == null) return;
@@ -447,9 +456,9 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
       ),
       const SizedBox(height: 4),
-      const Text(
+       Text(
         'Calculators from the LiftBig web app.',
-        style: TextStyle(color: LiftBigColors.muted),
+        style: TextStyle(color: context.liftBig.muted),
       ),
       ListTile(
         contentPadding: EdgeInsets.zero,
@@ -495,7 +504,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _proActive
               ? 'Watch companions are unlocked.'
               : 'Restore purchases. The journal stays available.',
-          style: const TextStyle(color: LiftBigColors.muted),
+          style:  TextStyle(color: context.liftBig.muted),
         ),
         trailing: TextButton(
           onPressed: _restorePro,
@@ -514,9 +523,9 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
       ),
       const SizedBox(height: 8),
-      const Text(
+       Text(
         'The journal is stored on this phone. Sync stays off until you sign in and turn this switch on.',
-        style: TextStyle(color: LiftBigColors.muted),
+        style: TextStyle(color: context.liftBig.muted),
       ),
       const SizedBox(height: 8),
       SwitchListTile(
@@ -526,17 +535,17 @@ class _SettingsPageState extends State<SettingsPage> {
           sync.syncEnabled
               ? 'On. Still uploads nothing until you are signed in.'
               : 'Off by default.',
-          style: const TextStyle(color: LiftBigColors.muted),
+          style:  TextStyle(color: context.liftBig.muted),
         ),
         value: sync.syncEnabled,
-        activeThumbColor: LiftBigColors.primary,
+        activeThumbColor: context.liftBig.primary,
         onChanged: sync.busy ? null : sync.setEnabled,
       ),
       if (sync.status != null) ...[
         const SizedBox(height: 8),
         Text(
           sync.status!,
-          style: const TextStyle(color: LiftBigColors.foreground),
+          style:  TextStyle(color: context.liftBig.foreground),
         ),
       ],
       const SizedBox(height: 24),
@@ -558,7 +567,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           Text(
             _authError!,
-            style: const TextStyle(color: LiftBigColors.primary),
+            style:  TextStyle(color: context.liftBig.primary),
           ),
         ],
         const SizedBox(height: 12),
@@ -607,46 +616,79 @@ class _SettingsPageState extends State<SettingsPage> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Fill in predicted weight and reps'),
-                subtitle: const Text(
+                subtitle:  Text(
                   'On by default. New sets start from your earlier work on that lift.',
-                  style: TextStyle(color: LiftBigColors.muted),
+                  style: TextStyle(color: context.liftBig.muted),
                 ),
                 value: _autoFill,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: _setAutoFill,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Start the timer when Done is tapped'),
-                subtitle: const Text(
+                subtitle:  Text(
                   'Off by default. The timer button next to Done still starts the rest.',
-                  style: TextStyle(color: LiftBigColors.muted),
+                  style: TextStyle(color: context.liftBig.muted),
                 ),
                 value: _timerOnDone,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: _setTimerOnDone,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Add a warmup set on new barbell compounds'),
-                subtitle: const Text(
+                subtitle:  Text(
                   'Off by default. New squats, benches, and deadlifts get one warmup set. Pull-ups and lat pulldowns do not. Days already logged stay as they are.',
-                  style: TextStyle(color: LiftBigColors.muted),
+                  style: TextStyle(color: context.liftBig.muted),
                 ),
                 value: _prescribeWarmup,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: _setPrescribeWarmup,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Rate set difficulty'),
-                subtitle: const Text(
+                subtitle:  Text(
                   'Off by default. When on, each set can be marked Easy, Moderate, or Difficult. Leave it unset if you skip it.',
-                  style: TextStyle(color: LiftBigColors.muted),
+                  style: TextStyle(color: context.liftBig.muted),
                 ),
                 value: _logDifficulty,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: _setLogDifficulty,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Color',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Named color schemes. The orange and navy look stays the default.',
+                style: TextStyle(color: context.liftBig.muted),
+              ),
+              ListenableBuilder(
+                listenable: widget.themes,
+                builder: (context, _) {
+                  final selected = widget.themes.palette.id;
+                  return Column(
+                    children: [
+                      for (final palette in liftBigThemePresets)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: _ThemeSwatch(palette: palette),
+                          title: Text(palette.label),
+                          trailing: palette.id == selected
+                              ? Icon(
+                                  Icons.check,
+                                  color: context.liftBig.primary,
+                                )
+                              : null,
+                          onTap: () => _selectTheme(palette.id),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 24),
               const Text(
@@ -654,9 +696,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'Weights stay in pounds and distances in miles in your journal. These toggles change display and entry only.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               if (_loadingPrefs)
                 const LinearProgressIndicator()
@@ -671,8 +713,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           ButtonSegment(value: WeightUnit.kg, label: Text('kg')),
                         ],
                         selected: {_weightUnit},
-                        onSelectionChanged: (value) =>
-                            _setWeightUnit(value.first),
+                        onSelectionChanged: (value) {
+                          liftBigSelectionHaptic();
+                          _setWeightUnit(value.first);
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -683,8 +727,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           ButtonSegment(value: DistanceUnit.km, label: Text('km')),
                         ],
                         selected: {_distanceUnit},
-                        onSelectionChanged: (value) =>
-                            _setDistanceUnit(value.first),
+                        onSelectionChanged: (value) {
+                          liftBigSelectionHaptic();
+                          _setDistanceUnit(value.first);
+                        },
                       ),
                     ),
                   ],
@@ -696,9 +742,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'Body weight powers strength estimates when you have no history. Time averages feed shuffle and rest defaults.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -787,29 +833,29 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'Choose sound, vibration, and/or the lock-screen notification.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Sound'),
                 value: _restAlerts.soundEnabled,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: (value) => _setRestAlert(sound: value),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Vibration'),
                 value: _restAlerts.vibrationEnabled,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: (value) => _setRestAlert(vibration: value),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Lock-screen notification'),
                 value: _restAlerts.notificationEnabled,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: (value) => _setRestAlert(notification: value),
               ),
               const SizedBox(height: 24),
@@ -818,22 +864,22 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'Reads and writes body weight, height, and workouts. Calories are Apple’s active energy for the workout window, never a LiftBig estimate.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Sync with Apple Health'),
                 value: _appleHealth,
-                activeThumbColor: LiftBigColors.primary,
+                activeThumbColor: context.liftBig.primary,
                 onChanged: _setAppleHealth,
               ),
               if (_healthNote != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   _healthNote!,
-                  style: const TextStyle(color: LiftBigColors.muted, height: 1.35),
+                  style:  TextStyle(color: context.liftBig.muted, height: 1.35),
                 ),
               ],
               const SizedBox(height: 24),
@@ -842,9 +888,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'Local notification on the days and time you choose.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               if (_loadingReminder)
                 const Padding(
@@ -859,10 +905,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     _reminder.enabled
                         ? 'Scheduled for ${_reminder.timeHHmm}'
                         : 'Off by default.',
-                    style: const TextStyle(color: LiftBigColors.muted),
+                    style:  TextStyle(color: context.liftBig.muted),
                   ),
                   value: _reminder.enabled,
-                  activeThumbColor: LiftBigColors.primary,
+                  activeThumbColor: context.liftBig.primary,
                   onChanged: _setReminderEnabled,
                 ),
                 ListTile(
@@ -879,8 +925,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     'Days',
                     style: TextStyle(
                       color: _reminder.enabled
-                          ? LiftBigColors.foreground
-                          : LiftBigColors.muted,
+                          ? context.liftBig.foreground
+                          : context.liftBig.muted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -920,9 +966,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
+               Text(
                 'JSON import is the legacy path for an existing LiftBig backup.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
@@ -946,9 +992,9 @@ class _FirebaseSetupCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: LiftBigColors.cardInner,
+        color: context.liftBig.cardInner,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: LiftBigColors.border),
+        border: Border.all(color: context.liftBig.border),
       ),
       child: const Text(
         'Firebase is not configured, so sign-in and sync do nothing.\n\n'
@@ -960,6 +1006,35 @@ class _FirebaseSetupCard extends StatelessWidget {
         'Deploy firestore.rules so a user can only read and write their own documents. '
         'Enable Email/Password in the Firebase Auth console.',
         style: TextStyle(height: 1.4),
+      ),
+    );
+  }
+}
+
+class _ThemeSwatch extends StatelessWidget {
+  const _ThemeSwatch({required this.palette});
+
+  final LiftBigPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: palette.border),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            palette.background,
+            palette.background,
+            palette.primary,
+            palette.blue,
+          ],
+          stops: const [0, 0.54, 0.77, 1],
+        ),
       ),
     );
   }

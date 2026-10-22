@@ -73,9 +73,9 @@ class _LibraryBody extends StatelessWidget {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
-              const Text(
+               Text(
                 'A lift and an exercise are the same activity. Descriptions, cues, and tutorial links come from the LiftBig catalog.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -122,7 +122,7 @@ class _LibraryBody extends StatelessWidget {
             itemBuilder: (context, index) {
               final lift = filtered[index];
               return Material(
-                color: LiftBigColors.card,
+                color: context.liftBig.card,
                 borderRadius: BorderRadius.circular(12),
                 child: ListTile(
                   title: Text(lift.name),
@@ -133,11 +133,11 @@ class _LibraryBody extends StatelessWidget {
                         (group) => muscleGroupLabels[group] ?? group,
                       ),
                     ].join(' · '),
-                    style: const TextStyle(color: LiftBigColors.muted),
+                    style:  TextStyle(color: context.liftBig.muted),
                   ),
                   trailing: lift.tutorialUrl.isEmpty
                       ? null
-                      : const Icon(Icons.smart_display_outlined, color: LiftBigColors.primary),
+                      :  Icon(Icons.smart_display_outlined, color: context.liftBig.primary),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -241,13 +241,13 @@ class _FilterChip extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        selectedColor: LiftBigColors.primary,
+        selectedColor: context.liftBig.primary,
         labelStyle: TextStyle(
-          color: selected ? LiftBigColors.foreground : LiftBigColors.muted,
+          color: selected ? context.liftBig.foreground : context.liftBig.muted,
           fontWeight: FontWeight.w700,
         ),
-        side: const BorderSide(color: LiftBigColors.border),
-        backgroundColor: LiftBigColors.card,
+        side:  BorderSide(color: context.liftBig.border),
+        backgroundColor: context.liftBig.card,
       ),
     );
   }

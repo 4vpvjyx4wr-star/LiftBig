@@ -83,11 +83,11 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
               children: [
                 Text(
                   'Weight lifted ($unitLabel)',
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    color: LiftBigColors.muted,
+                    color: context.liftBig.muted,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -103,10 +103,10 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
                   ),
-                  decoration: const InputDecoration(
+                  decoration:  InputDecoration(
                     hintText: 'Weight',
                     filled: true,
-                    fillColor: LiftBigColors.cardInner,
+                    fillColor: context.liftBig.cardInner,
                   ),
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) =>
@@ -115,11 +115,11 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                 const SizedBox(height: 16),
                 Text(
                   'Reps (to failure)',
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.6,
-                    color: LiftBigColors.muted,
+                    color: context.liftBig.muted,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -133,10 +133,10 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
                   ),
-                  decoration: const InputDecoration(
+                  decoration:  InputDecoration(
                     hintText: 'Reps',
                     filled: true,
-                    fillColor: LiftBigColors.cardInner,
+                    fillColor: context.liftBig.cardInner,
                   ),
                   onChanged: (_) => setState(() {}),
                   onSubmitted: (_) =>

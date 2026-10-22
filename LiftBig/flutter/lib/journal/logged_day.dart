@@ -185,6 +185,113 @@ List<JournalExercise> cloneExercisesForCopy(List<JournalExercise> source) {
   ];
 }
 
+String nextSupersetLabel(List<JournalExercise> exercises) {
+  final used = <String>{
+    for (final exercise in exercises)
+      if (exercise.supersetLabel?.trim().isNotEmpty ?? false)
+        exercise.supersetLabel!.trim(),
+  };
+  for (var index = 0; index < 26; index++) {
+    final letter = String.fromCharCode(65 + index);
+    if (!used.contains(letter)) return letter;
+  }
+  return 'Z';
+}
+
+bool exerciseInSuperset(JournalExercise exercise) {
+  return exercise.supersetGroupId?.trim().isNotEmpty ?? false;
+}
+
+/// Links two lifts, places them adjacent, and numbers the earlier one first.
+List<JournalExercise> linkExercisesAsSuperset(
+  List<JournalExercise> exercises,
+  String firstId,
+  String secondId, {
+  String? groupId,
+}) {
+  final firstIdx = exercises.indexWhere((exercise) => exercise.id == firstId);
+  final secondIdx = exercises.indexWhere((exercise) => exercise.id == secondId);
+  if (firstIdx < 0 || secondIdx < 0 || firstIdx == secondIdx) return exercises;
+  if (exerciseInSuperset(exercises[firstIdx]) ||
+      exerciseInSuperset(exercises[secondIdx])) {
+    return exercises;
+  }
+  final id = (groupId ?? '').trim();
+  final resolvedId = id.isEmpty ? 'ss-${newId()}' : id;
+  final label = nextSupersetLabel(exercises);
+  final lo = firstIdx < secondIdx ? firstIdx : secondIdx;
+  final hi = firstIdx < secondIdx ? secondIdx : firstIdx;
+  final next = [...exercises];
+  final atHi = next.removeAt(hi);
+  final atLo = next.removeAt(lo);
+  final pair = [
+    atLo.copyWith(
+      setSuperset: true,
+      supersetGroupId: resolvedId,
+      supersetLabel: label,
+      supersetOrder: 1,
+    ),
+    atHi.copyWith(
+      setSuperset: true,
+      supersetGroupId: resolvedId,
+      supersetLabel: label,
+      supersetOrder: 2,
+    ),
+  ];
+  next.insertAll(lo, pair);
+  return next;
+}
+
+List<JournalExercise> unlinkSupersetGroup(
+  List<JournalExercise> exercises,
+  String groupId,
+) {
+  final id = groupId.trim();
+  if (id.isEmpty) return exercises;
+  return [
+    for (final exercise in exercises)
+      if (exercise.supersetGroupId?.trim() == id)
+        exercise.copyWith(
+          setSuperset: true,
+          supersetGroupId: null,
+          supersetLabel: null,
+          supersetOrder: null,
+        )
+      else
+        exercise,
+  ];
+}
+
+List<JournalExercise> swapSupersetPairOrder(
+  List<JournalExercise> exercises,
+  String groupId,
+) {
+  final id = groupId.trim();
+  if (id.isEmpty) return exercises;
+  final indices = <int>[
+    for (var index = 0; index < exercises.length; index++)
+      if (exercises[index].supersetGroupId?.trim() == id) index,
+  ];
+  if (indices.length != 2) return exercises;
+  final next = [...exercises];
+  final first = next[indices[0]];
+  final second = next[indices[1]];
+  final label = first.supersetLabel ?? second.supersetLabel;
+  next[indices[0]] = second.copyWith(
+    setSuperset: true,
+    supersetGroupId: id,
+    supersetLabel: label,
+    supersetOrder: 1,
+  );
+  next[indices[1]] = first.copyWith(
+    setSuperset: true,
+    supersetGroupId: id,
+    supersetLabel: label,
+    supersetOrder: 2,
+  );
+  return next;
+}
+
 String? supersetBadge(JournalExercise exercise) {
   final label = exercise.supersetLabel?.trim();
   if (label == null || label.isEmpty) return null;

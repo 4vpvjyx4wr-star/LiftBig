@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
+import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
 import 'assign_plan_sheet.dart';
@@ -86,13 +87,14 @@ class _HomePageState extends State<HomePage> {
     _reload();
   }
 
-  Future<void> _openLog() async {
+  Future<void> _openLog([String? exerciseId]) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => DayPage(
           journal: widget.journal,
           dateKey: _selectedKey,
           onOpenSettings: widget.onOpenSettings,
+          initialExerciseId: exerciseId,
         ),
       ),
     );
@@ -173,6 +175,9 @@ class _HomePageState extends State<HomePage> {
     );
     final prescribeWarmup = await widget.journal.prescribeWarmupEnabled();
     for (final lift in pick.workout.lifts) {
+      final prescribed = prescriptionFromCatalogSets([
+        for (final set in lift.sets) (reps: set.reps, weight: set.weight),
+      ]);
       await widget.journal.addExercise(
         dateKey: _selectedKey,
         name: lift.name,
@@ -181,13 +186,15 @@ class _HomePageState extends State<HomePage> {
         isCore: lift.isCore,
         isCircuit: lift.isCircuit,
         prescribeWarmup: prescribeWarmup,
+        targetReps: prescribed.targetReps,
+        targetWeight: prescribed.targetWeight,
         sets: [
-          for (var i = 0; i < lift.sets.length; i++)
+          for (var i = 0; i < prescribed.sets.length; i++)
             JournalSet(
               id: '',
               sortOrder: i,
-              reps: lift.sets[i].reps,
-              weight: lift.sets[i].weight,
+              reps: prescribed.sets[i].reps,
+              weight: prescribed.sets[i].weight,
             ),
         ],
       );
@@ -258,8 +265,8 @@ class _HomePageState extends State<HomePage> {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: LiftBigColors.muted,
+                    style:  TextStyle(
+                      color: context.liftBig.muted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -335,11 +342,11 @@ class _DayCell extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(2),
       child: Material(
-        color: selected ? LiftBigColors.primary.withValues(alpha: 0.18) : LiftBigColors.card,
+        color: selected ? context.liftBig.primary.withValues(alpha: 0.18) : context.liftBig.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(
-            color: today ? LiftBigColors.primary : LiftBigColors.border,
+            color: today ? context.liftBig.primary : context.liftBig.border,
           ),
         ),
         child: InkWell(
@@ -354,16 +361,16 @@ class _DayCell extends StatelessWidget {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(
-                    color: LiftBigColors.primary,
+                  decoration:  BoxDecoration(
+                    color: context.liftBig.primary,
                     shape: BoxShape.circle,
                   ),
                 )
               else if (summary?.isRestDay == true)
-                const Text(
+                 Text(
                   'R',
                   style: TextStyle(
-                    color: LiftBigColors.success,
+                    color: context.liftBig.success,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
@@ -396,7 +403,7 @@ class _DayPanel extends StatelessWidget {
   final String dateKey;
   final bool isToday;
   final JournalDay? day;
-  final VoidCallback onLog;
+  final void Function([String? exerciseId]) onLog;
   final ValueChanged<bool> onRest;
   final VoidCallback onCopy;
   final VoidCallback onMove;
@@ -438,8 +445,8 @@ class _DayPanel extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: resting && workoutName == null
-                              ? LiftBigColors.success
-                              : LiftBigColors.foreground,
+                              ? context.liftBig.success
+                              : context.liftBig.foreground,
                         ),
                       ),
                       if (showPlan) ...[
@@ -448,8 +455,8 @@ class _DayPanel extends StatelessWidget {
                           planName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: LiftBigColors.muted,
+                          style:  TextStyle(
+                            color: context.liftBig.muted,
                             fontSize: 13,
                           ),
                         ),
@@ -460,8 +467,8 @@ class _DayPanel extends StatelessWidget {
                           day!.notes!,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: LiftBigColors.muted,
+                          style:  TextStyle(
+                            color: context.liftBig.muted,
                             fontSize: 13,
                           ),
                         ),
@@ -507,15 +514,15 @@ class _DayPanel extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 44),
                         foregroundColor: resting
-                            ? LiftBigColors.success
-                            : LiftBigColors.foreground,
+                            ? context.liftBig.success
+                            : context.liftBig.foreground,
                         backgroundColor: resting
-                            ? LiftBigColors.success.withValues(alpha: 0.12)
-                            : LiftBigColors.cardInner,
+                            ? context.liftBig.success.withValues(alpha: 0.12)
+                            : context.liftBig.cardInner,
                         side: BorderSide(
                           color: resting
-                              ? LiftBigColors.success
-                              : LiftBigColors.border,
+                              ? context.liftBig.success
+                              : context.liftBig.border,
                         ),
                       ),
                       child: Text(resting ? 'Clear rest' : 'Rest day'),
@@ -529,14 +536,14 @@ class _DayPanel extends StatelessWidget {
               onPressed: onAssignPlan,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                foregroundColor: LiftBigColors.foreground,
-                backgroundColor: LiftBigColors.cardInner,
-                side: const BorderSide(color: LiftBigColors.border),
+                foregroundColor: context.liftBig.foreground,
+                backgroundColor: context.liftBig.cardInner,
+                side:  BorderSide(color: context.liftBig.border),
               ),
-              icon: const Icon(
+              icon:  Icon(
                 Icons.assignment_outlined,
                 size: 18,
-                color: LiftBigColors.primary,
+                color: context.liftBig.primary,
               ),
               label: const Text('Assign a plan'),
             ),
@@ -566,14 +573,14 @@ class _DayPanel extends StatelessWidget {
                 onPressed: onClearDay,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(40),
-                  foregroundColor: LiftBigColors.foreground,
-                  backgroundColor: LiftBigColors.cardInner,
-                  side: const BorderSide(color: LiftBigColors.border),
+                  foregroundColor: context.liftBig.foreground,
+                  backgroundColor: context.liftBig.cardInner,
+                  side:  BorderSide(color: context.liftBig.border),
                 ),
-                icon: const Icon(
+                icon:  Icon(
                   Icons.delete_outline,
                   size: 16,
-                  color: LiftBigColors.primary,
+                  color: context.liftBig.primary,
                 ),
                 label: const Text('Clear day'),
               ),
@@ -584,7 +591,7 @@ class _DayPanel extends StatelessWidget {
                 if (i > 0) const SizedBox(height: 8),
                 _ExerciseCard(
                   exercise: exercises[i],
-                  onOpen: onLog,
+                  onOpen: () => onLog(exercises[i].id),
                   onEdit: () => onEditExercise(exercises[i]),
                   onInfo: () => onExerciseInfo(exercises[i]),
                 ),
@@ -612,10 +619,10 @@ class _DateBox extends StatelessWidget {
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        color: LiftBigColors.cardInner,
+        color: context.liftBig.cardInner,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isToday ? LiftBigColors.primary : LiftBigColors.border,
+          color: isToday ? context.liftBig.primary : context.liftBig.border,
         ),
       ),
       child: Column(
@@ -623,7 +630,7 @@ class _DateBox extends StatelessWidget {
           Text(
             weekday,
             style: TextStyle(
-              color: isToday ? LiftBigColors.primary : LiftBigColors.muted,
+              color: isToday ? context.liftBig.primary : context.liftBig.muted,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.6,
@@ -635,8 +642,8 @@ class _DateBox extends StatelessWidget {
           ),
           Text(
             month,
-            style: const TextStyle(
-              color: LiftBigColors.muted,
+            style:  TextStyle(
+              color: context.liftBig.muted,
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
@@ -666,11 +673,11 @@ class _SecondaryAction extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 40),
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        foregroundColor: LiftBigColors.foreground,
-        backgroundColor: LiftBigColors.cardInner,
-        side: const BorderSide(color: LiftBigColors.border),
+        foregroundColor: context.liftBig.foreground,
+        backgroundColor: context.liftBig.cardInner,
+        side:  BorderSide(color: context.liftBig.border),
       ),
-      icon: Icon(icon, size: 16, color: LiftBigColors.muted),
+      icon: Icon(icon, size: 16, color: context.liftBig.muted),
       label: Text(label),
     );
   }
@@ -692,10 +699,10 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: LiftBigColors.cardInner,
+      color: context.liftBig.cardInner,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: LiftBigColors.border),
+        side:  BorderSide(color: context.liftBig.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -717,7 +724,7 @@ class _ExerciseCard extends StatelessWidget {
                     onPressed: onEdit,
                     tooltip: 'Edit lift',
                     style: IconButton.styleFrom(
-                      foregroundColor: LiftBigColors.primary,
+                      foregroundColor: context.liftBig.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: const EdgeInsets.all(4),
                       minimumSize: const Size(32, 32),
@@ -729,7 +736,7 @@ class _ExerciseCard extends StatelessWidget {
                     onPressed: onInfo,
                     tooltip: 'Exercise info',
                     style: IconButton.styleFrom(
-                      foregroundColor: LiftBigColors.primary,
+                      foregroundColor: context.liftBig.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: const EdgeInsets.all(4),
                       minimumSize: const Size(32, 32),
@@ -744,7 +751,7 @@ class _ExerciseCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     exercise.notes!,
-                    style: const TextStyle(color: LiftBigColors.muted, fontSize: 13),
+                    style:  TextStyle(color: context.liftBig.muted, fontSize: 13),
                   ),
                 ),
               for (final set in exercise.sets)
@@ -777,7 +784,8 @@ String _setLine(JournalExercise exercise, JournalSet set) {
   }
   final done = set.checked ? 'Done · ' : '';
   final warmup = set.isWarmup ? 'Warmup · ' : '';
-  final reps = set.reps.isEmpty ? '—' : set.reps;
+  final loggedReps = loggedRepsField(set.reps);
+  final reps = loggedReps.isEmpty ? '—' : loggedReps;
   final weight = set.weight.isEmpty ? '—' : '${set.weight} lb';
   final time = set.durationSeconds?.trim();
   final timeLabel = exercise.isCore && time != null && time.isNotEmpty

@@ -134,6 +134,10 @@ class JournalExercise {
     String? prescribedWeight,
     int? prescribedSetCount,
     bool setPrescription = false,
+    String? supersetGroupId,
+    String? supersetLabel,
+    int? supersetOrder,
+    bool setSuperset = false,
   }) {
     return JournalExercise(
       id: id,
@@ -151,9 +155,9 @@ class JournalExercise {
       loggedCalories: loggedCalories,
       targetReps: setTargetReps ? targetReps : this.targetReps,
       targetWeight: setTargetWeight ? targetWeight : this.targetWeight,
-      supersetGroupId: supersetGroupId,
-      supersetLabel: supersetLabel,
-      supersetOrder: supersetOrder,
+      supersetGroupId: setSuperset ? supersetGroupId : this.supersetGroupId,
+      supersetLabel: setSuperset ? supersetLabel : this.supersetLabel,
+      supersetOrder: setSuperset ? supersetOrder : this.supersetOrder,
       preferredSwapLibraryIds: preferredSwapLibraryIds,
       targetRestSeconds: targetRestSeconds,
       prescribedReps: setPrescription ? prescribedReps : this.prescribedReps,

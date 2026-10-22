@@ -14,6 +14,7 @@ import '../utils/weight_units.dart';
 import '../utils/youtube_video_id.dart';
 import 'chart_axis_labels.dart';
 import 'exercise_tutorial.dart';
+import 'liftbig_sheet.dart';
 
 /// Catalog lift for a logged exercise: library id first, then normalized name.
 LibraryLift? catalogLiftForLoggedExercise(
@@ -40,16 +41,9 @@ Future<void> showExerciseInfoSheet(
   required String exerciseName,
   String? libraryId,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    isDismissible: true,
-    enableDrag: true,
-    backgroundColor: LiftBigColors.background,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      side: BorderSide(color: LiftBigColors.border),
-    ),
+  return showLiftBigSheet<void>(
+    context,
+    backgroundColor: context.liftBig.background,
     builder: (context) {
       return ExerciseInfoSheet(
         journal: journal,
@@ -152,13 +146,9 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
     final tutorialUrl = lift?.tutorialUrl.trim() ?? '';
     final tutorialVideoId = youtubeVideoIdFromUrl(tutorialUrl);
     final unitLabel = _unit == WeightUnit.lb ? 'lb' : 'kg';
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: media.size.height * 0.92),
-          child: Column(
+    return Padding(
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -184,10 +174,10 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                       Text(
                         'Warmup sets stay in the log and do not move this chart.',
                         style: TextStyle(
-                          color: LiftBigColors.muted,
+                          color: context.liftBig.muted,
                           fontSize: 13,
                         ),
                       ),
@@ -195,12 +185,12 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
                       if (_historyError != null)
                         Text(
                           _historyError!,
-                          style: const TextStyle(color: LiftBigColors.muted),
+                          style:  TextStyle(color: context.liftBig.muted),
                         )
                       else if (_sessions.isEmpty)
-                        const Text(
+                         Text(
                           'No working sets logged for this lift yet.',
-                          style: TextStyle(color: LiftBigColors.muted),
+                          style: TextStyle(color: context.liftBig.muted),
                         )
                       else
                         _HeaviestSetChart(
@@ -212,7 +202,7 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
                         const SizedBox(height: 20),
                         Text(
                           _libraryNote!,
-                          style: const TextStyle(color: LiftBigColors.muted),
+                          style:  TextStyle(color: context.liftBig.muted),
                         ),
                       ],
                       if (lift != null && _hasWrittenInstructions(lift)) ...[
@@ -289,8 +279,6 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
               ),
             ],
           ),
-        ),
-      ),
     );
   }
 }
@@ -303,7 +291,7 @@ class _SheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: LiftBigColors.background,
+      color: context.liftBig.background,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -316,8 +304,8 @@ class _SheetHeader extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: LiftBigColors.foreground,
+                    style:  TextStyle(
+                      color: context.liftBig.foreground,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                     ),
@@ -326,7 +314,7 @@ class _SheetHeader extends StatelessWidget {
                 IconButton(
                   tooltip: 'Close',
                   visualDensity: VisualDensity.compact,
-                  color: LiftBigColors.foreground,
+                  color: context.liftBig.foreground,
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
                 ),
@@ -350,7 +338,7 @@ class _SheetHandle extends StatelessWidget {
         height: 4,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: LiftBigColors.border,
+          color: context.liftBig.border,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -424,9 +412,9 @@ class _HeaviestSetChart extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: LiftBigColors.card,
+        color: context.liftBig.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: LiftBigColors.border),
+        border: Border.all(color: context.liftBig.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -445,8 +433,8 @@ class _HeaviestSetChart extends StatelessWidget {
                     show: true,
                     drawVerticalLine: false,
                     horizontalInterval: yInterval,
-                    getDrawingHorizontalLine: (value) => const FlLine(
-                      color: LiftBigColors.border,
+                    getDrawingHorizontalLine: (value) =>  FlLine(
+                      color: context.liftBig.border,
                       strokeWidth: 1,
                     ),
                   ),
@@ -466,8 +454,8 @@ class _HeaviestSetChart extends StatelessWidget {
                         getTitlesWidget: (value, meta) {
                           return Text(
                             _axisNumber(value, unit),
-                            style: const TextStyle(
-                              color: LiftBigColors.muted,
+                            style:  TextStyle(
+                              color: context.liftBig.muted,
                               fontSize: 10,
                             ),
                           );
@@ -493,7 +481,7 @@ class _HeaviestSetChart extends StatelessWidget {
                                   chartAxisLabelWidth(_labelText(index)),
                             ).toSet();
                           }
-                          return _axisLabel(value, visibleLabels);
+                          return _axisLabel(context, value, visibleLabels);
                         },
                       ),
                     ),
@@ -503,9 +491,9 @@ class _HeaviestSetChart extends StatelessWidget {
                       maxContentWidth: 180,
                       fitInsideHorizontally: true,
                       fitInsideVertically: true,
-                      getTooltipColor: (spot) => LiftBigColors.cardInner,
+                      getTooltipColor: (spot) => context.liftBig.cardInner,
                       getTooltipItems: (touched) {
-                        return [for (final spot in touched) _tooltip(spot)];
+                        return [for (final spot in touched) _tooltip(context, spot)];
                       },
                     ),
                   ),
@@ -514,12 +502,12 @@ class _HeaviestSetChart extends StatelessWidget {
                       spots: pastSpots,
                       isCurved: sessions.length > 2,
                       preventCurveOverShooting: true,
-                      color: LiftBigColors.foreground,
+                      color: context.liftBig.foreground,
                       barWidth: 2,
                       dotData: FlDotData(show: showDots),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: LiftBigColors.foreground.withValues(alpha: 0.12),
+                        color: context.liftBig.foreground.withValues(alpha: 0.12),
                       ),
                     ),
                     if (futureSpots.length > 1)
@@ -527,7 +515,7 @@ class _HeaviestSetChart extends StatelessWidget {
                         spots: futureSpots,
                         isCurved: forecast.length > 2,
                         preventCurveOverShooting: true,
-                        color: LiftBigColors.primary,
+                        color: context.liftBig.primary,
                         barWidth: 2,
                         dashArray: const [6, 4],
                         dotData: FlDotData(
@@ -543,22 +531,22 @@ class _HeaviestSetChart extends StatelessWidget {
             ),
           ),
           if (forecast.isNotEmpty)
-            const Padding(
+             Padding(
               padding: EdgeInsets.fromLTRB(12, 0, 12, 10),
               child: Row(
                 children: [
-                  _LegendSwatch(color: LiftBigColors.foreground),
+                  _LegendSwatch(color: context.liftBig.foreground),
                   SizedBox(width: 6),
                   Text(
                     'Past',
-                    style: TextStyle(color: LiftBigColors.muted, fontSize: 12),
+                    style: TextStyle(color: context.liftBig.muted, fontSize: 12),
                   ),
                   SizedBox(width: 14),
                   _DashedLegendSwatch(),
                   SizedBox(width: 6),
                   Text(
                     'Predicted',
-                    style: TextStyle(color: LiftBigColors.muted, fontSize: 12),
+                    style: TextStyle(color: context.liftBig.muted, fontSize: 12),
                   ),
                 ],
               ),
@@ -575,7 +563,7 @@ class _HeaviestSetChart extends StatelessWidget {
     return _shortDate(sessions[index].dateKey);
   }
 
-  Widget _axisLabel(double value, Set<int> visible) {
+  Widget _axisLabel(BuildContext context, double value, Set<int> visible) {
     final index = value.round();
     if ((value - index).abs() > 0.01) return const SizedBox.shrink();
     if (!visible.contains(index)) return const SizedBox.shrink();
@@ -587,14 +575,14 @@ class _HeaviestSetChart extends StatelessWidget {
         maxLines: 1,
         softWrap: false,
         style: TextStyle(
-          color: future ? LiftBigColors.primary : LiftBigColors.muted,
+          color: future ? context.liftBig.primary : context.liftBig.muted,
           fontSize: 10,
         ),
       ),
     );
   }
 
-  LineTooltipItem? _tooltip(LineBarSpot spot) {
+  LineTooltipItem? _tooltip(BuildContext context, LineBarSpot spot) {
     final index = spot.x.round();
     if (spot.barIndex == 0) {
       if (index < 0 || index >= sessions.length) return null;
@@ -602,8 +590,8 @@ class _HeaviestSetChart extends StatelessWidget {
       return LineTooltipItem(
         '${formatDisplayDate(session.dateKey)}\n'
         '${formatWeightWithUnit(session.maxWeightLbs, unit)} × ${session.maxReps}',
-        const TextStyle(
-          color: LiftBigColors.foreground,
+         TextStyle(
+          color: context.liftBig.foreground,
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
@@ -615,8 +603,8 @@ class _HeaviestSetChart extends StatelessWidget {
     return LineTooltipItem(
       'Predicted\n'
       '${formatWeightWithUnit(point.weightLbs, unit)} × ${point.reps}',
-      const TextStyle(
-        color: LiftBigColors.primary,
+       TextStyle(
+        color: context.liftBig.primary,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
@@ -669,7 +657,7 @@ class _LegendDash extends StatelessWidget {
       width: 6,
       height: 3,
       decoration: BoxDecoration(
-        color: LiftBigColors.primary,
+        color: context.liftBig.primary,
         borderRadius: BorderRadius.circular(2),
       ),
     );

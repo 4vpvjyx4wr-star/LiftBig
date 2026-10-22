@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../date_key.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 
 /// Bottom sheet to pick a start date for scheduling a multi-day plan.
 Future<String?> showPlanScheduleStartDateSheet(
@@ -9,13 +10,8 @@ Future<String?> showPlanScheduleStartDateSheet(
   required String planTitle,
   required int workoutCount,
 }) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: LiftBigColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
+  return showLiftBigSheet<String>(
+    context,
     builder: (context) => _PlanScheduleStartSheet(
       planTitle: planTitle,
       workoutCount: workoutCount,
@@ -75,7 +71,7 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: LiftBigColors.border,
+                color: context.liftBig.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -94,13 +90,13 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
           Text(
             '${widget.workoutCount} workouts · one per day in order',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+            style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
           ),
           const SizedBox(height: 16),
-          const Text(
+           Text(
             'START DATE',
             style: TextStyle(
-              color: LiftBigColors.muted,
+              color: context.liftBig.muted,
               fontSize: 10,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,

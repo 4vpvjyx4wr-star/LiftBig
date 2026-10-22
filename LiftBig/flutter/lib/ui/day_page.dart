@@ -11,6 +11,7 @@ import '../health/journal_health_sync.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/journal_repository.dart';
 import '../journal/logged_day.dart';
+import '../journal/set_prescription.dart';
 import '../journal/machine_starting_weight_settings.dart';
 import '../model/journal_day.dart';
 import '../pro/pro_status.dart';
@@ -29,7 +30,10 @@ import 'plate_calculator_page.dart';
 import 'rest_timer_banner.dart';
 import 'rest_timer_scope.dart';
 import 'machine_plates_hint.dart';
+import 'exercise_info_sheet.dart';
+import 'liftbig_sheet.dart';
 import 'set_value_sheet.dart';
+import 'swap_exercise_sheet.dart';
 import 'workout_details_section.dart';
 
 const List<String> commonLifts = [
@@ -52,11 +56,15 @@ class DayPage extends StatefulWidget {
     this.refreshToken = 0,
     this.embedRestBanner = true,
     this.onOpenSettings,
+    this.initialExerciseId,
   });
 
   final JournalRepository journal;
   final String dateKey;
   final Future<void> Function()? onOpenSettings;
+
+  /// Lift to bring into view after the day loads.
+  final String? initialExerciseId;
 
   /// Bumped by the shell after import or when this tab is opened again.
   final int refreshToken;
@@ -83,6 +91,8 @@ class _DayPageState extends State<DayPage> {
   JournalDay? _day;
   var _priorNotes = <String, List<PriorExerciseNote>>{};
   var _loaded = false;
+  var _didScrollToExercise = false;
+  final _exerciseKeys = <String, GlobalKey>{};
   var _adding = false;
   var _averageRest = defaultAverageRestSeconds;
   var _weightUnit = WeightUnit.lb;
@@ -225,11 +235,33 @@ class _DayPageState extends State<DayPage> {
       });
       if (syncHealth) _healthSync.scheduleDay(widget.dateKey);
       await _publishWatch();
+      _scheduleScrollToExercise();
     } catch (error) {
       if (!mounted) return;
       setState(() => _loaded = true);
       _snack('$error');
     }
+  }
+
+  GlobalKey _exerciseKey(String id) {
+    return _exerciseKeys.putIfAbsent(id, GlobalKey.new);
+  }
+
+  void _scheduleScrollToExercise() {
+    final id = widget.initialExerciseId;
+    if (id == null || _didScrollToExercise) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _didScrollToExercise) return;
+      final target = _exerciseKeys[id]?.currentContext;
+      if (target == null) return;
+      _didScrollToExercise = true;
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   void _applyHeader(JournalDay? day) {
@@ -342,7 +374,7 @@ class _DayPageState extends State<DayPage> {
         () => TextEditingController(text: exercise.loggedCalories ?? ''),
       );
       for (final set in exercise.sets) {
-        _syncField(_reps, set.id, set.reps);
+        _syncField(_reps, set.id, loggedRepsField(set.reps));
         _syncField(
           _weights,
           set.id,
@@ -370,6 +402,23 @@ class _DayPageState extends State<DayPage> {
 
   Future<void> _saveReps(String setId, String reps) async {
     try {
+      final exercise = _exerciseForSet(setId);
+      JournalSet? set;
+      if (exercise != null) {
+        for (final item in exercise.sets) {
+          if (item.id == setId) set = item;
+        }
+      }
+      if (exercise != null &&
+          set != null &&
+          storedRepsAreGoal(set.reps) &&
+          (exercise.targetReps ?? '').trim().isEmpty) {
+        await widget.journal.updateExerciseTargets(
+          exercise.id,
+          targetReps: set.reps.trim(),
+          setTargetReps: true,
+        );
+      }
       await _writeSet(setId, () => widget.journal.updateSet(setId, reps: reps));
     } catch (error) {
       if (mounted) _snack('$error');
@@ -529,6 +578,9 @@ class _DayPageState extends State<DayPage> {
       );
       final prescribeWarmup = await widget.journal.prescribeWarmupEnabled();
       for (final lift in pick.workout.lifts) {
+        final prescribed = prescriptionFromCatalogSets([
+          for (final set in lift.sets) (reps: set.reps, weight: set.weight),
+        ]);
         await widget.journal.addExercise(
           dateKey: widget.dateKey,
           name: lift.name,
@@ -537,13 +589,15 @@ class _DayPageState extends State<DayPage> {
           isCore: lift.isCore,
           isCircuit: lift.isCircuit,
           prescribeWarmup: prescribeWarmup,
+          targetReps: prescribed.targetReps,
+          targetWeight: prescribed.targetWeight,
           sets: [
-            for (var i = 0; i < lift.sets.length; i++)
+            for (var i = 0; i < prescribed.sets.length; i++)
               JournalSet(
                 id: '',
                 sortOrder: i,
-                reps: lift.sets[i].reps,
-                weight: lift.sets[i].weight,
+                reps: prescribed.sets[i].reps,
+                weight: prescribed.sets[i].weight,
               ),
           ],
         );
@@ -794,7 +848,12 @@ class _DayPageState extends State<DayPage> {
     JournalSet set,
     int index,
   ) async {
-    final initial = _weights[set.id]?.text ?? set.weight;
+    final logged = (_weights[set.id]?.text ?? '').trim();
+    final storedGoal = (exercise.targetWeight ?? '').trim();
+    final programmed = storedGoal.isEmpty
+        ? ''
+        : storedLbsToDisplay(storedGoal, _weightUnit);
+    final opening = logged.isNotEmpty ? logged : programmed;
     final goalWeight = exercise.targetWeight ?? '';
     final goal = index == 0
         ? snapWeightOption(
@@ -807,14 +866,17 @@ class _DayPageState extends State<DayPage> {
     final next = await showSetValueSheet(
       context,
       title: 'Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
-      initial: initial,
+      initial: opening,
       options: weightPickerOptions(_weightUnit),
       pinnedValue: goal,
+      weightUnit: _weightUnit,
+      sliderStep: step,
+      selectAll: opening.isNotEmpty,
       sliderMin: 0,
       sliderMax: maxDisplay,
       sliderDivisions: (maxDisplay / step).round(),
     );
-    if (!mounted || next == null || next == initial) return;
+    if (!mounted || next == null || next.trim() == logged) return;
     _weights[set.id]?.text = next;
     await _saveWeight(set.id, next);
     if (!mounted) return;
@@ -832,17 +894,29 @@ class _DayPageState extends State<DayPage> {
     JournalSet set,
     int index,
   ) async {
-    final initial = _reps[set.id]?.text ?? set.reps;
+    final field = (_reps[set.id]?.text ?? loggedRepsField(set.reps)).trim();
+    final goal = goalRepsForSet(
+      targetReps: exercise.targetReps,
+      storedReps: set.reps,
+    );
+    final openingCount = repSheetOpeningCount(
+      loggedReps: set.reps,
+      goalReps: goal,
+    );
+    final opening = openingCount?.toString() ?? field;
     final next = await showSetValueSheet(
       context,
       title: 'Reps',
-      initial: initial,
+      initial: opening,
+      goalLabel: goal,
+      selectAll: opening.isNotEmpty,
       options: repsPickerOptions(),
       sliderMin: 1,
       sliderMax: repsPickerMax.toDouble(),
       sliderDivisions: repsPickerMax - 1,
+      sliderStep: 1,
     );
-    if (!mounted || next == null || next == initial) return;
+    if (!mounted || next == null || next.trim() == field) return;
     _reps[set.id]?.text = next;
     await _saveReps(set.id, next);
     if (!mounted) return;
@@ -1002,6 +1076,106 @@ class _DayPageState extends State<DayPage> {
     if (changed && mounted) await _load(syncHealth: true);
   }
 
+  void _openExerciseInfo(JournalExercise exercise) {
+    showExerciseInfoSheet(
+      context,
+      journal: widget.journal,
+      exerciseName: exercise.name,
+      libraryId: exercise.libraryId,
+    );
+  }
+
+  Future<void> _swapExercise(JournalExercise exercise) async {
+    final saved = await showSwapExerciseSheet(
+      context,
+      journal: widget.journal,
+      exercise: exercise,
+    );
+    if (saved && mounted) await _load(syncHealth: true);
+  }
+
+  Future<void> _linkWithNext(JournalExercise exercise) async {
+    final exercises = _day?.exercises ?? const <JournalExercise>[];
+    final index = exercises.indexWhere((item) => item.id == exercise.id);
+    if (index < 0 || index + 1 >= exercises.length) return;
+    try {
+      await widget.journal.linkSupersetPair(
+        dateKey: widget.dateKey,
+        firstExerciseId: exercise.id,
+        secondExerciseId: exercises[index + 1].id,
+      );
+      if (mounted) await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    }
+  }
+
+  Future<void> _linkWithPartner(JournalExercise exercise) async {
+    final partners = [
+      for (final item in _day?.exercises ?? const <JournalExercise>[])
+        if (item.id != exercise.id && !exerciseInSuperset(item)) item,
+    ];
+    if (partners.isEmpty || !mounted) return;
+    final picked = await showLiftBigSheet<JournalExercise>(
+      context,
+      builder: (context) => ListView(
+        shrinkWrap: true,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Link with',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (final partner in partners)
+            ListTile(
+              title: Text(partner.name),
+              onTap: () {
+                liftBigSelectionHaptic();
+                Navigator.of(context).pop(partner);
+              },
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    try {
+      await widget.journal.linkSupersetPair(
+        dateKey: widget.dateKey,
+        firstExerciseId: exercise.id,
+        secondExerciseId: picked.id,
+      );
+      if (mounted) await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    }
+  }
+
+  Future<void> _unlinkSuperset(String groupId) async {
+    try {
+      await widget.journal.unlinkSuperset(
+        dateKey: widget.dateKey,
+        groupId: groupId,
+      );
+      if (mounted) await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    }
+  }
+
+  Future<void> _swapSupersetOrder(String groupId) async {
+    try {
+      await widget.journal.swapSupersetOrder(
+        dateKey: widget.dateKey,
+        groupId: groupId,
+      );
+      if (mounted) await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    }
+  }
+
   void _snack(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -1046,17 +1220,17 @@ class _DayPageState extends State<DayPage> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 56),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        foregroundColor: LiftBigColors.foreground,
-                        backgroundColor: LiftBigColors.cardInner,
-                        side: const BorderSide(color: LiftBigColors.border),
+                        foregroundColor: context.liftBig.foreground,
+                        backgroundColor: context.liftBig.cardInner,
+                        side:  BorderSide(color: context.liftBig.border),
                       ),
-                      child: const Row(
+                      child:  Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.assignment_outlined,
                             size: 18,
-                            color: LiftBigColors.primary,
+                            color: context.liftBig.primary,
                           ),
                           SizedBox(width: 6),
                           Text('Plan'),
@@ -1070,7 +1244,7 @@ class _DayPageState extends State<DayPage> {
                 const SizedBox(height: 6),
                 Text(
                   day!.planName!,
-                  style: const TextStyle(color: LiftBigColors.muted),
+                  style:  TextStyle(color: context.liftBig.muted),
                 ),
               ],
               if (exercises.isNotEmpty) ...[
@@ -1079,14 +1253,14 @@ class _DayPageState extends State<DayPage> {
                   onPressed: _clearDay,
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
-                    foregroundColor: LiftBigColors.foreground,
-                    backgroundColor: LiftBigColors.cardInner,
-                    side: const BorderSide(color: LiftBigColors.border),
+                    foregroundColor: context.liftBig.foreground,
+                    backgroundColor: context.liftBig.cardInner,
+                    side:  BorderSide(color: context.liftBig.border),
                   ),
-                  icon: const Icon(
+                  icon:  Icon(
                     Icons.delete_outline,
                     size: 18,
-                    color: LiftBigColors.primary,
+                    color: context.liftBig.primary,
                   ),
                   label: const Text('Clear day'),
                 ),
@@ -1096,7 +1270,7 @@ class _DayPageState extends State<DayPage> {
                 WorkoutDetailsSection(
                   key: ValueKey('workout-notes-${widget.dateKey}'),
                   text: workoutNotes,
-                  style: const TextStyle(color: LiftBigColors.foreground),
+                  style:  TextStyle(color: context.liftBig.foreground),
                 ),
               ],
               const SizedBox(height: 8),
@@ -1119,25 +1293,25 @@ class _DayPageState extends State<DayPage> {
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(44),
                     foregroundColor: restDay
-                        ? LiftBigColors.success
-                        : LiftBigColors.foreground,
+                        ? context.liftBig.success
+                        : context.liftBig.foreground,
                     backgroundColor: restDay
-                        ? LiftBigColors.success.withValues(alpha: 0.12)
-                        : LiftBigColors.cardInner,
+                        ? context.liftBig.success.withValues(alpha: 0.12)
+                        : context.liftBig.cardInner,
                     side: BorderSide(
                       color: restDay
-                          ? LiftBigColors.success
-                          : LiftBigColors.border,
+                          ? context.liftBig.success
+                          : context.liftBig.border,
                     ),
                   ),
                   child: Text(restDay ? 'Clear rest' : 'Rest day'),
                 ),
                 if (!restDay)
-                  const Padding(
+                   Padding(
                     padding: EdgeInsets.only(top: 8, bottom: 12),
                     child: Text(
                       'Nothing logged.',
-                      style: TextStyle(color: LiftBigColors.muted),
+                      style: TextStyle(color: context.liftBig.muted),
                     ),
                   )
                 else
@@ -1176,6 +1350,14 @@ class _DayPageState extends State<DayPage> {
                   machineStarting: _machineStarting,
                   onMachineStartingChanged: _saveMachineStarting,
                   onEditGoal: _editGoal,
+                  dayExercises: exercises,
+                  onInfo: _openExerciseInfo,
+                  onSwap: _swapExercise,
+                  onLinkWithNext: _linkWithNext,
+                  onLinkWithPartner: _linkWithPartner,
+                  onUnlinkSuperset: _unlinkSuperset,
+                  onSwapSupersetOrder: _swapSupersetOrder,
+                  exerciseKey: _exerciseKey,
                 ),
               _AddExerciseCard(
                 name: _customName,
@@ -1193,8 +1375,8 @@ class _DayPageState extends State<DayPage> {
                   child: Text(
                     '${formatRoundedNumber(day!.healthEnergyKcal!, 0)} kcal',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: LiftBigColors.foreground,
+                    style:  TextStyle(
+                      color: context.liftBig.foreground,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1246,7 +1428,7 @@ class _DayPageState extends State<DayPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 decoration: BoxDecoration(
-                  border: Border.all(color: LiftBigColors.border),
+                  border: Border.all(color: context.liftBig.border),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -1327,6 +1509,14 @@ class _ExerciseBlock extends StatelessWidget {
     required this.machineStarting,
     required this.onMachineStartingChanged,
     required this.onEditGoal,
+    required this.dayExercises,
+    required this.onInfo,
+    required this.onSwap,
+    required this.onLinkWithNext,
+    required this.onLinkWithPartner,
+    required this.onUnlinkSuperset,
+    required this.onSwapSupersetOrder,
+    required this.exerciseKey,
   });
 
   final List<JournalExercise> exercises;
@@ -1368,6 +1558,14 @@ class _ExerciseBlock extends StatelessWidget {
   final Future<void> Function(VariableMachineKind kind, String display)
   onMachineStartingChanged;
   final Future<void> Function(JournalExercise exercise) onEditGoal;
+  final List<JournalExercise> dayExercises;
+  final void Function(JournalExercise exercise) onInfo;
+  final Future<void> Function(JournalExercise exercise) onSwap;
+  final Future<void> Function(JournalExercise exercise) onLinkWithNext;
+  final Future<void> Function(JournalExercise exercise) onLinkWithPartner;
+  final Future<void> Function(String groupId) onUnlinkSuperset;
+  final Future<void> Function(String groupId) onSwapSupersetOrder;
+  final GlobalKey Function(String id) exerciseKey;
 
   bool get _superset =>
       (exercises.first.supersetGroupId?.trim().isNotEmpty ?? false);
@@ -1381,7 +1579,7 @@ class _ExerciseBlock extends StatelessWidget {
       decoration: _superset
           ? BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: LiftBigColors.primary),
+              border: Border.all(color: context.liftBig.primary),
             )
           : null,
       child: Column(
@@ -1393,8 +1591,8 @@ class _ExerciseBlock extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label == null || label.isEmpty ? 'Superset' : 'Superset $label',
-                    style: const TextStyle(
-                      color: LiftBigColors.primary,
+                    style:  TextStyle(
+                      color: context.liftBig.primary,
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                     ),
@@ -1406,10 +1604,23 @@ class _ExerciseBlock extends StatelessWidget {
                   onMoveUp: onMoveUp,
                   onMoveDown: onMoveDown,
                 ),
+                TextButton(
+                  onPressed: () => onSwapSupersetOrder(
+                    exercises.first.supersetGroupId ?? '',
+                  ),
+                  child: const Text('Swap order'),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      onUnlinkSuperset(exercises.first.supersetGroupId ?? ''),
+                  child: const Text('Unlink'),
+                ),
               ],
             ),
           for (final exercise in exercises)
-            _ExerciseCard(
+            KeyedSubtree(
+              key: exerciseKey(exercise.id),
+              child: _ExerciseCard(
               exercise: exercise,
               showMove: !_superset,
               canMoveUp: canMoveUp,
@@ -1442,6 +1653,12 @@ class _ExerciseBlock extends StatelessWidget {
               machineStarting: machineStarting,
               onMachineStartingChanged: onMachineStartingChanged,
               onEditGoal: () => onEditGoal(exercise),
+              dayExercises: dayExercises,
+              onInfo: () => onInfo(exercise),
+              onSwap: () => onSwap(exercise),
+              onLinkWithNext: () => onLinkWithNext(exercise),
+              onLinkWithPartner: () => onLinkWithPartner(exercise),
+            ),
             ),
         ],
       ),
@@ -1483,6 +1700,11 @@ class _ExerciseCard extends StatelessWidget {
     required this.machineStarting,
     required this.onMachineStartingChanged,
     required this.onEditGoal,
+    required this.dayExercises,
+    required this.onInfo,
+    required this.onSwap,
+    required this.onLinkWithNext,
+    required this.onLinkWithPartner,
   });
 
   final JournalExercise exercise;
@@ -1525,15 +1747,35 @@ class _ExerciseCard extends StatelessWidget {
   final Future<void> Function(VariableMachineKind kind, String display)
   onMachineStartingChanged;
   final VoidCallback onEditGoal;
+  final List<JournalExercise> dayExercises;
+  final VoidCallback onInfo;
+  final VoidCallback onSwap;
+  final VoidCallback onLinkWithNext;
+  final VoidCallback onLinkWithPartner;
 
   bool get _cardio => exercise.isCardio && !exercise.isCircuit;
+
+  bool get _canLinkWithNext {
+    if (exerciseInSuperset(exercise)) return false;
+    final index = dayExercises.indexWhere((item) => item.id == exercise.id);
+    if (index < 0 || index + 1 >= dayExercises.length) return false;
+    return !exerciseInSuperset(dayExercises[index + 1]);
+  }
+
+  List<JournalExercise> get _linkPartners {
+    if (exerciseInSuperset(exercise)) return const [];
+    return [
+      for (final item in dayExercises)
+        if (item.id != exercise.id && !exerciseInSuperset(item)) item,
+    ];
+  }
   VariableMachineKind? get _machineKind => variableMachineKindForExercise(
     libraryId: exercise.libraryId,
     name: exercise.name,
   );
   bool get _core => exercise.isCore && !_cardio && !exercise.isCircuit;
 
-  Widget _setFields(int index, JournalSet set, String label) {
+  Widget _setFields(BuildContext context, int index, JournalSet set, String label) {
     final repsController = reps[set.id];
     final weightController = weights[set.id];
     if (repsController == null || weightController == null) {
@@ -1557,14 +1799,14 @@ class _ExerciseCard extends StatelessWidget {
       onDelete: () => onDeleteSet(set.id),
       onEditWeight: () => onEditWeight(exercise, set, index),
       onEditReps: () => onEditReps(exercise, set, index),
-      restTimerSlot: _restTimerSlot(primary: index == 0),
+      restTimerSlot: _restTimerSlot(context, primary: index == 0),
       machineKind: kind,
       machineStarting: starting,
       weightUnit: weightUnit,
     );
   }
 
-  Widget _restTimerSlot({bool primary = true}) {
+  Widget _restTimerSlot(BuildContext context, {bool primary = true}) {
     final hint = restHintSeconds;
     if (hint != null && primary) {
       return Padding(
@@ -1574,7 +1816,7 @@ class _ExerciseCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w800,
-            color: hint == 0 ? LiftBigColors.success : LiftBigColors.foreground,
+            color: hint == 0 ? context.liftBig.success : context.liftBig.foreground,
           ),
         ),
       );
@@ -1592,10 +1834,10 @@ class _ExerciseCard extends StatelessWidget {
       margin: EdgeInsets.only(bottom: showMove ? 12 : 8),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: BoxDecoration(
-        color: LiftBigColors.card,
+        color: context.liftBig.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: allDone ? LiftBigColors.success : LiftBigColors.border,
+          color: allDone ? context.liftBig.success : context.liftBig.border,
           width: allDone ? 1.5 : 1,
         ),
       ),
@@ -1621,19 +1863,49 @@ class _ExerciseCard extends StatelessWidget {
                   onMoveDown: onMoveDown,
                 ),
               IconButton(
+                tooltip: 'Exercise info',
+                onPressed: onInfo,
+                visualDensity: VisualDensity.compact,
+                color: context.liftBig.primary,
+                icon: const Icon(Icons.info_outline, size: 20),
+              ),
+              IconButton(
+                tooltip: 'Swap lift',
+                onPressed: onSwap,
+                visualDensity: VisualDensity.compact,
+                color: context.liftBig.primary,
+                icon: const Icon(Icons.swap_horiz, size: 20),
+              ),
+              IconButton(
                 tooltip: 'Delete exercise',
                 onPressed: onDeleteExercise,
                 icon: const Icon(Icons.delete_outline),
               ),
             ],
           ),
+          if (showMove && (_canLinkWithNext || _linkPartners.isNotEmpty))
+            Wrap(
+              spacing: 4,
+              children: [
+                if (_canLinkWithNext)
+                  TextButton(
+                    onPressed: onLinkWithNext,
+                    child: const Text('Link with next'),
+                  ),
+                if (_linkPartners.isNotEmpty)
+                  TextButton(
+                    onPressed: onLinkWithPartner,
+                    child: const Text('Link with another'),
+                  ),
+              ],
+            ),
           if (badge != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 badge,
-                style: const TextStyle(
-                  color: LiftBigColors.primary,
+                style:  TextStyle(
+                  color: context.liftBig.primary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1644,7 +1916,7 @@ class _ExerciseCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Expanded(child: _goalRichText(exercise, weightUnit)),
+                  Expanded(child: _goalRichText(context, exercise, weightUnit)),
                   _GoalEditPencil(tooltip: 'Edit goal', onPressed: onEditGoal),
                 ],
               ),
@@ -1652,7 +1924,7 @@ class _ExerciseCard extends StatelessWidget {
           else if (goal != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(goal, style: const TextStyle(color: LiftBigColors.muted)),
+              child: Text(goal, style:  TextStyle(color: context.liftBig.muted)),
             ),
           _ExerciseNotesPanel(
             exercise: exercise,
@@ -1680,7 +1952,7 @@ class _ExerciseCard extends StatelessWidget {
               onWeight: onWeight,
               onCalories: (value) => onCalories(exercise.id, value),
               onChecked: (set, value) => onChecked(exercise, set, value),
-              restTimerSlot: _restTimerSlot(),
+              restTimerSlot: _restTimerSlot(context),
             )
           else if (exercise.isCircuit)
             for (var index = 0; index < exercise.sets.length; index++)
@@ -1693,22 +1965,22 @@ class _ExerciseCard extends StatelessWidget {
                 showDifficulty: showDifficulty,
                 onDifficulty: (value) =>
                     onDifficulty(exercise.sets[index], value),
-                restTimerSlot: _restTimerSlot(primary: index == 0),
+                restTimerSlot: _restTimerSlot(context, primary: index == 0),
                 onDelete: () => onDeleteSet(exercise.sets[index].id),
               )
           else ...[
             if (exercise.sets.isEmpty)
-              const Padding(
+               Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Text(
                   'No sets.',
-                  style: TextStyle(color: LiftBigColors.muted),
+                  style: TextStyle(color: context.liftBig.muted),
                 ),
               )
             else
               _SetColumnHeader(showTime: _core),
             for (final row in _labeledSets(exercise))
-              _setFields(row.$1, row.$2, row.$3),
+              _setFields(context, row.$1, row.$2, row.$3),
           ],
           if (!_cardio)
             Align(
@@ -1785,9 +2057,9 @@ class _CardioFields extends StatelessWidget {
   Widget build(BuildContext context) {
     final set = exercise.sets.isEmpty ? null : exercise.sets.first;
     if (set == null) {
-      return const Text(
+      return  Text(
         'No activity logged.',
-        style: TextStyle(color: LiftBigColors.muted),
+        style: TextStyle(color: context.liftBig.muted),
       );
     }
     final duration = reps[set.id];
@@ -1901,13 +2173,13 @@ class _CircuitRow extends StatelessWidget {
           Expanded(
             child: Text(
               'Set ${index + 1}  ${_circuitLine(exercise, set)}',
-              style: const TextStyle(color: LiftBigColors.foreground),
+              style:  TextStyle(color: context.liftBig.foreground),
             ),
           ),
           IconButton(
             tooltip: 'Delete set',
             onPressed: onDelete,
-            icon: const Icon(Icons.close, size: 16, color: LiftBigColors.muted),
+            icon:  Icon(Icons.close, size: 16, color: context.liftBig.muted),
           ),
         ],
       ),
@@ -1932,7 +2204,7 @@ class _GoalEditPencil extends StatelessWidget {
         padding: EdgeInsets.zero,
         visualDensity: VisualDensity.compact,
         constraints: const BoxConstraints.tightFor(width: 22, height: 22),
-        icon: const Icon(Icons.edit, size: 14, color: LiftBigColors.muted),
+        icon:  Icon(Icons.edit, size: 14, color: context.liftBig.muted),
       ),
     );
   }
@@ -2008,7 +2280,7 @@ class _DifficultyChoice extends StatelessWidget {
       selected: selected,
       label: stored,
       child: Material(
-        color: selected ? LiftBigColors.primary : Colors.transparent,
+        color: selected ? context.liftBig.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           onTap: onTap,
@@ -2021,7 +2293,7 @@ class _DifficultyChoice extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: selected ? LiftBigColors.primary : LiftBigColors.border,
+                  color: selected ? context.liftBig.primary : context.liftBig.border,
                 ),
               ),
               child: Text(
@@ -2029,7 +2301,7 @@ class _DifficultyChoice extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: selected ? LiftBigColors.foreground : LiftBigColors.muted,
+                  color: selected ? context.liftBig.foreground : context.liftBig.muted,
                 ),
               ),
             ),
@@ -2086,7 +2358,7 @@ class _SetFields extends StatelessWidget {
   Widget build(BuildContext context) {
     final labelColor = set.isWarmup
         ? const Color(0xFFFBBF24)
-        : LiftBigColors.muted;
+        : context.liftBig.muted;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -2141,12 +2413,12 @@ class _SetFields extends StatelessWidget {
                         controller: duration,
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 16,
-                          color: LiftBigColors.foreground,
+                          color: context.liftBig.foreground,
                         ),
-                        cursorColor: LiftBigColors.primary,
-                        decoration: _setInputDecoration('Sec'),
+                        cursorColor: context.liftBig.primary,
+                        decoration: _setInputDecoration(context, 'Sec'),
                         onChanged: onDuration,
                       ),
                     ),
@@ -2164,10 +2436,10 @@ class _SetFields extends StatelessWidget {
                         width: 32,
                         height: 32,
                       ),
-                      icon: const Icon(
+                      icon:  Icon(
                         Icons.close,
                         size: 16,
-                        color: LiftBigColors.muted,
+                        color: context.liftBig.muted,
                       ),
                     ),
                   ),
@@ -2238,10 +2510,10 @@ class _SetColumnHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final style = TextStyle(
       fontSize: 10,
       fontWeight: FontWeight.w700,
-      color: LiftBigColors.muted,
+      color: context.liftBig.muted,
     );
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -2249,18 +2521,18 @@ class _SetColumnHeader extends StatelessWidget {
         children: [
           const SizedBox(width: 64),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             flex: 3,
             child: Text('WEIGHT', textAlign: TextAlign.center, style: style),
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             flex: 2,
             child: Text('REPS', textAlign: TextAlign.center, style: style),
           ),
           if (showTime) ...[
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text('TIME', textAlign: TextAlign.center, style: style),
             ),
           ],
@@ -2287,15 +2559,24 @@ List<(int, JournalSet, String)> _labeledSets(JournalExercise exercise) {
   return rows;
 }
 
-Widget _goalRichText(JournalExercise exercise, WeightUnit unit) {
-  final reps = exercise.targetReps?.trim() ?? '';
+Widget _goalRichText(
+  BuildContext context,
+  JournalExercise exercise,
+  WeightUnit unit,
+) {
+  final reps =
+      exerciseGoalReps(
+        targetReps: exercise.targetReps,
+        storedReps: [for (final set in exercise.sets) set.reps],
+      ) ??
+      '';
   final storedWeight = exercise.targetWeight?.trim() ?? '';
   final weight = storedWeight.isEmpty ? '' : storedLbsToDisplay(storedWeight, unit);
   final time = exercise.targetTimeSeconds?.trim() ?? '';
   final count = '${exercise.sets.length}';
-  final muted = const TextStyle(color: LiftBigColors.muted);
-  final number = const TextStyle(
-    color: LiftBigColors.foreground,
+  final muted =  TextStyle(color: context.liftBig.muted);
+  final number =  TextStyle(
+    color: context.liftBig.foreground,
     fontWeight: FontWeight.w800,
   );
   final spans = <InlineSpan>[
@@ -2380,22 +2661,22 @@ String _circuitLine(JournalExercise exercise, JournalSet set) {
   return '$effort @ $weight lb';
 }
 
-InputDecoration _setInputDecoration(String hint) {
+InputDecoration _setInputDecoration(BuildContext context, String hint) {
   const radius = BorderRadius.all(Radius.circular(8));
-  const idle = OutlineInputBorder(
+  final idle = OutlineInputBorder(
     borderRadius: radius,
-    borderSide: BorderSide(color: LiftBigColors.border),
+    borderSide: BorderSide(color: context.liftBig.border),
   );
-  const focused = OutlineInputBorder(
+  final focused = OutlineInputBorder(
     borderRadius: radius,
-    borderSide: BorderSide(color: LiftBigColors.primary),
+    borderSide: BorderSide(color: context.liftBig.primary),
   );
   return InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: LiftBigColors.muted, fontSize: 16),
+    hintStyle:  TextStyle(color: context.liftBig.muted, fontSize: 16),
     isDense: true,
     filled: true,
-    fillColor: LiftBigColors.cardInner,
+    fillColor: context.liftBig.cardInner,
     contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     border: idle,
     enabledBorder: idle,
@@ -2482,9 +2763,9 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+             Text(
               'Pick a common lift or type a name.',
-              style: TextStyle(color: LiftBigColors.muted),
+              style: TextStyle(color: context.liftBig.muted),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -2494,10 +2775,10 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
                 for (final lift in commonLifts)
                   ActionChip(
                     label: Text(lift),
-                    backgroundColor: LiftBigColors.cardInner,
-                    side: const BorderSide(color: LiftBigColors.border),
-                    labelStyle: const TextStyle(
-                      color: LiftBigColors.foreground,
+                    backgroundColor: context.liftBig.cardInner,
+                    side:  BorderSide(color: context.liftBig.border),
+                    labelStyle:  TextStyle(
+                      color: context.liftBig.foreground,
                     ),
                     onPressed: () => widget.onAddNamed(lift),
                   ),
@@ -2532,7 +2813,7 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
               const SizedBox(height: 8),
               Text(
                 widget.error!,
-                style: const TextStyle(color: LiftBigColors.primary),
+                style:  TextStyle(color: context.liftBig.primary),
               ),
             ],
             if (_suggestions.isNotEmpty) ...[
@@ -2548,7 +2829,7 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
                         title: Text(lift.name),
                         subtitle: Text(
                           _suggestionDetail(lift),
-                          style: const TextStyle(color: LiftBigColors.muted),
+                          style:  TextStyle(color: context.liftBig.muted),
                         ),
                         onTap: () => widget.onAddNamed(
                           lift.name,
@@ -2626,7 +2907,7 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: LiftBigColors.background,
+        color: context.liftBig.background,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -2648,8 +2929,8 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
                           ),
                           Text(
                             subtitle,
-                            style: const TextStyle(
-                              color: LiftBigColors.muted,
+                            style:  TextStyle(
+                              color: context.liftBig.muted,
                               fontSize: 12,
                             ),
                           ),
@@ -2660,7 +2941,7 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
                       _expanded
                           ? Icons.expand_less
                           : Icons.expand_more,
-                      color: LiftBigColors.muted,
+                      color: context.liftBig.muted,
                     ),
                   ],
                 ),
@@ -2683,8 +2964,8 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
                           children: [
                             Text(
                               formatDisplayDate(note.dateKey),
-                              style: const TextStyle(
-                                color: LiftBigColors.primary,
+                              style:  TextStyle(
+                                color: context.liftBig.primary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -2737,7 +3018,7 @@ class _LoggedValueBox extends StatelessWidget {
       builder: (context, value, _) {
         final empty = value.text.trim().isEmpty;
         return Material(
-          color: LiftBigColors.cardInner,
+          color: context.liftBig.cardInner,
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             onTap: onTap,
@@ -2748,7 +3029,7 @@ class _LoggedValueBox extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: LiftBigColors.border),
+                border: Border.all(color: context.liftBig.border),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -2758,7 +3039,7 @@ class _LoggedValueBox extends StatelessWidget {
                   softWrap: false,
                   style: TextStyle(
                     fontSize: 16,
-                    color: empty ? LiftBigColors.muted : LiftBigColors.foreground,
+                    color: empty ? context.liftBig.muted : context.liftBig.foreground,
                   ),
                 ),
               ),
@@ -2890,27 +3171,29 @@ Future<int?> showDayRestPicker(
           : best,
     );
   }
-  return showModalBottomSheet<int>(
-    context: context,
+  return showLiftBigSheet<int>(
+    context,
     builder: (context) {
-      return SafeArea(
-        child: ListView(
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Rest',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
+      return ListView(
+        shrinkWrap: true,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Rest',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
-            for (final seconds in choices)
-              ListTile(
-                title: Text(formatRestDurationLabel(seconds)),
-                selected: seconds == selected,
-                onTap: () => Navigator.of(context).pop(seconds),
-              ),
-          ],
-        ),
+          ),
+          for (final seconds in choices)
+            ListTile(
+              title: Text(formatRestDurationLabel(seconds)),
+              selected: seconds == selected,
+              onTap: () {
+                liftBigSelectionHaptic();
+                Navigator.of(context).pop(seconds);
+              },
+            ),
+        ],
       );
     },
   );

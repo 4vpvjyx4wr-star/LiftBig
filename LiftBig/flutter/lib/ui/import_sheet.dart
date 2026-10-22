@@ -8,18 +8,14 @@ import 'package:flutter/services.dart';
 import '../backup/backup_parser.dart';
 import '../journal/journal_repository.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 
 Future<String?> showImportSheet(
   BuildContext context,
   JournalRepository journal,
 ) {
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: LiftBigColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+  return showLiftBigSheet<String>(
+    context,
     builder: (context) => _ImportSheet(journal: journal),
   );
 }
@@ -190,9 +186,9 @@ class _ImportSheetState extends State<_ImportSheet> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-            const Text(
+             Text(
               'Tap Import liftbig-backup.json. That reads the backup already copied into this app. Dates in the file replace those days. Other days stay.',
-              style: TextStyle(color: LiftBigColors.muted),
+              style: TextStyle(color: context.liftBig.muted),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -214,17 +210,17 @@ class _ImportSheetState extends State<_ImportSheet> {
             ),
             if (_busy) ...[
               const SizedBox(height: 12),
-              const Text(
+               Text(
                 'Importing…',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
             ],
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(
                 _error!,
-                style: const TextStyle(color: LiftBigColors.primary),
+                style:  TextStyle(color: context.liftBig.primary),
               ),
             ],
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
+import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../plans/custom_plans.dart';
 import '../plans/plan_quiz.dart';
@@ -132,6 +133,9 @@ class _PlansPageState extends State<PlansPage> {
     );
     final prescribeWarmup = await widget.journal.prescribeWarmupEnabled();
     for (final lift in workout.lifts) {
+      final prescribed = prescriptionFromCatalogSets([
+        for (final set in lift.sets) (reps: set.reps, weight: set.weight),
+      ]);
       await widget.journal.addExercise(
         dateKey: today,
         name: lift.name,
@@ -140,13 +144,15 @@ class _PlansPageState extends State<PlansPage> {
         isCore: lift.isCore,
         isCircuit: lift.isCircuit,
         prescribeWarmup: prescribeWarmup,
+        targetReps: prescribed.targetReps,
+        targetWeight: prescribed.targetWeight,
         sets: [
-          for (var i = 0; i < lift.sets.length; i++)
+          for (var i = 0; i < prescribed.sets.length; i++)
             JournalSet(
               id: '',
               sortOrder: i,
-              reps: lift.sets[i].reps,
-              weight: lift.sets[i].weight,
+              reps: prescribed.sets[i].reps,
+              weight: prescribed.sets[i].weight,
             ),
         ],
       );
@@ -369,11 +375,11 @@ class _PlansBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
-        const Center(
+         Center(
           child: Text(
             'PLANS',
             style: TextStyle(
-              color: LiftBigColors.primary,
+              color: context.liftBig.primary,
               fontSize: 26,
               fontWeight: FontWeight.w900,
               letterSpacing: 4,
@@ -392,7 +398,7 @@ class _PlansBody extends StatelessWidget {
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               alignment: Alignment.centerLeft,
-              foregroundColor: LiftBigColors.primary,
+              foregroundColor: context.liftBig.primary,
             ),
             onPressed: showQuiz ? null : onStartQuiz,
             child: const Text(
@@ -438,11 +444,11 @@ class _PlansBody extends StatelessWidget {
           onLog: onLogWorkout,
           favoritePlanIds: favoritePlanIds,
           onFavoriteChanged: onFavoriteChanged,
-          header: const Padding(
+          header:  Padding(
             padding: EdgeInsets.fromLTRB(0, 0, 0, 12),
             child: Text(
               'Sharing plans with other people is not available yet. There is no upload, account, or feed.',
-              style: TextStyle(color: LiftBigColors.muted),
+              style: TextStyle(color: context.liftBig.muted),
             ),
           ),
         ),
@@ -489,14 +495,14 @@ class _PlanTile extends StatelessWidget {
           },
           icon: Icon(
             favorited ? Icons.star : Icons.star_border,
-            color: favorited ? LiftBigColors.primary : LiftBigColors.foreground,
+            color: favorited ? context.liftBig.primary : context.liftBig.foreground,
           ),
         ),
         title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           '${plan.workouts.length} workouts'
           '${plan.purpose.isEmpty ? '' : ' · ${plan.purpose}'}',
-          style: const TextStyle(color: LiftBigColors.muted),
+          style:  TextStyle(color: context.liftBig.muted),
         ),
         children: [
           for (var i = 0; i < plan.workouts.length; i++)
@@ -552,7 +558,7 @@ class _Quiz extends StatelessWidget {
             const Spacer(),
             Text(
               results ? 'Your recommendations' : 'Step ${step + 1} of 6',
-              style: const TextStyle(color: LiftBigColors.muted, fontWeight: FontWeight.w700),
+              style:  TextStyle(color: context.liftBig.muted, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -575,7 +581,7 @@ class _Quiz extends StatelessWidget {
                       Text(choice.title),
                       Text(
                         choice.detail,
-                        style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+                        style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -586,13 +592,13 @@ class _Quiz extends StatelessWidget {
           Text(quizHeadline(answers)),
           const SizedBox(height: 12),
           for (final match in matches) ...[
-            Text(match.badge, style: const TextStyle(color: LiftBigColors.primary, fontWeight: FontWeight.w800)),
+            Text(match.badge, style:  TextStyle(color: context.liftBig.primary, fontWeight: FontWeight.w800)),
             Text(match.entry.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             Text(match.entry.description),
             if (match.reasons.isNotEmpty)
               Text(
                 match.reasons.join(' · '),
-                style: const TextStyle(color: LiftBigColors.muted),
+                style:  TextStyle(color: context.liftBig.muted),
               ),
             if (workoutsFor(match.entry.workoutIds).isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -609,7 +615,7 @@ class _Quiz extends StatelessWidget {
               Text(workout.name, style: const TextStyle(fontWeight: FontWeight.w700)),
               Text(
                 workout.lifts.map((lift) => lift.name).join(', '),
-                style: const TextStyle(color: LiftBigColors.muted),
+                style:  TextStyle(color: context.liftBig.muted),
               ),
               Align(
                 alignment: Alignment.centerLeft,
@@ -741,8 +747,8 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
         initiallyExpanded: false,
         tilePadding: EdgeInsets.zero,
         childrenPadding: EdgeInsets.zero,
-        iconColor: LiftBigColors.muted,
-        collapsedIconColor: LiftBigColors.muted,
+        iconColor: context.liftBig.muted,
+        collapsedIconColor: context.liftBig.muted,
         title: Text(
           widget.title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
@@ -759,11 +765,11 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
           const SizedBox(height: 8),
           if (widget.header != null) widget.header!,
           if (filtered.isEmpty && widget.plans.isNotEmpty)
-            const Padding(
+             Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
                 'No plans match your search.',
-                style: TextStyle(color: LiftBigColors.muted),
+                style: TextStyle(color: context.liftBig.muted),
               ),
             )
           else if (filtered.isEmpty && widget.emptyMessage != null)
@@ -771,7 +777,7 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                 widget.emptyMessage!,
-                style: const TextStyle(color: LiftBigColors.muted),
+                style:  TextStyle(color: context.liftBig.muted),
               ),
             )
           else

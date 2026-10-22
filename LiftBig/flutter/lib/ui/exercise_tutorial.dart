@@ -105,13 +105,13 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
     }
     final controller = _controller;
     if (controller != null) {
-      return _framed(
+      return _framed(context,
         YoutubePlayer(
           controller: controller,
           aspectRatio: 16 / 9,
           autoFullScreen: false,
           enableFullScreenOnVerticalDrag: false,
-          backgroundColor: LiftBigColors.card,
+          backgroundColor: context.liftBig.card,
         ),
       );
     }
@@ -120,8 +120,9 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
 
   Widget _thumbnail() {
     return _framed(
+      context,
       Material(
-        color: LiftBigColors.card,
+        color: context.liftBig.card,
         child: InkWell(
           onTap: _play,
           child: Semantics(
@@ -138,8 +139,8 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
                     excludeFromSemantics: true,
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) return child;
-                      return const ColoredBox(
-                        color: LiftBigColors.card,
+                      return  ColoredBox(
+                        color: context.liftBig.card,
                         child: Center(
                           child: SizedBox(
                             width: 24,
@@ -151,7 +152,7 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
                     },
                     errorBuilder: (context, error, stackTrace) {
                       _scheduleThumbnailFailure();
-                      return const ColoredBox(color: LiftBigColors.card);
+                      return  ColoredBox(color: context.liftBig.card);
                     },
                   ),
                   const ColoredBox(color: Color(0x33000000)),
@@ -171,7 +172,7 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
       child: TextButton.icon(
         onPressed: _openExternally,
         style: TextButton.styleFrom(
-          foregroundColor: LiftBigColors.foreground,
+          foregroundColor: context.liftBig.foreground,
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
@@ -182,15 +183,15 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
   }
 }
 
-Widget _framed(Widget child) {
+Widget _framed(BuildContext context, Widget child) {
   return Container(
     foregroundDecoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: LiftBigColors.border),
+      border: Border.all(color: context.liftBig.border),
     ),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: ColoredBox(color: LiftBigColors.card, child: child),
+      child: ColoredBox(color: context.liftBig.card, child: child),
     ),
   );
 }
@@ -202,7 +203,7 @@ class _TutorialPlayButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: LiftBigColors.primary,
+        color: context.liftBig.primary,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(

@@ -27,10 +27,10 @@ class RestTimerBanner extends StatelessWidget {
     final subtitle = exerciseName?.trim();
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: done ? const Color(0xFF163020) : LiftBigColors.card,
+        color: done ? const Color(0xFF163020) : context.liftBig.card,
         border: Border(
           bottom: BorderSide(
-            color: done ? LiftBigColors.success : LiftBigColors.primary,
+            color: done ? context.liftBig.success : context.liftBig.primary,
           ),
         ),
       ),
@@ -45,7 +45,7 @@ class RestTimerBanner extends StatelessWidget {
                   Text(
                     done ? 'Rest done' : 'Rest',
                     style: TextStyle(
-                      color: done ? LiftBigColors.success : LiftBigColors.muted,
+                      color: done ? context.liftBig.success : context.liftBig.muted,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -55,8 +55,8 @@ class RestTimerBanner extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: LiftBigColors.foreground,
+                      style:  TextStyle(
+                        color: context.liftBig.foreground,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),

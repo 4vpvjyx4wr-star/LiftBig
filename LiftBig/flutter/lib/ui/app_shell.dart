@@ -14,6 +14,7 @@ import 'settings_page.dart';
 import '../rest/rest_timer_controller.dart';
 import 'rest_timer_banner.dart';
 import 'rest_timer_scope.dart';
+import 'liftbig_sheet.dart';
 import 'shell_tabs.dart';
 
 class AppShell extends StatefulWidget {
@@ -22,11 +23,13 @@ class AppShell extends StatefulWidget {
     required this.journal,
     required this.sync,
     required this.dailyReminder,
+    required this.themes,
   });
 
   final JournalRepository journal;
   final SyncController sync;
   final DailyLiftReminderScheduler dailyReminder;
+  final LiftBigThemeController themes;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -87,6 +90,7 @@ class _AppShellState extends State<AppShell> {
         builder: (_) => SettingsPage(
           sync: widget.sync,
           dailyReminder: widget.dailyReminder,
+          themes: widget.themes,
         ),
       ),
     );
@@ -186,9 +190,9 @@ class _ShellHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: LiftBigColors.background,
-        border: Border(bottom: BorderSide(color: LiftBigColors.border)),
+      decoration:  BoxDecoration(
+        color: context.liftBig.background,
+        border: Border(bottom: BorderSide(color: context.liftBig.border)),
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, top + 8, 8, 8),
@@ -198,20 +202,20 @@ class _ShellHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                   Text(
                     'LIFTBIG',
                     style: TextStyle(
-                      color: LiftBigColors.primary,
+                      color: context.liftBig.primary,
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 4,
                     ),
                   ),
                   if (showTagline)
-                    const Text(
+                     Text(
                       'TRAINING JOURNAL',
                       style: TextStyle(
-                        color: LiftBigColors.muted,
+                        color: context.liftBig.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2,
@@ -242,9 +246,9 @@ class _ShellBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: LiftBigColors.card,
-        border: Border(top: BorderSide(color: LiftBigColors.border)),
+      decoration:  BoxDecoration(
+        color: context.liftBig.card,
+        border: Border(top: BorderSide(color: context.liftBig.border)),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: bottom),
@@ -258,12 +262,18 @@ class _ShellBar extends StatelessWidget {
                   child: tab == ShellTab.lift
                       ? _LiftButton(
                           selected: index == tab.index,
-                          onTap: () => onSelect(tab.index),
+                          onTap: () {
+                            liftBigSelectionHaptic();
+                            onSelect(tab.index);
+                          },
                         )
                       : _TabButton(
                           tab: tab,
                           selected: index == tab.index,
-                          onTap: () => onSelect(tab.index),
+                          onTap: () {
+                            liftBigSelectionHaptic();
+                            onSelect(tab.index);
+                          },
                         ),
                 ),
             ],
@@ -287,7 +297,7 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? LiftBigColors.primary : LiftBigColors.muted;
+    final color = selected ? context.liftBig.primary : context.liftBig.muted;
     return Semantics(
       button: true,
       selected: selected,
@@ -352,23 +362,23 @@ class _LiftButton extends StatelessWidget {
               child: Container(
                 width: 77,
                 height: 77,
-                decoration: const BoxDecoration(
+                decoration:  BoxDecoration(
                   shape: BoxShape.circle,
-                  color: LiftBigColors.background,
+                  color: context.liftBig.background,
                 ),
                 alignment: Alignment.center,
                 child: Container(
                   width: 67,
                   height: 67,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
+                  decoration:  BoxDecoration(
                     shape: BoxShape.circle,
-                    color: LiftBigColors.primary,
+                    color: context.liftBig.primary,
                   ),
-                  child: const Text(
+                  child:  Text(
                     'LIFT',
                     style: TextStyle(
-                      color: LiftBigColors.foreground,
+                      color: context.liftBig.foreground,
                       fontSize: 13,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.4,

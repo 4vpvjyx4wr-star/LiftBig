@@ -58,8 +58,30 @@ class LiftBigApp extends StatefulWidget {
 }
 
 class _LiftBigAppState extends State<LiftBigApp> {
+  late final LiftBigThemeController _themes;
+
+  @override
+  void initState() {
+    super.initState();
+    _themes = LiftBigThemeController();
+    _themes.addListener(_onTheme);
+    _loadTheme();
+  }
+
+  void _onTheme() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _loadTheme() async {
+    final id = await widget.journal.loadColorThemeId();
+    if (!mounted) return;
+    _themes.applyStored(id);
+  }
+
   @override
   void dispose() {
+    _themes.removeListener(_onTheme);
+    _themes.dispose();
     widget.restTimer.dispose();
     super.dispose();
   }
@@ -71,12 +93,13 @@ class _LiftBigAppState extends State<LiftBigApp> {
       child: MaterialApp(
         title: 'LiftBig',
         debugShowCheckedModeBanner: false,
-        theme: buildLiftBigTheme(),
+        theme: buildLiftBigTheme(_themes.palette),
         scrollBehavior: const LiftBigScrollBehavior(),
         home: AppShell(
           journal: widget.journal,
           sync: widget.sync,
           dailyReminder: widget.dailyReminder,
+          themes: _themes,
         ),
       ),
     );

@@ -59,10 +59,10 @@ class _KeyboardDoneBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: LiftBigColors.card,
+      color: context.liftBig.card,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: LiftBigColors.border)),
+        decoration:  BoxDecoration(
+          border: Border(top: BorderSide(color: context.liftBig.border)),
         ),
         child: Align(
           alignment: Alignment.centerRight,

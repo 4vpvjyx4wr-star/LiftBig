@@ -170,10 +170,10 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
                     ),
-                    decoration: const InputDecoration(
+                    decoration:  InputDecoration(
                       hintText: 'Weight',
                       filled: true,
-                      fillColor: LiftBigColors.cardInner,
+                      fillColor: context.liftBig.cardInner,
                     ),
                     onChanged: _onTargetChanged,
                     onSubmitted: (_) =>
@@ -218,11 +218,11 @@ class _SectionCard extends StatelessWidget {
           children: [
             Text(
               label.toUpperCase(),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: LiftBigColors.muted,
+                color: context.liftBig.muted,
               ),
             ),
             const SizedBox(height: 10),
@@ -260,14 +260,14 @@ class _BarPresetButton extends StatelessWidget {
         minimumSize: const Size.fromHeight(64),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         backgroundColor: selected
-            ? LiftBigColors.primary.withValues(alpha: 0.15)
-            : LiftBigColors.cardInner,
+            ? context.liftBig.primary.withValues(alpha: 0.15)
+            : context.liftBig.cardInner,
         side: BorderSide(
-          color: selected ? LiftBigColors.primary : LiftBigColors.border,
+          color: selected ? context.liftBig.primary : context.liftBig.border,
         ),
         foregroundColor: selected
-            ? LiftBigColors.foreground
-            : LiftBigColors.muted,
+            ? context.liftBig.foreground
+            : context.liftBig.muted,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -306,7 +306,7 @@ class _CustomBarField extends StatelessWidget {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(
-        color: active ? LiftBigColors.primary : LiftBigColors.border,
+        color: active ? context.liftBig.primary : context.liftBig.border,
       ),
     );
     return LayoutBuilder(
@@ -331,11 +331,11 @@ class _CustomBarField extends StatelessWidget {
                 isDense: true,
                 filled: true,
                 fillColor: active
-                    ? LiftBigColors.primary.withValues(alpha: 0.15)
-                    : LiftBigColors.cardInner,
+                    ? context.liftBig.primary.withValues(alpha: 0.15)
+                    : context.liftBig.cardInner,
                 enabledBorder: border,
                 focusedBorder: border.copyWith(
-                  borderSide: const BorderSide(color: LiftBigColors.primary),
+                  borderSide:  BorderSide(color: context.liftBig.primary),
                 ),
               ),
               onChanged: onChanged,
@@ -379,17 +379,17 @@ class _PlateResult extends StatelessWidget {
       caption =
           'Closest load — ${formatWeightWithUnit(result.remainder * 2, unit)} short';
     }
-    final accent = exact ? LiftBigColors.success : const Color(0xFFF59E0B);
+    final accent = exact ? context.liftBig.success : const Color(0xFFF59E0B);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: exact ? const Color(0xFF0D2010) : LiftBigColors.card,
+            color: exact ? const Color(0xFF0D2010) : context.liftBig.card,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: exact ? const Color(0xFF16A34A) : LiftBigColors.border,
+              color: exact ? const Color(0xFF16A34A) : context.liftBig.border,
             ),
           ),
           child: Column(
@@ -400,7 +400,7 @@ class _PlateResult extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: exact ? LiftBigColors.success : LiftBigColors.foreground,
+                  color: exact ? context.liftBig.success : context.liftBig.foreground,
                 ),
               ),
               const SizedBox(height: 4),
@@ -449,9 +449,9 @@ class _BarVisual extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
-          color: LiftBigColors.card,
+          color: context.liftBig.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: LiftBigColors.border),
+          border: Border.all(color: context.liftBig.border),
         ),
         child: Column(
           children: [
@@ -474,13 +474,13 @@ class _BarVisual extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '+$overflow more',
-                style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+                style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
               ),
             ] else if (shown.isEmpty) ...[
               const SizedBox(height: 8),
-              const Text(
+               Text(
                 'Just the bar — no plates needed',
-                style: TextStyle(color: LiftBigColors.muted, fontSize: 13),
+                style: TextStyle(color: context.liftBig.muted, fontSize: 13),
               ),
             ],
           ],
@@ -542,7 +542,7 @@ class _PlateDisc extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _colorForPlate(weightLb);
+    final color = _colorForPlate(context, weightLb);
     final ink = color.computeLuminance() > 0.62
         ? const Color(0xFF111827)
         : Colors.white;
@@ -590,9 +590,9 @@ class _PlateSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: LiftBigColors.card,
+        color: context.liftBig.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: LiftBigColors.border),
+        border: Border.all(color: context.liftBig.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -613,13 +613,13 @@ class _PlateSummary extends StatelessWidget {
                       height: 36,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _colorForPlate(size),
+                        color: _colorForPlate(context, size),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         _plateLabel(size, unit),
                         style: TextStyle(
-                          color: _colorForPlate(size).computeLuminance() > 0.62
+                          color: _colorForPlate(context, size).computeLuminance() > 0.62
                               ? const Color(0xFF111827)
                               : Colors.white,
                           fontSize: 11,
@@ -636,8 +636,8 @@ class _PlateSummary extends StatelessWidget {
                     ),
                     Text(
                       '× ${counts[size]}',
-                      style: const TextStyle(
-                        color: LiftBigColors.primary,
+                      style:  TextStyle(
+                        color: context.liftBig.primary,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
@@ -645,8 +645,8 @@ class _PlateSummary extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '(${_plateLabel(size * (counts[size] ?? 0), unit)} $unitWord)',
-                      style: const TextStyle(
-                        color: LiftBigColors.muted,
+                      style:  TextStyle(
+                        color: context.liftBig.muted,
                         fontSize: 12,
                       ),
                     ),
@@ -679,13 +679,13 @@ class _QuickReference extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+             Text(
               'QUICK REFERENCE',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
-                color: LiftBigColors.muted,
+                color: context.liftBig.muted,
               ),
             ),
             const SizedBox(height: 4),
@@ -697,8 +697,8 @@ class _QuickReference extends StatelessWidget {
                   decoration: BoxDecoration(
                     border: i == plateQuickPresetsLb.length - 1
                         ? null
-                        : const Border(
-                            bottom: BorderSide(color: LiftBigColors.border),
+                        :  Border(
+                            bottom: BorderSide(color: context.liftBig.border),
                           ),
                   ),
                   child: Row(
@@ -711,12 +711,12 @@ class _QuickReference extends StatelessWidget {
                       ),
                       Text(
                         '${lbsToDisplayWeightString(plateQuickPresetsLb[i].weightLb, unit)} $unitLabel',
-                        style: const TextStyle(color: LiftBigColors.muted),
+                        style:  TextStyle(color: context.liftBig.muted),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                       Icon(
                         Icons.chevron_right,
-                        color: LiftBigColors.primary,
+                        color: context.liftBig.primary,
                       ),
                     ],
                   ),
@@ -733,10 +733,10 @@ String _plateLabel(double weightLb, WeightUnit unit) {
   return lbsToDisplayWeightString(weightLb, unit);
 }
 
-Color _colorForPlate(double weightLb) {
+Color _colorForPlate(BuildContext context, double weightLb) {
   final hex = plateColorsLb[weightLb];
-  if (hex == null || hex.length < 7) return LiftBigColors.primary;
+  if (hex == null || hex.length < 7) return context.liftBig.primary;
   final value = int.tryParse(hex.replaceFirst('#', ''), radix: 16);
-  if (value == null) return LiftBigColors.primary;
+  if (value == null) return context.liftBig.primary;
   return Color(0xFF000000 | value);
 }

@@ -50,7 +50,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final restTimer = RestTimerController(journal: journal);
+    final themes = LiftBigThemeController();
     addTearDown(restTimer.dispose);
+    addTearDown(themes.dispose);
     await restTimer.load();
 
     await tester.pumpWidget(
@@ -62,6 +64,7 @@ void main() {
             journal: journal,
             sync: sync,
             dailyReminder: NoOpDailyLiftReminderScheduler(),
+            themes: themes,
           ),
         ),
       ),

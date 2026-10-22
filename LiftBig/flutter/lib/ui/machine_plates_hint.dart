@@ -30,10 +30,10 @@ class MachineStartingWeightField extends StatelessWidget {
             flex: 2,
             child: Text(
               startingWeightLabel(kind),
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: LiftBigColors.muted,
+                color: context.liftBig.muted,
               ),
             ),
           ),
@@ -52,7 +52,7 @@ class MachineStartingWeightField extends StatelessWidget {
                 ),
                 hintText: unitLabel,
                 filled: true,
-                fillColor: LiftBigColors.cardInner,
+                fillColor: context.liftBig.cardInner,
               ),
               onChanged: onChanged,
             ),
@@ -98,9 +98,9 @@ class MachineSetPlateHint extends StatelessWidget {
           padding: const EdgeInsets.only(left: 64, bottom: 4),
           child: Text(
             text,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 11,
-              color: LiftBigColors.muted,
+              color: context.liftBig.muted,
               height: 1.3,
             ),
           ),

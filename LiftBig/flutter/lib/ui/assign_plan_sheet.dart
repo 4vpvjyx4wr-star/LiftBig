@@ -4,6 +4,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../plans/custom_plans.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 import 'plan_workout_row.dart';
 
 /// A workout session chosen for one calendar day.
@@ -19,14 +20,9 @@ Future<PlanAssignment?> showAssignPlanSheet(
   BuildContext context, {
   required JournalRepository journal,
 }) {
-  return showModalBottomSheet<PlanAssignment>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: LiftBigColors.background,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      side: BorderSide(color: LiftBigColors.border),
-    ),
+  return showLiftBigSheet<PlanAssignment>(
+    context,
+    backgroundColor: context.liftBig.background,
     builder: (context) => AssignPlanSheet(journal: journal),
   );
 }
@@ -122,7 +118,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
       child: SizedBox(
-        height: media.size.height * 0.72,
+        height: liftBigPreferredHeight(context, 0.72),
         child: Column(
           children: [
             const SizedBox(height: 8),
@@ -130,7 +126,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: LiftBigColors.border,
+                color: context.liftBig.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -141,11 +137,11 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
             ),
-            const Padding(
+             Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text(
                 'Adds this workout to the selected day.',
-                style: TextStyle(color: LiftBigColors.muted, fontSize: 13),
+                style: TextStyle(color: context.liftBig.muted, fontSize: 13),
               ),
             ),
             Padding(
@@ -189,10 +185,10 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     }
     final visible = _visible(_search.text);
     if (visible.isEmpty) {
-      return const Center(
+      return  Center(
         child: Text(
           'No matching plans.',
-          style: TextStyle(color: LiftBigColors.muted),
+          style: TextStyle(color: context.liftBig.muted),
         ),
       );
     }
@@ -204,12 +200,12 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
         if (favorites.isNotEmpty) ...[
-          const Padding(
+           Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
               'Favorites',
               style: TextStyle(
-                color: LiftBigColors.primary,
+                color: context.liftBig.primary,
                 fontSize: 13,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.6,
@@ -217,9 +213,9 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
             ),
           ),
           for (final plan in favorites) _planCard(plan),
-          const Padding(
+           Padding(
             padding: EdgeInsets.only(top: 4, bottom: 12),
-            child: Divider(height: 1, color: LiftBigColors.border),
+            child: Divider(height: 1, color: context.liftBig.border),
           ),
         ],
         for (final plan in visible) _planCard(plan),
@@ -232,21 +228,21 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: LiftBigColors.card,
+        color: context.liftBig.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: LiftBigColors.border),
+          side:  BorderSide(color: context.liftBig.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
           childrenPadding: const EdgeInsets.only(bottom: 8),
-          iconColor: LiftBigColors.muted,
-          collapsedIconColor: LiftBigColors.muted,
+          iconColor: context.liftBig.muted,
+          collapsedIconColor: context.liftBig.muted,
           title: Row(
             children: [
               if (favorited) ...[
-                const Icon(Icons.star, size: 16, color: LiftBigColors.primary),
+                 Icon(Icons.star, size: 16, color: context.liftBig.primary),
                 const SizedBox(width: 6),
               ],
               Expanded(
@@ -259,7 +255,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
           ),
           subtitle: Text(
             '${plan.workouts.length} ${plan.workouts.length == 1 ? 'workout' : 'workouts'}',
-            style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+            style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
           ),
           children: [
             for (var i = 0; i < plan.workouts.length; i++)
@@ -277,7 +273,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.add, color: LiftBigColors.primary),
+                  icon:  Icon(Icons.add, color: context.liftBig.primary),
                 ),
               ),
           ],

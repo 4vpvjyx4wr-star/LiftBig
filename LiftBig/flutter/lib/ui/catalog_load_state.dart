@@ -67,7 +67,7 @@ class _CatalogLoadScopeState extends State<CatalogLoadScope> {
               Text(
                 error,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+                style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
               ),
               const SizedBox(height: 16),
               FilledButton(onPressed: _load, child: const Text('Try again')),

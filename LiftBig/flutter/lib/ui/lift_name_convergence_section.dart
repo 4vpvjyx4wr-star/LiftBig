@@ -98,10 +98,10 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Material(
-          color: LiftBigColors.cardInner,
+          color: context.liftBig.cardInner,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: LiftBigColors.border),
+            side:  BorderSide(color: context.liftBig.border),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -126,7 +126,7 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
                         const SizedBox(height: 4),
                         Text(
                           subtitle,
-                          style: const TextStyle(color: LiftBigColors.muted),
+                          style:  TextStyle(color: context.liftBig.muted),
                         ),
                       ],
                     ),
@@ -140,7 +140,7 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
                   else
                     Icon(
                       _expanded ? Icons.expand_less : Icons.expand_more,
-                      color: LiftBigColors.muted,
+                      color: context.liftBig.muted,
                     ),
                 ],
               ),
@@ -149,20 +149,20 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
         ),
         if (_expanded && !_loading) ...[
           const SizedBox(height: 12),
-          const Text(
+           Text(
             'Exact library spellings link automatically. These are the same lift with different capitalization or spacing.',
-            style: TextStyle(color: LiftBigColors.muted, height: 1.35),
+            style: TextStyle(color: context.liftBig.muted, height: 1.35),
           ),
           const SizedBox(height: 12),
           if (_catalogError != null)
             Text(
               'The Lift Library could not be loaded. Merges still use the first alphabetical spelling.',
-              style: TextStyle(color: LiftBigColors.muted.withValues(alpha: 0.9)),
+              style: TextStyle(color: context.liftBig.muted.withValues(alpha: 0.9)),
             ),
           if (_groups.isEmpty)
-            const Text(
+             Text(
               'No duplicate spellings.',
-              style: TextStyle(color: LiftBigColors.muted),
+              style: TextStyle(color: context.liftBig.muted),
             )
           else
             for (final group in _groups)
@@ -187,9 +187,9 @@ class _DuplicateCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: LiftBigColors.cardInner,
+          color: context.liftBig.cardInner,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: LiftBigColors.border),
+          border: Border.all(color: context.liftBig.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

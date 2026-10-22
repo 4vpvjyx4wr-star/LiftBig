@@ -150,8 +150,8 @@ class _Keypad extends StatelessWidget {
           child: FilledButton(
             onPressed: onTap,
             style: FilledButton.styleFrom(
-              backgroundColor: bg ?? LiftBigColors.cardInner,
-              foregroundColor: LiftBigColors.foreground,
+              backgroundColor: bg ?? context.liftBig.cardInner,
+              foregroundColor: context.liftBig.foreground,
               padding: const EdgeInsets.symmetric(vertical: 18),
             ),
             child: Text(label, style: const TextStyle(fontSize: 20)),
@@ -170,7 +170,7 @@ class _Keypad extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           row([
-            key('C', onClear, bg: LiftBigColors.border),
+            key('C', onClear, bg: context.liftBig.border),
             key('÷', () => onOp('÷')),
             key('×', () => onOp('×')),
             key('-', () => onOp('-')),
@@ -179,13 +179,13 @@ class _Keypad extends StatelessWidget {
             key('7', () => onDigit('7')),
             key('8', () => onDigit('8')),
             key('9', () => onDigit('9')),
-            key('+', () => onOp('+'), bg: LiftBigColors.primary.withValues(alpha: 0.25)),
+            key('+', () => onOp('+'), bg: context.liftBig.primary.withValues(alpha: 0.25)),
           ]),
           row([
             key('4', () => onDigit('4')),
             key('5', () => onDigit('5')),
             key('6', () => onDigit('6')),
-            key('=', onEquals, bg: LiftBigColors.primary),
+            key('=', onEquals, bg: context.liftBig.primary),
           ]),
           row([
             key('1', () => onDigit('1')),
@@ -197,8 +197,8 @@ class _Keypad extends StatelessWidget {
                 child: FilledButton(
                   onPressed: () => onDigit('0'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: LiftBigColors.cardInner,
-                    foregroundColor: LiftBigColors.foreground,
+                    backgroundColor: context.liftBig.cardInner,
+                    foregroundColor: context.liftBig.foreground,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                   ),
                   child: const Text('0', style: TextStyle(fontSize: 20)),

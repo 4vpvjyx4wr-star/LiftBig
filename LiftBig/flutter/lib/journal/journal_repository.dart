@@ -57,6 +57,7 @@ abstract final class SettingKeys {
   static const machineStartLegPressLb = 'machine_start_lb_leg_press';
   static const machineStartHackSquatLb = 'machine_start_lb_hack_squat';
   static const favoritePlanIds = 'favorite_plan_ids';
+  static const colorThemeId = 'color_theme_id';
 }
 
 /// Plan ids stored as a JSON string array. Blank or unreadable values are none.
@@ -187,6 +188,8 @@ class JournalRepository {
     bool isCore = false,
     bool isCircuit = false,
     bool prescribeWarmup = false,
+    String? targetReps,
+    String? targetWeight,
   }) async {
     final trimmed = name.trim();
     if (!isValidDateKey(dateKey)) {
@@ -240,6 +243,8 @@ class JournalRepository {
               isCardio: Value(isCardio),
               isCore: Value(isCore),
               isCircuit: Value(isCircuit),
+              targetReps: Value(_blankToNull(targetReps)),
+              targetWeight: Value(_blankToNull(targetWeight)),
             ),
           );
       final usedSetIds = <String>{};
@@ -671,6 +676,74 @@ class JournalRepository {
     });
   }
 
+  /// Writes superset id, label, and order, and places the two lifts together.
+  Future<void> linkSupersetPair({
+    required String dateKey,
+    required String firstExerciseId,
+    required String secondExerciseId,
+  }) async {
+    final day = await getDay(dateKey);
+    if (day == null) return;
+    final next = linkExercisesAsSuperset(
+      day.exercises,
+      firstExerciseId,
+      secondExerciseId,
+    );
+    if (identical(next, day.exercises)) return;
+    await _writeSupersetLayout(dateKey, next);
+  }
+
+  Future<void> unlinkSuperset({
+    required String dateKey,
+    required String groupId,
+  }) async {
+    final day = await getDay(dateKey);
+    if (day == null) return;
+    final next = unlinkSupersetGroup(day.exercises, groupId);
+    if (identical(next, day.exercises)) return;
+    await _writeSupersetLayout(dateKey, next);
+  }
+
+  Future<void> swapSupersetOrder({
+    required String dateKey,
+    required String groupId,
+  }) async {
+    final day = await getDay(dateKey);
+    if (day == null) return;
+    final next = swapSupersetPairOrder(day.exercises, groupId);
+    if (identical(next, day.exercises)) return;
+    await _writeSupersetLayout(dateKey, next);
+  }
+
+  /// Goal text only. Set rows stay as they are.
+  Future<void> updateExerciseTargets(
+    String exerciseId, {
+    String? targetReps,
+    bool setTargetReps = false,
+    String? targetWeight,
+    bool setTargetWeight = false,
+  }) async {
+    if (exerciseId.isEmpty) return;
+    await db.transaction(() async {
+      final exercise = await (db.select(
+        db.exercises,
+      )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
+      if (exercise == null) return;
+      await (db.update(db.exercises)..where((row) => row.id.equals(exerciseId)))
+          .write(
+        ExercisesCompanion(
+          targetReps: setTargetReps
+              ? Value(_blankToNull(targetReps))
+              : const Value.absent(),
+          targetWeight: setTargetWeight
+              ? Value(_blankToNull(targetWeight))
+              : const Value.absent(),
+        ),
+      );
+      await _touchDay(exercise.dateKey);
+    });
+  }
+
   Future<void> reorderExercises(String dateKey, List<String> idsInOrder) async {
     if (!isValidDateKey(dateKey) || idsInOrder.isEmpty) return;
     await db.transaction(() async {
@@ -681,6 +754,30 @@ class JournalRepository {
                   exercise.dateKey.equals(dateKey),
             ))
             .write(ExercisesCompanion(sortOrder: Value(index)));
+      }
+      await _touchDay(dateKey);
+    });
+  }
+
+  Future<void> _writeSupersetLayout(
+    String dateKey,
+    List<JournalExercise> exercises,
+  ) async {
+    await db.transaction(() async {
+      for (var index = 0; index < exercises.length; index++) {
+        final exercise = exercises[index];
+        await (db.update(db.exercises)..where(
+              (row) =>
+                  row.id.equals(exercise.id) & row.dateKey.equals(dateKey),
+            ))
+            .write(
+          ExercisesCompanion(
+            sortOrder: Value(index),
+            supersetGroupId: Value(_blankToNull(exercise.supersetGroupId)),
+            supersetLabel: Value(_blankToNull(exercise.supersetLabel)),
+            supersetOrder: Value(exercise.supersetOrder),
+          ),
+        );
       }
       await _touchDay(dateKey);
     });
@@ -1222,6 +1319,14 @@ class JournalRepository {
 
   Future<void> setWeightUnit(WeightUnit unit) {
     return _put(SettingKeys.weightUnit, unit == WeightUnit.kg ? 'kg' : 'lb');
+  }
+
+  Future<String?> loadColorThemeId() {
+    return _get(SettingKeys.colorThemeId);
+  }
+
+  Future<void> setColorThemeId(String id) {
+    return _put(SettingKeys.colorThemeId, id.trim());
   }
 
   Future<DistanceUnit> storedDistanceUnit() async {

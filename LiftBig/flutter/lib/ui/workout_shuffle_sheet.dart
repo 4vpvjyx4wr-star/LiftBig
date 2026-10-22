@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../plans/workout_shuffle.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 
 Future<void> showWorkoutShuffleSheet(
   BuildContext context, {
@@ -24,19 +25,17 @@ Future<void> showWorkoutShuffleSheet(
   required Future<void> Function(CatalogWorkout workout, String? planName)
       onLogWorkout,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: LiftBigColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (context) => DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.92,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => StatefulBuilder(
+  return showLiftBigSheet<void>(
+    context,
+    builder: (context) => LayoutBuilder(
+      builder: (context, constraints) => SizedBox(
+        height: constraints.maxHeight,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.94,
+          minChildSize: 0.45,
+          maxChildSize: 1,
+          builder: (context, scrollController) => StatefulBuilder(
         builder: (context, refreshSheet) {
           void refresh() => refreshSheet(() {});
           return _WorkoutShuffleSheet(
@@ -73,6 +72,8 @@ Future<void> showWorkoutShuffleSheet(
             onLogWorkout: onLogWorkout,
           );
         },
+      ),
+        ),
       ),
     ),
   );
@@ -135,7 +136,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
             height: 4,
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: LiftBigColors.border,
+              color: context.liftBig.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -145,9 +146,9 @@ class _WorkoutShuffleSheet extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
-        const Text(
+         Text(
           'What you have, what you want to train, how long you have, and how long each lift and rest takes.',
-          style: TextStyle(color: LiftBigColors.muted),
+          style: TextStyle(color: context.liftBig.muted),
         ),
         const SizedBox(height: 12),
         _GearMenu(
@@ -194,7 +195,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: const Text('Include cardio'),
           value: includeCardioValue,
-          activeThumbColor: LiftBigColors.primary,
+          activeThumbColor: context.liftBig.primary,
           onChanged: onIncludeCardioChanged,
         ),
         const Text('Time you have', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -235,7 +236,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
         FilledButton(onPressed: onShuffle, child: const Text('Shuffle a workout')),
         if (note != null) ...[
           const SizedBox(height: 8),
-          Text(note, style: const TextStyle(color: LiftBigColors.primary)),
+          Text(note, style:  TextStyle(color: context.liftBig.primary)),
         ],
         if (shuffledWorkout != null) ...[
           const SizedBox(height: 12),
@@ -249,7 +250,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
               title: Text(lift.name),
               subtitle: Text(
                 lift.isCardio ? '30 min' : '3 sets · 8-12',
-                style: const TextStyle(color: LiftBigColors.muted),
+                style:  TextStyle(color: context.liftBig.muted),
               ),
             ),
           OutlinedButton(
@@ -312,8 +313,8 @@ class _GearMenu extends StatelessWidget {
       child: ExpansionTile(
         initiallyExpanded: false,
         tilePadding: EdgeInsets.zero,
-        iconColor: LiftBigColors.muted,
-        collapsedIconColor: LiftBigColors.muted,
+        iconColor: context.liftBig.muted,
+        collapsedIconColor: context.liftBig.muted,
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         children: [
           Align(

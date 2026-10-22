@@ -51,7 +51,7 @@ class _PlanWorkoutRowState extends State<PlanWorkoutRow> {
                         ),
                         Icon(
                           _open ? Icons.expand_less : Icons.expand_more,
-                          color: LiftBigColors.muted,
+                          color: context.liftBig.muted,
                           size: 22,
                         ),
                       ],
@@ -68,9 +68,9 @@ class _PlanWorkoutRowState extends State<PlanWorkoutRow> {
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: LiftBigColors.cardInner,
+                color: context.liftBig.cardInner,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: LiftBigColors.border),
+                border: Border.all(color: context.liftBig.border),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -78,9 +78,9 @@ class _PlanWorkoutRowState extends State<PlanWorkoutRow> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (workout.lifts.isEmpty)
-                      const Text(
+                       Text(
                         'No lifts in this day.',
-                        style: TextStyle(color: LiftBigColors.muted, fontSize: 13),
+                        style: TextStyle(color: context.liftBig.muted, fontSize: 13),
                       )
                     else
                       for (final lift in workout.lifts)
@@ -88,8 +88,8 @@ class _PlanWorkoutRowState extends State<PlanWorkoutRow> {
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: Text(
                             '${lift.name} · ${lift.sets.length} sets',
-                            style: const TextStyle(
-                              color: LiftBigColors.muted,
+                            style:  TextStyle(
+                              color: context.liftBig.muted,
                               fontSize: 13,
                             ),
                           ),

@@ -111,4 +111,41 @@ void main() {
     expect(advanceAfterReps(enabled: true, reps: '5', nextSetId: null), isNull);
     expect(advanceAfterReps(enabled: true, reps: '', nextSetId: 'b'), isNull);
   });
+
+  test('rest labels speak minutes once the value reaches one minute', () {
+    expect(formatRestDurationLabel(30), '30 seconds');
+    expect(formatRestDurationLabel(70), '1 minute 10 seconds');
+    expect(formatRestDurationLabel(60), '1 minute');
+    expect(formatRestDurationLabel(120), '2 minutes');
+  });
+
+  test('auto rest waits until the second lift in a superset', () {
+    const first = JournalExercise(
+      id: 'a',
+      sortOrder: 0,
+      name: 'Bench',
+      supersetGroupId: 'ss-1',
+      supersetLabel: 'A',
+      supersetOrder: 1,
+      sets: [],
+    );
+    const second = JournalExercise(
+      id: 'b',
+      sortOrder: 1,
+      name: 'Row',
+      supersetGroupId: 'ss-1',
+      supersetLabel: 'A',
+      supersetOrder: 2,
+      sets: [],
+    );
+    const alone = JournalExercise(
+      id: 'c',
+      sortOrder: 2,
+      name: 'Squat',
+      sets: [],
+    );
+    expect(startsRestAfterSet(first, [first, second, alone]), isFalse);
+    expect(startsRestAfterSet(second, [first, second, alone]), isTrue);
+    expect(startsRestAfterSet(alone, [first, second, alone]), isTrue);
+  });
 }

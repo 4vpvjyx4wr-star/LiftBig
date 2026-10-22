@@ -24,22 +24,22 @@ class WorkoutDetailsSection extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         dense: true,
         minTileHeight: 32,
-        iconColor: LiftBigColors.muted,
-        collapsedIconColor: LiftBigColors.muted,
-        textColor: LiftBigColors.foreground,
-        collapsedTextColor: LiftBigColors.foreground,
+        iconColor: context.liftBig.muted,
+        collapsedIconColor: context.liftBig.muted,
+        textColor: context.liftBig.foreground,
+        collapsedTextColor: context.liftBig.foreground,
         backgroundColor: Colors.transparent,
         collapsedBackgroundColor: Colors.transparent,
         expandedAlignment: Alignment.centerLeft,
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         shape: const Border(),
         collapsedShape: const Border(),
-        title: const Text(
+        title:  Text(
           'Details/Instructions',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: LiftBigColors.foreground,
+            color: context.liftBig.foreground,
           ),
         ),
         children: [

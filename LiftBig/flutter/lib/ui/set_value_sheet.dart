@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../journal/logged_day.dart';
+import '../journal/set_prescription.dart';
 import '../theme.dart';
 import '../utils/weight_units.dart';
+import 'liftbig_sheet.dart';
 
 const int repsPickerMax = 50;
 
@@ -27,24 +28,29 @@ Future<String?> showSetValueSheet(
   required String initial,
   required List<String> options,
   String? pinnedValue,
+  String? goalLabel,
+  bool selectAll = false,
+  WeightUnit? weightUnit,
+  double? sliderStep,
   double sliderMin = 0,
   double sliderMax = 500,
   int sliderDivisions = 100,
 }) {
   final edited = ValueNotifier<String?>(null);
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: LiftBigColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+  final step = sliderStep ??
+      (weightUnit == null ? 1 : weightPickerStepForUnit(weightUnit));
+  return showLiftBigSheet<String>(
+    context,
     builder: (context) {
       return _SetValueSheet(
         title: title,
         initial: initial,
         options: options,
         pinnedValue: pinnedValue,
+        goalLabel: goalLabel,
+        selectAll: selectAll,
+        weightUnit: weightUnit,
+        sliderStep: step,
         sliderMin: sliderMin,
         sliderMax: sliderMax,
         sliderDivisions: sliderDivisions,
@@ -62,14 +68,22 @@ class _SetValueSheet extends StatefulWidget {
     required this.sliderMin,
     required this.sliderMax,
     required this.sliderDivisions,
+    required this.sliderStep,
     required this.onEdited,
     this.pinnedValue,
+    this.goalLabel,
+    this.selectAll = false,
+    this.weightUnit,
   });
 
   final String title;
   final String initial;
   final List<String> options;
   final String? pinnedValue;
+  final String? goalLabel;
+  final bool selectAll;
+  final WeightUnit? weightUnit;
+  final double sliderStep;
   final double sliderMin;
   final double sliderMax;
   final int sliderDivisions;
@@ -89,8 +103,23 @@ class _SetValueSheetState extends State<_SetValueSheet> {
   void initState() {
     super.initState();
     _text = TextEditingController(text: widget.initial);
+    if (widget.selectAll && widget.initial.isNotEmpty) {
+      _text.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: widget.initial.length,
+      );
+    }
     _slider = _sliderFor(widget.initial);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.selectAll && _text.text.isNotEmpty) {
+        _text.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _text.text.length,
+        );
+      }
+      _scrollToCurrent();
+    });
   }
 
   @override
@@ -130,9 +159,9 @@ class _SetValueSheetState extends State<_SetValueSheet> {
 
   void _scrollToCurrent() {
     if (!_scroll.hasClients) return;
-    final key = widget.title == 'Weight'
-        ? snapWeightOption(_text.text)
-        : _text.text.trim();
+    final key = widget.weightUnit == null
+        ? _text.text.trim()
+        : snapWeightOption(_text.text, widget.weightUnit!);
     final index = key == null ? -1 : widget.options.indexOf(key);
     if (index < 0) return;
     const row = 44.0;
@@ -142,39 +171,68 @@ class _SetValueSheetState extends State<_SetValueSheet> {
   }
 
   void _choose(String value) {
+    liftBigSelectionHaptic();
     widget.onEdited(value);
     Navigator.of(context).pop(value);
   }
+
+  double _applyStep(double value) {
+    final step = widget.sliderStep;
+    if (step <= 0) return value;
+    final stepped = (value / step).round() * step;
+    return stepped.clamp(widget.sliderMin, widget.sliderMax).toDouble();
+  }
+
+  String _formatStep(double value) {
+    final step = widget.sliderStep;
+    if (step >= 1 && (step - step.roundToDouble()).abs() < 0.001) {
+      return '${value.round()}';
+    }
+    var text = value.toStringAsFixed(1);
+    if (text.endsWith('.0')) text = text.substring(0, text.length - 2);
+    return text;
+  }
+
+  double? _lastSliderTick;
 
   @override
   Widget build(BuildContext context) {
     final shown = _text.text.trim().isEmpty ? '—' : _text.text.trim();
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
+    final goal = widget.goalLabel?.trim() ?? '';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screen = MediaQuery.sizeOf(context).height;
+        final cap = constraints.maxHeight.isFinite
+            ? constraints.maxHeight - bottom
+            : screen * 0.72;
+        final height = cap < screen * 0.72 ? cap : screen * 0.72;
+        return Padding(
       padding: EdgeInsets.only(bottom: bottom),
       child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.72,
+        height: height < 160 ? 160 : height,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 10),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: LiftBigColors.border,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: Text(
                 widget.title,
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
             ),
+            if (goal.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+                child: Text(
+                  'Goal $goal',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: context.liftBig.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: Text(
@@ -197,7 +255,11 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
                 decoration: InputDecoration(
-                  hintText: widget.title == 'Weight' ? 'Type pounds' : 'Type reps',
+                  hintText: widget.weightUnit == null
+                      ? 'Type reps'
+                      : widget.weightUnit == WeightUnit.kg
+                      ? 'Type kilograms'
+                      : 'Type pounds',
                 ),
                 onChanged: (value) {
                   widget.onEdited(value);
@@ -213,15 +275,17 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                 max: widget.sliderMax,
                 divisions: widget.sliderDivisions,
                 value: _slider,
-                activeColor: LiftBigColors.primary,
+                activeColor: context.liftBig.primary,
                 label: _sliderTouched || _text.text.trim().isNotEmpty
-                    ? _slider.round().toString()
+                    ? _formatStep(_slider)
                     : null,
                 onChanged: (value) {
-                  final stepped = widget.title == 'Weight'
-                      ? (value / weightPickerStepLbs).round() * weightPickerStepLbs
-                      : value.round();
-                  _publish('$stepped', fromSlider: true);
+                  final stepped = _applyStep(value);
+                  if (_lastSliderTick != stepped) {
+                    _lastSliderTick = stepped;
+                    liftBigSelectionHaptic();
+                  }
+                  _publish(_formatStep(stepped), fromSlider: true);
                 },
               ),
             ),
@@ -241,13 +305,14 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                 itemBuilder: (context, index) {
                   final option = widget.options[index];
                   final selected = option == _text.text.trim() ||
-                      (widget.title == 'Weight' &&
-                          option == snapWeightOption(_text.text));
+                      (widget.weightUnit != null &&
+                          option ==
+                              snapWeightOption(_text.text, widget.weightUnit!));
                   return InkWell(
                     onTap: () => _choose(option),
                     child: ColoredBox(
                       color: selected
-                          ? LiftBigColors.primary.withValues(alpha: 0.16)
+                          ? context.liftBig.primary.withValues(alpha: 0.16)
                           : Colors.transparent,
                       child: Center(
                         child: Text(
@@ -256,8 +321,8 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                             fontSize: 18,
                             fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                             color: selected
-                                ? LiftBigColors.primary
-                                : LiftBigColors.foreground,
+                                ? context.liftBig.primary
+                                : context.liftBig.foreground,
                           ),
                         ),
                       ),
@@ -269,13 +334,18 @@ class _SetValueSheetState extends State<_SetValueSheet> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(_text.text),
+                onPressed: () {
+                  liftBigConfirmHaptic();
+                  Navigator.of(context).pop(_text.text);
+                },
                 child: const Text('Save'),
               ),
             ),
           ],
         ),
       ),
+    );
+      },
     );
   }
 }
@@ -284,40 +354,38 @@ Future<int?> showRestDurationDialog(
   BuildContext context, {
   required int initialSeconds,
 }) {
-  return showDialog<int>(
-    context: context,
-    builder: (context) => _RestDurationDialog(initialSeconds: initialSeconds),
+  return showLiftBigSheet<int>(
+    context,
+    builder: (context) => _RestDurationSheet(initialSeconds: initialSeconds),
   );
 }
 
-class _RestDurationDialog extends StatefulWidget {
-  const _RestDurationDialog({required this.initialSeconds});
+class _RestDurationSheet extends StatefulWidget {
+  const _RestDurationSheet({required this.initialSeconds});
 
   final int initialSeconds;
 
   @override
-  State<_RestDurationDialog> createState() => _RestDurationDialogState();
+  State<_RestDurationSheet> createState() => _RestDurationSheetState();
 }
 
-class _RestDurationDialogState extends State<_RestDurationDialog> {
+class _RestDurationSheetState extends State<_RestDurationSheet> {
   late final TextEditingController _text;
   late double _sliderSeconds;
+  late int _pending;
+  var _edited = false;
+  int? _lastTick;
 
   @override
   void initState() {
     super.initState();
-    _sliderSeconds = _snapSeconds(widget.initialSeconds);
-    _text = TextEditingController(text: '${widget.initialSeconds}');
-  }
-
-  double _snapSeconds(int seconds) {
-    final clamped = seconds.clamp(minAverageRestSeconds, maxAverageRestSeconds);
-    final snapped =
-        ((((clamped - minAverageRestSeconds) / 5).round()) * 5) +
-        minAverageRestSeconds;
-    return snapped
-        .clamp(minAverageRestSeconds, maxAverageRestSeconds)
-        .toDouble();
+    final initial = widget.initialSeconds < 0 ? 0 : widget.initialSeconds;
+    _pending = initial;
+    final visual = initial > restEditorMaxSeconds
+        ? restEditorMaxSeconds
+        : snapRestEditorSeconds(initial);
+    _sliderSeconds = visual.toDouble();
+    _text = TextEditingController(text: '$initial');
   }
 
   @override
@@ -326,23 +394,54 @@ class _RestDurationDialogState extends State<_RestDurationDialog> {
     super.dispose();
   }
 
+  void _setPending(int seconds, {required bool fromSlider}) {
+    final next = fromSlider ? snapRestEditorSeconds(seconds) : seconds;
+    if (_lastTick != next) {
+      _lastTick = next;
+      liftBigSelectionHaptic();
+    }
+    setState(() {
+      _edited = true;
+      _pending = next;
+      _sliderSeconds = snapRestEditorSeconds(next).toDouble();
+      _text.text = '$next';
+    });
+  }
+
   void _save() {
     final parsed = int.tryParse(_text.text.trim());
-    final seconds = clampAverageRestSeconds(
-      parsed ?? _sliderSeconds.round(),
+    if (parsed != null && parsed != _pending) {
+      _edited = true;
+      _pending = parsed;
+    }
+    liftBigConfirmHaptic();
+    Navigator.of(context).pop(
+      restEditorValueOnSave(
+        initialSeconds: widget.initialSeconds,
+        edited: _edited,
+        pendingSeconds: _pending,
+      ),
     );
-    Navigator.of(context).pop(seconds);
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Rest timer'),
-      content: Column(
+    final picks = restEditorQuickPicks();
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Text(
+            'Rest timer',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
           Text(
-            '${_text.text.trim().isEmpty ? _sliderSeconds.round() : _text.text.trim()} seconds',
+            restEditorDurationLabel(_pending),
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
           ),
           TextField(
@@ -353,33 +452,41 @@ class _RestDurationDialogState extends State<_RestDurationDialog> {
             onChanged: (value) {
               final parsed = int.tryParse(value.trim());
               if (parsed == null) return;
-              setState(() => _sliderSeconds = _snapSeconds(parsed));
-            },
-          ),
-          Slider(
-            min: minAverageRestSeconds.toDouble(),
-            max: maxAverageRestSeconds.toDouble(),
-            divisions: (maxAverageRestSeconds - minAverageRestSeconds) ~/ 5,
-            value: _sliderSeconds,
-            activeColor: LiftBigColors.primary,
-            label: '${_sliderSeconds.round()}',
-            onChanged: (value) {
-              final stepped = _snapSeconds(value.round());
               setState(() {
-                _sliderSeconds = stepped;
-                _text.text = '${stepped.round()}';
+                _edited = true;
+                _pending = parsed;
+                if (parsed >= restEditorMinSeconds &&
+                    parsed <= restEditorMaxSeconds) {
+                  _sliderSeconds = snapRestEditorSeconds(parsed).toDouble();
+                }
               });
             },
           ),
+          Slider(
+            min: restEditorMinSeconds.toDouble(),
+            max: restEditorMaxSeconds.toDouble(),
+            divisions: (restEditorMaxSeconds - restEditorMinSeconds) ~/ 5,
+            value: _sliderSeconds,
+            activeColor: context.liftBig.primary,
+            label: restEditorDurationLabel(_sliderSeconds.round()),
+            onChanged: (value) => _setPending(value.round(), fromSlider: true),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final seconds in picks)
+                ChoiceChip(
+                  label: Text(restEditorDurationLabel(seconds)),
+                  selected: _pending == seconds,
+                  onSelected: (_) => _setPending(seconds, fromSlider: true),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
-      ],
     );
   }
 }

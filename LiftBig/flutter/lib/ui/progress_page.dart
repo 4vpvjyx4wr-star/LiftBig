@@ -77,21 +77,21 @@ class _ProgressPageState extends State<ProgressPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
-        const Text(
+         Text(
           'Working sets only. Warmup sets stay in the log and do not move these numbers.',
-          style: TextStyle(color: LiftBigColors.muted),
+          style: TextStyle(color: context.liftBig.muted),
         ),
         const SizedBox(height: 12),
         if (_series.isEmpty)
-          const Text(
+           Text(
             'Log a working set to see a lift over time.',
-            style: TextStyle(color: LiftBigColors.muted),
+            style: TextStyle(color: context.liftBig.muted),
           )
         else ...[
           DropdownButton<String>(
             isExpanded: true,
             value: _selected,
-            dropdownColor: LiftBigColors.card,
+            dropdownColor: context.liftBig.card,
             items: [
               for (final item in _series)
                 DropdownMenuItem(value: item.name, child: Text(item.name)),
@@ -125,11 +125,11 @@ class _ProgressPageState extends State<ProgressPage> {
         ),
         const SizedBox(height: 8),
         if (earned.isEmpty)
-          const Padding(
+           Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Text(
               'None earned yet. A logged working day unlocks the first one.',
-              style: TextStyle(color: LiftBigColors.muted),
+              style: TextStyle(color: context.liftBig.muted),
             ),
           ),
         for (final item in earned) _AchievementTile(item: item, earned: true),
@@ -168,9 +168,9 @@ class _WeightChart extends StatelessWidget {
                           ? 0
                           : (point.maxWeightLbs / maxWeight).clamp(0.08, 1),
                       widthFactor: 1,
-                      child: const DecoratedBox(
+                      child:  DecoratedBox(
                         decoration: BoxDecoration(
-                          color: LiftBigColors.primary,
+                          color: context.liftBig.primary,
                           borderRadius: BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -200,10 +200,10 @@ class _AchievementTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: earned ? const Color(0xFF163020) : LiftBigColors.card,
+          color: earned ? const Color(0xFF163020) : context.liftBig.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: earned ? LiftBigColors.success : LiftBigColors.border,
+            color: earned ? context.liftBig.success : context.liftBig.border,
           ),
         ),
         child: Row(
@@ -211,7 +211,7 @@ class _AchievementTile extends StatelessWidget {
           children: [
             Icon(
               earned ? Icons.emoji_events : Icons.emoji_events_outlined,
-              color: earned ? LiftBigColors.success : LiftBigColors.muted,
+              color: earned ? context.liftBig.success : context.liftBig.muted,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -223,14 +223,14 @@ class _AchievementTile extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: earned
-                          ? LiftBigColors.foreground
-                          : LiftBigColors.muted,
+                          ? context.liftBig.foreground
+                          : context.liftBig.muted,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     item.description,
-                    style: const TextStyle(color: LiftBigColors.muted),
+                    style:  TextStyle(color: context.liftBig.muted),
                   ),
                 ],
               ),

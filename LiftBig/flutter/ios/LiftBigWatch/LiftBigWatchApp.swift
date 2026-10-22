@@ -1,3 +1,16 @@
+// The iPhone Watch app reports an unverified source because this companion is
+// development-signed. watchOS hides Developer Mode until Xcode has offered the
+// watch a development app. Installing from the iPhone Watch app alone does not
+// reveal the toggle.
+//
+// 1. On the iPhone: Settings > Privacy & Security > Developer Mode, then restart.
+// 2. Connect the iPhone to the Mac, unlock the watch, then Xcode > Window >
+//    Devices and Simulators, and select the paired watch.
+// 3. On the watch, Developer Mode then appears at the bottom of Privacy &
+//    Security. Turn it on and let the watch restart.
+// 4. Run the LiftBigWatch scheme on that watch once from Xcode. After that, the
+//    iPhone Watch app can install this development build.
+
 import SwiftUI
 import WatchConnectivity
 import WatchKit
