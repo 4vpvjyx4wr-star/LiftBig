@@ -10,6 +10,7 @@ import '../plans/workout_shuffle.dart';
 import '../theme.dart';
 import 'catalog_load_state.dart';
 import 'plan_schedule_sheet.dart';
+import 'plan_workout_row.dart';
 import 'workout_shuffle_sheet.dart';
 
 class PlansPage extends StatefulWidget {
@@ -47,11 +48,36 @@ class _PlansPageState extends State<PlansPage> {
   ShuffledWorkout? _shuffled;
   String? _shuffleNote;
   Future<List<PremadePlan>>? _customPlansFuture;
+  final _favoritePlanIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _loadShuffleDefaults();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final ids = await widget.journal.favoritePlanIds();
+    if (!mounted) return;
+    setState(() {
+      _favoritePlanIds
+        ..clear()
+        ..addAll(ids);
+    });
+  }
+
+  Future<void> _setFavorite(String planId, bool favorited) async {
+    final id = planId.trim();
+    if (id.isEmpty) return;
+    setState(() {
+      if (favorited) {
+        _favoritePlanIds.add(id);
+      } else {
+        _favoritePlanIds.remove(id);
+      }
+    });
+    await widget.journal.saveFavoritePlanIds(_favoritePlanIds);
   }
 
   Future<void> _loadShuffleDefaults() async {
@@ -283,6 +309,8 @@ class _PlansPageState extends State<PlansPage> {
               onLogWorkout: _logWorkout,
               onSchedulePlan: _schedulePlan,
               onOpenShuffle: () => _openShuffleSheet(catalog),
+              favoritePlanIds: _favoritePlanIds,
+              onFavoriteChanged: _setFavorite,
             );
           },
         );
@@ -305,6 +333,8 @@ class _PlansBody extends StatelessWidget {
     required this.onLogWorkout,
     required this.onSchedulePlan,
     required this.onOpenShuffle,
+    required this.favoritePlanIds,
+    required this.onFavoriteChanged,
   });
 
   final LiftBigCatalog catalog;
@@ -320,6 +350,8 @@ class _PlansBody extends StatelessWidget {
   final Future<void> Function(String planTitle, List<CatalogWorkout> workouts)
       onSchedulePlan;
   final VoidCallback onOpenShuffle;
+  final Set<String> favoritePlanIds;
+  final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
 
   List<PremadePlan> get _premadePlans => [
         ...catalog.plans,
@@ -395,6 +427,8 @@ class _PlansBody extends StatelessWidget {
           catalog: catalog,
           plans: _premadePlans,
           onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
         ),
         const SizedBox(height: 8),
         _SearchablePlanSection(
@@ -402,6 +436,8 @@ class _PlansBody extends StatelessWidget {
           catalog: catalog,
           plans: const [],
           onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
           header: const Padding(
             padding: EdgeInsets.fromLTRB(0, 0, 0, 12),
             child: Text(
@@ -416,6 +452,8 @@ class _PlansBody extends StatelessWidget {
           catalog: catalog,
           plans: customPlans,
           onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
           emptyMessage: 'You have not created a plan yet.',
         ),
       ],
@@ -424,16 +462,36 @@ class _PlansBody extends StatelessWidget {
 }
 
 class _PlanTile extends StatelessWidget {
-  const _PlanTile({required this.plan, required this.onLog});
+  const _PlanTile({
+    required this.plan,
+    required this.onLog,
+    required this.favorited,
+    required this.onFavoriteChanged,
+  });
 
   final PremadePlan plan;
   final Future<void> Function(CatalogWorkout workout, String? planName) onLog;
+  final bool favorited;
+  final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
+        leading: IconButton(
+          tooltip: favorited ? 'Remove favorite' : 'Favorite plan',
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          onPressed: () {
+            onFavoriteChanged(plan.id, !favorited);
+          },
+          icon: Icon(
+            favorited ? Icons.star : Icons.star_border,
+            color: favorited ? LiftBigColors.primary : LiftBigColors.foreground,
+          ),
+        ),
         title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(
           '${plan.workouts.length} workouts'
@@ -441,34 +499,14 @@ class _PlanTile extends StatelessWidget {
           style: const TextStyle(color: LiftBigColors.muted),
         ),
         children: [
-          for (final workout in plan.workouts)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          workout.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        for (final lift in workout.lifts)
-                          Text(
-                            '${lift.name} · ${lift.sets.length} sets',
-                            style: const TextStyle(color: LiftBigColors.muted),
-                          ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Log this workout today',
-                    onPressed: () => onLog(workout, plan.name),
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
+          for (var i = 0; i < plan.workouts.length; i++)
+            PlanWorkoutRow(
+              key: ValueKey('${plan.workouts[i].id}:$i'),
+              workout: plan.workouts[i],
+              trailing: IconButton(
+                tooltip: 'Log this workout today',
+                onPressed: () => onLog(plan.workouts[i], plan.name),
+                icon: const Icon(Icons.add),
               ),
             ),
         ],
@@ -661,6 +699,8 @@ class _SearchablePlanSection extends StatefulWidget {
     required this.catalog,
     required this.plans,
     required this.onLog,
+    required this.favoritePlanIds,
+    required this.onFavoriteChanged,
     this.header,
     this.emptyMessage,
   });
@@ -669,6 +709,8 @@ class _SearchablePlanSection extends StatefulWidget {
   final LiftBigCatalog catalog;
   final List<PremadePlan> plans;
   final Future<void> Function(CatalogWorkout workout, String? planName) onLog;
+  final Set<String> favoritePlanIds;
+  final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
   final Widget? header;
   final String? emptyMessage;
 
@@ -734,7 +776,12 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
             )
           else
             for (final plan in filtered)
-              _PlanTile(plan: plan, onLog: widget.onLog),
+              _PlanTile(
+                plan: plan,
+                onLog: widget.onLog,
+                favorited: widget.favoritePlanIds.contains(plan.id),
+                onFavoriteChanged: widget.onFavoriteChanged,
+              ),
         ],
       ),
     );

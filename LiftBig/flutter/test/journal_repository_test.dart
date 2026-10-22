@@ -789,4 +789,21 @@ void main() {
     await journal.db.close();
     if (file.existsSync()) file.deleteSync();
   });
+
+  test('favorite plans survive a database reopen', () async {
+    final file = File(
+      '${Directory.systemTemp.path}/liftbig-favorites-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final first = JournalRepository(AppDatabase(NativeDatabase(file)));
+    expect(await first.favoritePlanIds(), isEmpty);
+    await first.saveFavoritePlanIds([' push ', 'pull', 'push', '']);
+    expect(await first.favoritePlanIds(), {'push', 'pull'});
+    await first.saveFavoritePlanIds(['pull']);
+    await first.db.close();
+
+    final second = JournalRepository(AppDatabase(NativeDatabase(file)));
+    expect(await second.favoritePlanIds(), {'pull'});
+    await second.db.close();
+    if (file.existsSync()) file.deleteSync();
+  });
 }

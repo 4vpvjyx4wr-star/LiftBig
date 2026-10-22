@@ -4,6 +4,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../plans/custom_plans.dart';
 import '../theme.dart';
+import 'plan_workout_row.dart';
 
 /// A workout session chosen for one calendar day.
 class PlanAssignment {
@@ -42,6 +43,7 @@ class AssignPlanSheet extends StatefulWidget {
 class _AssignPlanSheetState extends State<AssignPlanSheet> {
   final _search = TextEditingController();
   List<PremadePlan>? _plans;
+  Set<String> _favoriteIds = const {};
   String? _error;
 
   @override
@@ -63,8 +65,10 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
         journal: widget.journal,
         catalog: catalog,
       );
+      final favorites = await widget.journal.favoritePlanIds();
       if (!mounted) return;
       setState(() {
+        _favoriteIds = favorites;
         _plans = [
           ...catalog.plans,
           if (catalog.starterWorkouts.isNotEmpty)
@@ -192,60 +196,93 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
         ),
       );
     }
+    final favorites = [
+      for (final plan in visible)
+        if (_favoriteIds.contains(plan.id)) plan,
+    ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: [
-        for (final plan in visible)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: LiftBigColors.card,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: LiftBigColors.border),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: ExpansionTile(
-                tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-                childrenPadding: const EdgeInsets.only(bottom: 8),
-                iconColor: LiftBigColors.muted,
-                collapsedIconColor: LiftBigColors.muted,
-                title: Text(
-                  plan.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  '${plan.workouts.length} ${plan.workouts.length == 1 ? 'workout' : 'workouts'}',
-                  style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
-                ),
-                children: [
-                  for (final workout in plan.workouts)
-                    ListTile(
-                      dense: true,
-                      title: Text(
-                        workout.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        '${workout.lifts.length} ${workout.lifts.length == 1 ? 'exercise' : 'exercises'}',
-                        style: const TextStyle(color: LiftBigColors.muted),
-                      ),
-                      trailing: const Icon(
-                        Icons.add,
-                        color: LiftBigColors.primary,
-                      ),
-                      onTap: () {
-                        Navigator.pop(
-                          context,
-                          PlanAssignment(workout: workout, planName: plan.name),
-                        );
-                      },
-                    ),
-                ],
+        if (favorites.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Favorites',
+              style: TextStyle(
+                color: LiftBigColors.primary,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
               ),
             ),
           ),
+          for (final plan in favorites) _planCard(plan),
+          const Padding(
+            padding: EdgeInsets.only(top: 4, bottom: 12),
+            child: Divider(height: 1, color: LiftBigColors.border),
+          ),
+        ],
+        for (final plan in visible) _planCard(plan),
       ],
+    );
+  }
+
+  Widget _planCard(PremadePlan plan) {
+    final favorited = _favoriteIds.contains(plan.id);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: LiftBigColors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: LiftBigColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          iconColor: LiftBigColors.muted,
+          collapsedIconColor: LiftBigColors.muted,
+          title: Row(
+            children: [
+              if (favorited) ...[
+                const Icon(Icons.star, size: 16, color: LiftBigColors.primary),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text(
+                  plan.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          subtitle: Text(
+            '${plan.workouts.length} ${plan.workouts.length == 1 ? 'workout' : 'workouts'}',
+            style: const TextStyle(color: LiftBigColors.muted, fontSize: 12),
+          ),
+          children: [
+            for (var i = 0; i < plan.workouts.length; i++)
+              PlanWorkoutRow(
+                key: ValueKey('${plan.id}:${plan.workouts[i].id}:$i'),
+                workout: plan.workouts[i],
+                trailing: IconButton(
+                  tooltip: 'Add to this day',
+                  onPressed: () {
+                    Navigator.pop(
+                      context,
+                      PlanAssignment(
+                        workout: plan.workouts[i],
+                        planName: plan.name,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add, color: LiftBigColors.primary),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

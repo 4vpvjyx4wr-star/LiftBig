@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../backup/backup_parser.dart';
@@ -54,6 +56,22 @@ abstract final class SettingKeys {
   static const machineStartSmithLb = 'machine_start_lb_smith';
   static const machineStartLegPressLb = 'machine_start_lb_leg_press';
   static const machineStartHackSquatLb = 'machine_start_lb_hack_squat';
+  static const favoritePlanIds = 'favorite_plan_ids';
+}
+
+/// Plan ids stored as a JSON string array. Blank or unreadable values are none.
+Set<String> favoritePlanIdsFromStored(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return <String>{};
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) return <String>{};
+    return {
+      for (final item in decoded)
+        if (item is String && item.trim().isNotEmpty) item.trim(),
+    };
+  } catch (_) {
+    return <String>{};
+  }
 }
 
 String _machineStartingWeightKey(VariableMachineKind kind) {
@@ -951,6 +969,20 @@ class JournalRepository {
 
   Future<void> setPrescribeWarmupEnabled(bool enabled) {
     return _put(SettingKeys.prescribeWarmup, enabled ? 'true' : 'false');
+  }
+
+  /// Plans starred from the Plans tab. Local only, so they survive a restart.
+  Future<Set<String>> favoritePlanIds() async {
+    return favoritePlanIdsFromStored(await _get(SettingKeys.favoritePlanIds));
+  }
+
+  Future<void> saveFavoritePlanIds(Iterable<String> ids) {
+    final unique = <String>{
+      for (final id in ids)
+        if (id.trim().isNotEmpty) id.trim(),
+    };
+    final sorted = unique.toList()..sort();
+    return _put(SettingKeys.favoritePlanIds, jsonEncode(sorted));
   }
 
   /// Temporary tester unlock. Only the exact stored word `true` counts.

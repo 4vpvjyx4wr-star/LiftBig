@@ -267,11 +267,14 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           GridView.count(
             crossAxisCount: 7,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            // A nested grid with null padding copies the safe-area inset and
+            // opens a gap under the weekday labels.
+            padding: EdgeInsets.zero,
             children: [
               for (var i = 0; i < leading; i++) const SizedBox.shrink(),
               for (var day = 1; day <= daysInMonth; day++)
