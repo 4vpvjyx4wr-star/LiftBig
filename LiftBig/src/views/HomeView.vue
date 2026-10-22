@@ -168,7 +168,7 @@ function onMoveDone(targetDate: string, action: 'move' | 'swap') {
 }
 
 function onCopyDone(targetDate: string) {
-  workouts.copyExercisesToDay(selectedDate.value, targetDate)
+  workouts.copyExercisesToDay(selectedDate.value, targetDate, weightUnit.value)
   copySheetOpen.value = false
   selectedDate.value = targetDate
 }
@@ -196,7 +196,9 @@ function exerciseGoalLabel(ex: Exercise): string {
     ignoreStoredGoalWeight: true,
   })
 
-  const repsLabel = pred.hasHistory ? pred.suggestedReps : ex.targetReps
+  const repsLabel = pred.hasHistory
+    ? pred.suggestedLogReps || pred.suggestedReps
+    : ex.targetReps
   if (repsLabel) {
     parts.push(`× ${repsLabel}`)
   }

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "tutorials:fill": "node --experimental-strip-types ./scripts/fill-exercise-tutorials.mjs",
+    "predev": "npm run tutorials:fill",
+    "prebuild": "npm run tutorials:fill",
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
@@ -15,7 +18,7 @@
     "format": "prettier --write --experimental-cli src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "run-s lint test build",
+    "verify": "run-s lint tutorials:fill test build",
     "build:native": "CAPACITOR=1 npm run build-only",
     "cap:sync": "npm run build:native && cap sync",
     "ios": "npm run cap:sync && cap open ios",

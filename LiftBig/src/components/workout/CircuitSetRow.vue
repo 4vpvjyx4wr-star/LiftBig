@@ -22,7 +22,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: []
   update: [field: 'weight' | 'durationSeconds', value: string]
+  difficulty: [value: string]
 }>()
+
+const difficultyChoices = [
+  { value: 'Easy', label: 'Easy' },
+  { value: 'Moderate', label: 'Mod' },
+  { value: 'Difficult', label: 'Hard' },
+] as const
 
 const settings = inject(settingsInjectionKey)!
 const editing = ref(false)
@@ -66,6 +73,29 @@ function onToggleClick() {
       >
         {{ set.checked ? '✓' : '' }}
       </button>
+      <div
+        v-if="settings.logSetDifficulty.value"
+        class="flex h-11 w-[132px] shrink-0 overflow-hidden rounded-md border border-border"
+        role="group"
+        aria-label="Set difficulty"
+      >
+        <button
+          v-for="choice in difficultyChoices"
+          :key="choice.value"
+          type="button"
+          class="min-h-11 min-w-11 flex-1 px-1 text-[11px] font-bold leading-none"
+          :class="
+            set.difficulty === choice.value
+              ? 'bg-primary text-foreground'
+              : 'text-muted hover:bg-card-inner'
+          "
+          :aria-pressed="set.difficulty === choice.value"
+          :aria-label="choice.value"
+          @click="emit('difficulty', set.difficulty === choice.value ? '' : choice.value)"
+        >
+          {{ choice.label }}
+        </button>
+      </div>
       <span class="w-11 shrink-0 text-xs text-muted">Set {{ index + 1 }}</span>
       <span class="min-w-0 flex-1 text-[13px] text-foreground">{{ summaryLine }}</span>
       <button

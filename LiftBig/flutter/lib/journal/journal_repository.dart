@@ -530,15 +530,70 @@ class JournalRepository {
     });
   }
 
+  /// Removes the day row, its exercises, and their sets.
+  Future<void> deleteDay(String dateKey) async {
+    if (!isValidDateKey(dateKey)) {
+      throw ArgumentError('Date must look like YYYY-MM-DD.');
+    }
+    await db.transaction(() async {
+      await _deleteDayRows(dateKey);
+    });
+  }
+
+  /// Swaps this exercise for another library lift and keeps its set rows.
+  Future<void> replaceExercise({
+    required String exerciseId,
+    required String name,
+    String? libraryId,
+    required bool isCardio,
+    required bool isCore,
+  }) async {
+    final trimmed = name.trim();
+    if (exerciseId.isEmpty || trimmed.isEmpty) {
+      throw ArgumentError('Exercise is required.');
+    }
+    await db.transaction(() async {
+      final exercise = await (db.select(
+        db.exercises,
+      )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
+      if (exercise == null) throw ArgumentError('Exercise not found.');
+      final nextLibraryId = _blankToNull(libraryId);
+      final priorLibraryId = exercise.libraryId?.trim();
+      final priorPreferred = decodeStringList(exercise.preferredSwapLibraryIds);
+      final nextPreferred = <String>[
+        if (priorLibraryId != null &&
+            priorLibraryId.isNotEmpty &&
+            priorLibraryId != nextLibraryId)
+          priorLibraryId,
+        for (final id in priorPreferred)
+          if (id != nextLibraryId && id != priorLibraryId) id,
+      ];
+      await (db.update(db.exercises)..where((row) => row.id.equals(exerciseId)))
+          .write(
+        ExercisesCompanion(
+          name: Value(trimmed),
+          libraryId: Value(nextLibraryId),
+          isCardio: Value(isCardio),
+          isCore: Value(isCore && !isCardio),
+          isCircuit: const Value(false),
+          preferredSwapLibraryIds: Value(encodeStringList(nextPreferred)),
+        ),
+      );
+      await _touchDay(exercise.dateKey);
+    });
+  }
+
   /// Writes the workout name and the day's own notes. Blank text clears them.
   Future<void> updateDayHeader(
     String dateKey, {
     String? notes,
     String? workoutName,
     String? planName,
+    String? workoutNotes,
     bool setNotes = false,
     bool setWorkoutName = false,
     bool setPlanName = false,
+    bool setWorkoutNotes = false,
   }) async {
     if (!isValidDateKey(dateKey)) {
       throw ArgumentError('Date must look like YYYY-MM-DD.');
@@ -555,6 +610,9 @@ class JournalRepository {
             notes: Value(setNotes ? _blankToNull(notes) : null),
             workoutName: Value(setWorkoutName ? _blankToNull(workoutName) : null),
             planName: Value(setPlanName ? _blankToNull(planName) : null),
+            workoutNotes: Value(
+              setWorkoutNotes ? _blankToNull(workoutNotes) : null,
+            ),
             updatedAt: stamp,
           ),
         );
@@ -569,6 +627,9 @@ class JournalRepository {
               : const Value.absent(),
           planName: setPlanName
               ? Value(_blankToNull(planName))
+              : const Value.absent(),
+          workoutNotes: setWorkoutNotes
+              ? Value(_blankToNull(workoutNotes))
               : const Value.absent(),
           updatedAt: Value(stamp),
         ),

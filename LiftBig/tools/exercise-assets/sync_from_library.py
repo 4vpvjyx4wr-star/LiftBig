@@ -174,10 +174,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote name map -> {args.map_out}")
     print()
     print("Next steps (required for new library exercises):")
-    print("  1. Add YouTube tutorial URL in src/utils/exerciseTutorials.ts")
-    print("  2. Generate form GIF/PNG for each new gym id, e.g.:")
+    print("  1. Write how-to steps, cues, and tips on the library entry.")
+    print("  2. From LiftBig/: npm run tutorials:fill")
+    print("     (YouTube how-to under 3 minutes from a recognized source; cardio/sports skipped)")
+    print("  3. Generate form GIF/PNG for each new gym id, e.g.:")
     print("       python generate_assets.py --only {id} --out ..\\..\\public")
-    print("  3. Cardio/sports skip GIFs; some mobility may omit GIF intentionally.")
+    print("  4. Cardio/sports skip GIFs; some mobility may omit GIF intentionally.")
     print("  See tools/exercise-assets/README.md checklist + design system criteria.")
     return 0
 

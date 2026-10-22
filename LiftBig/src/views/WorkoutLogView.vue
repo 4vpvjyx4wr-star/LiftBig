@@ -193,7 +193,9 @@ function loadDay() {
   const loaded = (JSON.parse(JSON.stringify(workouts.getDay(k))) as Exercise[]).map(
     normalizeExerciseForLog,
   )
-  applyPredictedGoalsToExercises(loaded, workouts.log.value, k)
+  applyPredictedGoalsToExercises(loaded, workouts.log.value, k, {
+    displayUnit: settings.weightUnit.value,
+  })
   exercises.value = applyBodyWeightDefaultsToExercises(loaded, settings.bodyWeightLbs.value)
   workoutNotesDraft.value = workouts.getDayNotesForDate(k)
   workoutNotesBoundDate = k
@@ -365,7 +367,7 @@ function addSet(exerciseId: string) {
 function updateSet(
   exerciseId: string,
   setId: string,
-  field: 'reps' | 'weight' | 'durationSeconds',
+  field: 'reps' | 'weight' | 'durationSeconds' | 'difficulty',
   value: string,
 ) {
   exercises.value = exercises.value.map((ex) => {
@@ -377,6 +379,13 @@ function updateSet(
         if (field === 'durationSeconds') {
           const t = value.trim()
           return t ? { ...s, durationSeconds: t } : { ...s, durationSeconds: undefined }
+        }
+        if (field === 'difficulty') {
+          if (value === 'Easy' || value === 'Moderate' || value === 'Difficult') {
+            return { ...s, difficulty: value }
+          }
+          const { difficulty: _dropped, ...rest } = s
+          return rest
         }
         return { ...s, [field]: value }
       }),

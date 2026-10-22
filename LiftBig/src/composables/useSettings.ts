@@ -82,6 +82,8 @@ export type AppSettings = {
   appleHealthEnabled: boolean
   /** Sync the journal through the user's private iCloud container. */
   iCloudSyncEnabled: boolean
+  /** Off until the lifter asks to rate each set Easy, Moderate, or Difficult. */
+  logSetDifficulty: boolean
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -100,6 +102,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   heightInches: 0,
   appleHealthEnabled: false,
   iCloudSyncEnabled: false,
+  logSetDifficulty: false,
 }
 
 const MIN_AVERAGE_SECONDS = 5
@@ -236,6 +239,7 @@ export function useSettings() {
   const heightInches = ref<number>(sanitizeHeightInches(loaded.heightInches ?? 0))
   const appleHealthEnabled = ref<boolean>(loaded.appleHealthEnabled === true)
   const iCloudSyncEnabled = ref<boolean>(loaded.iCloudSyncEnabled === true)
+  const logSetDifficulty = ref<boolean>(loaded.logSetDifficulty === true)
 
   function persistSettings() {
     saveJson(STORAGE_KEY, {
@@ -260,6 +264,7 @@ export function useSettings() {
       heightInches: sanitizeHeightInches(heightInches.value),
       appleHealthEnabled: appleHealthEnabled.value,
       iCloudSyncEnabled: iCloudSyncEnabled.value,
+      logSetDifficulty: logSetDifficulty.value,
     })
   }
 
@@ -288,6 +293,7 @@ export function useSettings() {
       heightInches,
       appleHealthEnabled,
       iCloudSyncEnabled,
+      logSetDifficulty,
     ],
     () => {
       averageRestSeconds.value = sanitizeAverageSeconds(
@@ -365,6 +371,7 @@ export function useSettings() {
     heightInches,
     appleHealthEnabled,
     iCloudSyncEnabled,
+    logSetDifficulty,
     setTheme,
     addCustomTheme,
     updateCustomTheme,
@@ -392,6 +399,9 @@ export function useSettings() {
     },
     setICloudSyncEnabled(enabled: boolean) {
       iCloudSyncEnabled.value = enabled
+    },
+    setLogSetDifficulty(enabled: boolean) {
+      logSetDifficulty.value = enabled
     },
     setDailyLiftReminderEnabled(enabled: boolean) {
       dailyLiftReminderEnabled.value = enabled

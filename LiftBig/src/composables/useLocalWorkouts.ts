@@ -260,11 +260,14 @@ export function useLocalWorkouts() {
   }
 
   /** Copy exercises (goals + set structure, empty working sets) from one day onto another. Source day is unchanged. */
-  function copyExercisesToDay(fromKey: string, toKey: string) {
+  function copyExercisesToDay(fromKey: string, toKey: string, displayUnit?: 'lb' | 'kg') {
     const source = getDayExercises(log.value[fromKey])
     if (source.length === 0) return
     const cloned = cloneExercisesForCopy(source)
-    applyPredictedGoalsToExercises(cloned, log.value, toKey, { refreshFromHistory: true })
+    applyPredictedGoalsToExercises(cloned, log.value, toKey, {
+      refreshFromHistory: true,
+      displayUnit,
+    })
     const next = { ...log.value }
     const existing = getDayExercises(next[toKey])
     const merged = [...existing, ...cloned]

@@ -101,7 +101,7 @@ const goalSummaryLine = computed(() => {
 
 const emit = defineEmits<{
   addSet: []
-  updateSet: [setId: string, field: 'reps' | 'weight' | 'durationSeconds', value: string]
+  updateSet: [setId: string, field: 'reps' | 'weight' | 'durationSeconds' | 'difficulty', value: string]
   toggleCircuitSet: [setId: string]
   deleteSet: [setId: string]
   toggleWarmupSet: [setId: string]
@@ -180,6 +180,7 @@ watch(activePanel, (next, prev) => {
 
 const suggestion = ref<{
   suggestedReps: string
+  suggestedLogReps: string
   suggestedWeight: number
   reason: string
 } | null>(null)
@@ -299,7 +300,7 @@ function onCardioCaloriesInput(event: Event) {
 function onSetRowUpdate(
   setId: string,
   index: number,
-  field: 'reps' | 'weight' | 'durationSeconds',
+  field: 'reps' | 'weight' | 'durationSeconds' | 'difficulty',
   value: string,
 ) {
   emit('updateSet', setId, field, value)
@@ -346,6 +347,7 @@ watch(
         Number.isFinite(storedW) && storedW > 0
           ? {
               suggestedReps: reps || pred.suggestedReps,
+              suggestedLogReps: pred.suggestedLogReps,
               suggestedWeight: storedW,
               reason: pred.reason,
             }
@@ -354,6 +356,7 @@ watch(
     }
     suggestion.value = {
       suggestedReps: pred.suggestedReps,
+      suggestedLogReps: pred.suggestedLogReps,
       suggestedWeight: pred.suggestedWeightLbs,
       reason: pred.reason,
     }
@@ -753,7 +756,7 @@ function pickLinkPartner(partnerId: string) {
     >
       <div class="text-[13px] font-bold text-success-text">
         Predicted goal:
-        {{ exercise.sets.length }} × {{ suggestion.suggestedReps }}
+        {{ suggestion.suggestedLogReps || suggestion.suggestedReps }} reps
         @ {{ formatWeightWithUnit(suggestion.suggestedWeight, weightUnit, 1) }}
       </div>
       <div class="mt-0.5 text-[11px] text-success-text/80">{{ suggestion.reason }}</div>
@@ -769,6 +772,7 @@ function pickLinkPartner(partnerId: string) {
         :weight-unit="weightUnit"
         @toggle="emit('toggleCircuitSet', set.id)"
         @update="(field, value) => onCircuitSetUpdate(set.id, field, value)"
+        @difficulty="(value) => emit('updateSet', set.id, 'difficulty', value)"
       />
     </template>
 
@@ -781,6 +785,7 @@ function pickLinkPartner(partnerId: string) {
           v-if="showCoreTime"
           class="min-w-0 flex-1 basis-0 text-center text-[10px] font-bold uppercase text-muted"
         >Time</span>
+        <span v-if="settings.logSetDifficulty.value" class="w-[132px] shrink-0" />
         <span class="w-8 shrink-0" />
       </div>
       <SetRow

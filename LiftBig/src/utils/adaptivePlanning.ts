@@ -29,7 +29,7 @@ export function suggestNextSession(log: WorkoutLog, limit = 6): AdaptiveSuggesti
       if (!pred.hasHistory) continue
       suggestions.push({
         exerciseName: ex.name,
-        suggestedReps: pred.suggestedReps,
+        suggestedReps: pred.suggestedLogReps || pred.suggestedReps,
         suggestedWeightLbs: pred.suggestedWeightLbs,
         reason: pred.reason,
       })

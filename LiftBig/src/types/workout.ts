@@ -7,6 +7,8 @@ export type SetLog = {
   checked?: boolean
   /** Warmup sets are logged but excluded from strength/progress predictions. */
   isWarmup?: boolean
+  /** Optional. Unset until the lifter chooses Easy, Moderate, or Difficult. */
+  difficulty?: 'Easy' | 'Moderate' | 'Difficult'
 }
 
 /** Whether this set should feed progress charts and progressive-overload logic. */

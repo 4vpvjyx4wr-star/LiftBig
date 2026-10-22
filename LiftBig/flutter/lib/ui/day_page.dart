@@ -20,7 +20,9 @@ import '../utils/weight_units.dart';
 import '../rest/rest_timer_controller.dart';
 import '../rest/rest_timer_state.dart';
 import '../theme.dart';
+import 'assign_plan_sheet.dart';
 import 'basic_calculator_page.dart';
+import 'clear_day.dart';
 import 'day_transfer.dart';
 import 'one_rep_max_calculator_page.dart';
 import 'plate_calculator_page.dart';
@@ -98,6 +100,8 @@ class _DayPageState extends State<DayPage> {
   late final JournalHealthSync _healthSync;
   late final CompanionBridge _companion;
   late final ProStatus _proStatus;
+  LiftBigCatalog? _catalog;
+  var _assigning = false;
 
   @override
   void initState() {
@@ -118,6 +122,7 @@ class _DayPageState extends State<DayPage> {
     );
     _companion.addListener(_onCompanionMessage);
     _load(syncHealth: true);
+    _loadCatalog();
   }
 
   @override
@@ -444,6 +449,142 @@ class _DayPageState extends State<DayPage> {
     } catch (error) {
       if (mounted) _snack('$error');
     }
+  }
+
+  Future<void> _loadCatalog() async {
+    try {
+      final catalog = await LiftBigCatalog.load();
+      if (!mounted) return;
+      setState(() => _catalog = catalog);
+    } catch (_) {}
+  }
+
+  bool _showsBodyWeight(List<JournalExercise> exercises) {
+    final catalog = _catalog;
+    if (catalog == null || exercises.isEmpty) return false;
+    for (final exercise in exercises) {
+      if (exercise.isCardio) continue;
+      final lift = _libraryLift(catalog, exercise);
+      if (lift == null || lift.isCardio) continue;
+      if (lift.equipment.trim().toLowerCase() == 'bodyweight') return true;
+    }
+    return false;
+  }
+
+  LibraryLift? _libraryLift(LiftBigCatalog catalog, JournalExercise exercise) {
+    final id = exercise.libraryId?.trim();
+    if (id != null && id.isNotEmpty) {
+      final byId = catalog.liftById(id);
+      if (byId != null) return byId;
+    }
+    final name = exercise.name.trim().toLowerCase();
+    if (name.isEmpty) return null;
+    for (final lift in catalog.lifts) {
+      if (lift.name.trim().toLowerCase() == name) return lift;
+    }
+    return null;
+  }
+
+  Future<void> _assignPlan() async {
+    if (_assigning) return;
+    final pick = await showAssignPlanSheet(
+      context,
+      journal: widget.journal,
+    );
+    if (pick == null || !mounted) return;
+    final existing = _day;
+    if (existing != null && existing.exercises.isNotEmpty) {
+      final add = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Add to this day?'),
+          content: const Text(
+            'This day already has exercises. The workout will be added alongside them.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      );
+      if (add != true || !mounted) return;
+    }
+    _assigning = true;
+    try {
+      final notes = pick.workout.notes.trim();
+      await widget.journal.updateDayHeader(
+        widget.dateKey,
+        workoutName: pick.workout.name,
+        setWorkoutName: true,
+        planName: pick.planName,
+        setPlanName: true,
+        workoutNotes: notes,
+        setWorkoutNotes: true,
+      );
+      final prescribeWarmup = await widget.journal.prescribeWarmupEnabled();
+      for (final lift in pick.workout.lifts) {
+        await widget.journal.addExercise(
+          dateKey: widget.dateKey,
+          name: lift.name,
+          libraryId: lift.libraryId,
+          isCardio: lift.isCardio,
+          isCore: lift.isCore,
+          isCircuit: lift.isCircuit,
+          prescribeWarmup: prescribeWarmup,
+          sets: [
+            for (var i = 0; i < lift.sets.length; i++)
+              JournalSet(
+                id: '',
+                sortOrder: i,
+                reps: lift.sets[i].reps,
+                weight: lift.sets[i].weight,
+              ),
+          ],
+        );
+      }
+      if (!mounted) return;
+      _snack('${pick.workout.name} added.');
+      await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    } finally {
+      _assigning = false;
+    }
+  }
+
+  Future<void> _clearDay() async {
+    final confirmed = await confirmClearDay(context);
+    if (!confirmed || !mounted) return;
+    try {
+      await widget.journal.deleteDay(widget.dateKey);
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      _workoutName.text = '';
+      _dayNotes.text = '';
+      await _load(syncHealth: true);
+    } catch (error) {
+      if (mounted) _snack('$error');
+    }
+  }
+
+  Widget _bodyWeightField() {
+    final unit = _weightUnit == WeightUnit.lb ? 'lb' : 'kg';
+    return TextField(
+      controller: _bodyWeight,
+      focusNode: _bodyWeightFocus,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: 'Body weight ($unit)',
+        hintText: 'Optional — same as Settings',
+      ),
+      onChanged: _saveBodyWeight,
+    );
   }
 
   Future<void> _toggleRest(bool rest) async {
@@ -882,33 +1023,72 @@ class _DayPageState extends State<DayPage> {
         : ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             children: [
-              TextField(
-                controller: _bodyWeight,
-                focusNode: _bodyWeightFocus,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText:
-                      'Body weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
-                  hintText: 'Optional — same as Settings',
-                ),
-                onChanged: _saveBodyWeight,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _workoutName,
-                focusNode: _workoutNameFocus,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Workout',
-                  hintText: 'Workout name',
-                ),
-                onChanged: _saveWorkoutName,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _workoutName,
+                      focusNode: _workoutNameFocus,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Workout Name',
+                        hintText: 'Workout name',
+                      ),
+                      onChanged: _saveWorkoutName,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Assign a plan',
+                    child: OutlinedButton(
+                      onPressed: _assigning ? null : _assignPlan,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 56),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        foregroundColor: LiftBigColors.foreground,
+                        backgroundColor: LiftBigColors.cardInner,
+                        side: const BorderSide(color: LiftBigColors.border),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.assignment_outlined,
+                            size: 18,
+                            color: LiftBigColors.primary,
+                          ),
+                          SizedBox(width: 6),
+                          Text('Plan'),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (day?.planName != null) ...[
                 const SizedBox(height: 6),
                 Text(
                   day!.planName!,
                   style: const TextStyle(color: LiftBigColors.muted),
+                ),
+              ],
+              if (exercises.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _clearDay,
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: LiftBigColors.foreground,
+                    backgroundColor: LiftBigColors.cardInner,
+                    side: const BorderSide(color: LiftBigColors.border),
+                  ),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: LiftBigColors.primary,
+                  ),
+                  label: const Text('Clear day'),
                 ),
               ],
               if (workoutNotes != null && workoutNotes.trim().isNotEmpty) ...[
@@ -932,41 +1112,37 @@ class _DayPageState extends State<DayPage> {
                 ),
                 onChanged: _saveDayNotes,
               ),
-              if (day?.healthEnergyKcal != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    '${formatRoundedNumber(day!.healthEnergyKcal!, 0)} kcal',
-                    style: const TextStyle(
-                      color: LiftBigColors.foreground,
-                      fontWeight: FontWeight.w800,
+              if (exercises.isEmpty) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => _toggleRest(!restDay),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: restDay
+                        ? LiftBigColors.success
+                        : LiftBigColors.foreground,
+                    backgroundColor: restDay
+                        ? LiftBigColors.success.withValues(alpha: 0.12)
+                        : LiftBigColors.cardInner,
+                    side: BorderSide(
+                      color: restDay
+                          ? LiftBigColors.success
+                          : LiftBigColors.border,
                     ),
                   ),
+                  child: Text(restDay ? 'Clear rest' : 'Rest day'),
                 ),
-              if (exercises.isEmpty)
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Rest day'),
-                  value: restDay,
-                  activeThumbColor: LiftBigColors.primary,
-                  onChanged: _toggleRest,
-                ),
-              if (restDay)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Rest day',
-                    style: TextStyle(color: LiftBigColors.success),
-                  ),
-                )
-              else if (exercises.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    'Nothing logged.',
-                    style: TextStyle(color: LiftBigColors.muted),
-                  ),
-                ),
+                if (!restDay)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8, bottom: 12),
+                    child: Text(
+                      'Nothing logged.',
+                      style: TextStyle(color: LiftBigColors.muted),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 12),
+              ],
               for (var index = 0; index < blocks.length; index++)
                 _ExerciseBlock(
                   exercises: blocks[index],
@@ -1007,6 +1183,22 @@ class _DayPageState extends State<DayPage> {
                 onAddNamed: _addNamed,
                 onAddCustom: _addCustom,
               ),
+              if (_showsBodyWeight(exercises)) ...[
+                const SizedBox(height: 16),
+                _bodyWeightField(),
+              ],
+              if (day?.healthEnergyKcal != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    '${formatRoundedNumber(day!.healthEnergyKcal!, 0)} kcal',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: LiftBigColors.foreground,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
             ],
           );
     final restBanner = showBanner
@@ -2429,7 +2621,7 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
   Widget build(BuildContext context) {
     final priorCount = widget.priorNotes.length;
     final subtitle = priorCount == 0
-        ? 'Notes for this session'
+        ? 'Notes for this lift'
         : '$priorCount earlier ${priorCount == 1 ? 'note' : 'notes'}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

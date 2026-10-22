@@ -696,6 +696,18 @@ watch(
               @change="settings.setDoubleTapCopyWeight(($event.target as HTMLInputElement).checked)"
             />
           </label>
+          <label class="mb-3 flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-foreground">Rate set difficulty</span>
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-border"
+              :checked="settings.logSetDifficulty.value"
+              @change="settings.setLogSetDifficulty(($event.target as HTMLInputElement).checked)"
+            />
+          </label>
+          <p class="mb-3 text-[11px] leading-snug text-muted">
+            Off by default. When on, each set can be marked Easy, Moderate, or Difficult. Leave it unset if you skip it.
+          </p>
           <label class="flex items-center justify-between gap-3">
             <span class="text-sm font-bold text-foreground">Auto-advance: weight → reps → next set's weight</span>
             <input

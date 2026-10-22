@@ -5,6 +5,7 @@ import '../journal/journal_repository.dart';
 import '../theme.dart';
 import '../utils/one_rep_max.dart';
 import '../utils/weight_units.dart';
+import 'keyboard_dismiss.dart';
 
 class OneRepMaxCalculatorPage extends StatefulWidget {
   const OneRepMaxCalculatorPage({super.key, required this.journal});
@@ -18,7 +19,7 @@ class OneRepMaxCalculatorPage extends StatefulWidget {
 
 class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
   final _weightController = TextEditingController();
-  final _repsController = TextEditingController(text: '5');
+  final _repsController = TextEditingController();
   var _unit = WeightUnit.lb;
   var _loadingUnit = true;
 
@@ -72,11 +73,12 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
         ? null
         : values.reduce((a, b) => a + b) / values.length;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('One rep max')),
+    return KeyboardDismissScaffold(
+      title: 'One rep max',
       body: _loadingUnit
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
@@ -92,6 +94,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                 TextField(
                   controller: _weightController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputAction: TextInputAction.done,
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
@@ -100,12 +103,14 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
                   ),
-                  decoration: InputDecoration(
-                    hintText: _unit == WeightUnit.lb ? '225' : '100',
+                  decoration: const InputDecoration(
+                    hintText: 'Weight',
                     filled: true,
                     fillColor: LiftBigColors.cardInner,
                   ),
                   onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -121,6 +126,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                 TextField(
                   controller: _repsController,
                   keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   textAlign: TextAlign.center,
                   style: const TextStyle(
@@ -128,10 +134,13 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                     fontWeight: FontWeight.w800,
                   ),
                   decoration: const InputDecoration(
+                    hintText: 'Reps',
                     filled: true,
                     fillColor: LiftBigColors.cardInner,
                   ),
                   onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
                 ),
                 if (validWeight && validReps && values.isNotEmpty) ...[
                   const SizedBox(height: 24),

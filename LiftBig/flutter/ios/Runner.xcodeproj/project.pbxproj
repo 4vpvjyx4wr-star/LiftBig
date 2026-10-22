@@ -21,8 +21,6 @@
 		LB2F10032FE100010072D401 /* LiftBigWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */; };
 		LB2F10042FE100010072D401 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LB2F10142FE100010072D401 /* Assets.xcassets */; };
 		LB2F10052FE100010072D401 /* LiftBigWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = LB2F10162FE100010072D401 /* LiftBigWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		LB2F10062FE100010072D401 /* ConnectIQ.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = LB2F10172FE100010072D401 /* ConnectIQ.xcframework */; };
-		LB2F10072FE100010072D401 /* ConnectIQ.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = LB2F10172FE100010072D401 /* ConnectIQ.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,7 +47,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				LB2F10072FE100010072D401 /* ConnectIQ.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -91,7 +88,6 @@
 		LB2F10142FE100010072D401 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		LB2F10152FE100010072D401 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LB2F10162FE100010072D401 /* LiftBigWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiftBigWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		LB2F10172FE100010072D401 /* ConnectIQ.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ConnectIQ.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,7 +96,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
-				LB2F10062FE100010072D401 /* ConnectIQ.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,7 +137,6 @@
 				LB2F10412FE100010072D401 /* LiftBigWatch */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
-				LB2F10422FE100010072D401 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -172,14 +166,6 @@
 				LB2F10122FE100010072D401 /* ProBridge.swift */,
 			);
 			path = Runner;
-			sourceTree = "<group>";
-		};
-		LB2F10422FE100010072D401 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				LB2F10172FE100010072D401 /* ConnectIQ.xcframework */,
-			);
-			path = Frameworks;
 			sourceTree = "<group>";
 		};
 		LB2F10412FE100010072D401 /* LiftBigWatch */ = {
@@ -721,6 +707,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;
@@ -747,6 +734,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;
@@ -771,6 +759,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
+				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;

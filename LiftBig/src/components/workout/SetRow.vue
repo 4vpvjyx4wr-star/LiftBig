@@ -37,11 +37,17 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  update: [field: 'reps' | 'weight' | 'durationSeconds', value: string]
+  update: [field: 'reps' | 'weight' | 'durationSeconds' | 'difficulty', value: string]
   toggleWarmup: []
   delete: []
   advanceToNextWeight: []
 }>()
+
+const difficultyChoices = [
+  { value: 'Easy', label: 'Easy' },
+  { value: 'Moderate', label: 'Mod' },
+  { value: 'Difficult', label: 'Hard' },
+] as const
 
 const isWarmup = computed(() => props.set.isWarmup === true)
 
@@ -510,6 +516,31 @@ function handleRepsTap(e: MouseEvent) {
         placeholder="Time"
         @update:model-value="emit('update', 'durationSeconds', $event)"
       />
+    </div>
+    <div
+      v-if="settings.logSetDifficulty.value"
+      class="flex h-11 w-[132px] shrink-0 overflow-hidden rounded-md border border-border"
+      role="group"
+      aria-label="Set difficulty"
+    >
+      <button
+        v-for="choice in difficultyChoices"
+        :key="choice.value"
+        type="button"
+        class="min-h-11 min-w-11 flex-1 px-1 text-[11px] font-bold leading-none"
+        :class="
+          set.difficulty === choice.value
+            ? 'bg-primary text-foreground'
+            : 'text-muted hover:bg-card-inner'
+        "
+        :aria-pressed="set.difficulty === choice.value"
+        :aria-label="choice.value"
+        @click="
+          emit('update', 'difficulty', set.difficulty === choice.value ? '' : choice.value)
+        "
+      >
+        {{ choice.label }}
+      </button>
     </div>
     <button
       type="button"

@@ -324,6 +324,33 @@ onBeforeUnmount(() => {
           </template>
         </section>
 
+        <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">How to perform</h4>
+        <ol class="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
+          <li v-for="(step, i) in exercise.instructions" :key="i" class="leading-relaxed">
+            {{ step }}
+          </li>
+        </ol>
+
+        <template v-if="exercise.cues?.length">
+          <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Form cues</h4>
+          <ul class="mt-2 space-y-2 text-sm text-foreground">
+            <li v-for="(cue, i) in exercise.cues" :key="i" class="flex gap-2 leading-relaxed">
+              <span class="shrink-0 text-primary" aria-hidden="true">→</span>
+              <span>{{ cue }}</span>
+            </li>
+          </ul>
+        </template>
+
+        <template v-if="exercise.tips?.length">
+          <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Tips</h4>
+          <ul class="mt-2 space-y-2 text-sm text-foreground">
+            <li v-for="(tip, i) in exercise.tips" :key="i" class="flex gap-2 leading-relaxed">
+              <span class="shrink-0 text-primary">·</span>
+              <span>{{ tip }}</span>
+            </li>
+          </ul>
+        </template>
+
         <section v-if="showFormTutorial" class="mt-6">
           <h4 class="text-xs font-bold uppercase tracking-wide text-muted">Form tutorial</h4>
 
@@ -365,33 +392,6 @@ onBeforeUnmount(() => {
             Open on YouTube
           </a>
         </section>
-
-        <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">How to perform</h4>
-        <ol class="mt-2 list-decimal space-y-2 pl-5 text-sm text-foreground">
-          <li v-for="(step, i) in exercise.instructions" :key="i" class="leading-relaxed">
-            {{ step }}
-          </li>
-        </ol>
-
-        <template v-if="exercise.cues?.length">
-          <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Form cues</h4>
-          <ul class="mt-2 space-y-2 text-sm text-foreground">
-            <li v-for="(cue, i) in exercise.cues" :key="i" class="flex gap-2 leading-relaxed">
-              <span class="shrink-0 text-primary" aria-hidden="true">→</span>
-              <span>{{ cue }}</span>
-            </li>
-          </ul>
-        </template>
-
-        <template v-if="exercise.tips?.length">
-          <h4 class="mt-6 text-xs font-bold uppercase tracking-wide text-muted">Tips</h4>
-          <ul class="mt-2 space-y-2 text-sm text-foreground">
-            <li v-for="(tip, i) in exercise.tips" :key="i" class="flex gap-2 leading-relaxed">
-              <span class="shrink-0 text-primary">·</span>
-              <span>{{ tip }}</span>
-            </li>
-          </ul>
-        </template>
         </div>
       </div>
     </div>

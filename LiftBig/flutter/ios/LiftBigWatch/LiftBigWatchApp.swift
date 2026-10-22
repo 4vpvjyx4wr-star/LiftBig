@@ -19,6 +19,7 @@ struct WatchPayload: Decodable {
 
 final class WatchModel: NSObject, ObservableObject, WCSessionDelegate {
     @Published var payload = WatchPayload(version: 1, locked: true, reason: "idle")
+    @Published var phoneLink = "Connecting to iPhone…"
     @Published var restRemaining = 0
     private var timer: Timer?
 
@@ -27,12 +28,23 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate {
         if WCSession.isSupported() {
             WCSession.default.delegate = self
             WCSession.default.activate()
+        } else {
+            phoneLink = "Watch link unavailable"
         }
     }
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        DispatchQueue.main.async {
+            self.noteLink(session, activationState: activationState, error: error)
+        }
         if let json = session.receivedApplicationContext["sessionJson"] as? String {
             apply(json)
+        }
+    }
+
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        DispatchQueue.main.async {
+            self.noteLink(session, activationState: session.activationState, error: nil)
         }
     }
 
@@ -93,6 +105,16 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
+    private func noteLink(_ session: WCSession, activationState: WCSessionActivationState, error: Error?) {
+        if error != nil || activationState != .activated {
+            phoneLink = "iPhone link unavailable"
+        } else if session.isReachable {
+            phoneLink = "iPhone connected"
+        } else {
+            phoneLink = "Paired with iPhone"
+        }
+    }
+
     private func apply(_ json: String) {
         guard let data = json.data(using: .utf8),
               let next = try? JSONDecoder().decode(WatchPayload.self, from: data) else { return }
@@ -116,15 +138,22 @@ struct WatchSessionView: View {
 
     var body: some View {
         if model.payload.locked {
-            Text(
-                model.payload.reason == "pro"
-                    ? "LiftBig Pro unlocks the watch."
-                    : "Open a workout on your iPhone."
-            )
-            .multilineTextAlignment(.center)
+            VStack(spacing: 8) {
+                Text(model.phoneLink)
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                Text(
+                    model.payload.reason == "pro"
+                        ? "LiftBig Pro unlocks the watch."
+                        : "Open a workout on your iPhone."
+                )
+                .multilineTextAlignment(.center)
+            }
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
+                    Text(model.phoneLink)
+                        .font(.footnote)
                     Text(model.payload.exerciseName ?? "Exercise")
                         .font(.headline)
                     Text("Goal \(model.payload.targetWeightDisplay ?? "—") \(model.payload.weightUnit ?? "lb")")

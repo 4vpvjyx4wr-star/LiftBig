@@ -15,7 +15,7 @@ When adding or changing a **library exercise**, treat form GIF + YouTube as the 
 ## Required checklist
 
 1. Add the exercise to `LiftBig/src/utils/exerciseLibrary.ts` (stable kebab-case `id`).
-2. Add a YouTube tutorial URL (`exerciseTutorials.ts` / library tutorial field).
+2. Add how-to steps, cues, and tips on the library entry. Run `npm run tutorials:fill` from `LiftBig/` so a missing gym exercise gets a YouTube form tutorial (under 3 minutes, that exercise, recognized source). Cardio/sports are not auto-filled.
 3. Update asset maps: `tools/exercise-assets/name_map.json` + `exercise_list.json`, **or** run `python sync_from_library.py`.
 4. For gym / non-cardio exercises, generate the form illustration:
 

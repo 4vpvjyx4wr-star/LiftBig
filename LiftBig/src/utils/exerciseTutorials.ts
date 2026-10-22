@@ -1,12 +1,16 @@
 /**
  * YouTube form tutorials keyed by library exercise id.
- * Short-form tutorials focused on setup, cues, and safety.
+ * Short how-to videos (under 3 minutes) from a recognized coaching,
+ * clinical, or equipment source. New gym exercises are filled by
+ * `scripts/fill-exercise-tutorials.mjs`. Existing URLs are not replaced.
  */
 export const EXERCISE_TUTORIAL_URLS: Partial<Record<string, string>> = {
   'ab-machine-crunch': 'https://www.youtube.com/watch?v=tE-X4SZtAio',
   'ab-wheel-rollout': 'https://www.youtube.com/shorts/YgIf-8yklUA',
   'arnold-press': 'https://www.youtube.com/watch?v=6Z15_WdXmVw',
+  'assisted-dip': 'https://www.youtube.com/watch?v=8zFcJWD9Y_E',
   'assisted-pull-up': 'https://www.youtube.com/watch?v=D4qhgWBUL4M',
+  'back-extension': 'https://www.youtube.com/watch?v=WnsnESPx4JE',
   badminton: 'https://www.youtube.com/watch?v=ChzMQBZDSys',
   'banded-clamshell': 'https://www.youtube.com/watch?v=QjKyGqrAaP4',
   'barbell-curl': 'https://www.youtube.com/watch?v=wFEdHoM0dcQ',
@@ -69,6 +73,7 @@ export const EXERCISE_TUTORIAL_URLS: Partial<Record<string, string>> = {
   'hanging-knee-raise': 'https://www.youtube.com/watch?v=L9E0zu0OiqI',
   hiking: 'https://www.youtube.com/watch?v=VXlzMN7_njE',
   'hip-90-90-switch': 'https://www.youtube.com/watch?v=f_7qIPxw6nE',
+  'hip-abductor-machine': 'https://www.youtube.com/watch?v=2b97cvyH9sE',
   'hip-flexor-stretch': 'https://www.youtube.com/watch?v=VHqB_f_iBek',
   'hip-thrust': 'https://www.youtube.com/watch?v=pBH7pKHn-dI',
   'hiit-class': 'https://www.youtube.com/watch?v=p3yszLidvTc',
@@ -100,9 +105,12 @@ export const EXERCISE_TUTORIAL_URLS: Partial<Record<string, string>> = {
   'low-lunge-hip-flexor-stretch': 'https://www.youtube.com/watch?v=VHqB_f_iBek',
   'low-to-high-cable-fly': 'https://www.youtube.com/watch?v=KFl3Re5UbPo',
   'lying-spinal-twist': 'https://www.youtube.com/watch?v=mNdJti7ZwKI',
+  'machine-bicep-curl': 'https://www.youtube.com/watch?v=M_uPvGrMx_o',
   'machine-chest-press': 'https://www.youtube.com/watch?v=sqNwDkUU_Ps',
   'machine-fly': 'https://www.youtube.com/watch?v=WpU8-L5u890',
   'machine-pullover': 'https://www.youtube.com/watch?v=QG4k1Mha4vQ',
+  'machine-shoulder-press': 'https://www.youtube.com/watch?v=oAadscMCGLU',
+  'machine-triceps-extension': 'https://www.youtube.com/watch?v=S_evjJzI4hA',
   'martial-arts': 'https://www.youtube.com/shorts/uCNiYNTm_zQ',
   'mountain-climber': 'https://www.youtube.com/watch?v=Q_olQdxEPF4',
   'neutral-grip-lat-pulldown': 'https://www.youtube.com/watch?v=0rzMziYkK7k',
@@ -143,6 +151,7 @@ export const EXERCISE_TUTORIAL_URLS: Partial<Record<string, string>> = {
   'seated-leg-curl': 'https://www.youtube.com/watch?v=fDoVmFnnOE0',
   'side-plank': 'https://www.youtube.com/watch?v=Oe9Tp9SvTCE',
   'single-arm-lat-pulldown': 'https://www.youtube.com/watch?v=M9xUoJYtXtc',
+  'sit-up': 'https://www.youtube.com/watch?v=jDwoBqPH0jk',
   skiing: 'https://www.youtube.com/watch?v=lkqu6Mjkoko',
   'skull-crusher': 'https://www.youtube.com/watch?v=RavQHfFxbdA',
   'smith-machine-bench-press': 'https://www.youtube.com/shorts/hWbUlkb5Ms4',

@@ -1,9 +1,6 @@
 import { getDayExercises, setCountsTowardProgress, type Exercise, type WorkoutLog } from '@/types/workout'
-import { collectExerciseHistory } from '@/utils/exerciseProgress'
 import type { WeightUnit } from '@/utils/units'
 import { parseStoredLbs } from '@/utils/units'
-
-type SetLogLike = { reps: string; weight: string; isWarmup?: boolean }
 
 const INCREMENT_MAP: Record<string, number> = {
   'leg press': 10,
@@ -101,7 +98,10 @@ export function finiteGoalRepMaxForScroll(targetReps: string | undefined): numbe
 }
 
 export type PredictedGoals = {
+  /** Programmed range, such as `8-12`. */
   suggestedReps: string
+  /** Reps to log next. Empty when there is no history. */
+  suggestedLogReps: string
   suggestedWeightLbs: number
   reason: string
   hasHistory: boolean
@@ -109,30 +109,6 @@ export type PredictedGoals = {
 
 function exerciseNameMatches(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
-}
-
-function roundWeightToIncrement(lbs: number, increment: number): number {
-  const step = increment >= 5 ? increment : 2.5
-  return Math.round(lbs / step) * step
-}
-
-function linearSlope(ys: number[]): number {
-  const n = ys.length
-  if (n < 2) return 0
-  const xs = ys.map((_, i) => i)
-  let sumX = 0
-  let sumY = 0
-  let sumXY = 0
-  let sumXX = 0
-  for (let i = 0; i < n; i++) {
-    sumX += xs[i]!
-    sumY += ys[i]!
-    sumXY += xs[i]! * ys[i]!
-    sumXX += xs[i]! * xs[i]!
-  }
-  const denom = n * sumXX - sumX * sumX
-  if (denom === 0) return 0
-  return (n * sumXY - sumX * sumY) / denom
 }
 
 function collectHistoricalRepGoals(allWorkouts: WorkoutLog, exerciseName: string): string[] {
@@ -175,14 +151,6 @@ export function inferRepGoalFromHistory(maxRepsPerSession: number[]): string {
   return '12-15'
 }
 
-type SetPerformance = {
-  dateKey: string
-  weightLbs: number
-  reps: number
-  e1rm: number
-  sessionTargetReps?: string
-}
-
 /** Epley estimated 1-rep max from a weight × reps set. */
 export function estimateE1RMLbs(weightLbs: number, reps: number): number {
   if (weightLbs <= 0) return 0
@@ -204,73 +172,176 @@ export function repCountForWeightGoal(repGoal: string): number {
   return max
 }
 
-function collectSetPerformances(
+const LB_PER_KG = 2.2046226218
+
+type WorkSession = {
+  dateKey: string
+  achievedReps: number
+  peakReps: number
+  weightLbs: number
+  difficulty: 'Easy' | 'Moderate' | 'Difficult' | null
+}
+
+function canonicalDifficulty(raw: string | undefined): 'Easy' | 'Moderate' | 'Difficult' | null {
+  const text = (raw ?? '').trim().toLowerCase()
+  if (text === 'easy') return 'Easy'
+  if (text === 'moderate' || text === 'mod') return 'Moderate'
+  if (text === 'difficult' || text === 'hard') return 'Difficult'
+  return null
+}
+
+/** One Difficult set does not define the session when another rating is logged. */
+function sessionDifficulty(
+  sets: { difficulty?: string }[],
+): 'Easy' | 'Moderate' | 'Difficult' | null {
+  let easy = 0
+  let moderate = 0
+  let difficult = 0
+  for (const set of sets) {
+    const rating = canonicalDifficulty(set.difficulty)
+    if (rating === 'Easy') easy += 1
+    if (rating === 'Moderate') moderate += 1
+    if (rating === 'Difficult') difficult += 1
+  }
+  const rated = easy + moderate + difficult
+  if (rated === 0) return null
+  if (difficult === 1 && rated > 1) difficult = 0
+  if (difficult > easy && difficult > moderate) return 'Difficult'
+  if (easy > difficult && easy > moderate) return 'Easy'
+  if (moderate > easy && moderate > difficult) return 'Moderate'
+  if (easy === 0 && moderate === 0 && difficult === 0) return null
+  return 'Moderate'
+}
+
+/** Warmups never move the next target, even when they carry a rating. */
+function workingSessions(
   allWorkouts: WorkoutLog,
   exerciseName: string,
   excludeDateKey?: string,
-): SetPerformance[] {
-  const out: SetPerformance[] = []
-  for (const [dateKey, dayEntry] of Object.entries(allWorkouts)) {
+): WorkSession[] {
+  const out: WorkSession[] = []
+  const dates = Object.keys(allWorkouts).sort()
+  for (const dateKey of dates) {
     if (excludeDateKey && dateKey === excludeDateKey) continue
-    const ex = getDayExercises(dayEntry).find((e) => exerciseNameMatches(e.name, exerciseName))
+    const ex = getDayExercises(allWorkouts[dateKey]).find((e) => exerciseNameMatches(e.name, exerciseName))
     if (!ex) continue
-    const sessionTargetReps = (ex.targetReps ?? '').trim() || undefined
-    for (const s of ex.sets) {
-      if (!setCountsTowardProgress(s)) continue
-      const weightLbs = parseStoredLbs(s.weight)
-      const reps = parseInt(s.reps, 10)
-      if (Number.isNaN(weightLbs) || weightLbs <= 0 || Number.isNaN(reps) || reps <= 0) continue
-      out.push({
-        dateKey,
-        weightLbs,
-        reps,
-        e1rm: estimateE1RMLbs(weightLbs, reps),
-        sessionTargetReps,
-      })
+    const weights: number[] = []
+    const reps: number[] = []
+    const rated: { difficulty?: string }[] = []
+    for (const set of ex.sets) {
+      if (!setCountsTowardProgress(set)) continue
+      const weight = parseStoredLbs(set.weight)
+      const count = parseInt(set.reps, 10)
+      if (Number.isNaN(weight) || weight <= 0 || Number.isNaN(count) || count <= 0) continue
+      weights.push(weight)
+      reps.push(count)
+      rated.push(set)
     }
+    if (reps.length === 0) continue
+    out.push({
+      dateKey,
+      achievedReps: Math.min(...reps),
+      peakReps: Math.max(...reps),
+      weightLbs: modeWeight(weights),
+      difficulty: sessionDifficulty(rated),
+    })
   }
   return out
 }
 
-function sessionBestE1RMs(performances: SetPerformance[]): { dateKey: string; bestE1rm: number }[] {
-  const byDate = new Map<string, number>()
-  for (const p of performances) {
-    byDate.set(p.dateKey, Math.max(byDate.get(p.dateKey) ?? 0, p.e1rm))
-  }
-  return [...byDate.entries()]
-    .map(([dateKey, bestE1rm]) => ({ dateKey, bestE1rm }))
-    .sort((a, b) => a.dateKey.localeCompare(b.dateKey))
-}
-
-function lastSessionSets(
-  allWorkouts: WorkoutLog,
-  exerciseName: string,
-  excludeDateKey?: string,
-): { sets: SetLogLike[]; sessionTargetReps?: string } {
-  const sessions: { date: string; sets: SetLogLike[]; sessionTargetReps?: string }[] = []
-  for (const [date, dayEntry] of Object.entries(allWorkouts)) {
-    if (excludeDateKey && date === excludeDateKey) continue
-    const ex = getDayExercises(dayEntry).find((e) => exerciseNameMatches(e.name, exerciseName))
-    if (!ex) continue
-    const completed = ex.sets.filter(
-      (s) => setCountsTowardProgress(s) && s.reps.trim() !== '' && s.weight.trim() !== '',
-    )
-    if (completed.length > 0) {
-      sessions.push({
-        date,
-        sets: completed,
-        sessionTargetReps: (ex.targetReps ?? '').trim() || undefined,
-      })
+function modeWeight(weights: number[]): number {
+  const counts = new Map<number, number>()
+  let bestKey = 0
+  let bestCount = 0
+  let bestWeight = 0
+  for (const weight of weights) {
+    const key = Math.round(weight * 1000)
+    const count = (counts.get(key) ?? 0) + 1
+    counts.set(key, count)
+    if (count > bestCount || (count === bestCount && weight > bestWeight)) {
+      bestCount = count
+      bestKey = key
+      bestWeight = weight
     }
   }
-  sessions.sort((a, b) => b.date.localeCompare(a.date))
-  const last = sessions[0]
-  return last ? { sets: last.sets, sessionTargetReps: last.sessionTargetReps } : { sets: [] }
+  return bestKey / 1000
+}
+
+function progressionStepLbs(exerciseName: string, unit: WeightUnit): number {
+  const pounds = getWeightIncrementLbs(exerciseName)
+  if (unit !== 'kg') return pounds
+  if (pounds >= 10) return 5 * LB_PER_KG
+  if (pounds >= 5) return 2.5 * LB_PER_KG
+  return LB_PER_KG
+}
+
+function quantize(value: number, step: number): number {
+  if (step <= 0) return value
+  return Math.round((Math.round(value / step) * step) * 1000) / 1000
+}
+
+function stepUp(weightLbs: number, stepLbs: number, unit: WeightUnit): number {
+  if (unit !== 'kg') {
+    let next = quantize(weightLbs + stepLbs, stepLbs)
+    if (next <= weightLbs + 0.05) next = quantize(weightLbs + stepLbs * 2, stepLbs)
+    return next
+  }
+  const stepKg = stepLbs / LB_PER_KG
+  const kg = weightLbs / LB_PER_KG
+  const aligned = Math.round(kg / stepKg) * stepKg
+  let nextKg = aligned + stepKg
+  if (nextKg * LB_PER_KG <= weightLbs + 0.05) nextKg += stepKg
+  return quantize(nextKg * LB_PER_KG, 0.001)
+}
+
+function stepDown(weightLbs: number, stepLbs: number, unit: WeightUnit): number {
+  if (unit !== 'kg') {
+    let next = quantize(weightLbs - stepLbs, stepLbs)
+    if (next >= weightLbs - 0.05) next = weightLbs - stepLbs
+    if (next <= 0) return weightLbs
+    return Math.round(next * 1000) / 1000
+  }
+  const stepKg = stepLbs / LB_PER_KG
+  const kg = weightLbs / LB_PER_KG
+  const aligned = Math.round(kg / stepKg) * stepKg
+  let nextKg = aligned - stepKg
+  if (nextKg * LB_PER_KG >= weightLbs - 0.05) nextKg = kg - stepKg
+  if (nextKg <= 0) return weightLbs
+  return Math.round(nextKg * LB_PER_KG * 1000) / 1000
+}
+
+function stepLabel(stepLbs: number, unit: WeightUnit): string {
+  if (unit === 'kg') {
+    const kg = Math.round((stepLbs / LB_PER_KG) * 10) / 10
+    return `${kg} kg`
+  }
+  return `${formatLbs(stepLbs)} lb`
+}
+
+function weightLabel(lbs: number, unit: WeightUnit): string {
+  if (unit === 'kg') {
+    const kg = Math.round((lbs / LB_PER_KG) * 10) / 10
+    return `${kg} kg`
+  }
+  return `${formatLbs(lbs)} lb`
+}
+
+function formatLbs(lbs: number): string {
+  const scaled = Math.round(lbs * 1000) / 1000
+  if (scaled === Math.round(scaled)) return String(Math.round(scaled))
+  return String(scaled)
+}
+
+function capReps(value: number, finite: boolean, max: number): number {
+  if (value < 1) return 1
+  if (finite && value > max) return max
+  return value
 }
 
 /**
- * Predicts attainable rep and weight goals from the user's full exercise history in local storage,
- * blending long-term trend with recent performance and progressive-overload rules.
+ * Next session from the last working sets.
+ * Double progression inside the range. Easy climbs reps faster.
+ * Difficult holds, or takes one small step back.
  */
 export function predictWorkoutGoals(
   exerciseName: string,
@@ -290,22 +361,14 @@ export function predictWorkoutGoals(
   const currentWeight = options.ignoreStoredGoalWeight
     ? 0
     : (options.currentTargetWeightLbs ?? 0)
-  const increment = getWeightIncrementLbs(exerciseName)
+  const unit: WeightUnit = options.displayUnit === 'kg' ? 'kg' : 'lb'
+  const sessions = workingSessions(allWorkouts, exerciseName, options.excludeDateKey)
 
-  const performances = collectSetPerformances(
-    allWorkouts,
-    exerciseName,
-    options.excludeDateKey,
-  )
-
-  let history = collectExerciseHistory(allWorkouts, exerciseName)
-  if (options.excludeDateKey) {
-    history = history.filter((h) => h.dateKey !== options.excludeDateKey)
-  }
-
-  if (history.length === 0 && performances.length === 0) {
+  // No history: do not invent a starting weight.
+  if (sessions.length === 0) {
     return {
       suggestedReps: currentReps || '8-12',
+      suggestedLogReps: '',
       suggestedWeightLbs: currentWeight,
       reason: 'No history yet',
       hasHistory: false,
@@ -317,100 +380,76 @@ export function predictWorkoutGoals(
     ? currentReps
     : currentReps ||
       mostCommonRepGoal(historicalRepGoals) ||
-      inferRepGoalFromHistory(history.map((h) => h.maxReps))
+      inferRepGoalFromHistory(sessions.map((session) => session.peakReps))
+  const range = parseRepRange(repGoal)
+  const finite = range.max > 0 && range.max < 9999
+  const minReps = range.min > 0 ? range.min : 1
+  const last = sessions[sessions.length - 1]!
+  const achieved = last.achievedReps
+  const atTop = finite && achieved >= range.max
+  const short = finite && achieved < minReps
+  const step = progressionStepLbs(exerciseName, unit)
+  const label = stepLabel(step, unit)
+  const rating = last.difficulty
+  const streak =
+    rating === 'Difficult' &&
+    sessions.slice(-3).filter((session) => session.difficulty === 'Difficult').length >= 2
 
-  const targetRepsForWeight = repCountForWeightGoal(repGoal)
-
-  let baseWeight = 0
-  let repScaledFromHistory = false
-
-  if (performances.length > 0) {
-    const sessionE1rms = sessionBestE1RMs(performances)
-    const e1rmValues = sessionE1rms.map((s) => s.bestE1rm)
-    const lastSessionE1rm = e1rmValues[e1rmValues.length - 1] ?? 0
-    const recentSlice = e1rmValues.slice(-Math.min(3, e1rmValues.length))
-    const recentE1rmAvg = recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length
-    const e1rmSlope = linearSlope(e1rmValues)
-    const e1rmStep = Math.min(Math.max(e1rmSlope, 0), increment)
-    const trendE1rm = lastSessionE1rm + e1rmStep
-    const blendedE1rm = 0.55 * trendE1rm + 0.45 * recentE1rmAvg
-    baseWeight = weightForTargetRepsLbs(blendedE1rm, targetRepsForWeight)
-
-    const lastPerf = performances
-      .filter((p) => p.dateKey === sessionE1rms[sessionE1rms.length - 1]?.dateKey)
-      .sort((a, b) => b.e1rm - a.e1rm)[0]
-    if (lastPerf && lastPerf.reps < targetRepsForWeight - 2) {
-      repScaledFromHistory = true
-    }
-  } else if (history.length > 0) {
-    const last = history[history.length - 1]!
-    baseWeight = weightForTargetRepsLbs(
-      estimateE1RMLbs(last.maxWeightLbs, Math.max(1, last.maxReps)),
-      targetRepsForWeight,
-    )
-    if (last.maxReps > 0 && last.maxReps < targetRepsForWeight - 2) {
-      repScaledFromHistory = true
-    }
-  }
-
-  const lastSession = lastSessionSets(allWorkouts, exerciseName, options.excludeDateKey)
-  const lastSets = lastSession.sets
-  const lastSessionRepGoal = lastSession.sessionTargetReps || repGoal
-  const lastRepMax = parseRepRange(lastSessionRepGoal).max
-
-  if (lastSets.length > 0) {
-    const lastSetE1rms = lastSets.map((s) => {
-      const w = parseStoredLbs(s.weight) || parseFloat(s.weight)
-      const r = parseInt(s.reps, 10)
-      return estimateE1RMLbs(w, Number.isNaN(r) ? 1 : r)
-    })
-    const lastBestE1rm = Math.max(...lastSetE1rms)
-    const weightAtNewGoal = weightForTargetRepsLbs(lastBestE1rm, targetRepsForWeight)
-
-    const allHitMax = lastSets.every((s) => {
-      if (isAMRAP(lastSessionRepGoal)) return true
-      return parseInt(s.reps, 10) >= lastRepMax
-    })
-    const anyFailed = lastSets.some((s) => parseInt(s.reps, 10) < parseRepRange(lastSessionRepGoal).min)
-
-    if (allHitMax) {
-      const bumpedE1rm = lastBestE1rm + increment
-      baseWeight = Math.max(baseWeight, weightForTargetRepsLbs(bumpedE1rm, targetRepsForWeight))
-    } else if (anyFailed) {
-      baseWeight = Math.min(baseWeight, weightAtNewGoal)
-    } else {
-      baseWeight = (baseWeight + weightAtNewGoal) / 2
-    }
-  } else if (!options.ignoreStoredGoalWeight && currentWeight > 0 && baseWeight <= 0) {
-    baseWeight = weightForTargetRepsLbs(
-      estimateE1RMLbs(currentWeight, repCountForWeightGoal(currentReps || repGoal)),
-      targetRepsForWeight,
-    )
-  }
-
-  const suggestedWeightLbs = roundWeightToIncrement(
-    Math.max(baseWeight, increment > 0 ? increment : 2.5),
-    increment,
-  )
-
-  const sessionCount = Math.max(
-    history.length,
-    sessionBestE1RMs(performances).length,
-  )
+  let weight = last.weightLbs
+  let reps = achieved
   let reason: string
-  if (repScaledFromHistory && repGoal) {
-    reason = `Adjusted for ${repGoal} reps — weight scaled from your history at different rep ranges`
-  } else if (sessionCount >= 4) {
-    reason = `Based on ${sessionCount} sessions — strength estimated across all logged sets`
-  } else if (sessionCount >= 2) {
-    reason = `Based on ${sessionCount} past sessions — tailored to your rep goal`
+
+  if (rating === 'Difficult' && streak) {
+    const nextWeight = stepDown(weight, step, unit)
+    const dropped = nextWeight < weight - 0.05
+    reps = capReps(short ? achieved : minReps, finite, range.max)
+    if (dropped) weight = nextWeight
+    reason = dropped
+      ? `Several Difficult sessions. Drop ${label} and rebuild at ${reps} reps.`
+      : `Several Difficult sessions. Hold ${weightLabel(weight, unit)} and aim for ${reps} reps.`
+  } else if (rating === 'Difficult' && short) {
+    const nextWeight = stepDown(weight, step, unit)
+    const dropped = nextWeight < weight - 0.05
+    reps = capReps(achieved, finite, range.max)
+    if (dropped) weight = nextWeight
+    reason = dropped
+      ? `Rated Difficult and short of the range. Drop ${label} and rebuild at ${reps} reps.`
+      : `Rated Difficult and short of the range. Hold ${weightLabel(weight, unit)} and aim for ${reps} reps.`
+  } else if (rating === 'Difficult') {
+    reps = capReps(achieved, finite, range.max)
+    reason = `Rated Difficult. Hold ${weightLabel(weight, unit)} and aim for ${reps} reps.`
+  } else if (rating === 'Easy' && atTop) {
+    weight = stepUp(weight, step, unit)
+    reps = capReps(minReps, finite, range.max)
+    reason = `Rated Easy at the top of the range. Add ${label} and start back at ${reps} reps.`
+  } else if (rating === 'Easy') {
+    reps = capReps(achieved + 2, finite, range.max)
+    reason = `Rated Easy. Same weight, move up to ${reps} reps.`
+  } else if (atTop) {
+    weight = stepUp(weight, step, unit)
+    reps = capReps(minReps, finite, range.max)
+    reason =
+      rating === 'Moderate'
+        ? `Rated Moderate and at the top of the range. Add ${label} and start back at ${reps} reps.`
+        : `Working sets hit the top of the range. Add ${label} and start back at ${reps} reps.`
+  } else if (short) {
+    reps = capReps(achieved, finite, range.max)
+    reason =
+      rating === 'Moderate'
+        ? `Rated Moderate and short of the range. Hold ${weightLabel(weight, unit)} and aim for ${reps} reps.`
+        : `Short of the rep range. Hold ${weightLabel(weight, unit)} and aim for ${reps} reps.`
   } else {
-    reason = 'Based on your last session — log more workouts to refine predictions'
+    reps = capReps(achieved + 1, finite, range.max)
+    reason =
+      rating === 'Moderate'
+        ? `Rated Moderate. Same weight, aim for ${reps} reps.`
+        : `Same weight, aim for ${reps} reps. Add reps before adding weight.`
   }
 
   return {
     suggestedReps: repGoal,
-    suggestedWeightLbs,
+    suggestedLogReps: String(reps),
+    suggestedWeightLbs: weight,
     reason,
     hasHistory: true,
   }
@@ -443,6 +482,7 @@ export function applyPredictedGoalsToExercises(
   options: {
     /** Refresh from full history (e.g. after copy); keeps rep goals, replaces weight. */
     refreshFromHistory?: boolean
+    displayUnit?: WeightUnit
   } = {},
 ): void {
   for (const ex of exercises) {
@@ -456,6 +496,7 @@ export function applyPredictedGoalsToExercises(
       excludeDateKey: dateKey,
       lockRepGoal: hasRepGoal,
       ignoreStoredGoalWeight: true,
+      displayUnit: options.displayUnit,
     })
     if (!pred.hasHistory) continue
 

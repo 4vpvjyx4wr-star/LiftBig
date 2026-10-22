@@ -4,8 +4,11 @@ import '../date_key.dart';
 import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import 'assign_plan_sheet.dart';
+import 'clear_day.dart';
 import 'day_page.dart';
 import 'day_transfer.dart';
+import 'edit_exercise_sheet.dart';
 import 'exercise_info_sheet.dart';
 import 'workout_details_section.dart';
 
@@ -107,6 +110,93 @@ class _HomePageState extends State<HomePage> {
     if (changed && mounted) await _reload();
   }
 
+  Future<void> _clearDay() async {
+    final confirmed = await confirmClearDay(context);
+    if (!confirmed || !mounted) return;
+    try {
+      await widget.journal.deleteDay(_selectedKey);
+    } catch (error) {
+      if (mounted) _snack('$error');
+      return;
+    }
+    if (!mounted) return;
+    await _reload();
+  }
+
+  Future<void> _editExercise(JournalExercise exercise) async {
+    final saved = await showEditExerciseSheet(
+      context,
+      journal: widget.journal,
+      exercise: exercise,
+    );
+    if (saved && mounted) await _reload();
+  }
+
+  Future<void> _assignPlan() async {
+    final pick = await showAssignPlanSheet(
+      context,
+      journal: widget.journal,
+    );
+    if (pick == null || !mounted) return;
+    final existing = _day;
+    if (existing != null && existing.exercises.isNotEmpty) {
+      final add = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Add to this day?'),
+          content: const Text(
+            'This day already has exercises. The workout will be added alongside them.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      );
+      if (add != true || !mounted) return;
+    }
+    final notes = pick.workout.notes.trim();
+    await widget.journal.updateDayHeader(
+      _selectedKey,
+      workoutName: pick.workout.name,
+      setWorkoutName: true,
+      planName: pick.planName,
+      setPlanName: true,
+      workoutNotes: notes,
+      setWorkoutNotes: true,
+    );
+    final prescribeWarmup = await widget.journal.prescribeWarmupEnabled();
+    for (final lift in pick.workout.lifts) {
+      await widget.journal.addExercise(
+        dateKey: _selectedKey,
+        name: lift.name,
+        libraryId: lift.libraryId,
+        isCardio: lift.isCardio,
+        isCore: lift.isCore,
+        isCircuit: lift.isCircuit,
+        prescribeWarmup: prescribeWarmup,
+        sets: [
+          for (var i = 0; i < lift.sets.length; i++)
+            JournalSet(
+              id: '',
+              sortOrder: i,
+              reps: lift.sets[i].reps,
+              weight: lift.sets[i].weight,
+            ),
+        ],
+      );
+    }
+    if (!mounted) return;
+    _snack('${pick.workout.name} added.');
+    await _reload();
+  }
+
   Future<void> _toggleRest(bool rest) async {
     final ok = await widget.journal.setRestDay(_selectedKey, rest: rest);
     if (!mounted) return;
@@ -139,7 +229,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
         children: [
           Row(
             children: [
@@ -204,11 +294,15 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           _DayPanel(
             dateKey: _selectedKey,
+            isToday: _selectedKey == today,
             day: _day,
             onLog: _openLog,
             onRest: _toggleRest,
             onCopy: _copyDay,
             onMove: _moveDay,
+            onAssignPlan: _assignPlan,
+            onClearDay: _clearDay,
+            onEditExercise: _editExercise,
             onExerciseInfo: _openExerciseInfo,
           ),
         ],
@@ -284,34 +378,40 @@ class _DayCell extends StatelessWidget {
 class _DayPanel extends StatelessWidget {
   const _DayPanel({
     required this.dateKey,
+    required this.isToday,
     required this.day,
     required this.onLog,
     required this.onRest,
     required this.onCopy,
     required this.onMove,
+    required this.onAssignPlan,
+    required this.onClearDay,
+    required this.onEditExercise,
     required this.onExerciseInfo,
   });
 
   final String dateKey;
+  final bool isToday;
   final JournalDay? day;
   final VoidCallback onLog;
   final ValueChanged<bool> onRest;
   final VoidCallback onCopy;
   final VoidCallback onMove;
+  final VoidCallback onAssignPlan;
+  final VoidCallback onClearDay;
+  final ValueChanged<JournalExercise> onEditExercise;
   final ValueChanged<JournalExercise> onExerciseInfo;
 
   @override
   Widget build(BuildContext context) {
     final exercises = day?.exercises ?? const <JournalExercise>[];
     final workoutNotes = day?.workoutNotes;
+    final resting = day?.isRestDay == true;
     final showRest = exercises.isEmpty;
-    final compactActionStyle = OutlinedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      minimumSize: const Size(0, 28),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-    );
+    final workoutName = day?.workoutName;
+    final planName = day?.planName;
+    final showPlan = planName != null && planName != workoutName;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -319,117 +419,52 @@ class _DayPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                _DateBox(dateKey: dateKey, isToday: isToday),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        onTap: onLog,
-                        child: Text(
-                          formatNumericDate(dateKey),
+                      Text(
+                        workoutName ?? (resting ? 'Rest day' : 'No workout yet'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: resting && workoutName == null
+                              ? LiftBigColors.success
+                              : LiftBigColors.foreground,
+                        ),
+                      ),
+                      if (showPlan) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          planName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (day?.workoutName != null) ...[
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: onLog,
-                          child: Text(
-                            day!.workoutName!,
-                            style: const TextStyle(color: LiftBigColors.primary),
+                            color: LiftBigColors.muted,
+                            fontSize: 13,
                           ),
                         ),
                       ],
-                      if (day?.planName != null)
-                        Text(
-                          day!.planName!,
-                          style: const TextStyle(color: LiftBigColors.muted),
-                        ),
                       if (day?.notes != null) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           day!.notes!,
-                          style: const TextStyle(color: LiftBigColors.muted),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: LiftBigColors.muted,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 148,
-                      height: 60,
-                      child: FilledButton(
-                        onPressed: onLog,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: LiftBigColors.primary,
-                          foregroundColor: LiftBigColors.foreground,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          minimumSize: const Size(148, 60),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.standard,
-                          textStyle: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: const Text('Log'),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        OutlinedButton(
-                          onPressed: exercises.isEmpty ? null : onCopy,
-                          style: compactActionStyle,
-                          child: const Text('Copy'),
-                        ),
-                        const SizedBox(width: 4),
-                        OutlinedButton(
-                          onPressed: exercises.isEmpty ? null : onMove,
-                          style: compactActionStyle,
-                          child: const Text('Move'),
-                        ),
-                      ],
-                    ),
-                    if (showRest) ...[
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Rest day',
-                            style: TextStyle(
-                              color: day?.isRestDay == true
-                                  ? LiftBigColors.success
-                                  : LiftBigColors.muted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Switch(
-                            value: day?.isRestDay == true,
-                            activeThumbColor: LiftBigColors.primary,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            onChanged: onRest,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
                 ),
               ],
             ),
@@ -440,39 +475,261 @@ class _DayPanel extends StatelessWidget {
                 text: workoutNotes,
               ),
             ],
-            const SizedBox(height: 12),
-            if (exercises.isEmpty && day?.isRestDay != true)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Nothing logged.',
-                  style: TextStyle(color: LiftBigColors.muted),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  flex: showRest ? 3 : 1,
+                  child: FilledButton.icon(
+                    onPressed: onLog,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    icon: Icon(
+                      exercises.isEmpty
+                          ? Icons.edit_outlined
+                          : Icons.open_in_new,
+                      size: 18,
+                    ),
+                    label: Text(exercises.isEmpty ? 'Log workout' : 'Open log'),
+                  ),
                 ),
-              ),
-            for (final exercise in exercises) ...[
-              Row(
-                children: [
-                  Flexible(
-                    child: GestureDetector(
-                      onTap: onLog,
-                      behavior: HitTestBehavior.opaque,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          exercise.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                if (showRest) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton(
+                      onPressed: () => onRest(!resting),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 44),
+                        foregroundColor: resting
+                            ? LiftBigColors.success
+                            : LiftBigColors.foreground,
+                        backgroundColor: resting
+                            ? LiftBigColors.success.withValues(alpha: 0.12)
+                            : LiftBigColors.cardInner,
+                        side: BorderSide(
+                          color: resting
+                              ? LiftBigColors.success
+                              : LiftBigColors.border,
                         ),
                       ),
+                      child: Text(resting ? 'Clear rest' : 'Rest day'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: onAssignPlan,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                foregroundColor: LiftBigColors.foreground,
+                backgroundColor: LiftBigColors.cardInner,
+                side: const BorderSide(color: LiftBigColors.border),
+              ),
+              icon: const Icon(
+                Icons.assignment_outlined,
+                size: 18,
+                color: LiftBigColors.primary,
+              ),
+              label: const Text('Assign a plan'),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _SecondaryAction(
+                    icon: Icons.copy_outlined,
+                    label: 'Copy',
+                    onPressed: exercises.isEmpty ? null : onCopy,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _SecondaryAction(
+                    icon: Icons.swap_horiz,
+                    label: 'Move',
+                    onPressed: exercises.isEmpty ? null : onMove,
+                  ),
+                ),
+              ],
+            ),
+            if (exercises.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: onClearDay,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(40),
+                  foregroundColor: LiftBigColors.foreground,
+                  backgroundColor: LiftBigColors.cardInner,
+                  side: const BorderSide(color: LiftBigColors.border),
+                ),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 16,
+                  color: LiftBigColors.primary,
+                ),
+                label: const Text('Clear day'),
+              ),
+            ],
+            if (exercises.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              for (var i = 0; i < exercises.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _ExerciseCard(
+                  exercise: exercises[i],
+                  onOpen: onLog,
+                  onEdit: () => onEditExercise(exercises[i]),
+                  onInfo: () => onExerciseInfo(exercises[i]),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DateBox extends StatelessWidget {
+  const _DateBox({required this.dateKey, required this.isToday});
+
+  final String dateKey;
+  final bool isToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = parseDateKey(dateKey);
+    final weekday = weekdayLabels[parsed.weekday % 7];
+    final month = monthNames[parsed.month - 1].substring(0, 3).toUpperCase();
+    return Container(
+      width: 64,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: LiftBigColors.cardInner,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isToday ? LiftBigColors.primary : LiftBigColors.border,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            weekday,
+            style: TextStyle(
+              color: isToday ? LiftBigColors.primary : LiftBigColors.muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
+          Text(
+            '${parsed.day}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, height: 1.1),
+          ),
+          Text(
+            month,
+            style: const TextStyle(
+              color: LiftBigColors.muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondaryAction extends StatelessWidget {
+  const _SecondaryAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        foregroundColor: LiftBigColors.foreground,
+        backgroundColor: LiftBigColors.cardInner,
+        side: const BorderSide(color: LiftBigColors.border),
+      ),
+      icon: Icon(icon, size: 16, color: LiftBigColors.muted),
+      label: Text(label),
+    );
+  }
+}
+
+class _ExerciseCard extends StatelessWidget {
+  const _ExerciseCard({
+    required this.exercise,
+    required this.onOpen,
+    required this.onEdit,
+    required this.onInfo,
+  });
+
+  final JournalExercise exercise;
+  final VoidCallback onOpen;
+  final VoidCallback onEdit;
+  final VoidCallback onInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: LiftBigColors.cardInner,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: LiftBigColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 4, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      exercise.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                   IconButton(
-                    onPressed: () => onExerciseInfo(exercise),
+                    onPressed: onEdit,
+                    tooltip: 'Edit lift',
+                    style: IconButton.styleFrom(
+                      foregroundColor: LiftBigColors.primary,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                  ),
+                  IconButton(
+                    onPressed: onInfo,
                     tooltip: 'Exercise info',
                     style: IconButton.styleFrom(
                       foregroundColor: LiftBigColors.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: const EdgeInsets.all(4),
-                      minimumSize: const Size(28, 28),
+                      minimumSize: const Size(32, 32),
                       visualDensity: VisualDensity.compact,
                     ),
                     icon: const Icon(Icons.info_outline, size: 18),
@@ -480,26 +737,23 @@ class _DayPanel extends StatelessWidget {
                 ],
               ),
               if (exercise.notes != null)
-                Text(
-                  exercise.notes!,
-                  style: const TextStyle(color: LiftBigColors.muted),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    exercise.notes!,
+                    style: const TextStyle(color: LiftBigColors.muted, fontSize: 13),
+                  ),
                 ),
               for (final set in exercise.sets)
                 Padding(
-                  padding: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: 2, right: 8),
                   child: Text(
                     _setLine(exercise, set),
-                    style: const TextStyle(color: LiftBigColors.foreground),
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ),
-              const SizedBox(height: 10),
             ],
-            const SizedBox(height: 8),
-            FilledButton(
-              onPressed: onLog,
-              child: Text(exercises.isEmpty ? 'Log workout' : 'Open log'),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -3325,8 +3325,7 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
 import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
 
 for (const ex of CARDIO_LIBRARY) {
-  reg(ex)
-  EXERCISE_LIBRARY.push(ex)
+  EXERCISE_LIBRARY.push(reg(ex))
 }
 
 export function libraryExerciseIsCardio(ex: LibraryExercise | undefined): boolean {

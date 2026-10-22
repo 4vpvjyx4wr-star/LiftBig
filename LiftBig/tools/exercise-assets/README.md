@@ -86,7 +86,7 @@ python generate_assets.py --no-rembg --out ..\..\public
 Whenever you add an exercise to the library, complete **all** of the following (GIF + YouTube are mandatory for gym / non-cardio lifts unless intentionally omitted for mobility):
 
 1. **Library entry** — add to `src/utils/exerciseLibrary.ts` (same kebab-case `id` everywhere).
-2. **YouTube tutorial** — add URL in `src/utils/exerciseTutorials.ts` (or the library field the app uses for tutorials).
+2. **YouTube tutorial** — `npm run tutorials:fill` searches YouTube for any gym exercise that does not have one yet (how-to for that exercise, under 3 minutes, recognized coaching / clinical / equipment channel) and writes `src/utils/exerciseTutorials.ts`. Cardio and sports are skipped. Curated URLs are not replaced. The exercise entry itself still needs `instructions`, `cues`, and `tips`; the detail sheet shows that text above the video.
 3. **Asset maps** — add to `name_map.json` + `exercise_list.json`, **or** run:
 
    ```powershell
