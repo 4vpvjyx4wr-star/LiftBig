@@ -36,6 +36,12 @@ final class CompanionBridge: NSObject, WCSessionDelegate {
                     ?? "{\"version\":1,\"locked\":true,\"reason\":\"idle\"}"
                 self.publish(json)
                 result(nil)
+            case "startWorkout":
+                let json = (call.arguments as? [String: Any])?["sessionJson"] as? String
+                    ?? "{\"version\":1,\"locked\":true,\"reason\":\"idle\"}"
+                self.publish(json)
+                self.launchWatch(json)
+                result(nil)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -71,6 +77,13 @@ final class CompanionBridge: NSObject, WCSessionDelegate {
     private func sendWatch(_ json: String) {
         guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
         try? WCSession.default.updateApplicationContext(["sessionJson": json])
+    }
+
+    /// Wakes the watch app when it can be reached. A sleeping watch must not throw.
+    private func launchWatch(_ json: String) {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+        guard WCSession.default.isReachable else { return }
+        WCSession.default.sendMessage(["sessionJson": json, "command": "start"], replyHandler: nil) { _ in }
     }
 
     func session(

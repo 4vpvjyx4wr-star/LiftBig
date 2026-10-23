@@ -210,7 +210,24 @@ void main() {
     expect(catalog.liftById('sit-up')!.tutorialUrl, 'https://www.youtube.com/watch?v=jDwoBqPH0jk');
     expect(catalog.liftById('sit-up')!.tips, isNotEmpty);
     expect(catalog.lifts.length, 179);
-    expect(catalog.plans.length, 51);
+    expect(catalog.plans.length, 56);
+    final joeyC4 = catalog.plans.singleWhere((plan) => plan.name == 'Joey C4');
+    final monday = joeyC4.workouts.singleWhere((workout) => workout.id == 'plan-joey-c4-mon');
+    expect(monday.lifts.first.name, 'Incline DB Press');
+    expect(monday.lifts.first.supersetGroupId, 'plan-joey-c4-mon__ss-a');
+    expect(monday.lifts.first.supersetLabel, 'A');
+    expect(monday.lifts.first.supersetOrder, 1);
+    expect(monday.lifts.first.sets.first.reps, '6–10');
+    expect(monday.lifts.first.sets.first.weight, '70');
+    expect(
+      catalog.plans.map((plan) => plan.name),
+      containsAll([
+        'Joey Fall Bulk',
+        'Joey Fall Bulk v3',
+        'Joey Summer Plan 2',
+        "Joey's Summer PPL/Core/Cut Split",
+      ]),
+    );
     expect(catalog.quiz.length, 53);
     expect(catalog.plans, isNotEmpty);
     expect(catalog.quiz, isNotEmpty);

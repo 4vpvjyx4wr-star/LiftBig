@@ -113,4 +113,69 @@ void main() {
     expect(day3?.workoutName, 'Day 3');
     expect(untouched?.exercises.single.sets.last.weight, '225');
   });
+
+  test('catalog supersets are stored on the scheduled day', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(() => journal.db.close());
+
+    final workout = CatalogWorkout(
+      id: 'joey-c4',
+      name: 'Joey C4',
+      folderId: 'joey',
+      notes: '',
+      lifts: [
+        CatalogLift(
+          name: 'Incline Press',
+          libraryId: 'incline',
+          isCardio: false,
+          isCore: false,
+          isCircuit: false,
+          targetDuration: null,
+          sets: [CatalogSet(reps: '8', weight: '55')],
+          supersetGroupId: 'joey-c4-ss-a',
+          supersetLabel: 'A',
+          supersetOrder: 1,
+        ),
+        CatalogLift(
+          name: 'Lateral Raise',
+          libraryId: 'raise',
+          isCardio: false,
+          isCore: false,
+          isCircuit: false,
+          targetDuration: null,
+          sets: [CatalogSet(reps: '12', weight: '15')],
+          supersetGroupId: 'joey-c4-ss-a',
+          supersetLabel: 'A',
+          supersetOrder: 2,
+        ),
+      ],
+    );
+
+    await applyPlanScheduleToJournal(
+      journal: journal,
+      startDateKey: '2026-11-04',
+      planName: 'Joey C4',
+      workouts: [workout],
+      confirmConflict: (_) async => true,
+    );
+
+    final day = await journal.getDay('2026-11-04');
+    expect(day?.planName, 'Joey C4');
+    expect(day?.exercises.map((exercise) => exercise.supersetGroupId).toList(), [
+      'joey-c4-ss-a',
+      'joey-c4-ss-a',
+    ]);
+    expect(day?.exercises.map((exercise) => exercise.supersetOrder).toList(), [1, 2]);
+  });
+
+  test('calendarPlanName prefers today, then the next scheduled plan', () {
+    const days = [
+      (dateKey: '2026-10-20', planName: 'Old Plan'),
+      (dateKey: '2026-10-22', planName: 'Joey C4'),
+      (dateKey: '2026-10-25', planName: 'Later Plan'),
+    ];
+    expect(calendarPlanName(days, '2026-10-22'), 'Joey C4');
+    expect(calendarPlanName(days.where((day) => day.dateKey != '2026-10-22'), '2026-10-22'), 'Later Plan');
+    expect(calendarPlanName(const [(dateKey: '2026-10-01', planName: 'Only Past')], '2026-10-22'), 'Only Past');
+  });
 }

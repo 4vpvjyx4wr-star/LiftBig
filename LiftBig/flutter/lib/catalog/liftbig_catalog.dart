@@ -60,6 +60,10 @@ class CatalogLift {
     required this.isCircuit,
     required this.targetDuration,
     required this.sets,
+    this.supersetGroupId,
+    this.supersetLabel,
+    this.supersetOrder,
+    this.targetRestSeconds,
   });
 
   final String name;
@@ -69,6 +73,10 @@ class CatalogLift {
   final bool isCircuit;
   final String? targetDuration;
   final List<CatalogSet> sets;
+  final String? supersetGroupId;
+  final String? supersetLabel;
+  final int? supersetOrder;
+  final int? targetRestSeconds;
 }
 
 class CatalogSet {
@@ -287,6 +295,10 @@ CatalogLift _catalogLift(Map<String, Object?> json) {
     isCore: json['isCore'] == true,
     isCircuit: json['isCircuit'] == true,
     targetDuration: json['targetDuration'] as String?,
+    supersetGroupId: _optionalText(json['supersetGroupId']),
+    supersetLabel: _optionalText(json['supersetLabel']),
+    supersetOrder: _optionalInt(json['supersetOrder']),
+    targetRestSeconds: _optionalInt(json['targetRestSeconds']),
     sets: [
       for (final item in (json['sets'] as List? ?? const []))
         _catalogSet(Map<String, Object?>.from(item as Map)),
@@ -334,6 +346,19 @@ QuizEntry _quiz(Map<String, Object?> json) {
     category: json['category'] as String? ?? '',
     workoutIds: _strings(json['workoutIds']),
   );
+}
+
+String? _optionalText(Object? raw) {
+  if (raw is! String) return null;
+  final trimmed = raw.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+int? _optionalInt(Object? raw) {
+  if (raw is int) return raw;
+  if (raw is num) return raw.round();
+  if (raw is String) return int.tryParse(raw.trim());
+  return null;
 }
 
 List<String> _strings(Object? raw) {

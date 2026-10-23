@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../companion/companion_bridge.dart';
+import '../companion/watch_session.dart';
 import '../date_key.dart';
+import '../health/journal_health_sync.dart';
 import '../journal/journal_repository.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../sync/sync_controller.dart';
@@ -41,6 +44,16 @@ class _AppShellState extends State<AppShell> {
   final _opened = <int>{0};
   String? _homeFocusDateKey;
   RestTimerController? _restTimer;
+  late final JournalHealthSync _healthSync;
+  final _companion = CompanionBridge.shared;
+  Future<void> _watchWrites = Future<void>.value();
+
+  @override
+  void initState() {
+    super.initState();
+    _healthSync = JournalHealthSync(journal: widget.journal);
+    _companion.addListener(_onWatchMessage);
+  }
 
   @override
   void didChangeDependencies() {
@@ -55,8 +68,32 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void dispose() {
+    _companion.removeListener(_onWatchMessage);
+    _healthSync.dispose();
     _restTimer?.removeListener(_onRestTimerChanged);
     super.dispose();
+  }
+
+  void _onWatchMessage(String raw) {
+    _watchWrites = _watchWrites.then((_) => _applyWatchMessage(raw));
+  }
+
+  Future<void> _applyWatchMessage(String raw) async {
+    final unit = await widget.journal.storedWeightUnit();
+    final message = parseCompanionMessage(raw, fallbackUnit: unit);
+    if (message == null) return;
+    if (message.isFinish) {
+      if (message.activeKcal != null) {
+        await widget.journal.setHealthEnergyKcal(message.dateKey, message.activeKcal);
+      } else {
+        await _healthSync.syncDay(message.dateKey, honorToggle: false);
+      }
+    } else if (message.isSetRest && message.restSeconds != null) {
+      await widget.journal.setChosenRestSeconds(message.dateKey, message.restSeconds!);
+    } else if (!message.isSkipRest) {
+      await widget.journal.persistCompanionMessage(message);
+    }
+    if (mounted) setState(() => _refresh++);
   }
 
   void _onRestTimerChanged() {
@@ -69,7 +106,8 @@ class _AppShellState extends State<AppShell> {
       _opened.add(index);
       if (index == ShellTab.home.index ||
           index == ShellTab.progress.index ||
-          index == ShellTab.lift.index) {
+          index == ShellTab.lift.index ||
+          index == ShellTab.plans.index) {
         _refresh++;
       }
     });
@@ -104,6 +142,7 @@ class _AppShellState extends State<AppShell> {
     final rest = _restTimer;
     final showRestBanner = rest != null && rest.isActive;
     return Scaffold(
+      backgroundColor: context.liftBig.background,
       body: Column(
         children: [
           _ShellHeader(
@@ -173,6 +212,7 @@ class _AppShellState extends State<AppShell> {
       ),
       ShellTab.plans => PlansPage(
         journal: widget.journal,
+        refreshToken: _refresh,
         onPlanScheduled: _openHomeOnDate,
       ),
       ShellTab.library => const LibraryPage(),

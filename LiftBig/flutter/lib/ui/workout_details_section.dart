@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// Plan or workout description, collapsed under the day title.
-class WorkoutDetailsSection extends StatelessWidget {
+/// Plan or workout description, collapsed to a single row until opened.
+class WorkoutDetailsSection extends StatefulWidget {
   const WorkoutDetailsSection({
     super.key,
     required this.text,
@@ -14,41 +14,48 @@ class WorkoutDetailsSection extends StatelessWidget {
   final TextStyle? style;
 
   @override
+  State<WorkoutDetailsSection> createState() => _WorkoutDetailsSectionState();
+}
+
+class _WorkoutDetailsSectionState extends State<WorkoutDetailsSection> {
+  var _open = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        initiallyExpanded: false,
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(top: 4),
-        visualDensity: VisualDensity.compact,
-        dense: true,
-        minTileHeight: 32,
-        iconColor: context.liftBig.muted,
-        collapsedIconColor: context.liftBig.muted,
-        textColor: context.liftBig.foreground,
-        collapsedTextColor: context.liftBig.foreground,
-        backgroundColor: Colors.transparent,
-        collapsedBackgroundColor: Colors.transparent,
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-        shape: const Border(),
-        collapsedShape: const Border(),
-        title:  Text(
-          'Details/Instructions',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: context.liftBig.foreground,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Details/Instructions',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.liftBig.foreground,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _open ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                  color: context.liftBig.muted,
+                ),
+              ],
+            ),
           ),
         ),
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: Text(text, style: style),
+        if (_open)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 4),
+            child: Text(widget.text, style: widget.style),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

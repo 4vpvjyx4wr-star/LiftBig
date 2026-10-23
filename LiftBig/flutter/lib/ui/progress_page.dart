@@ -4,6 +4,7 @@ import '../date_key.dart';
 import '../journal/journal_repository.dart';
 import '../progress/lift_progress.dart';
 import '../theme.dart';
+import 'liftbig_sheet.dart';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({
@@ -51,6 +52,38 @@ class _ProgressPageState extends State<ProgressPage> {
     });
   }
 
+  Future<void> _pickLift(BuildContext context) async {
+    final picked = await showLiftBigSheet<String>(
+      context,
+      builder: (context) => ListView(
+        shrinkWrap: true,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Lifts over time',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (final item in _series)
+            ListTile(
+              title: Text(item.name),
+              subtitle: Text(
+                '${item.latestCompleted ? 'Completed' : 'Not completed'}'
+                ' · ${item.sessions.length} ${item.sessions.length == 1 ? 'time' : 'times'}',
+              ),
+              trailing: item.name == _selected
+                  ? Icon(Icons.check, color: context.liftBig.primary)
+                  : null,
+              onTap: () => Navigator.of(context).pop(item.name),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _selected = picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_loaded) {
@@ -88,15 +121,46 @@ class _ProgressPageState extends State<ProgressPage> {
             style: TextStyle(color: context.liftBig.muted),
           )
         else ...[
-          DropdownButton<String>(
-            isExpanded: true,
-            value: _selected,
-            dropdownColor: context.liftBig.card,
-            items: [
-              for (final item in _series)
-                DropdownMenuItem(value: item.name, child: Text(item.name)),
-            ],
-            onChanged: (value) => setState(() => _selected = value),
+          Material(
+            color: context.liftBig.card,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: context.liftBig.border),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _pickLift(context),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            selected?.name ?? 'Choose a lift',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (selected != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${selected.latestCompleted ? 'Completed' : 'Not completed'}'
+                              ' · ${selected.sessions.length} ${selected.sessions.length == 1 ? 'time' : 'times'}',
+                              style: TextStyle(color: context.liftBig.muted),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.expand_more, color: context.liftBig.primary),
+                  ],
+                ),
+              ),
+            ),
           ),
           if (selected != null) ...[
             const SizedBox(height: 12),

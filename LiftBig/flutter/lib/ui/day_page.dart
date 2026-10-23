@@ -126,7 +126,7 @@ class _DayPageState extends State<DayPage> {
         if (mounted) _load();
       },
     );
-    _companion = CompanionBridge();
+    _companion = CompanionBridge.shared;
     _proStatus = ProStatus(
       unlockStore: JournalTesterUnlockStore(widget.journal),
     );
@@ -591,6 +591,10 @@ class _DayPageState extends State<DayPage> {
           prescribeWarmup: prescribeWarmup,
           targetReps: prescribed.targetReps,
           targetWeight: prescribed.targetWeight,
+          supersetGroupId: lift.supersetGroupId,
+          supersetLabel: lift.supersetLabel,
+          supersetOrder: lift.supersetOrder,
+          targetRestSeconds: lift.targetRestSeconds,
           sets: [
             for (var i = 0; i < prescribed.sets.length; i++)
               JournalSet(
@@ -717,8 +721,14 @@ class _DayPageState extends State<DayPage> {
   }
 
   Future<void> _publishWatch() async {
+    final json = await _watchSessionJson();
+    if (json == null) return;
+    await _companion.publishSession(json);
+  }
+
+  Future<String?> _watchSessionJson() async {
     final pro = await _proStatus.refresh();
-    if (!mounted) return;
+    if (!mounted) return null;
     final day = _day;
     final rest = day?.chosenRestSeconds ?? _averageRest;
     final session = buildWatchSession(
@@ -728,12 +738,50 @@ class _DayPageState extends State<DayPage> {
       weightUnit: _weightUnit,
       pro: pro,
     );
-    await _companion.publishSession(jsonEncode(session.toJson()));
+    return jsonEncode(session.toJson());
+  }
+
+  Future<void> _startOnWatch() async {
+    final json = await _watchSessionJson();
+    if (json == null) return;
+    await _companion.publishSession(json);
+    await _companion.startWorkout(json);
+    if (!mounted) return;
+    _snack('Sent to your Apple Watch. This workout stays on your iPhone.');
+  }
+
+  Future<void> _finishWorkout() async {
+    await _healthSync.syncDay(widget.dateKey, honorToggle: false);
+    if (!mounted) return;
+    await _load();
+    if (!mounted) return;
+    final kcal = _day?.healthEnergyKcal;
+    if (kcal == null) {
+      _snack('Workout saved. Active calories show up when Apple Health has them.');
+      return;
+    }
+    _snack('${formatRoundedNumber(kcal, 0)} active kcal saved on this workout.');
   }
 
   Future<void> _onCompanionMessage(String raw) async {
     final message = parseCompanionMessage(raw, fallbackUnit: _weightUnit);
     if (message == null || message.dateKey != widget.dateKey) return;
+    if (message.isFinish) {
+      if (message.activeKcal != null) {
+        await widget.journal.setHealthEnergyKcal(widget.dateKey, message.activeKcal);
+      } else {
+        await _healthSync.syncDay(widget.dateKey, honorToggle: false);
+      }
+      if (!mounted) return;
+      await _load();
+      return;
+    }
+    if (message.isSetRest && message.restSeconds != null) {
+      await widget.journal.setChosenRestSeconds(widget.dateKey, message.restSeconds!);
+      if (!mounted) return;
+      await _load(syncHealth: false);
+      return;
+    }
     final completed = await widget.journal.persistCompanionMessage(message);
     if (!mounted) return;
     await _load(syncHealth: true);
@@ -750,14 +798,31 @@ class _DayPageState extends State<DayPage> {
   }
 
   Future<void> _editGoal(JournalExercise exercise) async {
+    final exercises = _day?.exercises ?? const <JournalExercise>[];
+    final editGoal = !exercise.isCardio && !exercise.isCircuit;
+    final showLinkWithNext = _canLinkExerciseWithNext(exercise, exercises);
+    final showLinkWithPartner =
+        _linkPartnersFor(exercise, exercises).isNotEmpty;
+    if (!editGoal && !showLinkWithNext && !showLinkWithPartner) return;
     final result = await showDialog<_GoalEdit>(
       context: context,
       builder: (context) => _GoalEditDialog(
         exercise: exercise,
         unit: _weightUnit,
+        editGoal: editGoal,
+        showLinkWithNext: showLinkWithNext,
+        showLinkWithPartner: showLinkWithPartner,
       ),
     );
     if (result == null || !mounted) return;
+    if (result.linkNext) {
+      await _linkWithNext(exercise);
+      return;
+    }
+    if (result.linkPartner) {
+      await _linkWithPartner(exercise);
+      return;
+    }
     try {
       if (result.revert) {
         await widget.journal.revertExerciseGoal(exercise.id);
@@ -1195,6 +1260,7 @@ class _DayPageState extends State<DayPage> {
     Widget logBody = !_loaded
         ? const Center(child: CircularProgressIndicator())
         : ListView(
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             children: [
               Row(
@@ -1238,6 +1304,13 @@ class _DayPageState extends State<DayPage> {
                       ),
                     ),
                   ),
+                  if (exercises.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Clear day',
+                      onPressed: _clearDay,
+                      color: context.liftBig.primary,
+                      icon: const Icon(Icons.delete_outline),
+                    ),
                 ],
               ),
               if (day?.planName != null) ...[
@@ -1249,20 +1322,10 @@ class _DayPageState extends State<DayPage> {
               ],
               if (exercises.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _clearDay,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    foregroundColor: context.liftBig.foreground,
-                    backgroundColor: context.liftBig.cardInner,
-                    side:  BorderSide(color: context.liftBig.border),
-                  ),
-                  icon:  Icon(
-                    Icons.delete_outline,
-                    size: 18,
-                    color: context.liftBig.primary,
-                  ),
-                  label: const Text('Clear day'),
+                FilledButton.icon(
+                  onPressed: _startOnWatch,
+                  icon: const Icon(Icons.watch),
+                  label: const Text('Start workout'),
                 ),
               ],
               if (workoutNotes != null && workoutNotes.trim().isNotEmpty) ...[
@@ -1277,12 +1340,13 @@ class _DayPageState extends State<DayPage> {
               TextField(
                 controller: _dayNotes,
                 focusNode: _dayNotesFocus,
-                minLines: 2,
+                minLines: 1,
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Notes',
                   hintText: 'Notes for this day',
+                  isDense: true,
                 ),
                 onChanged: _saveDayNotes,
               ),
@@ -1353,8 +1417,6 @@ class _DayPageState extends State<DayPage> {
                   dayExercises: exercises,
                   onInfo: _openExerciseInfo,
                   onSwap: _swapExercise,
-                  onLinkWithNext: _linkWithNext,
-                  onLinkWithPartner: _linkWithPartner,
                   onUnlinkSuperset: _unlinkSuperset,
                   onSwapSupersetOrder: _swapSupersetOrder,
                   exerciseKey: _exerciseKey,
@@ -1381,6 +1443,13 @@ class _DayPageState extends State<DayPage> {
                     ),
                   ),
                 ),
+              if (exercises.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _finishWorkout,
+                  child: const Text('Done'),
+                ),
+              ],
             ],
           );
     final restBanner = showBanner
@@ -1405,7 +1474,11 @@ class _DayPageState extends State<DayPage> {
         : null;
     final chosenRest = day?.chosenRestSeconds ?? _averageRest;
     return Scaffold(
+      backgroundColor: context.liftBig.background,
       appBar: AppBar(
+        backgroundColor: context.liftBig.background,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         titleSpacing: 12,
         title: Row(
           children: [
@@ -1512,8 +1585,6 @@ class _ExerciseBlock extends StatelessWidget {
     required this.dayExercises,
     required this.onInfo,
     required this.onSwap,
-    required this.onLinkWithNext,
-    required this.onLinkWithPartner,
     required this.onUnlinkSuperset,
     required this.onSwapSupersetOrder,
     required this.exerciseKey,
@@ -1561,8 +1632,6 @@ class _ExerciseBlock extends StatelessWidget {
   final List<JournalExercise> dayExercises;
   final void Function(JournalExercise exercise) onInfo;
   final Future<void> Function(JournalExercise exercise) onSwap;
-  final Future<void> Function(JournalExercise exercise) onLinkWithNext;
-  final Future<void> Function(JournalExercise exercise) onLinkWithPartner;
   final Future<void> Function(String groupId) onUnlinkSuperset;
   final Future<void> Function(String groupId) onSwapSupersetOrder;
   final GlobalKey Function(String id) exerciseKey;
@@ -1656,8 +1725,6 @@ class _ExerciseBlock extends StatelessWidget {
               dayExercises: dayExercises,
               onInfo: () => onInfo(exercise),
               onSwap: () => onSwap(exercise),
-              onLinkWithNext: () => onLinkWithNext(exercise),
-              onLinkWithPartner: () => onLinkWithPartner(exercise),
             ),
             ),
         ],
@@ -1703,8 +1770,6 @@ class _ExerciseCard extends StatelessWidget {
     required this.dayExercises,
     required this.onInfo,
     required this.onSwap,
-    required this.onLinkWithNext,
-    required this.onLinkWithPartner,
   });
 
   final JournalExercise exercise;
@@ -1750,25 +1815,12 @@ class _ExerciseCard extends StatelessWidget {
   final List<JournalExercise> dayExercises;
   final VoidCallback onInfo;
   final VoidCallback onSwap;
-  final VoidCallback onLinkWithNext;
-  final VoidCallback onLinkWithPartner;
 
   bool get _cardio => exercise.isCardio && !exercise.isCircuit;
 
-  bool get _canLinkWithNext {
-    if (exerciseInSuperset(exercise)) return false;
-    final index = dayExercises.indexWhere((item) => item.id == exercise.id);
-    if (index < 0 || index + 1 >= dayExercises.length) return false;
-    return !exerciseInSuperset(dayExercises[index + 1]);
-  }
-
-  List<JournalExercise> get _linkPartners {
-    if (exerciseInSuperset(exercise)) return const [];
-    return [
-      for (final item in dayExercises)
-        if (item.id != exercise.id && !exerciseInSuperset(item)) item,
-    ];
-  }
+  bool get _canOfferSupersetLink =>
+      _canLinkExerciseWithNext(exercise, dayExercises) ||
+      _linkPartnersFor(exercise, dayExercises).isNotEmpty;
   VariableMachineKind? get _machineKind => variableMachineKindForExercise(
     libraryId: exercise.libraryId,
     name: exercise.name,
@@ -1883,22 +1935,6 @@ class _ExerciseCard extends StatelessWidget {
               ),
             ],
           ),
-          if (showMove && (_canLinkWithNext || _linkPartners.isNotEmpty))
-            Wrap(
-              spacing: 4,
-              children: [
-                if (_canLinkWithNext)
-                  TextButton(
-                    onPressed: onLinkWithNext,
-                    child: const Text('Link with next'),
-                  ),
-                if (_linkPartners.isNotEmpty)
-                  TextButton(
-                    onPressed: onLinkWithPartner,
-                    child: const Text('Link with another'),
-                  ),
-              ],
-            ),
           if (badge != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -1921,10 +1957,27 @@ class _ExerciseCard extends StatelessWidget {
                 ],
               ),
             )
-          else if (goal != null)
+          else if (goal != null || _canOfferSupersetLink)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(goal, style:  TextStyle(color: context.liftBig.muted)),
+              child: Row(
+                children: [
+                  if (goal != null)
+                    Expanded(
+                      child: Text(
+                        goal,
+                        style: TextStyle(color: context.liftBig.muted),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (_canOfferSupersetLink)
+                    _GoalEditPencil(
+                      tooltip: 'Link exercises',
+                      onPressed: onEditGoal,
+                    ),
+                ],
+              ),
             ),
           _ExerciseNotesPanel(
             exercise: exercise,
@@ -3051,25 +3104,59 @@ class _LoggedValueBox extends StatelessWidget {
   }
 }
 
+bool _canLinkExerciseWithNext(
+  JournalExercise exercise,
+  List<JournalExercise> dayExercises,
+) {
+  if (exerciseInSuperset(exercise)) return false;
+  final index = dayExercises.indexWhere((item) => item.id == exercise.id);
+  if (index < 0 || index + 1 >= dayExercises.length) return false;
+  return !exerciseInSuperset(dayExercises[index + 1]);
+}
+
+List<JournalExercise> _linkPartnersFor(
+  JournalExercise exercise,
+  List<JournalExercise> dayExercises,
+) {
+  if (exerciseInSuperset(exercise)) return const [];
+  return [
+    for (final item in dayExercises)
+      if (item.id != exercise.id && !exerciseInSuperset(item)) item,
+  ];
+}
+
 class _GoalEdit {
   const _GoalEdit({
     required this.setCount,
     required this.reps,
     required this.weight,
     this.revert = false,
+    this.linkNext = false,
+    this.linkPartner = false,
   });
 
   final int setCount;
   final String reps;
   final String weight;
   final bool revert;
+  final bool linkNext;
+  final bool linkPartner;
 }
 
 class _GoalEditDialog extends StatefulWidget {
-  const _GoalEditDialog({required this.exercise, required this.unit});
+  const _GoalEditDialog({
+    required this.exercise,
+    required this.unit,
+    required this.editGoal,
+    required this.showLinkWithNext,
+    required this.showLinkWithPartner,
+  });
 
   final JournalExercise exercise;
   final WeightUnit unit;
+  final bool editGoal;
+  final bool showLinkWithNext;
+  final bool showLinkWithPartner;
 
   @override
   State<_GoalEditDialog> createState() => _GoalEditDialogState();
@@ -3101,34 +3188,69 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
 
   bool get _canRevert => widget.exercise.prescribedSetCount != null;
 
+  void _popLink({required bool next}) {
+    Navigator.of(context).pop(
+      _GoalEdit(
+        setCount: 0,
+        reps: '',
+        weight: '',
+        linkNext: next,
+        linkPartner: !next,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final unit = widget.unit == WeightUnit.kg ? 'kg' : 'lb';
+    final links = widget.showLinkWithNext || widget.showLinkWithPartner;
     return AlertDialog(
       title: Text(widget.exercise.name),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            controller: _sets,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Sets'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _reps,
-            decoration: const InputDecoration(labelText: 'Reps'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _weight,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: 'Weight ($unit)'),
-          ),
+          if (widget.editGoal) ...[
+            TextField(
+              controller: _sets,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Sets'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reps,
+              decoration: const InputDecoration(labelText: 'Reps'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _weight,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'Weight ($unit)'),
+            ),
+          ],
+          if (widget.editGoal && links) const SizedBox(height: 8),
+          if (links)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 4,
+                children: [
+                  if (widget.showLinkWithNext)
+                    TextButton(
+                      onPressed: () => _popLink(next: true),
+                      child: const Text('Link with next'),
+                    ),
+                  if (widget.showLinkWithPartner)
+                    TextButton(
+                      onPressed: () => _popLink(next: false),
+                      child: const Text('Link with another'),
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
       actions: [
-        if (_canRevert)
+        if (widget.editGoal && _canRevert)
           TextButton(
             onPressed: () => Navigator.of(context).pop(
               const _GoalEdit(setCount: 0, reps: '', weight: '', revert: true),
@@ -3139,19 +3261,21 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: () {
-            final count = int.tryParse(_sets.text.trim()) ?? widget.exercise.sets.length;
-            Navigator.of(context).pop(
-              _GoalEdit(
-                setCount: count,
-                reps: _reps.text.trim(),
-                weight: _weight.text.trim(),
-              ),
-            );
-          },
-          child: const Text('Save'),
-        ),
+        if (widget.editGoal)
+          FilledButton(
+            onPressed: () {
+              final count =
+                  int.tryParse(_sets.text.trim()) ?? widget.exercise.sets.length;
+              Navigator.of(context).pop(
+                _GoalEdit(
+                  setCount: count,
+                  reps: _reps.text.trim(),
+                  weight: _weight.text.trim(),
+                ),
+              );
+            },
+            child: const Text('Save'),
+          ),
       ],
     );
   }

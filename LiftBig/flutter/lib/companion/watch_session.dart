@@ -15,7 +15,8 @@ class WatchSession {
       setCount = null,
       currentSetIndex = null,
       restSeconds = null,
-      weightUnit = null;
+      weightUnit = null,
+      lineup = const [];
 
   const WatchSession.open({
     required this.dateKey,
@@ -27,6 +28,7 @@ class WatchSession {
     required this.currentSetIndex,
     required this.restSeconds,
     required this.weightUnit,
+    required this.lineup,
   }) : locked = false,
        reason = null;
 
@@ -41,6 +43,7 @@ class WatchSession {
   final int? currentSetIndex;
   final int? restSeconds;
   final WeightUnit? weightUnit;
+  final List<Map<String, Object?>> lineup;
 
   Map<String, Object?> toJson() {
     if (locked) {
@@ -58,6 +61,7 @@ class WatchSession {
       'currentSetIndex': currentSetIndex,
       'restSeconds': restSeconds,
       'weightUnit': weightUnit == WeightUnit.kg ? 'kg' : 'lb',
+      'lineup': lineup,
     };
   }
 }
@@ -70,6 +74,8 @@ class CompanionMessage {
     required this.setIndex,
     this.reps,
     this.weightLbs,
+    this.activeKcal,
+    this.restSeconds,
   });
 
   final String kind;
@@ -81,9 +87,17 @@ class CompanionMessage {
   /// Weight already converted to stored pounds.
   final String? weightLbs;
 
+  /// Active calories reported by the watch, when it measured the session.
+  final double? activeKcal;
+
+  /// Rest duration the watch chose, in seconds.
+  final int? restSeconds;
+
   bool get isCompleteSet => kind == 'completeSet';
   bool get isAdjustSet => kind == 'adjustSet';
   bool get isSkipRest => kind == 'skipRest';
+  bool get isFinish => kind == 'finishWorkout';
+  bool get isSetRest => kind == 'setRest';
 }
 
 int firstOpenSetIndex(JournalExercise exercise) {
@@ -93,6 +107,35 @@ int firstOpenSetIndex(JournalExercise exercise) {
   if (open >= 0) return open;
   final unchecked = exercise.sets.indexWhere((set) => !set.checked);
   return unchecked >= 0 ? unchecked : 0;
+}
+
+List<Map<String, Object?>> lineupForWatch(
+  List<JournalExercise> exercises,
+  WeightUnit weightUnit,
+) {
+  final slots = <Map<String, Object?>>[];
+  for (final exercise in exercises) {
+    final count = exercise.sets.isEmpty ? 1 : exercise.sets.length;
+    for (var index = 0; index < count; index++) {
+      final set = index < exercise.sets.length ? exercise.sets[index] : null;
+      final weightRaw = set != null && set.weight.trim().isNotEmpty
+          ? set.weight
+          : (exercise.targetWeight ?? '');
+      final repsRaw = set != null && set.reps.trim().isNotEmpty
+          ? set.reps
+          : (exercise.targetReps ?? '');
+      slots.add({
+        'exerciseId': exercise.id,
+        'exerciseName': exercise.name,
+        'setIndex': index,
+        'setCount': count,
+        'reps': repsRaw.trim(),
+        'weightDisplay': storedLbsToDisplay(weightRaw, weightUnit),
+        'checked': set?.checked ?? false,
+      });
+    }
+  }
+  return slots;
 }
 
 JournalExercise? watchExercise(List<JournalExercise> exercises) {
@@ -113,23 +156,36 @@ WatchSession buildWatchSession({
   if (!pro) return const WatchSession.locked('pro');
   final exercise = watchExercise(exercises);
   if (exercise == null) return const WatchSession.locked('idle');
+  final openIndex = firstOpenSetIndex(exercise);
+  final current = exercise.sets.isEmpty
+      ? null
+      : exercise.sets[openIndex.clamp(0, exercise.sets.length - 1)];
+  final weightRaw = (current != null && current.weight.trim().isNotEmpty)
+      ? current.weight
+      : (exercise.targetWeight ?? '');
+  final repsRaw = (current != null && current.reps.trim().isNotEmpty)
+      ? current.reps
+      : (exercise.targetReps ?? '');
   return WatchSession.open(
     dateKey: dateKey,
     exerciseId: exercise.id,
     exerciseName: exercise.name,
-    targetWeightDisplay: storedLbsToDisplay(exercise.targetWeight ?? '', weightUnit),
-    targetReps: (exercise.targetReps ?? '').trim(),
+    targetWeightDisplay: storedLbsToDisplay(weightRaw, weightUnit),
+    targetReps: repsRaw.trim(),
     setCount: exercise.sets.isEmpty ? 1 : exercise.sets.length,
-    currentSetIndex: firstOpenSetIndex(exercise),
+    currentSetIndex: openIndex,
     restSeconds: restSeconds,
     weightUnit: weightUnit,
+    lineup: lineupForWatch(exercises, weightUnit),
   );
 }
 
 /// Applies a companion message onto [day]. [skipRest] and unknown exercises
 /// leave the day unchanged. Missing set rows are appended empty, then filled.
 JournalDay applyCompanionMessage(JournalDay day, CompanionMessage message) {
-  if (message.kind == 'skipRest') return day;
+  if (message.kind == 'skipRest' || message.kind == 'finishWorkout' || message.kind == 'setRest') {
+    return day;
+  }
   if (message.dateKey != day.dateKey) return day;
   final index = day.exercises.indexWhere((exercise) => exercise.id == message.exerciseId);
   if (index < 0) return day;
@@ -152,7 +208,11 @@ JournalDay applyCompanionMessage(JournalDay day, CompanionMessage message) {
     reps: message.reps ?? current.reps,
     weight: message.weightLbs ?? current.weight,
     durationSeconds: current.durationSeconds,
-    checked: message.kind == 'completeSet' ? true : current.checked,
+    checked: message.kind == 'completeSet'
+        ? true
+        : message.kind == 'undoSet'
+        ? false
+        : current.checked,
     isWarmup: current.isWarmup,
     difficulty: current.difficulty,
   );
@@ -205,6 +265,10 @@ CompanionMessage? parseCompanionMessage(
     }
   }
 
+  double? activeKcal;
+  final kcal = json['activeKcal'];
+  if (kcal is num && kcal.isFinite && kcal >= 0) activeKcal = kcal.toDouble();
+
   return CompanionMessage(
     kind: kind,
     dateKey: dateKey,
@@ -212,5 +276,7 @@ CompanionMessage? parseCompanionMessage(
     setIndex: setIndex,
     reps: reps,
     weightLbs: weightLbs,
+    activeKcal: activeKcal,
+    restSeconds: json['restSeconds'] is num ? (json['restSeconds'] as num).round() : null,
   );
 }

@@ -26,10 +26,17 @@ class LiftSessionPoint {
 }
 
 class LiftSeries {
-  const LiftSeries({required this.name, required this.sessions});
+  const LiftSeries({
+    required this.name,
+    required this.sessions,
+    this.latestCompleted = false,
+  });
 
   final String name;
   final List<LiftSessionPoint> sessions;
+
+  /// Every working set on the newest logged day for this lift is checked off.
+  final bool latestCompleted;
 }
 
 /// Working-set history for one lift name. Warmups and empty loads are skipped.
@@ -106,8 +113,31 @@ List<LiftSeries> strengthSeries(List<JournalDay> days) {
   final names = display.values.toList()..sort();
   return [
     for (final name in names)
-      LiftSeries(name: name, sessions: collectLiftHistory(days, name)),
+      LiftSeries(
+        name: name,
+        sessions: collectLiftHistory(days, name),
+        latestCompleted: _latestLiftCompleted(days, name),
+      ),
   ];
+}
+
+bool _latestLiftCompleted(List<JournalDay> days, String name) {
+  final target = name.trim().toLowerCase();
+  JournalExercise? latest;
+  var latestKey = '';
+  for (final day in days) {
+    for (final exercise in day.exercises) {
+      if (exercise.name.trim().toLowerCase() != target) continue;
+      if (sessionPoint(day.dateKey, exercise) == null) continue;
+      if (latest == null || day.dateKey.compareTo(latestKey) >= 0) {
+        latest = exercise;
+        latestKey = day.dateKey;
+      }
+    }
+  }
+  final working = latest?.sets.where((set) => !set.isWarmup).toList() ?? const <JournalSet>[];
+  if (working.isEmpty) return false;
+  return working.every((set) => set.checked);
 }
 
 LiftSessionPoint? sessionPoint(String dateKey, JournalExercise exercise) {

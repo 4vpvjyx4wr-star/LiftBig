@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
@@ -425,6 +428,58 @@ class _SettingsPageState extends State<SettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _export() async {
+    try {
+      final json = await widget.sync.journal.exportBackupJson();
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Export LiftBig backup',
+        fileName: 'liftbig-backup.json',
+        mimeType: 'application/json',
+        bytes: Uint8List.fromList(utf8.encode(json)),
+      );
+      if (!mounted) return;
+      if (saved == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup exported. Import can read this file.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not export the backup. $error')),
+      );
+    }
+  }
+
+  Future<void> _pickTheme() async {
+    final selected = widget.themes.palette.id;
+    final picked = await showLiftBigSheet<String>(
+      context,
+      builder: (context) => ListView(
+        shrinkWrap: true,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Theme',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (final palette in liftBigThemePresets)
+            ListTile(
+              leading: _ThemeSwatch(palette: palette),
+              title: Text(palette.label),
+              trailing: palette.id == selected
+                  ? Icon(Icons.check, color: context.liftBig.primary)
+                  : null,
+              onTap: () => Navigator.of(context).pop(palette.id),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    await _selectTheme(picked);
+  }
+
   @override
   void dispose() {
     _email.dispose();
@@ -454,11 +509,6 @@ class _SettingsPageState extends State<SettingsPage> {
       const Text(
         'Tools',
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 4),
-       Text(
-        'Calculators from the LiftBig web app.',
-        style: TextStyle(color: context.liftBig.muted),
       ),
       ListTile(
         contentPadding: EdgeInsets.zero,
@@ -670,23 +720,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ListenableBuilder(
                 listenable: widget.themes,
                 builder: (context, _) {
-                  final selected = widget.themes.palette.id;
-                  return Column(
-                    children: [
-                      for (final palette in liftBigThemePresets)
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: _ThemeSwatch(palette: palette),
-                          title: Text(palette.label),
-                          trailing: palette.id == selected
-                              ? Icon(
-                                  Icons.check,
-                                  color: context.liftBig.primary,
-                                )
-                              : null,
-                          onTap: () => _selectTheme(palette.id),
-                        ),
-                    ],
+                  final palette = widget.themes.palette;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: _ThemeSwatch(palette: palette),
+                    title: const Text('Theme'),
+                    subtitle: Text(palette.label),
+                    trailing: Icon(Icons.expand_more, color: context.liftBig.primary),
+                    onTap: _pickTheme,
                   );
                 },
               ),
@@ -974,6 +1015,11 @@ class _SettingsPageState extends State<SettingsPage> {
               OutlinedButton(
                 onPressed: _import,
                 child: const Text('Import backup'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: _export,
+                child: const Text('Export backup'),
               ),
               ..._cloudSection(sync),
             ],

@@ -188,6 +188,10 @@ class _HomePageState extends State<HomePage> {
         prescribeWarmup: prescribeWarmup,
         targetReps: prescribed.targetReps,
         targetWeight: prescribed.targetWeight,
+        supersetGroupId: lift.supersetGroupId,
+        supersetLabel: lift.supersetLabel,
+        supersetOrder: lift.supersetOrder,
+        targetRestSeconds: lift.targetRestSeconds,
         sets: [
           for (var i = 0; i < prescribed.sets.length; i++)
             JournalSet(

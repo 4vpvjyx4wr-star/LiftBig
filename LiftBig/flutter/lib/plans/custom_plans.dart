@@ -158,11 +158,27 @@ CatalogLift _templateLift(Map<String, Object?> json) {
     isCore: json['isCore'] == true,
     isCircuit: json['isCircuit'] == true,
     targetDuration: json['targetDuration'] as String?,
+    supersetGroupId: _optionalPlanText(json['supersetGroupId']),
+    supersetLabel: _optionalPlanText(json['supersetLabel']),
+    supersetOrder: _optionalPlanInt(json['supersetOrder']),
     sets: [
       for (final item in setsRaw)
         _templateSet(Map<String, Object?>.from(item as Map)),
     ],
   );
+}
+
+String? _optionalPlanText(Object? raw) {
+  if (raw is! String) return null;
+  final trimmed = raw.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+int? _optionalPlanInt(Object? raw) {
+  if (raw is int) return raw;
+  if (raw is num) return raw.round();
+  if (raw is String) return int.tryParse(raw.trim());
+  return null;
 }
 
 CatalogSet _templateSet(Map<String, Object?> json) {

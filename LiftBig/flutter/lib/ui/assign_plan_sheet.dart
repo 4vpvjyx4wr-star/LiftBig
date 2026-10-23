@@ -41,6 +41,8 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
   List<PremadePlan>? _plans;
   Set<String> _favoriteIds = const {};
   String? _error;
+  String? _selectedPlanId;
+  var _choosingPlan = true;
 
   @override
   void initState() {
@@ -112,6 +114,13 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     return out;
   }
 
+  PremadePlan? _selected(List<PremadePlan> plans) {
+    for (final plan in plans) {
+      if (plan.id == _selectedPlanId) return plan;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
@@ -120,27 +129,19 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
       child: SizedBox(
         height: liftBigPreferredHeight(context, 0.72),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.liftBig.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             const Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
               child: Text(
                 'Assign a plan',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
             ),
-             Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
-                'Adds this workout to the selected day.',
+                'Choose one plan, then add a workout to this day.',
                 style: TextStyle(color: context.liftBig.muted, fontSize: 13),
               ),
             ),
@@ -185,99 +186,127 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     }
     final visible = _visible(_search.text);
     if (visible.isEmpty) {
-      return  Center(
+      return Center(
         child: Text(
           'No matching plans.',
           style: TextStyle(color: context.liftBig.muted),
         ),
       );
     }
-    final favorites = [
-      for (final plan in visible)
-        if (_favoriteIds.contains(plan.id)) plan,
-    ];
+    final selected = _selected(visible);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
-        if (favorites.isNotEmpty) ...[
-           Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Favorites',
-              style: TextStyle(
-                color: context.liftBig.primary,
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
-              ),
+        _planChooser(visible, selected),
+        if (!_choosingPlan && selected != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Adding from ${selected.name}',
+            style: TextStyle(
+              color: context.liftBig.primary,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          for (final plan in favorites) _planCard(plan),
-           Padding(
-            padding: EdgeInsets.only(top: 4, bottom: 12),
-            child: Divider(height: 1, color: context.liftBig.border),
-          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < selected.workouts.length; i++)
+            _workoutRow(selected, selected.workouts[i], i),
         ],
-        for (final plan in visible) _planCard(plan),
       ],
     );
   }
 
-  Widget _planCard(PremadePlan plan) {
-    final favorited = _favoriteIds.contains(plan.id);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: context.liftBig.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side:  BorderSide(color: context.liftBig.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-          childrenPadding: const EdgeInsets.only(bottom: 8),
-          iconColor: context.liftBig.muted,
-          collapsedIconColor: context.liftBig.muted,
-          title: Row(
-            children: [
-              if (favorited) ...[
-                 Icon(Icons.star, size: 16, color: context.liftBig.primary),
-                const SizedBox(width: 6),
-              ],
-              Expanded(
-                child: Text(
-                  plan.name,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
+  Widget _planChooser(List<PremadePlan> plans, PremadePlan? selected) {
+    return Material(
+      color: context.liftBig.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.liftBig.primary, width: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _choosingPlan = !_choosingPlan),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Plan',
+                          style: TextStyle(
+                            color: context.liftBig.muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          selected?.name ?? 'Choose a plan',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        ),
+                        if (selected != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'This plan will be assigned',
+                            style: TextStyle(
+                              color: context.liftBig.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    _choosingPlan ? Icons.expand_less : Icons.expand_more,
+                    color: context.liftBig.primary,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          subtitle: Text(
-            '${plan.workouts.length} ${plan.workouts.length == 1 ? 'workout' : 'workouts'}',
-            style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
-          ),
-          children: [
-            for (var i = 0; i < plan.workouts.length; i++)
-              PlanWorkoutRow(
-                key: ValueKey('${plan.id}:${plan.workouts[i].id}:$i'),
-                workout: plan.workouts[i],
-                trailing: IconButton(
-                  tooltip: 'Add to this day',
-                  onPressed: () {
-                    Navigator.pop(
-                      context,
-                      PlanAssignment(
-                        workout: plan.workouts[i],
-                        planName: plan.name,
-                      ),
-                    );
-                  },
-                  icon:  Icon(Icons.add, color: context.liftBig.primary),
+          if (_choosingPlan)
+            for (final plan in plans)
+              ListTile(
+                dense: true,
+                leading: _favoriteIds.contains(plan.id)
+                    ? Icon(Icons.star, color: context.liftBig.primary, size: 18)
+                    : const SizedBox(width: 18),
+                title: Text(plan.name),
+                subtitle: Text(
+                  '${plan.workouts.length} ${plan.workouts.length == 1 ? 'workout' : 'workouts'}',
                 ),
+                trailing: plan.id == selected?.id
+                    ? Icon(Icons.check, color: context.liftBig.primary)
+                    : null,
+                onTap: () => setState(() {
+                  _selectedPlanId = plan.id;
+                  _choosingPlan = false;
+                }),
               ),
-          ],
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _workoutRow(PremadePlan plan, CatalogWorkout workout, int index) {
+    return PlanWorkoutRow(
+      key: ValueKey('${plan.id}:${workout.id}:$index'),
+      workout: workout,
+      trailing: IconButton(
+        tooltip: 'Add to this day',
+        onPressed: () {
+          Navigator.pop(
+            context,
+            PlanAssignment(workout: workout, planName: plan.name),
+          );
+        },
+        icon: Icon(Icons.add, color: context.liftBig.primary),
       ),
     );
   }

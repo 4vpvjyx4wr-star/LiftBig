@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../theme.dart';
 
 /// Gap between the status bar or Dynamic Island and the sheet's rounded top.
-const double liftBigSheetTopGap = 8;
+const double liftBigSheetTopGap = 12;
 
 /// Height for a sheet body that already sits under the shared grabber.
 double liftBigPreferredHeight(BuildContext context, double fraction) {
@@ -16,7 +16,7 @@ double liftBigPreferredHeight(BuildContext context, double fraction) {
 
 double liftBigSheetMaxHeight(BuildContext context) {
   final media = MediaQuery.of(context);
-  final available = media.size.height - media.padding.top - liftBigSheetTopGap;
+  final available = media.size.height - media.viewPadding.top - liftBigSheetTopGap;
   if (available < 120) return media.size.height;
   return available;
 }
@@ -31,7 +31,11 @@ void liftBigConfirmHaptic() {
   HapticFeedback.mediumImpact();
 }
 
-/// Bottom sheet that stays below the status bar, with a grabber and rounded top.
+/// Bottom sheet that stays below the status bar.
+///
+/// The dimmed band above the sheet is the modal barrier, so a tap there
+/// dismisses. Dragging the grabber dismisses, and pulling a list down from
+/// the top dismisses too.
 Future<T?> showLiftBigSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -46,44 +50,94 @@ Future<T?> showLiftBigSheet<T>(
     isScrollControlled: true,
     isDismissible: isDismissible,
     enableDrag: enableDrag,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      final media = MediaQuery.of(sheetContext);
-      final top = media.padding.top + liftBigSheetTopGap;
       return Padding(
-        padding: EdgeInsets.only(top: top),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Material(
-            color: backgroundColor ?? colors.card,
-            shape: RoundedRectangleBorder(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              side: BorderSide(color: colors.border),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: liftBigSheetMaxHeight(sheetContext)),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: sheetContext.liftBig.border,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+        padding: const EdgeInsets.only(top: liftBigSheetTopGap),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: _PullDownToDismiss(
+                enabled: isDismissible && enableDrag,
+                child: Material(
+                  color: backgroundColor ?? colors.card,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    side: BorderSide(color: colors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 10),
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: sheetContext.liftBig.border,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        Flexible(child: builder(sheetContext)),
+                      ],
                     ),
                   ),
-                  Flexible(child: builder(sheetContext)),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       );
     },
   );
+}
+
+/// Clamped lists do not hand a downward pull to the sheet. Close after a short pull from the top.
+class _PullDownToDismiss extends StatefulWidget {
+  const _PullDownToDismiss({required this.enabled, required this.child});
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_PullDownToDismiss> createState() => _PullDownToDismissState();
+}
+
+class _PullDownToDismissState extends State<_PullDownToDismiss> {
+  double _pulled = 0;
+  bool _closing = false;
+
+  void _close() {
+    if (_closing || !mounted) return;
+    _closing = true;
+    Navigator.of(context).maybePop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (!widget.enabled || notification.metrics.axis != Axis.vertical) return false;
+        if (notification is OverscrollNotification &&
+            notification.overscroll < 0 &&
+            notification.metrics.pixels <= 0) {
+          _pulled += -notification.overscroll;
+          if (_pulled > 48) {
+            _pulled = 0;
+            WidgetsBinding.instance.addPostFrameCallback((_) => _close());
+          }
+        } else if (notification is ScrollEndNotification) {
+          _pulled = 0;
+        }
+        return false;
+      },
+      child: widget.child,
+    );
+  }
 }

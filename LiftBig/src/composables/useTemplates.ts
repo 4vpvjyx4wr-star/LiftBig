@@ -16,6 +16,7 @@ import {
   LEGACY_JOEY_SUMMER_FOLDER_NAME,
 } from '@/utils/joeySummerCutSplitPlans'
 import { reorderSeededFolderPlans } from '@/utils/folderPlanSort'
+import { JOEY_C4_FOLDER, JOEY_C4_PLANS } from '@/utils/joeyC4'
 import { JOEY_FALL_BULK_FOLDER, JOEY_FALL_BULK_PLANS } from '@/utils/joeyFallBulk'
 import { JOEY_FALL_BULK_V2_FOLDER, JOEY_FALL_BULK_V2_PLANS } from '@/utils/joeyFallBulkV2'
 import { JOEY_SUMMER_PLAN2_FOLDER, JOEY_SUMMER_PLAN2_PLANS } from '@/utils/joeySummerPlan2'
@@ -145,13 +146,29 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...folders, ...cloneFolders([JOEY_FALL_BULK_V2_FOLDER])]
 
-  // Keep Joey Fall Bulk v3 (same folder id as v2) first, then original Fall Bulk, in the Plans folder list.
+  const hasJoeyC4Folder = folders.some((folder) => folder.id === JOEY_C4_FOLDER.id)
+  folders = hasJoeyC4Folder
+    ? folders.map((folder) =>
+        folder.id === JOEY_C4_FOLDER.id
+          ? {
+              ...folder,
+              name: JOEY_C4_FOLDER.name,
+              purpose: JOEY_C4_FOLDER.purpose,
+            }
+          : folder,
+      )
+    : [...folders, ...cloneFolders([JOEY_C4_FOLDER])]
+
+  // Newest Joey program first, then Fall Bulk v3, then the original Fall Bulk.
   folders = [
+    ...folders.filter((folder) => folder.id === JOEY_C4_FOLDER.id),
     ...folders.filter((folder) => folder.id === JOEY_FALL_BULK_V2_FOLDER.id),
     ...folders.filter((folder) => folder.id === JOEY_FALL_BULK_FOLDER.id),
     ...folders.filter(
       (folder) =>
-        folder.id !== JOEY_FALL_BULK_V2_FOLDER.id && folder.id !== JOEY_FALL_BULK_FOLDER.id,
+        folder.id !== JOEY_C4_FOLDER.id &&
+        folder.id !== JOEY_FALL_BULK_V2_FOLDER.id &&
+        folder.id !== JOEY_FALL_BULK_FOLDER.id,
     ),
   ]
 
@@ -174,6 +191,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
   const missingSummerPlan2Plans = JOEY_SUMMER_PLAN2_PLANS.filter((template) => !existingIds.has(template.id))
   const missingFallBulkPlans = JOEY_FALL_BULK_PLANS.filter((template) => !existingIds.has(template.id))
   const missingFallBulkV2Plans = JOEY_FALL_BULK_V2_PLANS.filter((template) => !existingIds.has(template.id))
+  const missingJoeyC4Plans = JOEY_C4_PLANS.filter((template) => !existingIds.has(template.id))
   const missingDefaultPlans = DEFAULT_PLANS.filter((template) => !existingIds.has(template.id))
   const missingGuidedPlans = ALL_GUIDED_PLANS.filter((template) => !existingIds.has(template.id))
   const missingPlans = [
@@ -184,6 +202,7 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
     ...missingSummerPlan2Plans,
     ...missingFallBulkPlans,
     ...missingFallBulkV2Plans,
+    ...missingJoeyC4Plans,
     ...missingDefaultPlans,
     ...missingGuidedPlans,
   ]

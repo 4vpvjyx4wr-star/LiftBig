@@ -10,6 +10,7 @@ import '../plans/plan_schedule.dart';
 import '../plans/workout_shuffle.dart';
 import '../theme.dart';
 import 'catalog_load_state.dart';
+import 'liftbig_sheet.dart';
 import 'plan_schedule_sheet.dart';
 import 'plan_workout_row.dart';
 import 'workout_shuffle_sheet.dart';
@@ -19,10 +20,12 @@ class PlansPage extends StatefulWidget {
     super.key,
     required this.journal,
     this.onPlanScheduled,
+    this.refreshToken = 0,
   });
 
   final JournalRepository journal;
   final ValueChanged<String>? onPlanScheduled;
+  final int refreshToken;
 
   @override
   State<PlansPage> createState() => _PlansPageState();
@@ -50,12 +53,20 @@ class _PlansPageState extends State<PlansPage> {
   String? _shuffleNote;
   Future<List<PremadePlan>>? _customPlansFuture;
   final _favoritePlanIds = <String>{};
+  String? _calendarPlanName;
 
   @override
   void initState() {
     super.initState();
     _loadShuffleDefaults();
     _loadFavorites();
+    _loadCalendarPlan();
+  }
+
+  @override
+  void didUpdateWidget(PlansPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshToken != widget.refreshToken) _loadCalendarPlan();
   }
 
   Future<void> _loadFavorites() async {
@@ -79,6 +90,12 @@ class _PlansPageState extends State<PlansPage> {
       }
     });
     await widget.journal.saveFavoritePlanIds(_favoritePlanIds);
+  }
+
+  Future<void> _loadCalendarPlan() async {
+    final slots = await widget.journal.calendarPlanSlots();
+    if (!mounted) return;
+    setState(() => _calendarPlanName = calendarPlanName(slots, todayKey()));
   }
 
   Future<void> _loadShuffleDefaults() async {
@@ -144,9 +161,13 @@ class _PlansPageState extends State<PlansPage> {
         isCore: lift.isCore,
         isCircuit: lift.isCircuit,
         prescribeWarmup: prescribeWarmup,
-        targetReps: prescribed.targetReps,
-        targetWeight: prescribed.targetWeight,
-        sets: [
+          targetReps: prescribed.targetReps,
+          targetWeight: prescribed.targetWeight,
+          supersetGroupId: lift.supersetGroupId,
+          supersetLabel: lift.supersetLabel,
+          supersetOrder: lift.supersetOrder,
+          targetRestSeconds: lift.targetRestSeconds,
+          sets: [
           for (var i = 0; i < prescribed.sets.length; i++)
             JournalSet(
               id: '',
@@ -213,6 +234,7 @@ class _PlansPageState extends State<PlansPage> {
       ),
     );
     widget.onPlanScheduled?.call(startDateKey);
+    await _loadCalendarPlan();
   }
 
   void _shuffle(LiftBigCatalog catalog) {
@@ -317,6 +339,7 @@ class _PlansPageState extends State<PlansPage> {
               onOpenShuffle: () => _openShuffleSheet(catalog),
               favoritePlanIds: _favoritePlanIds,
               onFavoriteChanged: _setFavorite,
+              calendarPlanName: _calendarPlanName,
             );
           },
         );
@@ -341,6 +364,7 @@ class _PlansBody extends StatelessWidget {
     required this.onOpenShuffle,
     required this.favoritePlanIds,
     required this.onFavoriteChanged,
+    required this.calendarPlanName,
   });
 
   final LiftBigCatalog catalog;
@@ -358,6 +382,7 @@ class _PlansBody extends StatelessWidget {
   final VoidCallback onOpenShuffle;
   final Set<String> favoritePlanIds;
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
+  final String? calendarPlanName;
 
   List<PremadePlan> get _premadePlans => [
         ...catalog.plans,
@@ -369,6 +394,40 @@ class _PlansBody extends StatelessWidget {
             workouts: catalog.starterWorkouts,
           ),
       ];
+
+  Future<void> _changeCalendarPlan(BuildContext context) async {
+    final plans = [
+      ..._premadePlans,
+      ...customPlans.where((plan) => plan.workouts.isNotEmpty),
+    ];
+    final picked = await showLiftBigSheet<PremadePlan>(
+      context,
+      backgroundColor: context.liftBig.background,
+      builder: (context) => ListView(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              'Change the calendar plan',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('Scheduling a plan writes it onto your calendar.'),
+          ),
+          for (final plan in plans)
+            ListTile(
+              title: Text(plan.name),
+              subtitle: Text('${plan.workouts.length} workouts'),
+              onTap: () => Navigator.of(context).pop(plan),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    await onSchedulePlan(picked.name, picked.workouts);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -387,11 +446,11 @@ class _PlansBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Plan Picker',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        _CalendarPlanHeader(
+          planName: calendarPlanName,
+          onChange: () => _changeCalendarPlan(context),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(
@@ -402,7 +461,7 @@ class _PlansBody extends StatelessWidget {
             ),
             onPressed: showQuiz ? null : onStartQuiz,
             child: const Text(
-              'Unsure where to start? Click here to see which plan we recommend.',
+              'Not sure which plan to use? Get a recommendation.',
               textAlign: TextAlign.left,
             ),
           ),
@@ -463,6 +522,64 @@ class _PlansBody extends StatelessWidget {
           emptyMessage: 'You have not created a plan yet.',
         ),
       ],
+    );
+  }
+}
+
+class _CalendarPlanHeader extends StatelessWidget {
+  const _CalendarPlanHeader({required this.planName, required this.onChange});
+
+  final String? planName;
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = planName?.trim();
+    final showing = name == null || name.isEmpty ? 'No plan on the calendar' : name;
+    return Material(
+      color: context.liftBig.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.liftBig.primary, width: 1.5),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onChange,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Calendar plan',
+                style: TextStyle(
+                  color: context.liftBig.muted,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                showing,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.edit_calendar_outlined, size: 18, color: context.liftBig.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Tap to change the plan',
+                    style: TextStyle(
+                      color: context.liftBig.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

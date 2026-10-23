@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'data/app_database.dart';
 import 'journal/journal_repository.dart';
@@ -95,6 +96,23 @@ class _LiftBigAppState extends State<LiftBigApp> {
         debugShowCheckedModeBanner: false,
         theme: buildLiftBigTheme(_themes.palette),
         scrollBehavior: const LiftBigScrollBehavior(),
+        builder: (context, child) {
+          final colors = Theme.of(context).extension<LiftBigPalette>() ??
+              liftBigThemePresets.first;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarColor: colors.background,
+              statusBarBrightness: Brightness.dark,
+              statusBarIconBrightness: Brightness.light,
+              systemNavigationBarColor: colors.background,
+              systemNavigationBarIconBrightness: Brightness.light,
+            ),
+            child: ColoredBox(
+              color: colors.background,
+              child: child ?? const SizedBox.shrink(),
+            ),
+          );
+        },
         home: AppShell(
           journal: widget.journal,
           sync: widget.sync,

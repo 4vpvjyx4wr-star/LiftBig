@@ -288,3 +288,59 @@ String _textField(Object? value) {
   if (value is num) return value.toString();
   return '';
 }
+
+/// JSON the import path can read again. Day headers use the Vue backup names.
+String encodeLiftBigBackup({
+  required List<JournalDay> days,
+  String? templatesJson,
+  String? settingsJson,
+  String? weightUnit,
+  double? bodyWeightLbs,
+  DateTime? now,
+}) {
+  final exportedAt = (now ?? DateTime.now()).toUtc().toIso8601String();
+  final workouts = <String, Object?>{};
+  for (final day in days) {
+    workouts[day.dateKey] = {
+      'notes': day.notes,
+      'isRestDay': day.isRestDay,
+      'planName': day.workoutName,
+      'planFolderName': day.planName,
+      'planNotes': day.workoutNotes,
+      'exercises': [
+        for (final exercise in day.exercises) exercise.toMap(),
+      ],
+    };
+  }
+  Object? templates = templatesJson;
+  Object? settings = settingsJson;
+  if (templatesJson != null) {
+    try {
+      templates = jsonDecode(templatesJson);
+    } catch (_) {}
+  }
+  if (settingsJson != null) {
+    try {
+      settings = jsonDecode(settingsJson);
+    } catch (_) {}
+  }
+  if (settings is Map) {
+    final map = Map<String, Object?>.from(settings);
+    if (weightUnit != null) map['weightUnit'] = weightUnit;
+    if (bodyWeightLbs != null) map['bodyWeightLbs'] = bodyWeightLbs;
+    settings = map;
+  } else if (weightUnit != null || bodyWeightLbs != null) {
+    settings = {
+      if (weightUnit != null) 'weightUnit': weightUnit,
+      if (bodyWeightLbs != null) 'bodyWeightLbs': bodyWeightLbs,
+    };
+  }
+  return jsonEncode({
+    'formatVersion': 2,
+    'exportedAt': exportedAt,
+    'app': 'LiftBig',
+    'liftbig_workouts': workouts,
+    'liftbig_templates': templates,
+    'liftbig_settings': settings,
+  });
+}

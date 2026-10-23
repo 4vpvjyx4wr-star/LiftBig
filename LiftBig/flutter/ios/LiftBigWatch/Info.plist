@@ -12,5 +12,22 @@
 	<string>com.liftbig.app.dev</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
+	<key>WKSupportsAlwaysOnDisplay</key>
+	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>self-care</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.liftbig.app.dev.watch</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>liftbig</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

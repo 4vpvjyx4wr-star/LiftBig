@@ -28,8 +28,8 @@ class JournalHealthSync {
     _timer?.cancel();
   }
 
-  Future<void> syncDay(String dateKey) async {
-    if (!await journal.appleHealthSyncEnabled()) return;
+  Future<void> syncDay(String dateKey, {bool honorToggle = true}) async {
+    if (honorToggle && !await journal.appleHealthSyncEnabled()) return;
     final granted = await _health.requestAccess();
     if (!granted) return;
     final day = await journal.getDay(dateKey);

@@ -63,6 +63,30 @@ List<String> restDaysAfterWorkouts(
   return restKeys;
 }
 
+/// Plan name already written onto the calendar.
+///
+/// Today wins. Otherwise the next upcoming scheduled plan, then the most recent one.
+String? calendarPlanName(
+  Iterable<({String dateKey, String? planName})> days,
+  String today,
+) {
+  final named = <({String dateKey, String name})>[];
+  for (final day in days) {
+    final name = day.planName?.trim();
+    if (name == null || name.isEmpty || !isValidDateKey(day.dateKey)) continue;
+    named.add((dateKey: day.dateKey, name: name));
+  }
+  if (named.isEmpty) return null;
+  named.sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  for (final day in named) {
+    if (day.dateKey == today) return day.name;
+  }
+  for (final day in named) {
+    if (day.dateKey.compareTo(today) > 0) return day.name;
+  }
+  return named.last.name;
+}
+
 List<JournalExercise> journalExercisesFromCatalogWorkout(CatalogWorkout workout) {
   final exercises = <JournalExercise>[];
   for (var exerciseIndex = 0; exerciseIndex < workout.lifts.length; exerciseIndex++) {
@@ -80,6 +104,10 @@ List<JournalExercise> journalExercisesFromCatalogWorkout(CatalogWorkout workout)
         isCore: lift.isCore,
         isCircuit: lift.isCircuit,
         targetDuration: lift.targetDuration,
+        supersetGroupId: lift.supersetGroupId,
+        supersetLabel: lift.supersetLabel,
+        supersetOrder: lift.supersetOrder,
+        targetRestSeconds: lift.targetRestSeconds,
         sets: [
           for (var setIndex = 0; setIndex < sets.length; setIndex++)
             JournalSet(

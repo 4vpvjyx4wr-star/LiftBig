@@ -155,6 +155,14 @@ class JournalRepository {
     return list;
   }
 
+  /// Plan folder name stored on each calendar day, including days with no name.
+  Future<List<({String dateKey, String? planName})>> calendarPlanSlots() async {
+    final rows = await db.select(db.days).get();
+    return [
+      for (final row in rows) (dateKey: row.dateKey, planName: row.planName),
+    ];
+  }
+
   /// Distinct exercise names as stored in the journal (any day, including without libraryId).
   Future<List<String>> distinctLoggedExerciseNames() async {
     final rows = await db.select(db.exercises).get();
@@ -190,6 +198,10 @@ class JournalRepository {
     bool prescribeWarmup = false,
     String? targetReps,
     String? targetWeight,
+    String? supersetGroupId,
+    String? supersetLabel,
+    int? supersetOrder,
+    int? targetRestSeconds,
   }) async {
     final trimmed = name.trim();
     if (!isValidDateKey(dateKey)) {
@@ -245,6 +257,12 @@ class JournalRepository {
               isCircuit: Value(isCircuit),
               targetReps: Value(_blankToNull(targetReps)),
               targetWeight: Value(_blankToNull(targetWeight)),
+              supersetGroupId: Value(_blankToNull(supersetGroupId)),
+              supersetLabel: Value(_blankToNull(supersetLabel)),
+              supersetOrder: Value(supersetOrder),
+              targetRestSeconds: Value(
+                targetRestSeconds != null && targetRestSeconds > 0 ? targetRestSeconds : null,
+              ),
             ),
           );
       final usedSetIds = <String>{};
@@ -1110,7 +1128,7 @@ class JournalRepository {
     if (!isValidDateKey(dateKey)) {
       throw ArgumentError('Date must look like YYYY-MM-DD.');
     }
-    final clamped = seconds.clamp(30, 600);
+    final clamped = seconds.clamp(5, 600);
     final stamp = nowStamp();
     await db.transaction(() async {
       final existing = await (db.select(
@@ -1554,6 +1572,18 @@ class JournalRepository {
       );
       await _touchDay(exercise.dateKey);
     });
+  }
+
+  Future<String> exportBackupJson() async {
+    final days = await allDays();
+    final body = await storedBodyWeightLbs();
+    return encodeLiftBigBackup(
+      days: days,
+      templatesJson: await _get(SettingKeys.templatesJson),
+      settingsJson: await _get(SettingKeys.settingsJson),
+      weightUnit: await _get(SettingKeys.weightUnit),
+      bodyWeightLbs: body,
+    );
   }
 
   Future<CloudSettings?> localCloudSettings() async {
