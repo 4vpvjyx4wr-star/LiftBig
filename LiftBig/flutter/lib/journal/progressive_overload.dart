@@ -342,6 +342,158 @@ double parseStoredLbs(String raw) {
   return double.tryParse(text) ?? double.nan;
 }
 
+/// True when two stored pound strings are the same load.
+bool storedWeightsMatch(String a, String b) {
+  final left = a.trim();
+  final right = b.trim();
+  if (left == right) return true;
+  final leftLbs = parseStoredLbs(left);
+  final rightLbs = parseStoredLbs(right);
+  if (leftLbs.isNaN || rightLbs.isNaN) return false;
+  return (leftLbs - rightLbs).abs() < 0.001;
+}
+
+/// One set as it sits on the day, for the unlogged-progression check.
+class UnloggedSetSnapshot {
+  const UnloggedSetSnapshot({
+    required this.reps,
+    required this.weight,
+    this.checked = false,
+    this.isWarmup = false,
+  });
+
+  final String reps;
+  final String weight;
+  final bool checked;
+  final bool isWarmup;
+}
+
+/// Goal and working-set values to write when today's lift is still the plan.
+class UnloggedProgression {
+  const UnloggedProgression({
+    required this.targetReps,
+    required this.targetWeight,
+    required this.setReps,
+    required this.setWeight,
+  });
+
+  final String targetReps;
+  final String targetWeight;
+  final String setReps;
+  final String setWeight;
+}
+
+/// True when the lifter changed the goal after the plan snapshot was stored.
+bool goalWasEditedByHand({
+  required String? targetReps,
+  required String? targetWeight,
+  required String? prescribedReps,
+  required String? prescribedWeight,
+  required int? prescribedSetCount,
+}) {
+  final hasSnapshot =
+      prescribedSetCount != null ||
+      prescribedReps != null ||
+      prescribedWeight != null;
+  if (!hasSnapshot) return false;
+  if ((targetReps ?? '').trim() != (prescribedReps ?? '').trim()) return true;
+  return !storedWeightsMatch(targetWeight ?? '', prescribedWeight ?? '');
+}
+
+/// Empty, a stored range, or the programmed number. A different count is logged.
+bool setStillHoldsProgrammedPrescription({
+  required String reps,
+  required String weight,
+  required String? targetReps,
+  required String? targetWeight,
+}) {
+  final goalWeight = (targetWeight ?? '').trim();
+  final goalReps = (targetReps ?? '').trim();
+  final storedWeight = weight.trim();
+  final storedReps = reps.trim();
+  final weightOk =
+      storedWeight.isEmpty ||
+      (goalWeight.isNotEmpty && storedWeightsMatch(storedWeight, goalWeight));
+  if (!weightOk) return false;
+  if (storedReps.isEmpty || _repsLookLikeRange(storedReps)) return true;
+  return goalReps.isNotEmpty && storedReps == goalReps;
+}
+
+/// History-based goal for a lift that has not been logged or hand-edited today.
+///
+/// Null when any set is checked, the goal was edited, a working set already
+/// holds a different number, or this lift has no history. Name match is exact.
+UnloggedProgression? progressionForUnloggedExercise({
+  required String exerciseName,
+  required List<HistorySet> history,
+  required List<UnloggedSetSnapshot> sets,
+  String? targetReps,
+  String? targetWeight,
+  String? prescribedReps,
+  String? prescribedWeight,
+  int? prescribedSetCount,
+  String? excludeDateKey,
+  String? libraryId,
+  double? bodyWeightLbs,
+  String displayUnit = 'lb',
+}) {
+  if (goalWasEditedByHand(
+    targetReps: targetReps,
+    targetWeight: targetWeight,
+    prescribedReps: prescribedReps,
+    prescribedWeight: prescribedWeight,
+    prescribedSetCount: prescribedSetCount,
+  )) {
+    return null;
+  }
+  if (sets.any((set) => set.checked)) return null;
+  final working = [for (final set in sets) if (!set.isWarmup) set];
+  if (working.isEmpty) return null;
+  final stillProgrammed = working.every(
+    (set) => setStillHoldsProgrammedPrescription(
+      reps: set.reps,
+      weight: set.weight,
+      targetReps: targetReps,
+      targetWeight: targetWeight,
+    ),
+  );
+  if (!stillProgrammed) return null;
+  final goal = (targetReps ?? '').trim();
+  final predicted = predictWorkoutGoals(
+    exerciseName,
+    history,
+    currentTargetReps: goal,
+    excludeDateKey: excludeDateKey,
+    lockRepGoal: goal.isNotEmpty,
+    ignoreStoredGoalWeight: true,
+    displayUnit: displayUnit,
+  );
+  if (!predicted.hasHistory) return null;
+  final fill = loggedSetFill(
+    exerciseName: exerciseName,
+    history: history,
+    currentTargetReps: goal,
+    excludeDateKey: excludeDateKey,
+    libraryId: libraryId,
+    bodyWeightLbs: bodyWeightLbs,
+    displayUnit: displayUnit,
+  );
+  if (fill == null) return null;
+  final goalReps = predicted.suggestedReps.trim();
+  return UnloggedProgression(
+    targetReps: goalReps.isEmpty ? goal : goalReps,
+    targetWeight: fill.weight,
+    setReps: fill.reps,
+    setWeight: fill.weight,
+  );
+}
+
+bool _repsLookLikeRange(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty || RegExp(r'^\d+$').hasMatch(trimmed)) return false;
+  return RegExp(r'\d+\s*[-–]\s*\d+').hasMatch(trimmed);
+}
+
 const double _lbsPerKg = 2.2046226218;
 
 class _WorkSession {

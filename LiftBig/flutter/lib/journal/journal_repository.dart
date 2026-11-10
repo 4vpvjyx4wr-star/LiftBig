@@ -10,6 +10,7 @@ import '../ids.dart';
 import '../model/journal_day.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../rest/rest_timer_state.dart';
+import '../utils/barbell_compound.dart';
 import '../utils/distance_units.dart';
 import '../utils/variable_machine.dart';
 import '../utils/weight_units.dart';
@@ -45,8 +46,11 @@ abstract final class SettingKeys {
   static const templatesJson = 'templates_json';
   static const settingsJson = 'settings_json';
   static const autoFillSets = 'auto_fill_sets';
+  static const autoAdvanceWeightToReps = 'auto_advance_weight_to_reps';
   static const startTimerOnDone = 'start_timer_on_done';
   static const logSetDifficulty = 'log_set_difficulty';
+  static const showPlateGraphic = 'show_plate_graphic';
+  static const plateBarLb = 'plate_bar_lb';
   static const proTesterUnlock = 'pro_tester_unlock';
   static const restTimerState = 'rest_timer_state';
   static const dailyLiftReminderEnabled = 'daily_lift_reminder_enabled';
@@ -435,8 +439,14 @@ class JournalRepository {
     });
   }
 
-  /// Writes the prediction onto empty, unchecked working sets for [dateKey].
-  /// Returns how many sets changed. Does nothing when auto-fill is off.
+  /// Writes the predicted weight onto empty unchecked sets for [dateKey].
+  ///
+  /// Rep counts are left blank so the log can show the goal as a hint. When
+  /// the lift has no checked sets and its working sets are still empty or
+  /// still the programmed prescription, the same weight prediction is written
+  /// onto the goal and those sets. A hand-edited goal and any set the lifter
+  /// already changed are left alone. Returns how many sets changed, or 1 when
+  /// only the goal changed. Does nothing when auto-fill is off.
   Future<int> prefillEmptySets(String dateKey) async {
     if (!await autoFillSetsEnabled()) return 0;
     final day = await getDay(dateKey);
@@ -447,6 +457,36 @@ class JournalRepository {
     var wrote = 0;
     for (final exercise in day.exercises) {
       if (exercise.isCircuit || exercise.isCardio) continue;
+      final progression = progressionForUnloggedExercise(
+        exerciseName: exercise.name,
+        libraryId: exercise.libraryId,
+        bodyWeightLbs: bodyWeightLbs,
+        history: history,
+        sets: [
+          for (final set in exercise.sets)
+            UnloggedSetSnapshot(
+              reps: set.reps,
+              weight: set.weight,
+              checked: set.checked,
+              isWarmup: set.isWarmup,
+            ),
+        ],
+        targetReps: exercise.targetReps,
+        targetWeight: exercise.targetWeight,
+        prescribedReps: exercise.prescribedReps,
+        prescribedWeight: exercise.prescribedWeight,
+        prescribedSetCount: exercise.prescribedSetCount,
+        excludeDateKey: dateKey,
+        displayUnit: displayUnit,
+      );
+      if (progression != null) {
+        wrote += await _writeUnloggedProgression(
+          dateKey: dateKey,
+          exercise: exercise,
+          progression: progression,
+        );
+        continue;
+      }
       final fill = loggedSetFill(
         exerciseName: exercise.name,
         libraryId: exercise.libraryId,
@@ -462,11 +502,44 @@ class JournalRepository {
         if (set.reps.trim().isNotEmpty || set.weight.trim().isNotEmpty) {
           continue;
         }
-        await updateSet(set.id, reps: fill.reps, weight: fill.weight);
+        await updateSet(set.id, weight: fill.weight);
         wrote += 1;
       }
     }
     return wrote;
+  }
+
+  Future<int> _writeUnloggedProgression({
+    required String dateKey,
+    required JournalExercise exercise,
+    required UnloggedProgression progression,
+  }) async {
+    final repsChanged =
+        (exercise.targetReps ?? '').trim() != progression.targetReps.trim();
+    final weightChanged = !storedWeightsMatch(
+      exercise.targetWeight ?? '',
+      progression.targetWeight,
+    );
+    if (repsChanged || weightChanged) {
+      await (db.update(
+        db.exercises,
+      )..where((row) => row.id.equals(exercise.id))).write(
+        ExercisesCompanion(
+          targetReps: Value(_blankToNull(progression.targetReps)),
+          targetWeight: Value(_blankToNull(progression.targetWeight)),
+        ),
+      );
+      await _touchDay(dateKey);
+    }
+    var setsWrote = 0;
+    for (final set in exercise.sets) {
+      if (set.isWarmup || set.checked) continue;
+      if (storedWeightsMatch(set.weight, progression.setWeight)) continue;
+      await updateSet(set.id, weight: progression.setWeight);
+      setsWrote += 1;
+    }
+    if (setsWrote > 0) return setsWrote;
+    return (repsChanged || weightChanged) ? 1 : 0;
   }
 
   Future<void> updateTargetRestSeconds(String exerciseId, int seconds) async {
@@ -535,6 +608,48 @@ class JournalRepository {
     });
   }
 
+  /// Copies [weight] onto every later set of [exerciseId] that is not checked.
+  ///
+  /// Sets before [fromSetId] stay as they are. A set already marked done stays,
+  /// including when it already has a number. [fromSetId] itself is not written.
+  Future<void> propagateWeightToLaterSets({
+    required String exerciseId,
+    required String fromSetId,
+    required String weight,
+  }) async {
+    if (exerciseId.isEmpty || fromSetId.isEmpty) {
+      throw ArgumentError('Exercise and set are required.');
+    }
+    final stored = weight.trim();
+    await db.transaction(() async {
+      final exercise = await (db.select(
+        db.exercises,
+      )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
+      final sets = await (db.select(
+        db.workoutSets,
+      )..where((row) => row.exerciseId.equals(exerciseId))).get();
+      final ordered = [...sets]
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      final fromIndex = ordered.indexWhere((set) => set.id == fromSetId);
+      if (fromIndex < 0) {
+        throw ArgumentError('Set not found.');
+      }
+      var changed = false;
+      for (var index = fromIndex + 1; index < ordered.length; index++) {
+        final set = ordered[index];
+        if (set.checked) continue;
+        if (set.weight.trim() == stored) continue;
+        await (db.update(
+          db.workoutSets,
+        )..where((row) => row.id.equals(set.id))).write(
+          WorkoutSetsCompanion(weight: Value(stored)),
+        );
+        changed = true;
+      }
+      if (changed && exercise != null) await _touchDay(exercise.dateKey);
+    });
+  }
+
   /// Removes one set. The exercise stays, even if it has no sets left.
   Future<void> deleteSet(String setId) async {
     if (setId.isEmpty) return;
@@ -581,7 +696,11 @@ class JournalRepository {
     });
   }
 
-  /// Swaps this exercise for another library lift and keeps its set rows.
+  /// Swaps this exercise for another library lift.
+  ///
+  /// Checked sets stay logged. Unchecked sets drop the previous lift's reps
+  /// and weight, a warmup is removed when the new lift does not qualify, and
+  /// the rest are filled from the new name's history with today excluded.
   Future<void> replaceExercise({
     required String exerciseId,
     required String name,
@@ -593,12 +712,33 @@ class JournalRepository {
     if (exerciseId.isEmpty || trimmed.isEmpty) {
       throw ArgumentError('Exercise is required.');
     }
+    final existing = await (db.select(
+      db.exercises,
+    )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
+    if (existing == null) throw ArgumentError('Exercise not found.');
+    final history = historySetsFromDays(await allDays());
+    final bodyWeightLbs = await storedBodyWeightLbs();
+    final displayUnit = (await storedWeightUnit()) == WeightUnit.kg ? 'kg' : 'lb';
+    final nextLibraryId = _blankToNull(libraryId);
+    final fill = isCardio
+        ? null
+        : loggedSetFill(
+            exerciseName: trimmed,
+            libraryId: nextLibraryId,
+            bodyWeightLbs: bodyWeightLbs,
+            history: history,
+            currentTargetReps: existing.targetReps,
+            excludeDateKey: existing.dateKey,
+            displayUnit: displayUnit,
+          );
+    final qualifyingWarmup =
+        !isCardio &&
+        qualifiesForWarmupPrescription(trimmed, libraryId: nextLibraryId);
     await db.transaction(() async {
       final exercise = await (db.select(
         db.exercises,
       )..where((row) => row.id.equals(exerciseId))).getSingleOrNull();
       if (exercise == null) throw ArgumentError('Exercise not found.');
-      final nextLibraryId = _blankToNull(libraryId);
       final priorLibraryId = exercise.libraryId?.trim();
       final priorPreferred = decodeStringList(exercise.preferredSwapLibraryIds);
       final nextPreferred = <String>[
@@ -618,8 +758,29 @@ class JournalRepository {
           isCore: Value(isCore && !isCardio),
           isCircuit: const Value(false),
           preferredSwapLibraryIds: Value(encodeStringList(nextPreferred)),
+          targetWeight: Value(_blankToNull(isCardio ? null : fill?.weight)),
         ),
       );
+      final sets = await (db.select(
+        db.workoutSets,
+      )..where((row) => row.exerciseId.equals(exerciseId))).get();
+      final warmWeight = warmupWeightLbsFromWorking(fill?.weight ?? '') ?? '';
+      for (final set in sets) {
+        if (set.checked) continue;
+        if (set.isWarmup && !qualifyingWarmup) {
+          await (db.delete(
+            db.workoutSets,
+          )..where((row) => row.id.equals(set.id))).go();
+          continue;
+        }
+        final reps = set.isWarmup ? (fill == null ? '' : '5') : (fill?.reps ?? '');
+        final weight = set.isWarmup ? warmWeight : (fill?.weight ?? '');
+        await (db.update(
+          db.workoutSets,
+        )..where((row) => row.id.equals(set.id))).write(
+          WorkoutSetsCompanion(reps: Value(reps), weight: Value(weight)),
+        );
+      }
       await _touchDay(exercise.dateKey);
     });
   }
@@ -1059,6 +1220,20 @@ class JournalRepository {
     return _put(SettingKeys.autoFillSets, enabled ? 'true' : 'false');
   }
 
+  /// On unless the stored value is the word `false`.
+  Future<bool> autoAdvanceWeightToRepsEnabled() async {
+    return autoAdvanceWeightToRepsFromStored(
+      await _get(SettingKeys.autoAdvanceWeightToReps),
+    );
+  }
+
+  Future<void> setAutoAdvanceWeightToRepsEnabled(bool enabled) {
+    return _put(
+      SettingKeys.autoAdvanceWeightToReps,
+      enabled ? 'true' : 'false',
+    );
+  }
+
   /// Off unless the stored value is the word `true`.
   Future<bool> startTimerOnDone() async {
     return startTimerOnDoneFromStored(await _get(SettingKeys.startTimerOnDone));
@@ -1084,6 +1259,25 @@ class JournalRepository {
 
   Future<void> setPrescribeWarmupEnabled(bool enabled) {
     return _put(SettingKeys.prescribeWarmup, enabled ? 'true' : 'false');
+  }
+
+  /// On unless the stored value is the word `false`.
+  Future<bool> showPlateGraphicEnabled() async {
+    return showPlateGraphicFromStored(await _get(SettingKeys.showPlateGraphic));
+  }
+
+  Future<void> setShowPlateGraphicEnabled(bool enabled) {
+    return _put(SettingKeys.showPlateGraphic, enabled ? 'true' : 'false');
+  }
+
+  /// 45 lb bar, or 35 when that plate-calculator preset is stored.
+  Future<double> storedPlateBarLb() async {
+    return standardBarLbFromStored(await _get(SettingKeys.plateBarLb));
+  }
+
+  Future<void> setPlateBarLb(double lbs) {
+    final stored = standardBarLbFromStored(lbs.toString());
+    return _put(SettingKeys.plateBarLb, stored.toString());
   }
 
   /// Plans starred from the Plans tab. Local only, so they survive a restart.
@@ -1197,14 +1391,22 @@ class JournalRepository {
 
   /// Edits this day's set count, reps, and weight. The first edit stores the
   /// plan snapshot used by [revertExerciseGoal].
+  ///
+  /// When [writeTargetWeight] is true, that weight is written onto every
+  /// unchecked set. A rep goal fills empty rep fields and leaves a count that
+  /// is already entered. Pass [writeTargetWeight] false after a swap so the
+  /// previous lift's weight is not put back.
   Future<void> updateExerciseGoal({
     required String exerciseId,
     required String? targetReps,
     required String? targetWeight,
     required int setCount,
+    bool writeTargetWeight = true,
   }) async {
     if (exerciseId.isEmpty) throw ArgumentError('Exercise is required.');
     final count = setCount.clamp(0, 30);
+    final goalReps = (targetReps ?? '').trim();
+    final goalWeight = (targetWeight ?? '').trim();
     await db.transaction(() async {
       final exercise = await (db.select(
         db.exercises,
@@ -1217,11 +1419,16 @@ class JournalRepository {
           exercise.prescribedReps == null &&
           exercise.prescribedWeight == null &&
           exercise.prescribedSetCount == null;
+      final weightForNew = writeTargetWeight
+          ? goalWeight
+          : (exercise.targetWeight ?? '');
       await (db.update(db.exercises)..where((row) => row.id.equals(exerciseId)))
           .write(
         ExercisesCompanion(
           targetReps: Value(_blankToNull(targetReps)),
-          targetWeight: Value(_blankToNull(targetWeight)),
+          targetWeight: writeTargetWeight
+              ? Value(_blankToNull(targetWeight))
+              : const Value.absent(),
           prescribedReps: snapshotMissing
               ? Value(exercise.targetReps)
               : const Value.absent(),
@@ -1237,9 +1444,27 @@ class JournalRepository {
         exerciseId: exerciseId,
         sets: sets,
         count: count,
-        repsForNew: targetReps ?? '',
-        weightForNew: targetWeight ?? '',
+        repsForNew: goalReps,
+        weightForNew: weightForNew,
       );
+      final refreshed = await (db.select(
+        db.workoutSets,
+      )..where((row) => row.exerciseId.equals(exerciseId))).get();
+      for (final set in refreshed) {
+        if (set.checked) continue;
+        final replaceReps = _replaceEmptyRepField(set.reps, goalReps);
+        if (!replaceReps && !writeTargetWeight) continue;
+        await (db.update(
+          db.workoutSets,
+        )..where((row) => row.id.equals(set.id))).write(
+          WorkoutSetsCompanion(
+            reps: replaceReps ? Value(goalReps) : const Value.absent(),
+            weight: writeTargetWeight
+                ? Value(goalWeight)
+                : const Value.absent(),
+          ),
+        );
+      }
       await _touchDay(exercise.dateKey);
     });
   }
@@ -1828,4 +2053,10 @@ String? _blankToNull(String? value) {
   if (value == null) return null;
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+/// A rep goal replaces a blank or a stored range. A number already entered stays.
+bool _replaceEmptyRepField(String stored, String nextReps) {
+  if (nextReps.trim().isEmpty) return false;
+  return !RegExp(r'^\d+$').hasMatch(stored.trim());
 }

@@ -15,7 +15,9 @@ import '../journal/set_prescription.dart';
 import '../journal/machine_starting_weight_settings.dart';
 import '../model/journal_day.dart';
 import '../pro/pro_status.dart';
+import '../utils/barbell_compound.dart';
 import '../utils/distance_units.dart';
+import '../utils/plates.dart';
 import '../utils/variable_machine.dart';
 import '../utils/weight_units.dart';
 import '../rest/rest_timer_controller.dart';
@@ -27,10 +29,10 @@ import 'clear_day.dart';
 import 'day_transfer.dart';
 import 'one_rep_max_calculator_page.dart';
 import 'plate_calculator_page.dart';
-import 'rest_timer_banner.dart';
 import 'rest_timer_scope.dart';
 import 'machine_plates_hint.dart';
 import 'exercise_info_sheet.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 import 'set_value_sheet.dart';
 import 'swap_exercise_sheet.dart';
@@ -54,8 +56,9 @@ class DayPage extends StatefulWidget {
     required this.journal,
     required this.dateKey,
     this.refreshToken = 0,
-    this.embedRestBanner = true,
+    this.embedRestBanner = false,
     this.onOpenSettings,
+    this.onWorkoutFinished,
     this.initialExerciseId,
   });
 
@@ -63,13 +66,17 @@ class DayPage extends StatefulWidget {
   final String dateKey;
   final Future<void> Function()? onOpenSettings;
 
+  /// Called when Done finishes a workout that is not on its own route.
+  final VoidCallback? onWorkoutFinished;
+
   /// Lift to bring into view after the day loads.
   final String? initialExerciseId;
 
   /// Bumped by the shell after import or when this tab is opened again.
   final int refreshToken;
 
-  /// False when the tab shell already shows the app-wide rest banner.
+  /// The rest card floats above every route. This only keeps the old bottom
+  /// inset for a caller that still wants the log clear of that card.
   final bool embedRestBanner;
 
   @override
@@ -92,6 +99,7 @@ class _DayPageState extends State<DayPage> {
   var _priorNotes = <String, List<PriorExerciseNote>>{};
   var _loaded = false;
   var _didScrollToExercise = false;
+  var _scrollGeneration = 0;
   final _exerciseKeys = <String, GlobalKey>{};
   var _adding = false;
   var _averageRest = defaultAverageRestSeconds;
@@ -106,6 +114,9 @@ class _DayPageState extends State<DayPage> {
   var _autoAdvance = true;
   var _startTimerOnDone = false;
   var _logDifficulty = false;
+  var _showPlateGraphic = true;
+  var _barLb = defaultBarLb;
+  var _plateRouteCurrent = true;
   String? _nameError;
   late final JournalHealthSync _healthSync;
   late final CompanionBridge _companion;
@@ -138,9 +149,14 @@ class _DayPageState extends State<DayPage> {
   @override
   void didUpdateWidget(DayPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.dateKey != widget.dateKey ||
-        oldWidget.refreshToken != widget.refreshToken) {
+    final exerciseChanged =
+        oldWidget.initialExerciseId != widget.initialExerciseId;
+    final dateChanged = oldWidget.dateKey != widget.dateKey;
+    if (exerciseChanged || dateChanged) _didScrollToExercise = false;
+    if (dateChanged || oldWidget.refreshToken != widget.refreshToken) {
       _load();
+    } else if (exerciseChanged) {
+      _scheduleScrollToExercise();
     }
   }
 
@@ -153,6 +169,22 @@ class _DayPageState extends State<DayPage> {
       _restTimer = next;
       _restTimer!.addListener(_onRestTimerChanged);
     }
+    final routeCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    if (routeCurrent && !_plateRouteCurrent) {
+      _refreshPlateGraphic();
+    }
+    _plateRouteCurrent = routeCurrent;
+  }
+
+  Future<void> _refreshPlateGraphic() async {
+    final show = await widget.journal.showPlateGraphicEnabled();
+    final bar = await widget.journal.storedPlateBarLb();
+    if (!mounted) return;
+    if (show == _showPlateGraphic && bar == _barLb) return;
+    setState(() {
+      _showPlateGraphic = show;
+      _barLb = bar;
+    });
   }
 
   void _onRestTimerChanged() {
@@ -192,13 +224,15 @@ class _DayPageState extends State<DayPage> {
   Future<void> _load({bool prefill = true, bool syncHealth = false}) async {
     try {
       var day = await widget.journal.getDay(widget.dateKey);
-      final settings = await widget.journal.localCloudSettings();
       final weightUnit = await widget.journal.storedWeightUnit();
       final distanceUnit = await widget.journal.storedDistanceUnit();
       final averageRest = await widget.journal.storedAverageRestSeconds();
       final autoFill = await widget.journal.autoFillSetsEnabled();
+      final autoAdvance = await widget.journal.autoAdvanceWeightToRepsEnabled();
       final timerOnDone = await widget.journal.startTimerOnDone();
       final logDifficulty = await widget.journal.logSetDifficultyEnabled();
+      final showPlateGraphic = await widget.journal.showPlateGraphicEnabled();
+      final barLb = await widget.journal.storedPlateBarLb();
       var bodyLbs = await _bodyWeightService.importFromHealthIfEmpty();
       bodyLbs ??= await widget.journal.storedBodyWeightLbs();
       if (!mounted) return;
@@ -229,13 +263,15 @@ class _DayPageState extends State<DayPage> {
         _weightUnit = weightUnit;
         _distanceUnit = distanceUnit;
         _averageRest = averageRest;
-        _autoAdvance = autoAdvanceFromSettings(settings?.settingsJson);
+        _autoAdvance = autoAdvance;
         _startTimerOnDone = timerOnDone;
         _logDifficulty = logDifficulty;
+        _showPlateGraphic = showPlateGraphic;
+        _barLb = barLb;
       });
       if (syncHealth) _healthSync.scheduleDay(widget.dateKey);
-      await _publishWatch();
       _scheduleScrollToExercise();
+      await _publishWatch();
     } catch (error) {
       if (!mounted) return;
       setState(() => _loaded = true);
@@ -249,19 +285,57 @@ class _DayPageState extends State<DayPage> {
 
   void _scheduleScrollToExercise() {
     final id = widget.initialExerciseId;
-    if (id == null || _didScrollToExercise) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _didScrollToExercise) return;
-      final target = _exerciseKeys[id]?.currentContext;
-      if (target == null) return;
+    if (id == null || id.isEmpty || _didScrollToExercise) return;
+    final generation = ++_scrollGeneration;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _revealExercise(id, generation, 0),
+    );
+  }
+
+  /// Brings [id] to the top of the day log.
+  ///
+  /// The log lays out every exercise, so the key exists even when that lift
+  /// starts below the fold. A post-frame pass can still run before the scroll
+  /// view has a real extent, which used to mark the scroll done at offset 0.
+  void _revealExercise(String id, int generation, int attempt) {
+    if (!mounted || _didScrollToExercise || _scrollGeneration != generation) {
+      return;
+    }
+    if (widget.initialExerciseId != id) return;
+    if (attempt > 24) return;
+    final present =
+        _day?.exercises.any((exercise) => exercise.id == id) ?? false;
+    if (_loaded && !present) return;
+    final target = _exerciseKeys[id]?.currentContext;
+    if (target != null && _revealExerciseInView(target)) {
       _didScrollToExercise = true;
-      Scrollable.ensureVisible(
-        target,
-        alignment: 0.08,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    });
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _revealExercise(id, generation, attempt + 1),
+    );
+  }
+
+  /// Jumps the day log so [target] sits near the top. Returns true only once
+  /// that position has been applied and the card intersects the viewport.
+  bool _revealExerciseInView(BuildContext target) {
+    final scrollable = Scrollable.maybeOf(target);
+    final box = target.findRenderObject();
+    if (scrollable == null || box is! RenderBox || !box.hasSize || !box.attached) {
+      return false;
+    }
+    final viewportObject = scrollable.context.findRenderObject();
+    if (viewportObject is! RenderBox || !viewportObject.hasSize) return false;
+    final position = scrollable.position;
+    if (!position.hasContentDimensions || !position.hasPixels) return false;
+    final viewportHeight = viewportObject.size.height;
+    if (viewportHeight <= 0) return false;
+    final before = position.pixels;
+    Scrollable.ensureVisible(target, alignment: 0.08, duration: Duration.zero);
+    if ((position.pixels - before).abs() > 1) return false;
+    final top = box.localToGlobal(Offset.zero).dy -
+        viewportObject.localToGlobal(Offset.zero).dy;
+    return top < viewportHeight && top + box.size.height > 0;
   }
 
   void _applyHeader(JournalDay? day) {
@@ -427,13 +501,37 @@ class _DayPageState extends State<DayPage> {
 
   Future<void> _saveWeight(String setId, String weight) async {
     final stored = _displayWeightToStored(setId, weight);
+    final exercise = _exerciseForSet(setId);
     try {
       await _writeSet(
         setId,
         () => widget.journal.updateSet(setId, weight: stored),
       );
+      if (exercise == null) return;
+      await widget.journal.propagateWeightToLaterSets(
+        exerciseId: exercise.id,
+        fromSetId: setId,
+        weight: stored,
+      );
+      _showWeightOnLaterSets(_exerciseForSet(setId) ?? exercise, setId, weight);
     } catch (error) {
       if (mounted) _snack('$error');
+    }
+  }
+
+  void _showWeightOnLaterSets(
+    JournalExercise exercise,
+    String fromSetId,
+    String display,
+  ) {
+    final origin = exercise.sets.indexWhere((set) => set.id == fromSetId);
+    if (origin < 0) return;
+    for (var index = origin + 1; index < exercise.sets.length; index++) {
+      final set = exercise.sets[index];
+      if (set.checked) continue;
+      final controller = _weights[set.id];
+      if (controller == null || controller.text == display) continue;
+      controller.text = display;
     }
   }
 
@@ -637,11 +735,13 @@ class _DayPageState extends State<DayPage> {
       controller: _bodyWeight,
       focusNode: _bodyWeightFocus,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.done,
       decoration: InputDecoration(
         labelText: 'Body weight ($unit)',
         hintText: 'Optional — same as Settings',
       ),
       onChanged: _saveBodyWeight,
+      onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
     );
   }
 
@@ -753,14 +853,12 @@ class _DayPageState extends State<DayPage> {
   Future<void> _finishWorkout() async {
     await _healthSync.syncDay(widget.dateKey, honorToggle: false);
     if (!mounted) return;
-    await _load();
-    if (!mounted) return;
-    final kcal = _day?.healthEnergyKcal;
-    if (kcal == null) {
-      _snack('Workout saved. Active calories show up when Apple Health has them.');
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop(true);
       return;
     }
-    _snack('${formatRoundedNumber(kcal, 0)} active kcal saved on this workout.');
+    widget.onWorkoutFinished?.call();
   }
 
   Future<void> _onCompanionMessage(String raw) async {
@@ -919,13 +1017,13 @@ class _DayPageState extends State<DayPage> {
         ? ''
         : storedLbsToDisplay(storedGoal, _weightUnit);
     final opening = logged.isNotEmpty ? logged : programmed;
-    final goalWeight = exercise.targetWeight ?? '';
-    final goal = index == 0
-        ? snapWeightOption(
-            storedLbsToDisplay(goalWeight, _weightUnit),
+    final goal = storedGoal.isEmpty
+        ? null
+        : snapWeightOption(
+            storedLbsToDisplay(storedGoal, _weightUnit),
             _weightUnit,
-          )
-        : null;
+          );
+    assert(index >= 0);
     final maxDisplay = weightPickerMaxForUnit(_weightUnit);
     final step = weightPickerStepForUnit(_weightUnit);
     final next = await showSetValueSheet(
@@ -945,10 +1043,12 @@ class _DayPageState extends State<DayPage> {
     _weights[set.id]?.text = next;
     await _saveWeight(set.id, next);
     if (!mounted) return;
+    final loggedReps = (_reps[set.id]?.text ?? loggedRepsField(set.reps)).trim();
     final advance = advanceAfterWeight(
       enabled: _autoAdvance,
       weight: next,
       setId: set.id,
+      loggedReps: loggedReps,
     );
     if (advance == null) return;
     await _editReps(exercise, set, index);
@@ -965,35 +1065,40 @@ class _DayPageState extends State<DayPage> {
       storedReps: set.reps,
     );
     final openingCount = repSheetOpeningCount(
-      loggedReps: set.reps,
+      loggedReps: field.isNotEmpty ? field : set.reps,
       goalReps: goal,
     );
     final opening = openingCount?.toString() ?? field;
+    final pickerMax = repSheetGoalPickerMax(goal) ?? repsPickerMax;
     final next = await showSetValueSheet(
       context,
       title: 'Reps',
       initial: opening,
       goalLabel: goal,
       selectAll: opening.isNotEmpty,
-      options: repsPickerOptions(),
+      options: repsPickerOptions(max: pickerMax),
       sliderMin: 1,
-      sliderMax: repsPickerMax.toDouble(),
-      sliderDivisions: repsPickerMax - 1,
+      sliderMax: pickerMax.toDouble(),
+      sliderDivisions: pickerMax <= 1 ? 1 : pickerMax - 1,
       sliderStep: 1,
     );
-    if (!mounted || next == null || next.trim() == field) return;
-    _reps[set.id]?.text = next;
-    await _saveReps(set.id, next);
+    if (!mounted || next == null) return;
+    final trimmed = next.trim();
+    if (trimmed.isEmpty || trimmed == field) return;
+    _reps[set.id]?.text = trimmed;
+    await _saveReps(set.id, trimmed);
     if (!mounted) return;
     final nextIndex = index + 1;
     if (nextIndex >= exercise.sets.length) return;
+    final nextSet = exercise.sets[nextIndex];
     final advance = advanceAfterReps(
       enabled: _autoAdvance,
-      reps: next,
-      nextSetId: exercise.sets[nextIndex].id,
+      reps: trimmed,
+      nextSetId: nextSet.id,
+      nextWeight: _weights[nextSet.id]?.text ?? '',
     );
     if (advance == null) return;
-    await _editWeight(exercise, exercise.sets[nextIndex], nextIndex);
+    await _editWeight(exercise, nextSet, nextIndex);
   }
 
   Future<void> _setDifficulty(JournalSet set, String? difficulty) async {
@@ -1242,8 +1347,7 @@ class _DayPageState extends State<DayPage> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    showLiftBigNotice(context, message);
   }
 
   @override
@@ -1254,15 +1358,21 @@ class _DayPageState extends State<DayPage> {
     final restDay = day?.isRestDay == true && exercises.isEmpty;
 
     final blocks = groupExercisesForDisplay(exercises);
-    final rest = _restTimer;
-    final showBanner =
-        widget.embedRestBanner && rest != null && rest.isActive;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final view = View.of(context);
+    final rawKeyboard = view.viewInsets.bottom / view.devicePixelRatio;
+    final keyboardOpen = keyboardInset > 0 || rawKeyboard > 0;
+    final keyboardLift = keyboardOpen
+        ? keyboardInset + KeyboardDismissScaffold.toolbarHeight
+        : 0.0;
     Widget logBody = !_loaded
         ? const Center(child: CircularProgressIndicator())
-        : ListView(
+        : SingleChildScrollView(
             physics: const ClampingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-            children: [
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 32 + keyboardLift),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -1450,30 +1560,12 @@ class _DayPageState extends State<DayPage> {
                   child: const Text('Done'),
                 ),
               ],
-            ],
-          );
-    final restBanner = showBanner
-        ? Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: RestTimerBanner(
-              remaining: rest.remaining,
-              running: rest.isRunning,
-              exerciseName: rest.snapshot.exerciseName,
-              onPause: () => rest.togglePause(),
-              onReset: () {
-                final snap = rest.snapshot;
-                rest.reset(
-                  fullSeconds: snap.fullSeconds > 0 ? snap.fullSeconds : 60,
-                );
-              },
-              onDismiss: () => rest.dismiss(),
+              ],
             ),
-          )
-        : null;
+          );
     final chosenRest = day?.chosenRestSeconds ?? _averageRest;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: context.liftBig.background,
       appBar: AppBar(
         backgroundColor: context.liftBig.background,
@@ -1539,11 +1631,30 @@ class _DayPageState extends State<DayPage> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          logBody,
-          ?restBanner,
-        ],
+      body: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) => dismissKeyboardIfOutside(event.position),
+        child: Stack(
+          children: [
+            SafeArea(
+              top: false,
+              bottom: widget.embedRestBanner && !keyboardOpen,
+              child: PlateGraphicConfig(
+                showGraphic: _showPlateGraphic,
+                barLb: _barLb,
+                child: logBody,
+              ),
+            ),
+            if (keyboardOpen)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: keyboardInset,
+                height: KeyboardDismissScaffold.toolbarHeight,
+                child: const KeyboardDoneBar(),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1851,29 +1962,24 @@ class _ExerciseCard extends StatelessWidget {
       onDelete: () => onDeleteSet(set.id),
       onEditWeight: () => onEditWeight(exercise, set, index),
       onEditReps: () => onEditReps(exercise, set, index),
-      restTimerSlot: _restTimerSlot(context, primary: index == 0),
+      repsHint: _repsGhost(set),
       machineKind: kind,
       machineStarting: starting,
       weightUnit: weightUnit,
+      barbellPlates: isBarbellCompoundPlateLift(
+        libraryId: exercise.libraryId,
+        name: exercise.name,
+      ),
     );
   }
 
-  Widget _restTimerSlot(BuildContext context, {bool primary = true}) {
-    final hint = restHintSeconds;
-    if (hint != null && primary) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Text(
-          formatRestClock(hint),
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: hint == 0 ? context.liftBig.success : context.liftBig.foreground,
-          ),
-        ),
-      );
-    }
-    return _TimerButton(onStart: onStartTimer, onEdit: onEditTimer);
+  String _repsGhost(JournalSet set) {
+    final goal = goalRepsForSet(
+      targetReps: exercise.targetReps,
+      storedReps: set.reps,
+    )?.trim();
+    if (goal != null && goal.isNotEmpty) return goal;
+    return 'Reps';
   }
 
   @override
@@ -1917,9 +2023,11 @@ class _ExerciseCard extends StatelessWidget {
               IconButton(
                 tooltip: 'Exercise info',
                 onPressed: onInfo,
-                visualDensity: VisualDensity.compact,
                 color: context.liftBig.primary,
-                icon: const Icon(Icons.info_outline, size: 20),
+                iconSize: 28,
+                padding: const EdgeInsets.all(10),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: const Icon(Icons.info_outline),
               ),
               IconButton(
                 tooltip: 'Swap lift',
@@ -2005,7 +2113,6 @@ class _ExerciseCard extends StatelessWidget {
               onWeight: onWeight,
               onCalories: (value) => onCalories(exercise.id, value),
               onChecked: (set, value) => onChecked(exercise, set, value),
-              restTimerSlot: _restTimerSlot(context),
             )
           else if (exercise.isCircuit)
             for (var index = 0; index < exercise.sets.length; index++)
@@ -2018,7 +2125,6 @@ class _ExerciseCard extends StatelessWidget {
                 showDifficulty: showDifficulty,
                 onDifficulty: (value) =>
                     onDifficulty(exercise.sets[index], value),
-                restTimerSlot: _restTimerSlot(context, primary: index == 0),
                 onDelete: () => onDeleteSet(exercise.sets[index].id),
               )
           else ...[
@@ -2036,13 +2142,20 @@ class _ExerciseCard extends StatelessWidget {
               _setFields(context, row.$1, row.$2, row.$3),
           ],
           if (!_cardio)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onAddSet,
-                icon: const Icon(Icons.add),
-                label: Text(exercise.isCircuit ? 'Add round' : 'Add set'),
-              ),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: onAddSet,
+                  icon: const Icon(Icons.add),
+                  label: Text(exercise.isCircuit ? 'Add round' : 'Add set'),
+                ),
+                const Spacer(),
+                _ExerciseRestButton(
+                  remaining: restHintSeconds,
+                  onStart: onStartTimer,
+                  onEdit: onEditTimer,
+                ),
+              ],
             ),
         ],
       ),
@@ -2093,7 +2206,6 @@ class _CardioFields extends StatelessWidget {
     required this.onWeight,
     required this.onCalories,
     required this.onChecked,
-    required this.restTimerSlot,
   });
 
   final JournalExercise exercise;
@@ -2104,7 +2216,6 @@ class _CardioFields extends StatelessWidget {
   final Future<void> Function(String setId, String weight) onWeight;
   final ValueChanged<String> onCalories;
   final void Function(JournalSet set, bool checked) onChecked;
-  final Widget restTimerSlot;
 
   @override
   Widget build(BuildContext context) {
@@ -2170,7 +2281,6 @@ class _CardioFields extends StatelessWidget {
               onChanged: (value) => onChecked(set, value ?? false),
             ),
             const Text('Done'),
-            restTimerSlot,
           ],
         ),
       ],
@@ -2186,7 +2296,6 @@ class _CircuitRow extends StatelessWidget {
     required this.onChecked,
     required this.showDifficulty,
     required this.onDifficulty,
-    required this.restTimerSlot,
     required this.onDelete,
   });
 
@@ -2196,7 +2305,6 @@ class _CircuitRow extends StatelessWidget {
   final ValueChanged<bool> onChecked;
   final bool showDifficulty;
   final ValueChanged<String?> onDifficulty;
-  final Widget restTimerSlot;
   final VoidCallback onDelete;
 
   @override
@@ -2222,7 +2330,6 @@ class _CircuitRow extends StatelessWidget {
                 ),
               ),
             ),
-          restTimerSlot,
           Expanded(
             child: Text(
               'Set ${index + 1}  ${_circuitLine(exercise, set)}',
@@ -2248,35 +2355,61 @@ class _GoalEditPencil extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: IconButton(
-        tooltip: tooltip,
-        onPressed: onPressed,
-        padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-        constraints: const BoxConstraints.tightFor(width: 22, height: 22),
-        icon:  Icon(Icons.edit, size: 14, color: context.liftBig.muted),
-      ),
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      padding: const EdgeInsets.all(10),
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      icon: Icon(Icons.edit, size: 26, color: context.liftBig.muted),
     );
   }
 }
 
-class _TimerButton extends StatelessWidget {
-  const _TimerButton({required this.onStart, required this.onEdit});
+class _ExerciseRestButton extends StatelessWidget {
+  const _ExerciseRestButton({
+    required this.onStart,
+    required this.onEdit,
+    required this.remaining,
+  });
 
   final VoidCallback onStart;
   final VoidCallback onEdit;
+  final int? remaining;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: 'Start rest. Hold to change the time.',
-      onPressed: onStart,
-      onLongPress: onEdit,
-      visualDensity: VisualDensity.compact,
-      icon: const Icon(Icons.timer_outlined, size: 20),
+    final seconds = remaining;
+    return Tooltip(
+      message: 'Start rest. Hold to change the time.',
+      child: InkWell(
+        onTap: onStart,
+        onLongPress: onEdit,
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Center(
+              child: seconds == null
+                  ? Icon(
+                      Icons.timer_outlined,
+                      size: 20,
+                      color: context.liftBig.foreground,
+                    )
+                  : Text(
+                      formatRestClock(seconds),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: seconds == 0
+                            ? context.liftBig.success
+                            : context.liftBig.foreground,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2381,11 +2514,12 @@ class _SetFields extends StatelessWidget {
     required this.onDelete,
     required this.onEditWeight,
     required this.onEditReps,
-    required this.restTimerSlot,
+    required this.repsHint,
     this.duration,
     this.machineKind,
     this.machineStarting,
     this.weightUnit = WeightUnit.lb,
+    this.barbellPlates = false,
   });
 
   final int index;
@@ -2402,16 +2536,18 @@ class _SetFields extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onEditWeight;
   final VoidCallback onEditReps;
-  final Widget restTimerSlot;
+  final String repsHint;
   final VariableMachineKind? machineKind;
   final TextEditingController? machineStarting;
   final WeightUnit weightUnit;
+  final bool barbellPlates;
 
   @override
   Widget build(BuildContext context) {
     final labelColor = set.isWarmup
         ? const Color(0xFFFBBF24)
         : context.liftBig.muted;
+    final plates = PlateGraphicConfig.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -2455,7 +2591,7 @@ class _SetFields extends StatelessWidget {
                     flex: 2,
                     child: _LoggedValueBox(
                       controller: reps,
-                      hint: 'Reps',
+                      hint: repsHint,
                       onTap: onEditReps,
                     ),
                   ),
@@ -2506,6 +2642,13 @@ class _SetFields extends StatelessWidget {
               startingController: machineStarting!,
               weightController: weight,
               unit: weightUnit,
+              showGraphic: plates.showGraphic,
+            ),
+          if (barbellPlates && machineKind == null && plates.showGraphic)
+            BarbellSetPlateHint(
+              weightController: weight,
+              unit: weightUnit,
+              barLb: plates.barLb,
             ),
           Row(
             children: [
@@ -2531,7 +2674,6 @@ class _SetFields extends StatelessWidget {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                     ),
-                    restTimerSlot,
                   ],
                 ),
               ),

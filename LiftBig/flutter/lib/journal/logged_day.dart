@@ -33,6 +33,9 @@ bool autoAdvanceFromSettings(String? settingsJson) {
 /// Missing key means on. Only the stored word `false` turns it off.
 bool autoFillSetsFromStored(String? raw) => raw != 'false';
 
+/// Missing key means on. Only the stored word `false` turns it off.
+bool autoAdvanceWeightToRepsFromStored(String? raw) => raw != 'false';
+
 /// Missing key means off. Only the stored word `true` turns it on.
 bool startTimerOnDoneFromStored(String? raw) => raw == 'true';
 
@@ -80,24 +83,30 @@ class FieldAdvance {
   final bool toReps;
 }
 
-/// Weight, then that set's reps, when auto-advance is on and weight is filled.
+/// Weight, then that set's reps, when auto-advance is on, weight is filled,
+/// and the set does not already have logged reps.
 FieldAdvance? advanceAfterWeight({
   required bool enabled,
   required String weight,
   required String setId,
+  String loggedReps = '',
 }) {
   if (!enabled || weight.trim().isEmpty) return null;
+  if (loggedReps.trim().isNotEmpty) return null;
   return FieldAdvance.reps(setId);
 }
 
-/// Reps, then the next set's weight. Stops on the last set.
+/// Reps, then the next set's weight, unless that weight is already filled.
+/// Stops on the last set.
 FieldAdvance? advanceAfterReps({
   required bool enabled,
   required String reps,
   required String? nextSetId,
+  String nextWeight = '',
 }) {
   if (!enabled || reps.trim().isEmpty) return null;
   if (nextSetId == null || nextSetId.isEmpty) return null;
+  if (nextWeight.trim().isNotEmpty) return null;
   return FieldAdvance.weight(nextSetId);
 }
 
@@ -139,6 +148,7 @@ bool startsRestAfterSet(
   JournalExercise exercise,
   List<JournalExercise> dayExercises,
 ) {
+  if (exercise.isCardio) return false;
   final groupId = exercise.supersetGroupId?.trim();
   if (groupId == null || groupId.isEmpty) return true;
   final index = dayExercises.indexWhere((item) => item.id == exercise.id);

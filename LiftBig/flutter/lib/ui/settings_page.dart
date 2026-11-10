@@ -44,9 +44,11 @@ class _SettingsPageState extends State<SettingsPage> {
   final _password = TextEditingController();
   String? _authError;
   var _autoFill = true;
+  var _autoAdvanceWeightToReps = true;
   var _timerOnDone = false;
   var _logDifficulty = false;
   var _prescribeWarmup = false;
+  var _showPlateGraphic = true;
   var _proActive = false;
   late final ProStatus _proStatus;
   final _heightFeet = TextEditingController();
@@ -142,15 +144,19 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadLogging() async {
     final journal = widget.sync.journal;
     final autoFill = await journal.autoFillSetsEnabled();
+    final autoAdvance = await journal.autoAdvanceWeightToRepsEnabled();
     final timerOnDone = await journal.startTimerOnDone();
     final logDifficulty = await journal.logSetDifficultyEnabled();
     final prescribeWarmup = await journal.prescribeWarmupEnabled();
+    final showPlateGraphic = await journal.showPlateGraphicEnabled();
     if (!mounted) return;
     setState(() {
       _autoFill = autoFill;
+      _autoAdvanceWeightToReps = autoAdvance;
       _timerOnDone = timerOnDone;
       _logDifficulty = logDifficulty;
       _prescribeWarmup = prescribeWarmup;
+      _showPlateGraphic = showPlateGraphic;
     });
   }
 
@@ -171,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
         : result.storeActive
         ? 'Purchases restored.'
         : 'No active subscription found.';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    showLiftBigNotice(context, message);
   }
 
   Future<String?> _askRestoreCode() {
@@ -225,11 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
       final granted = await widget.dailyReminder.requestPermissionIfNeeded();
       if (!granted) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notification permission is required for reminders.'),
-          ),
-        );
+        showLiftBigNotice(context, 'Notification permission is required for reminders.');
         return;
       }
     }
@@ -280,6 +282,11 @@ class _SettingsPageState extends State<SettingsPage> {
     await widget.sync.journal.setAutoFillSetsEnabled(value);
   }
 
+  Future<void> _setAutoAdvanceWeightToReps(bool value) async {
+    setState(() => _autoAdvanceWeightToReps = value);
+    await widget.sync.journal.setAutoAdvanceWeightToRepsEnabled(value);
+  }
+
   Future<void> _setTimerOnDone(bool value) async {
     setState(() => _timerOnDone = value);
     await widget.sync.journal.setStartTimerOnDone(value);
@@ -293,6 +300,11 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _setPrescribeWarmup(bool value) async {
     setState(() => _prescribeWarmup = value);
     await widget.sync.journal.setPrescribeWarmupEnabled(value);
+  }
+
+  Future<void> _setShowPlateGraphic(bool value) async {
+    setState(() => _showPlateGraphic = value);
+    await widget.sync.journal.setShowPlateGraphicEnabled(value);
   }
 
   Future<void> _setWeightUnit(WeightUnit unit) async {
@@ -425,7 +437,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _import() async {
     final message = await showImportSheet(context, widget.sync.journal);
     if (message == null || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    showLiftBigNotice(context, message);
   }
 
   Future<void> _export() async {
@@ -439,14 +451,10 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       if (!mounted) return;
       if (saved == null) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup exported. Import can read this file.')),
-      );
+      showLiftBigNotice(context, 'Backup exported. Import can read this file.');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not export the backup. $error')),
-      );
+      showLiftBigNotice(context, 'Could not export the backup. $error');
     }
   }
 
@@ -676,9 +684,20 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
+                title: const Text('Open reps after saving weight'),
+                subtitle: Text(
+                  'On by default. Saving a weight opens reps when that set has none yet.',
+                  style: TextStyle(color: context.liftBig.muted),
+                ),
+                value: _autoAdvanceWeightToReps,
+                activeThumbColor: context.liftBig.primary,
+                onChanged: _setAutoAdvanceWeightToReps,
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
                 title: const Text('Start the timer when Done is tapped'),
-                subtitle:  Text(
-                  'Off by default. The timer button next to Done still starts the rest.',
+                subtitle: Text(
+                  'Off by default. The rest button on the exercise still starts the timer.',
                   style: TextStyle(color: context.liftBig.muted),
                 ),
                 value: _timerOnDone,
@@ -695,6 +714,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 value: _prescribeWarmup,
                 activeThumbColor: context.liftBig.primary,
                 onChanged: _setPrescribeWarmup,
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Plate graphic'),
+                subtitle: Text(
+                  'On by default. Off hides the plate graphic on machines and barbells.',
+                  style: TextStyle(color: context.liftBig.muted),
+                ),
+                value: _showPlateGraphic,
+                activeThumbColor: context.liftBig.primary,
+                onChanged: _setShowPlateGraphic,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -880,7 +910,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Sound'),
+                title: const Text('Alarm sound'),
                 value: _restAlerts.soundEnabled,
                 activeThumbColor: context.liftBig.primary,
                 onChanged: (value) => _setRestAlert(sound: value),

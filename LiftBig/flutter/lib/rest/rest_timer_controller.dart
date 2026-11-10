@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../companion/companion_bridge.dart';
+import '../companion/watch_session.dart';
 import '../journal/app_settings.dart';
 import '../journal/journal_repository.dart';
+import 'rest_alarm.dart';
 import 'rest_notifications.dart';
 import 'rest_timer_alerts.dart';
 import 'rest_timer_state.dart';
@@ -13,10 +16,13 @@ class RestTimerController extends ChangeNotifier {
   RestTimerController({
     required this.journal,
     RestNotificationScheduler? notifications,
-  }) : _notifications = notifications ?? NoOpRestNotificationScheduler();
+    CompanionBridge? companion,
+  }) : _notifications = notifications ?? NoOpRestNotificationScheduler(),
+       _companion = companion ?? CompanionBridge.shared;
 
   final JournalRepository journal;
   final RestNotificationScheduler _notifications;
+  final CompanionBridge _companion;
 
   RestTimerSnapshot _snapshot = RestTimerSnapshot.inactive;
   RestTimerAlertSettings _alerts = RestTimerAlertSettings.defaults;
@@ -28,6 +34,8 @@ class RestTimerController extends ChangeNotifier {
   bool get isActive => _snapshot.active;
 
   int get remaining => _snapshot.remainingSeconds(DateTime.now());
+
+  bool get soundEnabled => _alerts.soundEnabled;
 
   bool get isRunning =>
       _snapshot.active &&
@@ -42,7 +50,6 @@ class RestTimerController extends ChangeNotifier {
     _playedFinishedFeedback = false;
     final now = DateTime.now();
     if (_snapshot.active && _snapshot.isExpired(now)) {
-      await _notifications.cancelRestFinished();
       _maybePlayFinishedFeedback(now);
     } else if (_snapshot.active &&
         !_snapshot.paused &&
@@ -51,13 +58,24 @@ class RestTimerController extends ChangeNotifier {
         DateTime.fromMillisecondsSinceEpoch(_snapshot.endAtEpochMs!),
         options: _notificationOptions(),
       );
+      await _syncAlarmSession();
     }
+    _publishWatchRest();
     _syncTick();
     notifyListeners();
   }
 
   Future<void> reloadAlertSettings() async {
     _alerts = await journal.loadRestTimerAlertSettings();
+    if (isRunning && _snapshot.endAtEpochMs != null) {
+      await _notifications.scheduleRestFinished(
+        DateTime.fromMillisecondsSinceEpoch(_snapshot.endAtEpochMs!),
+        options: _notificationOptions(),
+      );
+    }
+    await _syncAlarmSession();
+    _publishWatchRest();
+    notifyListeners();
   }
 
   RestFinishedNotificationOptions _notificationOptions() {
@@ -89,6 +107,8 @@ class RestTimerController extends ChangeNotifier {
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
     await _persistAndSchedule(endAt);
+    await _syncAlarmSession();
+    _publishWatchRest();
     _syncTick();
     notifyListeners();
   }
@@ -107,6 +127,8 @@ class RestTimerController extends ChangeNotifier {
       pausedRemainingSeconds: left,
     );
     await _persist();
+    await _syncAlarmSession();
+    _publishWatchRest();
     _syncTick();
     notifyListeners();
   }
@@ -128,6 +150,63 @@ class RestTimerController extends ChangeNotifier {
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
     await _persistAndSchedule(endAt);
+    await _syncAlarmSession();
+    _publishWatchRest();
+    _syncTick();
+    notifyListeners();
+  }
+
+  /// Moves the end time to [remainingSeconds] from now. Does not restart from
+  /// the original full duration and does not play the finished alert.
+  Future<void> setRemaining(int remainingSeconds) async {
+    if (!_snapshot.active) return;
+    final seconds = remainingSeconds < 0 ? 0 : remainingSeconds;
+    if (_snapshot.paused) {
+      _snapshot = RestTimerSnapshot(
+        active: true,
+        exerciseId: _snapshot.exerciseId,
+        exerciseName: _snapshot.exerciseName,
+        fullSeconds: _snapshot.fullSeconds,
+        paused: true,
+        pausedRemainingSeconds: seconds,
+      );
+      await _persist();
+      _publishWatchRest();
+      _syncTick();
+      notifyListeners();
+      return;
+    }
+    if (seconds <= 0) {
+      _playedFinishedFeedback = true;
+      _snapshot = RestTimerSnapshot(
+        active: true,
+        exerciseId: _snapshot.exerciseId,
+        exerciseName: _snapshot.exerciseName,
+        fullSeconds: _snapshot.fullSeconds,
+        paused: false,
+        endAtEpochMs: DateTime.now().millisecondsSinceEpoch,
+      );
+      await _persist();
+      await _notifications.cancelRestFinished();
+      await RestAlarm.stopKeepAlive();
+      _publishWatchRest();
+      _syncTick();
+      notifyListeners();
+      return;
+    }
+    final endAt = DateTime.now().add(Duration(seconds: seconds));
+    _playedFinishedFeedback = false;
+    _snapshot = RestTimerSnapshot(
+      active: true,
+      exerciseId: _snapshot.exerciseId,
+      exerciseName: _snapshot.exerciseName,
+      fullSeconds: _snapshot.fullSeconds,
+      paused: false,
+      endAtEpochMs: endAt.millisecondsSinceEpoch,
+    );
+    await _persistAndSchedule(endAt);
+    await _syncAlarmSession();
+    _publishWatchRest();
     _syncTick();
     notifyListeners();
   }
@@ -148,15 +227,20 @@ class RestTimerController extends ChangeNotifier {
       pausedRemainingSeconds: fullSeconds,
     );
     await _persist();
+    await _syncAlarmSession();
+    _publishWatchRest();
     _syncTick();
     notifyListeners();
   }
 
   Future<void> dismiss() async {
-    await _notifications.cancelRestFinished();
     _snapshot = RestTimerSnapshot.inactive;
-    await journal.clearRestTimerState();
+    _playedFinishedFeedback = true;
     _syncTick();
+    await _notifications.cancelRestFinished();
+    await RestAlarm.stopKeepAlive();
+    await journal.clearRestTimerState();
+    _publishWatchRest(cancelled: true);
     notifyListeners();
   }
 
@@ -182,7 +266,34 @@ class RestTimerController extends ChangeNotifier {
     if (_playedFinishedFeedback) return;
     if (!_snapshot.active || !_snapshot.isExpired(now)) return;
     _playedFinishedFeedback = true;
-    playRestTimerFinishedAlerts(_alerts);
+    unawaited(
+      playRestTimerFinishedAlerts(
+        _alerts,
+        onAlarmPlayed: _notifications.cancelRestFinished,
+      ),
+    );
+  }
+
+  Future<void> _syncAlarmSession() async {
+    if (_alerts.soundEnabled && isRunning) {
+      await RestAlarm.startKeepAlive();
+      return;
+    }
+    await RestAlarm.stopKeepAlive();
+  }
+
+  void _publishWatchRest({bool cancelled = false}) {
+    final ends = _snapshot.endAtEpochMs;
+    final running = isRunning && ends != null;
+    _companion.notePhoneRest(
+      WatchRestPublish(
+        soundEnabled: _alerts.soundEnabled,
+        restCancelled: cancelled,
+        restPaused: _snapshot.active && _snapshot.paused,
+        restRemaining: _snapshot.active ? remaining : null,
+        restEndsAtEpochSeconds: running ? (ends / 1000).round() : null,
+      ),
+    );
   }
 
   Future<void> _persist() async {
@@ -208,7 +319,6 @@ class RestTimerController extends ChangeNotifier {
     if (_snapshot.isExpired(now)) {
       _tick?.cancel();
       _tick = null;
-      _notifications.cancelRestFinished();
       _maybePlayFinishedFeedback(now);
       notifyListeners();
       return;
@@ -219,6 +329,7 @@ class RestTimerController extends ChangeNotifier {
   @override
   void dispose() {
     _tick?.cancel();
+    unawaited(RestAlarm.stopKeepAlive());
     super.dispose();
   }
 }

@@ -1,18 +1,11 @@
 import 'plates.dart';
 
 /// Machines whose built-in weight varies by gym.
-enum VariableMachineKind {
-  smith,
-  legPress,
-  hackSquat,
-}
+enum VariableMachineKind { smith, legPress, hackSquat }
 
 enum VariableMachinePlateMode {
-  /// Bar-style: same plate stack on each side (Smith machine).
+  /// Same plate stack on each side of the bar or sled.
   perSide,
-
-  /// Single stack on the sled/carriage (leg press, hack squat).
-  totalLoad,
 }
 
 enum MachinePlatesStatus {
@@ -36,18 +29,69 @@ class MachinePlatesResult {
   final double remainderLb;
   final VariableMachinePlateMode mode;
 
-  /// Total plate weight to add (both sides for [VariableMachinePlateMode.perSide]).
+  /// Total plate weight added on both sides.
   final double addedPlateWeightLb;
 }
 
+/// Leg press, hack squat, and Smith all split `(goal - start) / 2` per side.
 VariableMachinePlateMode plateModeFor(VariableMachineKind kind) {
   switch (kind) {
     case VariableMachineKind.smith:
-      return VariableMachinePlateMode.perSide;
     case VariableMachineKind.legPress:
     case VariableMachineKind.hackSquat:
-      return VariableMachinePlateMode.totalLoad;
+      return VariableMachinePlateMode.perSide;
   }
+}
+
+class PlateCount {
+  const PlateCount({required this.weightLb, required this.count});
+
+  final double weightLb;
+  final int count;
+}
+
+/// Per-side counts, largest standard plate first.
+List<PlateCount> eachSidePlateCounts(List<double> plates) {
+  final counts = <double, int>{};
+  for (final plate in plates) {
+    counts[plate] = (counts[plate] ?? 0) + 1;
+  }
+  final sizes = counts.keys.toList()
+    ..sort((a, b) {
+      final aKnown = plateSizesLb.indexOf(a);
+      final bKnown = plateSizesLb.indexOf(b);
+      if (aKnown >= 0 && bKnown >= 0) return aKnown.compareTo(bKnown);
+      if (aKnown >= 0) return -1;
+      if (bKnown >= 0) return 1;
+      return b.compareTo(a);
+    });
+  return [
+    for (final size in sizes) PlateCount(weightLb: size, count: counts[size]!),
+  ];
+}
+
+/// Compact per-side load, such as `3×45, 1×25`.
+String eachSidePlateSummary(
+  List<double> plates, {
+  String Function(double weightLb)? label,
+}) {
+  String plain(double weightLb) {
+    if ((weightLb - weightLb.roundToDouble()).abs() < 0.001) {
+      return weightLb.round().toString();
+    }
+    var text = weightLb.toString();
+    if (text.contains('.')) {
+      text = text
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+    }
+    return text;
+  }
+
+  final format = label ?? plain;
+  return eachSidePlateCounts(plates)
+      .map((count) => '${count.count}×${format(count.weightLb)}')
+      .join(', ');
 }
 
 String startingWeightLabel(VariableMachineKind kind) {
@@ -84,7 +128,10 @@ VariableMachineKind? variableMachineKindForExercise({
   return null;
 }
 
-/// [goalLb] and [startingLb] in pounds. Reuses [calculatePlates] for per-side mode.
+/// [goalLb] and [startingLb] in pounds.
+///
+/// Every variable machine uses the same split as a barbell:
+/// `(goal - start) / 2` on each side, via [calculatePlates].
 MachinePlatesResult machinePlatesForGoal({
   required double goalLb,
   required double startingLb,
@@ -105,48 +152,25 @@ MachinePlatesResult machinePlatesForGoal({
     );
   }
 
-  if (mode == VariableMachinePlateMode.perSide) {
-    final result = calculatePlates(goalLb, startingLb, sizes);
-    if (result.plates.isEmpty && result.remainder > 0.001) {
-      return MachinePlatesResult(
-        status: MachinePlatesStatus.goalBelowStarting,
-        plates: const [],
-        remainderLb: result.remainder,
-        mode: mode,
-        addedPlateWeightLb: 0,
-      );
-    }
-    final added = result.plates.fold<double>(0, (a, b) => a + b) * 2;
-    final exact = platesAreExact(result.remainder);
+  final result = calculatePlates(goalLb, startingLb, sizes);
+  if (result.plates.isEmpty && result.remainder > 0.001) {
     return MachinePlatesResult(
-      status: exact
-          ? MachinePlatesStatus.platesComputed
-          : MachinePlatesStatus.inexact,
-      plates: result.plates,
-      remainderLb: result.remainder * 2,
+      status: MachinePlatesStatus.goalBelowStarting,
+      plates: const [],
+      remainderLb: result.remainder,
       mode: mode,
-      addedPlateWeightLb: added,
+      addedPlateWeightLb: 0,
     );
   }
-
-  final toLoad = goalLb - startingLb;
-  final plates = <double>[];
-  var remaining = toLoad;
-  for (final plate in sizes) {
-    while (remaining >= plate - 0.001) {
-      plates.add(plate);
-      remaining -= plate;
-    }
-  }
-  final remainder = (remaining * 1000).round() / 1000;
-  final exact = platesAreExact(remainder);
+  final added = result.plates.fold<double>(0, (a, b) => a + b) * 2;
+  final exact = platesAreExact(result.remainder);
   return MachinePlatesResult(
     status: exact
         ? MachinePlatesStatus.platesComputed
         : MachinePlatesStatus.inexact,
-    plates: plates,
-    remainderLb: remainder,
+    plates: result.plates,
+    remainderLb: result.remainder * 2,
     mode: mode,
-    addedPlateWeightLb: plates.fold<double>(0, (a, b) => a + b),
+    addedPlateWeightLb: added,
   );
 }

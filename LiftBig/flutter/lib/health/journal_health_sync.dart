@@ -4,7 +4,8 @@ import '../journal/journal_repository.dart';
 import 'body_weight_health.dart';
 import 'health_workout.dart';
 
-/// Debounced Health write for one logged day. Calories come only from active energy.
+/// Debounced Health write for one logged day. Calories come from active energy,
+/// or a strength estimate when Apple recorded almost none.
 class JournalHealthSync {
   JournalHealthSync({
     required this.journal,
@@ -53,6 +54,8 @@ class JournalHealthSync {
       return;
     }
 
+    final bodyWeightLbs = await journal.storedBodyWeightLbs();
+
     // Strength and cardio windows share an end time, so summing each window
     // would count the overlap twice. The day stores one read of the union.
     final startMs = writes
@@ -66,22 +69,37 @@ class JournalHealthSync {
       DateTime.fromMillisecondsSinceEpoch(endMs),
     );
 
-    for (final write in writes) {
-      if (writes.length == 1) {
-        if (dayEnergy.succeeded) write.energyKcal = dayEnergy.kcal;
-      } else {
-        final read = await _health.readActiveEnergyKcal(
-          DateTime.fromMillisecondsSinceEpoch(write.startMs),
-          DateTime.fromMillisecondsSinceEpoch(write.endMs),
+    double? kcalForWindow(double? appleKcal, double minutes) {
+      // Apple often returns ~0–3 kcal when the watch missed the session.
+      if (minutes >= 10 &&
+          (appleKcal == null || appleKcal < 1.5 * minutes)) {
+        return estimateStrengthKcal(
+          minutes: minutes,
+          bodyWeightLbs: bodyWeightLbs,
         );
-        if (read.succeeded) write.energyKcal = read.kcal;
       }
+      return appleKcal;
+    }
+
+    for (final write in writes) {
+      final read = writes.length == 1
+          ? dayEnergy
+          : await _health.readActiveEnergyKcal(
+              DateTime.fromMillisecondsSinceEpoch(write.startMs),
+              DateTime.fromMillisecondsSinceEpoch(write.endMs),
+            );
+      final minutes = (write.endMs - write.startMs).abs() / 60000;
+      final apple = read.succeeded ? read.kcal : null;
+      write.energyKcal = kcalForWindow(apple, minutes);
       if (!await _health.workoutAlreadyWritten(write)) {
         await _health.writeWorkout(write);
       }
     }
-    if (!dayEnergy.succeeded) return;
-    await journal.setHealthEnergyKcal(dateKey, dayEnergy.kcal);
+    final dayMinutes = (endMs - startMs).abs() / 60000;
+    final appleDay = dayEnergy.succeeded ? dayEnergy.kcal : null;
+    final stored = kcalForWindow(appleDay, dayMinutes);
+    if (stored == null && !dayEnergy.succeeded) return;
+    await journal.setHealthEnergyKcal(dateKey, stored);
     onStored?.call();
   }
 }

@@ -550,6 +550,25 @@ const List<LiftBigPalette> liftBigThemePresets = [
   ),
 ];
 
+/// A short notice at the top of the screen, clear of the bottom bar.
+void showLiftBigNotice(BuildContext context, String message) {
+  final messenger = ScaffoldMessenger.of(context);
+  final media = MediaQuery.of(context);
+  final top = media.padding.top + 8;
+  final side = ((media.size.width - 280) / 2).clamp(20.0, 80.0);
+  messenger.hideCurrentSnackBar();
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(message, textAlign: TextAlign.center),
+      behavior: SnackBarBehavior.floating,
+      dismissDirection: DismissDirection.up,
+      margin: EdgeInsets.fromLTRB(side, 0, side, media.size.height - top - 88),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
+
 ThemeData buildLiftBigTheme([LiftBigPalette? palette]) {
   final colors = palette ?? liftBigThemePresets.first;
   final shape = RoundedRectangleBorder(
@@ -616,8 +635,15 @@ ThemeData buildLiftBigTheme([LiftBigPalette? palette]) {
       ),
     ),
     snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
       backgroundColor: colors.card,
-      contentTextStyle: TextStyle(color: colors.foreground),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      contentTextStyle: TextStyle(
+        color: colors.foreground,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
     ),
   );
 }

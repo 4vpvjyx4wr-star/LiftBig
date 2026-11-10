@@ -95,9 +95,11 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
     try {
       final replacement = _replacement;
       final exercise = widget.exercise;
-      if (replacement != null &&
+      final swapped =
+          replacement != null &&
           (replacement.id != exercise.libraryId ||
-              replacement.name != exercise.name)) {
+              replacement.name != exercise.name);
+      if (replacement != null && swapped) {
         await widget.journal.replaceExercise(
           exerciseId: exercise.id,
           name: replacement.name,
@@ -109,8 +111,11 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
       await widget.journal.updateExerciseGoal(
         exerciseId: exercise.id,
         targetReps: _reps.text,
-        targetWeight: replacement?.isCardio == true ? null : exercise.targetWeight,
+        targetWeight: !swapped && replacement?.isCardio == true
+            ? null
+            : exercise.targetWeight,
         setCount: count,
+        writeTargetWeight: !swapped,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -135,17 +140,6 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.liftBig.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(

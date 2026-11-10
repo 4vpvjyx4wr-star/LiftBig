@@ -15,7 +15,19 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let messenger = engineBridge.applicationRegistrar.messenger()
     CompanionBridge.shared.register(messenger: messenger)
+    RestAlarmPlayer.register(messenger: messenger)
     ProBridge.shared.register(messenger: messenger)
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if CompanionBridge.shared.open(url: url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
   }
 
 }

@@ -84,10 +84,12 @@ class _ImportSheetState extends State<_ImportSheet> {
     if (_busy) return;
     final PlatformFile? file;
     try {
+      // Export goes through the system document picker, which often tags the
+      // file as generic data. A json/txt filter hides that file. public.item
+      // includes it. The bytes are still read as a LiftBig JSON backup.
       file = await FilePicker.pickFile(
         dialogTitle: 'LiftBig backup',
-        type: FileType.custom,
-        allowedExtensions: const ['json', 'txt'],
+        type: FileType.any,
       );
     } catch (_) {
       if (!mounted) return;
@@ -150,16 +152,28 @@ class _ImportSheetState extends State<_ImportSheet> {
 
     var closed = false;
     try {
+      // The whole file is parsed before any write. A bad file throws here,
+      // so importBackup never commits a partial journal.
       final parsed = parseLiftBigBackup(text);
-      final count = await widget.journal.importBackup(parsed);
+      final local = await widget.journal.allDays();
+      if (!mounted) return;
+      final ready = dropStaleBackupDays(parsed, {
+        for (final day in local) day.dateKey: day.updatedAt,
+      });
+      final count = await widget.journal.importBackup(ready);
       if (!mounted) return;
       final days = count == 1 ? '1 day' : '$count days';
-      final skipped = parsed.skippedDays == 0
+      final skipped = ready.skippedDays == 0
           ? ''
-          : ' Skipped ${parsed.skippedDays} unrecognized '
-                '${parsed.skippedDays == 1 ? 'day' : 'days'}.';
+          : ' Skipped ${ready.skippedDays} unrecognized '
+                '${ready.skippedDays == 1 ? 'day' : 'days'}.';
+      final keptLocal = parsed.days.length - ready.days.length;
+      final kept = keptLocal == 0
+          ? ''
+          : ' Left $keptLocal local '
+                '${keptLocal == 1 ? 'day' : 'days'} unchanged.';
       closed = true;
-      Navigator.of(context).pop('Imported $days.$skipped');
+      Navigator.of(context).pop('Imported $days.$skipped$kept');
     } on BackupParseException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {
@@ -186,18 +200,12 @@ class _ImportSheetState extends State<_ImportSheet> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
-             Text(
-              'Tap Import liftbig-backup.json. That reads the backup already copied into this app. Dates in the file replace those days. Other days stay.',
+            Text(
+              'Choose the backup you exported. JSON is accepted, including a file the export dialog saved as generic data. A day logged more recently on this phone stays. Paste still works if you copied the backup.',
               style: TextStyle(color: context.liftBig.muted),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _busy ? null : _importSavedFile,
-              icon: const Icon(Icons.download),
-              label: const Text('Import liftbig-backup.json'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
               onPressed: _busy ? null : _chooseFile,
               icon: const Icon(Icons.folder_open),
               label: const Text('Choose backup file'),
@@ -207,6 +215,12 @@ class _ImportSheetState extends State<_ImportSheet> {
               onPressed: _busy ? null : _pasteBackup,
               icon: const Icon(Icons.content_paste),
               label: const Text('Paste backup'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _importSavedFile,
+              icon: const Icon(Icons.download),
+              label: const Text('Import liftbig-backup.json'),
             ),
             if (_busy) ...[
               const SizedBox(height: 12),

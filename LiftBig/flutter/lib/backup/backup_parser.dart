@@ -88,7 +88,7 @@ ParsedBackup parseLiftBigBackup(String text, {DateTime? now}) {
     final day = _parseDay(
       dateKey,
       entry.value,
-      stamps[dateKey] ?? fallbackStamp,
+      _stampForDay(dateKey, entry.value, stamps, fallbackStamp),
     );
     if (day == null) {
       skipped += 1;
@@ -117,6 +117,51 @@ ParsedBackup parseLiftBigBackup(String text, {DateTime? now}) {
   );
 }
 
+/// Drops backup days that must not replace a newer local copy of that date.
+///
+/// A day stays in the result when this phone has no row for it, or when the
+/// backup stamp is strictly newer. An equal stamp keeps the local day, same
+/// as the cloud merge. Templates and settings stay on the backup. Dropped
+/// days are not counted as unrecognized.
+ParsedBackup dropStaleBackupDays(
+  ParsedBackup backup,
+  Map<String, String> localUpdatedAt,
+) {
+  final kept = <JournalDay>[
+    for (final day in backup.days)
+      if (_backupDayIsNewer(day.updatedAt, localUpdatedAt[day.dateKey])) day,
+  ];
+  if (kept.length == backup.days.length) return backup;
+  return ParsedBackup(
+    days: kept,
+    skippedDays: backup.skippedDays,
+    templatesJson: backup.templatesJson,
+    settingsJson: backup.settingsJson,
+    weightUnit: backup.weightUnit,
+    bodyWeightLbs: backup.bodyWeightLbs,
+    settingsUpdatedAt: backup.settingsUpdatedAt,
+  );
+}
+
+/// Stamp map wins, then a stamp written on the day, then [fallbackStamp].
+String _stampForDay(
+  String dateKey,
+  Object? raw,
+  Map<String, String> stamps,
+  String fallbackStamp,
+) {
+  final recorded = stamps[dateKey];
+  if (recorded != null) return recorded;
+  final onDay = _string(_asMap(raw)?['updatedAt']);
+  if (onDay != null) return onDay;
+  return fallbackStamp;
+}
+
+bool _backupDayIsNewer(String backupStamp, String? localStamp) {
+  if (localStamp == null || localStamp.isEmpty) return true;
+  return backupStamp.compareTo(localStamp) > 0;
+}
+
 JournalDay? _parseDay(String dateKey, Object? raw, String updatedAt) {
   if (raw is List) {
     final exercises = _parseExercises(raw);
@@ -136,6 +181,7 @@ JournalDay? _parseDay(String dateKey, Object? raw, String updatedAt) {
     workoutName: _string(map['planName']),
     planName: _string(map['planFolderName']),
     workoutNotes: _string(map['planNotes']),
+    chosenRestSeconds: _wholeNumber(map['chosenRestSeconds']),
     updatedAt: updatedAt,
     exercises: _parseExercises(map['exercises'] as List),
   );
@@ -174,9 +220,10 @@ List<JournalExercise> _parseExercises(List<Object?> raw) {
         preferredSwapLibraryIds: map['preferredSwapLibraryIds'] is List
             ? (map['preferredSwapLibraryIds'] as List).whereType<String>().toList()
             : const [],
-        targetRestSeconds: map['targetRestSeconds'] is num
-            ? (map['targetRestSeconds'] as num).round()
-            : null,
+        targetRestSeconds: _wholeNumber(map['targetRestSeconds']),
+        prescribedReps: _string(map['prescribedReps']),
+        prescribedWeight: _string(map['prescribedWeight']),
+        prescribedSetCount: _wholeNumber(map['prescribedSetCount']),
         sets: _parseSets(setsRaw),
       ),
     );
@@ -289,6 +336,12 @@ String _textField(Object? value) {
   return '';
 }
 
+int? _wholeNumber(Object? value) {
+  if (value is num) return value.round();
+  if (value is String) return int.tryParse(value.trim());
+  return null;
+}
+
 /// JSON the import path can read again. Day headers use the Vue backup names.
 String encodeLiftBigBackup({
   required List<JournalDay> days,
@@ -300,13 +353,18 @@ String encodeLiftBigBackup({
 }) {
   final exportedAt = (now ?? DateTime.now()).toUtc().toIso8601String();
   final workouts = <String, Object?>{};
+  final stamps = <String, String>{};
   for (final day in days) {
+    final stamp = day.updatedAt.trim();
+    if (stamp.isNotEmpty) stamps[day.dateKey] = stamp;
     workouts[day.dateKey] = {
       'notes': day.notes,
       'isRestDay': day.isRestDay,
       'planName': day.workoutName,
       'planFolderName': day.planName,
       'planNotes': day.workoutNotes,
+      'chosenRestSeconds': day.chosenRestSeconds,
+      if (stamp.isNotEmpty) 'updatedAt': stamp,
       'exercises': [
         for (final exercise in day.exercises) exercise.toMap(),
       ],
@@ -340,6 +398,7 @@ String encodeLiftBigBackup({
     'exportedAt': exportedAt,
     'app': 'LiftBig',
     'liftbig_workouts': workouts,
+    'liftbig_day_stamps': stamps,
     'liftbig_templates': templates,
     'liftbig_settings': settings,
   });

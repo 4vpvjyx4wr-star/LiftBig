@@ -90,7 +90,10 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
     final plans = _plans ?? const <PremadePlan>[];
     final q = query.trim().toLowerCase();
     if (q.isEmpty) {
-      return plans.where((plan) => plan.workouts.isNotEmpty).toList();
+      return plansWithFavoritesFirst(
+        plans.where((plan) => plan.workouts.isNotEmpty).toList(),
+        _favoriteIds,
+      );
     }
     final out = <PremadePlan>[];
     for (final plan in plans) {
@@ -111,7 +114,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
         ),
       );
     }
-    return out;
+    return plansWithFavoritesFirst(out, _favoriteIds);
   }
 
   PremadePlan? _selected(List<PremadePlan> plans) {

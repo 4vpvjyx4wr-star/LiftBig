@@ -14,9 +14,6 @@ import 'library_page.dart';
 import 'plans_page.dart';
 import 'progress_page.dart';
 import 'settings_page.dart';
-import '../rest/rest_timer_controller.dart';
-import 'rest_timer_banner.dart';
-import 'rest_timer_scope.dart';
 import 'liftbig_sheet.dart';
 import 'shell_tabs.dart';
 
@@ -43,7 +40,6 @@ class _AppShellState extends State<AppShell> {
   var _refresh = 0;
   final _opened = <int>{0};
   String? _homeFocusDateKey;
-  RestTimerController? _restTimer;
   late final JournalHealthSync _healthSync;
   final _companion = CompanionBridge.shared;
   Future<void> _watchWrites = Future<void>.value();
@@ -56,21 +52,9 @@ class _AppShellState extends State<AppShell> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final next = RestTimerScope.of(context);
-    if (_restTimer != next) {
-      _restTimer?.removeListener(_onRestTimerChanged);
-      _restTimer = next;
-      _restTimer!.addListener(_onRestTimerChanged);
-    }
-  }
-
-  @override
   void dispose() {
     _companion.removeListener(_onWatchMessage);
     _healthSync.dispose();
-    _restTimer?.removeListener(_onRestTimerChanged);
     super.dispose();
   }
 
@@ -94,10 +78,6 @@ class _AppShellState extends State<AppShell> {
       await widget.journal.persistCompanionMessage(message);
     }
     if (mounted) setState(() => _refresh++);
-  }
-
-  void _onRestTimerChanged() {
-    if (mounted) setState(() {});
   }
 
   void _select(int index) {
@@ -139,8 +119,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final today = todayKey();
-    final rest = _restTimer;
-    final showRestBanner = rest != null && rest.isActive;
     return Scaffold(
       backgroundColor: context.liftBig.background,
       body: Column(
@@ -150,38 +128,13 @@ class _AppShellState extends State<AppShell> {
             onSettings: _openSettings,
           ),
           Expanded(
-            child: Stack(
+            child: IndexedStack(
+              index: _index,
               children: [
-                IndexedStack(
-                  index: _index,
-                  children: [
-                    for (var tab = 0; tab < ShellTab.values.length; tab++)
-                      _opened.contains(tab)
-                          ? _page(tab, today)
-                          : const SizedBox.shrink(),
-                  ],
-                ),
-                if (showRestBanner)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: RestTimerBanner(
-                      remaining: rest.remaining,
-                      running: rest.isRunning,
-                      exerciseName: rest.snapshot.exerciseName,
-                      onPause: () => rest.togglePause(),
-                      onReset: () {
-                        final snap = rest.snapshot;
-                        rest.reset(
-                          fullSeconds: snap.fullSeconds > 0
-                              ? snap.fullSeconds
-                              : 60,
-                        );
-                      },
-                      onDismiss: () => rest.dismiss(),
-                    ),
-                  ),
+                for (var tab = 0; tab < ShellTab.values.length; tab++)
+                  _opened.contains(tab)
+                      ? _page(tab, today)
+                      : const SizedBox.shrink(),
               ],
             ),
           ),
@@ -209,6 +162,14 @@ class _AppShellState extends State<AppShell> {
         refreshToken: _refresh,
         embedRestBanner: false,
         onOpenSettings: _openSettings,
+        onWorkoutFinished: () {
+          if (!mounted) return;
+          _select(ShellTab.home.index);
+          showLiftBigNotice(
+            context,
+            'Congrats on lifting big - see you tomorrow',
+          );
+        },
       ),
       ShellTab.plans => PlansPage(
         journal: widget.journal,

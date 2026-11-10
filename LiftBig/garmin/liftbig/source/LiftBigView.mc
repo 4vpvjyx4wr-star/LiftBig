@@ -1,7 +1,13 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
+import Toybox.Timer;
 import Toybox.WatchUi;
+
+// Hit tests use the size onUpdate just drew with. Device settings can
+// disagree with the drawable on a round screen, and then every tap misses.
+var drawnWidth as Number = 454;
+var drawnHeight as Number = 454;
 
 class LiftBigView extends WatchUi.View {
     function initialize() {
@@ -11,6 +17,8 @@ class LiftBigView extends WatchUi.View {
     function onUpdate(dc as Dc) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
+        drawnWidth = width;
+        drawnHeight = height;
         var session = getApp().session;
         session.syncRestClock(true);
         var layout = screenLayout(width, height);
@@ -27,9 +35,19 @@ class LiftBigView extends WatchUi.View {
             return;
         }
 
+        var slot = session.current();
+        var done = slot != null && slot["done"] == true;
+        if (done) {
+            dc.setColor(0xFF6A1A, Graphics.COLOR_TRANSPARENT);
+        } else {
+            dc.setColor(0x9AA4B8, Graphics.COLOR_TRANSPARENT);
+        }
+        dc.drawText(cx, layout["setY"] as Number, Graphics.FONT_XTINY, session.setLabel(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
         var nameY = layout["nameY"] as Number;
-        drawChevron(dc, layout["prevX"] as Number, nameY, -1, session.canMove(-1));
-        drawChevron(dc, layout["nextX"] as Number, nameY, 1, session.canMove(1));
+        var navR = layout["navR"] as Number;
+        drawChevron(dc, layout["prevX"] as Number, nameY, -1, session.canMove(-1), navR);
+        drawChevron(dc, layout["nextX"] as Number, nameY, 1, session.canMove(1), navR);
 
         var name = session.exerciseName();
         var nameFont = Graphics.FONT_TINY;
@@ -40,15 +58,6 @@ class LiftBigView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, nameY, nameFont, name, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
-        var slot = session.current();
-        var done = slot != null && slot["done"] == true;
-        if (done) {
-            dc.setColor(0xFF6A1A, Graphics.COLOR_TRANSPARENT);
-        } else {
-            dc.setColor(0x9AA4B8, Graphics.COLOR_TRANSPARENT);
-        }
-        dc.drawText(cx, layout["setY"] as Number, Graphics.FONT_XTINY, session.setLabel(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-
         var textMax = (layout["plusX"] as Number) - (layout["btnX"] as Number) - 56;
         drawAdjustRow(dc, layout, layout["weightY"] as Number, session.weightLabel(), textMax, false);
         drawAdjustRow(dc, layout, layout["repsY"] as Number, session.repsLabel(), textMax, false);
@@ -58,29 +67,56 @@ class LiftBigView extends WatchUi.View {
 }
 
 class LiftBigDelegate extends WatchUi.BehaviorDelegate {
-    var sawTap as Boolean = false;
+    var lastBackMs as Number = -1000;
+    var lastTapMs as Number = -10000;
+    var selectArmed as Boolean = false;
+    var selectTimer as Timer.Timer = new Timer.Timer();
 
     function initialize() {
         BehaviorDelegate.initialize();
     }
 
+    function stepBack() as Void {
+        var now = System.getTimer();
+        if (now - lastBackMs < 400) {
+            return;
+        }
+        lastBackMs = now;
+        var session = getApp().session;
+        if (session.canMove(-1)) {
+            session.move(-1);
+            return;
+        }
+        // leaveNow() clears the timer. Stay up until the buzz instead.
+        if (session.restRemaining > 0 && session.restPaused == false) {
+            session.requestHome();
+            return;
+        }
+        session.leaveNow();
+    }
+
     function onTap(evt as ClickEvent) as Boolean {
-        sawTap = true;
+        lastTapMs = System.getTimer();
+        selectArmed = false;
+        selectTimer.stop();
         var coords = evt.getCoordinates();
         var x = coords[0] as Number;
         var y = coords[1] as Number;
-        var settings = System.getDeviceSettings();
-        var layout = screenLayout(settings.screenWidth, settings.screenHeight);
-        var session = getApp().session;
-        var top = hitTop(x, y, settings.screenWidth, settings.screenHeight, session.restRemaining > 0);
-        if (top == 0) {
-            session.requestHome();
-            return true;
+        var width = drawnWidth;
+        var height = drawnHeight;
+        if (width < 100 || height < 100) {
+            var settings = System.getDeviceSettings();
+            width = settings.screenWidth;
+            height = settings.screenHeight;
         }
+        var layout = screenLayout(width, height);
+        var session = getApp().session;
         if (session.locked) {
             return true;
         }
-        if (top == 1 && session.restRemaining > 0) {
+        var resting = session.restRemaining > 0;
+        var top = hitTop(x, y, width, height, resting, !resting && session.allSetsDone());
+        if (top == 1 && resting) {
             if (session.restPaused) {
                 session.resumeRest();
             } else {
@@ -88,7 +124,7 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
             }
             return true;
         }
-        if (top == 2 && session.restRemaining > 0) {
+        if (top == 2 && resting) {
             session.cancelRest();
             return true;
         }
@@ -96,40 +132,46 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
             session.finishWorkout();
             return true;
         }
-        var radius = layout["navR"] as Number;
+
+        // Hit the drawn circles, not coarse left/right bands. A tap that
+        // misses every control still returns true so it does not toggle the set.
         var nameY = layout["nameY"] as Number;
-        if (inCircle(x, y, layout["prevX"] as Number, nameY, radius)) {
+        var navR = layout["navR"] as Number;
+        if (inCircle(x, y, layout["prevX"] as Number, nameY, navR)) {
             session.move(-1);
             return true;
         }
-        if (inCircle(x, y, layout["nextX"] as Number, nameY, radius)) {
+        if (inCircle(x, y, layout["nextX"] as Number, nameY, navR)) {
             session.move(1);
             return true;
         }
-        var buttonRadius = layout["btnR"] as Number;
-        var minusX = layout["btnX"] as Number;
+        var btnX = layout["btnX"] as Number;
         var plusX = layout["plusX"] as Number;
-        if (inCircle(x, y, minusX, layout["weightY"] as Number, buttonRadius)) {
+        var btnR = layout["btnR"] as Number;
+        var weightY = layout["weightY"] as Number;
+        if (inCircle(x, y, btnX, weightY, btnR)) {
             session.adjustWeight(-5);
             return true;
         }
-        if (inCircle(x, y, plusX, layout["weightY"] as Number, buttonRadius)) {
+        if (inCircle(x, y, plusX, weightY, btnR)) {
             session.adjustWeight(5);
             return true;
         }
-        if (inCircle(x, y, minusX, layout["repsY"] as Number, buttonRadius)) {
+        var repsY = layout["repsY"] as Number;
+        if (inCircle(x, y, btnX, repsY, btnR)) {
             session.adjustReps(-1);
             return true;
         }
-        if (inCircle(x, y, plusX, layout["repsY"] as Number, buttonRadius)) {
+        if (inCircle(x, y, plusX, repsY, btnR)) {
             session.adjustReps(1);
             return true;
         }
-        if (inCircle(x, y, minusX, layout["restY"] as Number, buttonRadius)) {
+        var restY = layout["restY"] as Number;
+        if (inCircle(x, y, btnX, restY, btnR)) {
             session.adjustRest(-5);
             return true;
         }
-        if (inCircle(x, y, plusX, layout["restY"] as Number, buttonRadius)) {
+        if (inCircle(x, y, plusX, restY, btnR)) {
             session.adjustRest(5);
             return true;
         }
@@ -140,22 +182,43 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
+    // A screen touch arrives as Select as well as onTap. Ignore that Select
+    // when a tap just happened so the touch does not also complete the set.
+    // A real upper-button press, with no recent tap, still toggles.
     function onSelect() as Boolean {
-        if (sawTap) {
-            sawTap = false;
-            return true;
+        armSelect();
+        return true;
+    }
+
+    function armSelect() as Void {
+        var now = System.getTimer();
+        if (now - lastTapMs < 400) {
+            return;
+        }
+        selectArmed = true;
+        selectTimer.stop();
+        selectTimer.start(method(:commitSelect), 400, false);
+    }
+
+    function commitSelect() as Void {
+        if (selectArmed == false) {
+            return;
+        }
+        selectArmed = false;
+        if (System.getTimer() - lastTapMs < 400) {
+            return;
         }
         getApp().session.toggleSet();
-        return true;
     }
 
     function onKey(evt as KeyEvent) as Boolean {
         var key = evt.getKey();
         if (key == WatchUi.KEY_ENTER || key == WatchUi.KEY_START) {
-            getApp().session.toggleSet();
+            armSelect();
             return true;
         }
         if (key == WatchUi.KEY_ESC) {
+            stepBack();
             return true;
         }
         if (key == WatchUi.KEY_UP) {
@@ -170,45 +233,39 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onSwipe(evt as SwipeEvent) as Boolean {
-        var direction = evt.getDirection();
-        if (direction == WatchUi.SWIPE_UP || direction == WatchUi.SWIPE_LEFT) {
-            getApp().session.move(1);
-            return true;
-        }
-        if (direction == WatchUi.SWIPE_DOWN) {
-            getApp().session.move(-1);
-            return true;
-        }
         return false;
     }
 
     function onBack() as Boolean {
+        stepBack();
         return true;
     }
 }
 
-// 454x454 round Venu 3. Chevrons share the exercise-name row, inset
-// so the 18px discs stay inside the circular mask. Rest controls sit
-// in the top band and do not overlap that row.
+// 454x454 round Venu 3. Hit radius matches the drawn disc so neighboring
+// circles do not overlap. Row pitch is wider than the diameter, and the
+// centers stay inside the round bezel. Previous and next sit clear of
+// the weight row. Pause and cancel use the top band.
 function screenLayout(width as Number, height as Number) as Dictionary {
     var cx = width / 2;
+    var navSpan = width * 28 / 100;
     return {
         "cx" => cx,
-        "prevX" => width * 15 / 100,
-        "nextX" => width * 85 / 100,
-        "navR" => 28,
-        "nameY" => height * 28 / 100,
-        "setY" => height * 38 / 100,
+        "prevX" => cx - navSpan,
+        "nextX" => cx + navSpan,
+        "navR" => 22,
+        "setY" => height * 28 / 100,
+        "nameY" => height * 36 / 100,
         "weightY" => height * 49 / 100,
-        "repsY" => height * 60 / 100,
-        "restY" => height * 71 / 100,
+        "repsY" => height * 61 / 100,
+        "restY" => height * 73 / 100,
         "btnX" => width * 18 / 100,
         "plusX" => width * 82 / 100,
-        "btnR" => 26,
+        "btnR" => 22,
         "doneX" => width * 20 / 100,
-        "doneY" => height * 79 / 100,
+        "doneY" => height * 80 / 100,
         "doneW" => width * 60 / 100,
-        "doneH" => 42,
+        "doneH" => 40,
         "timerY" => height * 8 / 100,
         "timerW" => 88,
         "timerH" => 36,
@@ -217,18 +274,18 @@ function screenLayout(width as Number, height as Number) as Dictionary {
     };
 }
 
-function drawChevron(dc as Graphics.Dc, x as Number, y as Number, direction as Number, enabled as Boolean) as Void {
+function drawChevron(dc as Graphics.Dc, x as Number, y as Number, direction as Number, enabled as Boolean, radius as Number) as Void {
     if (enabled) {
         dc.setColor(0x162033, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(x, y, 18);
+        dc.fillCircle(x, y, radius);
         dc.setColor(0xFF6A1A, Graphics.COLOR_TRANSPARENT);
     } else {
         dc.setColor(0x121826, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(x, y, 18);
+        dc.fillCircle(x, y, radius);
         dc.setColor(0x3A4458, Graphics.COLOR_TRANSPARENT);
     }
     dc.setPenWidth(3);
-    dc.drawCircle(x, y, 18);
+    dc.drawCircle(x, y, radius);
     dc.setPenWidth(4);
     if (direction < 0) {
         dc.drawLine(x + 6, y - 8, x - 5, y);
@@ -242,7 +299,7 @@ function drawChevron(dc as Graphics.Dc, x as Number, y as Number, direction as N
 function drawAdjustRow(dc as Graphics.Dc, layout as Dictionary, y as Number, label as String, textMax as Number, active as Boolean) as Void {
     var minusX = layout["btnX"] as Number;
     var plusX = layout["plusX"] as Number;
-    var radius = 22;
+    var radius = layout["btnR"] as Number;
     drawRoundButton(dc, minusX, y, radius, false);
     drawRoundButton(dc, plusX, y, radius, true);
     var font = Graphics.FONT_TINY;
@@ -287,29 +344,28 @@ function drawDone(dc as Graphics.Dc, layout as Dictionary, done as Boolean) as V
     }
 }
 
-function topRow(width as Number, height as Number, resting as Boolean) as Dictionary {
-    var count = resting ? 3 : 2;
-    var buttonW = resting ? 72 : 100;
-    var gap = 8;
-    var total = count * buttonW + (count - 1) * gap;
+// Two pills, centered. On a 454 circle the top of this row is ~40px
+// inside the bezel, and the bottom stays clear of the set line.
+function topRow(width as Number, height as Number) as Dictionary {
+    var buttonW = width * 21 / 100;
+    var gap = 16;
+    var total = buttonW * 2 + gap;
     var x = width / 2 - total / 2;
     return {
-        "y" => height * 10 / 100,
-        "h" => 32,
+        "y" => height * 15 / 100,
+        "h" => 36,
         "w" => buttonW,
         "x0" => x,
-        "x1" => x + buttonW + gap,
-        "x2" => x + (buttonW + gap) * 2
+        "x1" => x + buttonW + gap
     };
 }
 
 function drawTopRow(dc as Graphics.Dc, width as Number, height as Number, session as Session) as Void {
     var resting = session.restRemaining > 0;
-    var row = topRow(width, height, resting);
+    var row = topRow(width, height);
     var y = row["y"] as Number;
     var w = row["w"] as Number;
     var h = row["h"] as Number;
-    drawPill(dc, row["x0"] as Number, y, w, h, "Home", session.exitAfterRest == false);
     if (resting) {
         var label = "Pause";
         var outline = false;
@@ -317,26 +373,31 @@ function drawTopRow(dc as Graphics.Dc, width as Number, height as Number, sessio
             label = "Resume";
             outline = true;
         }
-        drawPill(dc, row["x1"] as Number, y, w, h, label, outline);
-        drawPill(dc, row["x2"] as Number, y, w, h, "Cancel", true);
-    } else if (session.locked == false && session.slots.size() > 0) {
-        drawPill(dc, row["x1"] as Number, y, w, h, "Finish", false);
+        drawPill(dc, row["x0"] as Number, y, w, h, label, outline);
+        drawPill(dc, row["x1"] as Number, y, w, h, "Cancel", true);
+        return;
+    }
+    if (session.allSetsDone()) {
+        drawPill(dc, width / 2 - w / 2, y, w, h, "Finish", false);
     }
 }
 
-function hitTop(x as Number, y as Number, width as Number, height as Number, resting as Boolean) as Number {
-    var row = topRow(width, height, resting);
+function hitTop(x as Number, y as Number, width as Number, height as Number, resting as Boolean, showFinish as Boolean) as Number {
+    var row = topRow(width, height);
     var top = row["y"] as Number;
     var w = row["w"] as Number;
     var h = row["h"] as Number;
-    if (inRect(x, y, row["x0"] as Number, top, w, h)) {
-        return 0;
+    if (resting) {
+        if (inRect(x, y, row["x0"] as Number, top, w, h)) {
+            return 1;
+        }
+        if (inRect(x, y, row["x1"] as Number, top, w, h)) {
+            return 2;
+        }
+        return -1;
     }
-    if (inRect(x, y, row["x1"] as Number, top, w, h)) {
+    if (showFinish && inRect(x, y, width / 2 - w / 2, top, w, h)) {
         return 1;
-    }
-    if (resting && inRect(x, y, row["x2"] as Number, top, w, h)) {
-        return 2;
     }
     return -1;
 }
@@ -383,6 +444,10 @@ function drawRestArc(dc as Graphics.Dc, session as Session, cx as Number, cy as 
         dc.setColor(0xFF6A1A, Graphics.COLOR_TRANSPARENT);
     }
     dc.drawArc(cx, cy, radius, Graphics.ARC_CLOCKWISE, 90, end);
+}
+
+function nearChevron(x as Number, y as Number, cx as Number, cy as Number) as Boolean {
+    return inCircle(x, y, cx, cy, 40);
 }
 
 function inCircle(x as Number, y as Number, cx as Number, cy as Number, radius as Number) as Boolean {

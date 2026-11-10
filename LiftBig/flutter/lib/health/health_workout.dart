@@ -1,7 +1,8 @@
 import '../model/journal_day.dart';
 
-/// Activity names shared with the Vue health writer. Calories are filled later
-/// from Apple or Health Connect active energy, never from a MET estimate.
+/// Activity names shared with the Vue health writer. [healthWritesForDay]
+/// leaves calories null. Sync fills Apple's active energy, or
+/// [estimateStrengthKcal] when that reading is missing or tiny.
 enum HealthActivity {
   strength,
   walking,
@@ -30,7 +31,8 @@ class HealthWorkoutWrite {
   final int startMs;
   final int endMs;
 
-  /// Null until active-energy samples are summed. Never a LiftBig estimate.
+  /// Null from [healthWritesForDay]. Sync may set Apple's active energy or a
+  /// strength estimate when Apple recorded almost none.
   double? energyKcal;
   final double? distanceMeters;
 }
@@ -187,6 +189,18 @@ bool healthWorkoutDuplicates({
       existingDay.month == nextDay.month &&
       existingDay.day == nextDay.day;
   return sameDay && (existingMinutes - nextMinutes).abs() <= 1;
+}
+
+/// Strength work at about 6 METs: kcal = 6 * kg * hours.
+/// Uses 80 kg when [bodyWeightLbs] is missing.
+double estimateStrengthKcal({
+  required double minutes,
+  double? bodyWeightLbs,
+}) {
+  if (minutes <= 0) return 0;
+  final lbs = bodyWeightLbs;
+  final kg = (lbs == null || lbs <= 0) ? 80.0 : lbs * 0.45359237;
+  return 6 * kg * (minutes / 60);
 }
 
 /// Sum of active-energy samples. Null when Apple recorded none.

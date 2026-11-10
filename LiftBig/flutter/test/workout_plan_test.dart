@@ -180,4 +180,15 @@ void main() {
     expect(sumActiveEnergyKcal(const []), isNull);
     expect(sumActiveEnergyKcal(const [120, 30]), 150);
   });
+
+  test('a 45 minute lift estimates a few hundred kcal, not 3', () {
+    final estimate = estimateStrengthKcal(minutes: 45);
+    expect(estimate, closeTo(360, 0.01));
+    expect(estimate, greaterThan(200));
+    expect(estimate, isNot(closeTo(3, 0.1)));
+    expect(
+      estimateStrengthKcal(minutes: 45, bodyWeightLbs: 200),
+      greaterThan(estimate),
+    );
+  });
 }

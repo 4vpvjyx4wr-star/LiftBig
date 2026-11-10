@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
+import '../journal/logged_day.dart';
 import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
@@ -88,8 +89,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _openLog([String? exerciseId]) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+    final finished = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
         builder: (_) => DayPage(
           journal: widget.journal,
           dateKey: _selectedKey,
@@ -99,6 +100,9 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (!mounted) return;
+    if (finished == true) {
+      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow');
+    }
     await _reload();
   }
 
@@ -117,6 +121,39 @@ class _HomePageState extends State<HomePage> {
     if (!confirmed || !mounted) return;
     try {
       await widget.journal.deleteDay(_selectedKey);
+    } catch (error) {
+      if (mounted) _snack('$error');
+      return;
+    }
+    if (!mounted) return;
+    await _reload();
+  }
+
+  Future<void> _deleteExercise(JournalExercise exercise) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete exercise?'),
+          content: Text(
+            'Remove ${exercise.name} and its sets from this day.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.journal.deleteExercise(exercise.id);
     } catch (error) {
       if (mounted) _snack('$error');
       return;
@@ -219,7 +256,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    showLiftBigNotice(context, message);
   }
 
   void _openExerciseInfo(JournalExercise exercise) {
@@ -317,6 +354,7 @@ class _HomePageState extends State<HomePage> {
             onAssignPlan: _assignPlan,
             onClearDay: _clearDay,
             onEditExercise: _editExercise,
+            onDeleteExercise: _deleteExercise,
             onExerciseInfo: _openExerciseInfo,
           ),
         ],
@@ -401,6 +439,7 @@ class _DayPanel extends StatelessWidget {
     required this.onAssignPlan,
     required this.onClearDay,
     required this.onEditExercise,
+    required this.onDeleteExercise,
     required this.onExerciseInfo,
   });
 
@@ -414,6 +453,7 @@ class _DayPanel extends StatelessWidget {
   final VoidCallback onAssignPlan;
   final VoidCallback onClearDay;
   final ValueChanged<JournalExercise> onEditExercise;
+  final ValueChanged<JournalExercise> onDeleteExercise;
   final ValueChanged<JournalExercise> onExerciseInfo;
 
   @override
@@ -597,6 +637,7 @@ class _DayPanel extends StatelessWidget {
                   exercise: exercises[i],
                   onOpen: () => onLog(exercises[i].id),
                   onEdit: () => onEditExercise(exercises[i]),
+                  onDelete: () => onDeleteExercise(exercises[i]),
                   onInfo: () => onExerciseInfo(exercises[i]),
                 ),
               ],
@@ -692,16 +733,25 @@ class _ExerciseCard extends StatelessWidget {
     required this.exercise,
     required this.onOpen,
     required this.onEdit,
+    required this.onDelete,
     required this.onInfo,
   });
 
   final JournalExercise exercise;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
   final VoidCallback onInfo;
 
   @override
   Widget build(BuildContext context) {
+    final badge = supersetBadge(exercise);
+    final targetReps = (exercise.targetReps ?? '').trim();
+    final repsLabel = targetReps.isEmpty
+        ? null
+        : (targetReps.toLowerCase().contains('rep')
+              ? targetReps
+              : '$targetReps reps');
     return Material(
       color: context.liftBig.cardInner,
       shape: RoundedRectangleBorder(
@@ -748,8 +798,43 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.info_outline, size: 18),
                   ),
+                  IconButton(
+                    onPressed: onDelete,
+                    tooltip: 'Delete exercise',
+                    style: IconButton.styleFrom(
+                      foregroundColor: context.liftBig.primary,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(40, 40),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 22),
+                  ),
                 ],
               ),
+              if (badge != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 2),
+                  child: Text(
+                    badge,
+                    style: TextStyle(
+                      color: context.liftBig.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              if (repsLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 4),
+                  child: Text(
+                    repsLabel,
+                    style: TextStyle(
+                      color: context.liftBig.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               if (exercise.notes != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),

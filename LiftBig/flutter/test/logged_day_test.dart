@@ -98,6 +98,27 @@ void main() {
       isA<FieldAdvance>().having((advance) => advance.toReps, 'toReps', isTrue),
     );
     expect(
+      advanceAfterWeight(
+        enabled: true,
+        weight: '135',
+        setId: 'a',
+        loggedReps: '8',
+      ),
+      isNull,
+    );
+    expect(
+      advanceAfterWeight(
+        enabled: true,
+        weight: '135',
+        setId: 'a',
+        loggedReps: '   ',
+      ),
+      isNotNull,
+    );
+    expect(autoAdvanceWeightToRepsFromStored(null), isTrue);
+    expect(autoAdvanceWeightToRepsFromStored('false'), isFalse);
+    expect(autoAdvanceWeightToRepsFromStored('true'), isTrue);
+    expect(
       advanceAfterWeight(enabled: true, weight: '  ', setId: 'a'),
       isNull,
     );
@@ -110,6 +131,24 @@ void main() {
     expect(next.toReps, isFalse);
     expect(advanceAfterReps(enabled: true, reps: '5', nextSetId: null), isNull);
     expect(advanceAfterReps(enabled: true, reps: '', nextSetId: 'b'), isNull);
+    expect(
+      advanceAfterReps(
+        enabled: true,
+        reps: '5',
+        nextSetId: 'b',
+        nextWeight: '135',
+      ),
+      isNull,
+    );
+    expect(
+      advanceAfterReps(
+        enabled: true,
+        reps: '5',
+        nextSetId: 'b',
+        nextWeight: '   ',
+      )!.setId,
+      'b',
+    );
   });
 
   test('rest labels speak minutes once the value reaches one minute', () {
@@ -147,5 +186,13 @@ void main() {
     expect(startsRestAfterSet(first, [first, second, alone]), isFalse);
     expect(startsRestAfterSet(second, [first, second, alone]), isTrue);
     expect(startsRestAfterSet(alone, [first, second, alone]), isTrue);
+    const cardio = JournalExercise(
+      id: 'd',
+      sortOrder: 3,
+      name: 'Stair Climber',
+      isCardio: true,
+      sets: [],
+    );
+    expect(startsRestAfterSet(cardio, [alone, cardio]), isFalse);
   });
 }

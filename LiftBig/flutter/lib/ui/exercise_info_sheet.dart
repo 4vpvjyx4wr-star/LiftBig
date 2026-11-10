@@ -295,8 +295,6 @@ class _SheetHeader extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 8),
-          const _SheetHandle(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 4, 16),
             child: Row(
@@ -322,25 +320,6 @@ class _SheetHeader extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SheetHandle extends StatelessWidget {
-  const _SheetHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 36,
-        height: 4,
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: context.liftBig.border,
-          borderRadius: BorderRadius.circular(2),
-        ),
       ),
     );
   }

@@ -65,17 +65,6 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: context.liftBig.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
           const Text(
             'Add to calendar',
             textAlign: TextAlign.center,

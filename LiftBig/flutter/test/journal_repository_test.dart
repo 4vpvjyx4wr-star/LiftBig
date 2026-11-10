@@ -698,7 +698,7 @@ void main() {
     expect(prefilled!.exercises.single.sets, hasLength(3));
     for (final set in prefilled.exercises.single.sets) {
       expect(set.weight, '102.5');
-      expect(set.reps, '6');
+      expect(set.reps, isEmpty);
     }
 
     await first.addExercise(
@@ -727,7 +727,7 @@ void main() {
     final curlFilled = await first.getDay('2026-02-08');
     for (final set in curlFilled!.exercises.single.sets) {
       expect(set.weight, isNotEmpty);
-      expect(set.reps, '12');
+      expect(set.reps, isEmpty);
     }
 
     await first.updateSet('work', difficulty: 'Easy', setDifficulty: true);
@@ -804,6 +804,354 @@ void main() {
     final second = JournalRepository(AppDatabase(NativeDatabase(file)));
     expect(await second.favoritePlanIds(), {'pull'});
     await second.db.close();
+    if (file.existsSync()) file.deleteSync();
+  });
+
+  test('replaceExercise refills the new lift and drops an unqualified warmup', () async {
+    final file = File(
+      '${Directory.systemTemp.path}/liftbig-swap-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final journal = JournalRepository(AppDatabase(NativeDatabase(file)));
+    await journal.addExercise(
+      dateKey: '2026-04-01',
+      name: 'Leg Press',
+      targetReps: '8-12',
+      targetWeight: '300',
+      sets: const [
+        JournalSet(id: 'lp-1', sortOrder: 0, reps: '12', weight: '300'),
+        JournalSet(id: 'lp-2', sortOrder: 1, reps: '12', weight: '300'),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-04-01',
+      name: 'Hack Squat',
+      targetReps: '8-12',
+      targetWeight: '500',
+      sets: const [
+        JournalSet(id: 'hs-1', sortOrder: 0, reps: '12', weight: '500'),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-04-08',
+      name: 'Leg Press',
+      targetReps: '8-12',
+      sets: const [
+        JournalSet(id: 'today-lp', sortOrder: 0, reps: '12', weight: '400', checked: true),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-04-08',
+      name: 'Back Squat',
+      libraryId: 'back-squat',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(
+          id: 'sq-warm',
+          sortOrder: 0,
+          reps: '5',
+          weight: '50',
+          isWarmup: true,
+        ),
+        JournalSet(id: 'sq-1', sortOrder: 1, reps: '8', weight: '100'),
+        JournalSet(id: 'sq-2', sortOrder: 2, reps: '8', weight: '100'),
+        JournalSet(
+          id: 'sq-done',
+          sortOrder: 3,
+          reps: '3',
+          weight: '100',
+          checked: true,
+        ),
+      ],
+    );
+    final squat = (await journal.getDay('2026-04-08'))!.exercises.last;
+    await journal.replaceExercise(
+      exerciseId: squat.id,
+      name: 'Leg Press',
+      libraryId: 'leg-press',
+      isCardio: false,
+      isCore: false,
+    );
+    final swapped = (await journal.getDay('2026-04-08'))!.exercises.last;
+    expect(swapped.name, 'Leg Press');
+    expect(swapped.libraryId, 'leg-press');
+    expect(swapped.targetWeight, '310');
+    expect(swapped.targetReps, '8-12');
+    expect(swapped.sets.map((set) => set.isWarmup), everyElement(isFalse));
+    expect(swapped.sets.map((set) => set.weight), ['310', '310', '100']);
+    expect(swapped.sets.map((set) => set.reps), ['8', '8', '3']);
+    expect(swapped.sets.last.checked, isTrue);
+
+    await journal.updateExerciseGoal(
+      exerciseId: swapped.id,
+      targetReps: '8-12',
+      targetWeight: '100',
+      setCount: swapped.sets.length,
+      writeTargetWeight: false,
+    );
+    final kept = (await journal.getDay('2026-04-08'))!.exercises.last;
+    expect(kept.targetWeight, '310');
+    expect(kept.sets.map((set) => set.weight), ['310', '310', '100']);
+
+    await journal.addExercise(
+      dateKey: '2026-04-01',
+      name: 'Back Squat',
+      targetReps: '5',
+      targetWeight: '200',
+      sets: const [
+        JournalSet(id: 'bs-1', sortOrder: 0, reps: '5', weight: '200'),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-04-15',
+      name: 'Bench Press',
+      targetReps: '5',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(
+          id: 'bp-warm',
+          sortOrder: 0,
+          reps: '5',
+          weight: '45',
+          isWarmup: true,
+        ),
+        JournalSet(id: 'bp-1', sortOrder: 1, reps: '8', weight: '100'),
+        JournalSet(id: 'bp-2', sortOrder: 2, reps: '8', weight: '100'),
+      ],
+    );
+    final bench = (await journal.getDay('2026-04-15'))!.exercises.single;
+    await journal.replaceExercise(
+      exerciseId: bench.id,
+      name: 'Back Squat',
+      libraryId: 'back-squat',
+      isCardio: false,
+      isCore: false,
+    );
+    final withWarmup = (await journal.getDay('2026-04-15'))!.exercises.single;
+    expect(withWarmup.sets.first.isWarmup, isTrue);
+    expect(withWarmup.sets.first.reps, '5');
+    expect(withWarmup.sets.first.weight, '105');
+    expect(withWarmup.sets.skip(1).map((set) => set.weight), ['205', '205']);
+    expect(withWarmup.sets.skip(1).map((set) => set.reps), ['5', '5']);
+    expect(withWarmup.targetWeight, '205');
+
+    await journal.db.close();
+    if (file.existsSync()) file.deleteSync();
+  });
+
+  test('propagateWeightToLaterSets copies a weight onto later unchecked sets', () async {
+    final file = File(
+      '${Directory.systemTemp.path}/liftbig-propagate-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final journal = JournalRepository(AppDatabase(NativeDatabase(file)));
+    await journal.addExercise(
+      dateKey: '2026-05-01',
+      name: 'Bench Press',
+      sets: const [
+        JournalSet(id: 'p1', sortOrder: 0, reps: '8', weight: '185'),
+        JournalSet(id: 'p2', sortOrder: 1, reps: '8', weight: '205'),
+        JournalSet(id: 'p3', sortOrder: 2, reps: '8', weight: '185'),
+        JournalSet(id: 'p4', sortOrder: 3, reps: '8', weight: '175', checked: true),
+      ],
+    );
+    final exercise = (await journal.getDay('2026-05-01'))!.exercises.single;
+    await journal.updateSet(exercise.sets.first.id, weight: '225');
+    await journal.propagateWeightToLaterSets(
+      exerciseId: exercise.id,
+      fromSetId: exercise.sets.first.id,
+      weight: '225',
+    );
+    final updated = (await journal.getDay('2026-05-01'))!.exercises.single;
+    expect(updated.sets.map((set) => set.weight), ['225', '225', '225', '175']);
+    expect(updated.sets.last.checked, isTrue);
+
+    await journal.propagateWeightToLaterSets(
+      exerciseId: exercise.id,
+      fromSetId: exercise.sets[1].id,
+      weight: '200',
+    );
+    final fromMiddle = (await journal.getDay('2026-05-01'))!.exercises.single;
+    expect(fromMiddle.sets.map((set) => set.weight), ['225', '225', '200', '175']);
+
+    await journal.db.close();
+    if (file.existsSync()) file.deleteSync();
+  });
+
+  test('updateExerciseGoal writes the weight onto every unchecked set', () async {
+    final file = File(
+      '${Directory.systemTemp.path}/liftbig-goal-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final journal = JournalRepository(AppDatabase(NativeDatabase(file)));
+    await journal.addExercise(
+      dateKey: '2026-05-02',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '135',
+      sets: const [
+        JournalSet(
+          id: 'g-warm',
+          sortOrder: 0,
+          reps: '5',
+          weight: '45',
+          isWarmup: true,
+        ),
+        JournalSet(id: 'g1', sortOrder: 1, reps: '8', weight: '135'),
+        JournalSet(id: 'g2', sortOrder: 2, reps: '10', weight: '185'),
+        JournalSet(id: 'g3', sortOrder: 3, reps: '', weight: '135'),
+        JournalSet(id: 'g4', sortOrder: 4, reps: '8-12', weight: '135'),
+        JournalSet(
+          id: 'g-done',
+          sortOrder: 5,
+          reps: '5',
+          weight: '95',
+          checked: true,
+        ),
+      ],
+    );
+    final exercise = (await journal.getDay('2026-05-02'))!.exercises.single;
+    await journal.updateExerciseGoal(
+      exerciseId: exercise.id,
+      targetReps: '6-10',
+      targetWeight: '225',
+      setCount: exercise.sets.length,
+    );
+    final updated = (await journal.getDay('2026-05-02'))!.exercises.single;
+    expect(updated.targetWeight, '225');
+    expect(updated.targetReps, '6-10');
+    expect(updated.prescribedWeight, '135');
+    expect(updated.prescribedReps, '8-12');
+    expect(updated.sets.map((set) => set.weight), [
+      '225',
+      '225',
+      '225',
+      '225',
+      '225',
+      '95',
+    ]);
+    expect(updated.sets.map((set) => set.reps), [
+      '5',
+      '8',
+      '10',
+      '6-10',
+      '6-10',
+      '5',
+    ]);
+    expect(updated.sets.last.checked, isTrue);
+
+    await journal.db.close();
+    if (file.existsSync()) file.deleteSync();
+  });
+
+  test('prefill writes progression onto unlogged prescription sets', () async {
+    final file = File(
+      '${Directory.systemTemp.path}/liftbig-progress-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final journal = JournalRepository(AppDatabase(NativeDatabase(file)));
+    await journal.addExercise(
+      dateKey: '2026-06-01',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(id: 'hist-1', sortOrder: 0, reps: '12', weight: '100', checked: true),
+        JournalSet(id: 'hist-2', sortOrder: 1, reps: '12', weight: '100', checked: true),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-06-01',
+      name: 'Hack Squat',
+      targetReps: '8-12',
+      targetWeight: '400',
+      sets: const [
+        JournalSet(id: 'hack-1', sortOrder: 0, reps: '12', weight: '400', checked: true),
+      ],
+    );
+    await journal.addExercise(
+      dateKey: '2026-06-08',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(
+          id: 'warm',
+          sortOrder: 0,
+          reps: '5',
+          weight: '50',
+          isWarmup: true,
+        ),
+        JournalSet(id: 's1', sortOrder: 1, reps: '', weight: '100'),
+        JournalSet(id: 's2', sortOrder: 2, reps: '', weight: '100'),
+        JournalSet(id: 's3', sortOrder: 3, reps: '', weight: '100'),
+      ],
+    );
+    expect(await journal.prefillEmptySets('2026-06-08'), 3);
+    final progressed = (await journal.getDay('2026-06-08'))!.exercises.single;
+    expect(progressed.targetReps, '8-12');
+    expect(progressed.targetWeight, '102.5');
+    expect(progressed.sets.first.weight, '50');
+    expect(progressed.sets.first.isWarmup, isTrue);
+    expect(progressed.sets.skip(1).map((set) => set.weight), [
+      '102.5',
+      '102.5',
+      '102.5',
+    ]);
+    expect(progressed.sets.skip(1).map((set) => set.reps), ['', '', '']);
+    expect(await journal.prefillEmptySets('2026-06-08'), 0);
+
+    await journal.addExercise(
+      dateKey: '2026-06-15',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(id: 'c1', sortOrder: 0, reps: '', weight: '100'),
+        JournalSet(id: 'c2', sortOrder: 1, reps: '', weight: '185'),
+        JournalSet(id: 'c3', sortOrder: 2, reps: '', weight: '100'),
+      ],
+    );
+    expect(await journal.prefillEmptySets('2026-06-15'), 0);
+    final custom = (await journal.getDay('2026-06-15'))!.exercises.single;
+    expect(custom.targetWeight, '100');
+    expect(custom.sets.map((set) => set.weight), ['100', '185', '100']);
+
+    await journal.addExercise(
+      dateKey: '2026-06-22',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(id: 'k1', sortOrder: 0, reps: '', weight: '100', checked: true),
+        JournalSet(id: 'k2', sortOrder: 1, reps: '', weight: '100'),
+      ],
+    );
+    expect(await journal.prefillEmptySets('2026-06-22'), 0);
+    final started = (await journal.getDay('2026-06-22'))!.exercises.single;
+    expect(started.targetWeight, '100');
+    expect(started.sets.map((set) => set.weight), ['100', '100']);
+
+    await journal.addExercise(
+      dateKey: '2026-06-29',
+      name: 'Bench Press',
+      targetReps: '8-12',
+      targetWeight: '100',
+      sets: const [
+        JournalSet(id: 'e1', sortOrder: 0, reps: '', weight: '100'),
+        JournalSet(id: 'e2', sortOrder: 1, reps: '', weight: '100'),
+      ],
+    );
+    final edited = (await journal.getDay('2026-06-29'))!.exercises.single;
+    await journal.updateExerciseGoal(
+      exerciseId: edited.id,
+      targetReps: '8-12',
+      targetWeight: '225',
+      setCount: 2,
+    );
+    expect(await journal.prefillEmptySets('2026-06-29'), 0);
+    final hand = (await journal.getDay('2026-06-29'))!.exercises.single;
+    expect(hand.targetWeight, '225');
+    expect(hand.sets.map((set) => set.weight), ['225', '225']);
+
+    await journal.db.close();
     if (file.existsSync()) file.deleteSync();
   });
 }

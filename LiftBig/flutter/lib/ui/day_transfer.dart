@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
+import '../theme.dart';
 
 /// Copies [fromKey] onto a day the user picks. Returns true when rows changed.
 Future<bool> copyLoggedDay(
@@ -89,5 +90,5 @@ Future<String?> _pickOtherDay(BuildContext context, String fromKey) async {
 }
 
 void _toast(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  showLiftBigNotice(context, message);
 }

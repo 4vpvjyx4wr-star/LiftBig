@@ -416,4 +416,103 @@ void main() {
     expect(double.parse(squat.weight), closeTo(92.5 * 2.2046226218, 0.02));
     expect(squat.reps, '5');
   });
+
+  test('unlogged prescription sets take the next session goal', () {
+    final history = [
+      benchSet(
+        dateKey: '2026-01-01',
+        reps: '12',
+        weight: '100',
+        targetReps: '8-12',
+      ),
+      benchSet(
+        dateKey: '2026-01-01',
+        reps: '12',
+        weight: '500',
+        targetReps: '8-12',
+        exerciseName: 'Hack Squat',
+      ),
+    ];
+    final progression = progressionForUnloggedExercise(
+      exerciseName: 'Bench Press',
+      history: history,
+      targetReps: '8-12',
+      targetWeight: '100',
+      excludeDateKey: '2026-01-08',
+      sets: const [
+        UnloggedSetSnapshot(reps: '', weight: '100'),
+        UnloggedSetSnapshot(reps: '8-12', weight: '100'),
+        UnloggedSetSnapshot(reps: '5', weight: '50', isWarmup: true),
+      ],
+    );
+    expect(progression, isNotNull);
+    expect(progression!.targetReps, '8-12');
+    expect(progression.targetWeight, '102.5');
+    expect(progression.setReps, '8');
+    expect(progression.setWeight, '102.5');
+    expect(
+      progressionForUnloggedExercise(
+        exerciseName: 'Leg Press',
+        history: history,
+        targetReps: '8-12',
+        targetWeight: '100',
+        sets: const [UnloggedSetSnapshot(reps: '', weight: '100')],
+      ),
+      isNull,
+    );
+  });
+
+  test('a logged set, a checked set, or a hand-edited goal blocks progression', () {
+    final history = [
+      benchSet(dateKey: '2026-01-01', reps: '12', weight: '100', targetReps: '8-12'),
+    ];
+    expect(
+      progressionForUnloggedExercise(
+        exerciseName: 'Bench Press',
+        history: history,
+        targetReps: '8-12',
+        targetWeight: '100',
+        sets: const [
+          UnloggedSetSnapshot(reps: '', weight: '100'),
+          UnloggedSetSnapshot(reps: '', weight: '185'),
+        ],
+      ),
+      isNull,
+    );
+    expect(
+      progressionForUnloggedExercise(
+        exerciseName: 'Bench Press',
+        history: history,
+        targetReps: '8-12',
+        targetWeight: '100',
+        sets: const [
+          UnloggedSetSnapshot(reps: '', weight: '100', checked: true),
+          UnloggedSetSnapshot(reps: '', weight: '100'),
+        ],
+      ),
+      isNull,
+    );
+    expect(
+      progressionForUnloggedExercise(
+        exerciseName: 'Bench Press',
+        history: history,
+        targetReps: '8-12',
+        targetWeight: '225',
+        prescribedReps: '8-12',
+        prescribedWeight: '100',
+        prescribedSetCount: 3,
+        sets: const [UnloggedSetSnapshot(reps: '', weight: '100')],
+      ),
+      isNull,
+    );
+    expect(
+      setStillHoldsProgrammedPrescription(
+        reps: '10',
+        weight: '100',
+        targetReps: '8-12',
+        targetWeight: '100',
+      ),
+      isFalse,
+    );
+  });
 }

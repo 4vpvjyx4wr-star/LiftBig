@@ -3,6 +3,70 @@ import 'dart:convert';
 import '../model/journal_day.dart';
 import '../utils/weight_units.dart';
 
+/// Working count for a companion. A range such as 8-12 uses the top, 12.
+String companionReps(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  final numbers = RegExp(r'\d+')
+      .allMatches(trimmed)
+      .map((match) => int.parse(match.group(0)!))
+      .toList();
+  if (numbers.isEmpty) return trimmed;
+  if (numbers.length == 1 && RegExp(r'^\d+$').hasMatch(trimmed)) {
+    return trimmed;
+  }
+  var top = numbers.first;
+  for (final number in numbers.skip(1)) {
+    if (number > top) top = number;
+  }
+  return '$top';
+}
+
+/// Phone rest stamped onto a session the watches already understand.
+class WatchRestPublish {
+  const WatchRestPublish({
+    required this.soundEnabled,
+    this.restEndsAtEpochSeconds,
+    this.restPaused = false,
+    this.restRemaining,
+    this.restCancelled = false,
+  });
+
+  final bool soundEnabled;
+
+  /// Absolute end, unix seconds. Null when rest is not running.
+  final int? restEndsAtEpochSeconds;
+  final bool restPaused;
+  final int? restRemaining;
+  final bool restCancelled;
+}
+
+/// Adds the phone rest clock and the alarm-sound preference.
+/// A lineup republish without an active phone rest leaves the watch clock alone.
+Map<String, Object?> withWatchRest(
+  Map<String, Object?> payload,
+  WatchRestPublish rest,
+) {
+  final next = Map<String, Object?>.from(payload);
+  next['soundEnabled'] = rest.soundEnabled;
+  next['restCancelled'] = rest.restCancelled;
+  next.remove('restEndsAt');
+  next.remove('restPaused');
+  next.remove('restRemaining');
+  if (rest.restCancelled) return next;
+  if (rest.restPaused) {
+    next['restPaused'] = true;
+    next['restRemaining'] = rest.restRemaining ?? 0;
+    return next;
+  }
+  final ends = rest.restEndsAtEpochSeconds;
+  if (ends != null && ends > 0) {
+    next['restEndsAt'] = ends;
+    next['restPaused'] = false;
+  }
+  return next;
+}
+
 /// Session the Apple Watch and Garmin companions already decode.
 class WatchSession {
   const WatchSession.locked(this.reason)
@@ -16,6 +80,7 @@ class WatchSession {
       currentSetIndex = null,
       restSeconds = null,
       weightUnit = null,
+      restCancelled = false,
       lineup = const [];
 
   const WatchSession.open({
@@ -29,6 +94,7 @@ class WatchSession {
     required this.restSeconds,
     required this.weightUnit,
     required this.lineup,
+    this.restCancelled = false,
   }) : locked = false,
        reason = null;
 
@@ -43,6 +109,10 @@ class WatchSession {
   final int? currentSetIndex;
   final int? restSeconds;
   final WeightUnit? weightUnit;
+
+  /// True only when the phone cancelled rest. A lineup republish leaves this
+  /// false so a watch countdown keeps running.
+  final bool restCancelled;
   final List<Map<String, Object?>> lineup;
 
   Map<String, Object?> toJson() {
@@ -61,6 +131,7 @@ class WatchSession {
       'currentSetIndex': currentSetIndex,
       'restSeconds': restSeconds,
       'weightUnit': weightUnit == WeightUnit.kg ? 'kg' : 'lb',
+      'restCancelled': restCancelled,
       'lineup': lineup,
     };
   }
@@ -129,9 +200,12 @@ List<Map<String, Object?>> lineupForWatch(
         'exerciseName': exercise.name,
         'setIndex': index,
         'setCount': count,
-        'reps': repsRaw.trim(),
+        'reps': companionReps(repsRaw),
         'weightDisplay': storedLbsToDisplay(weightRaw, weightUnit),
         'checked': set?.checked ?? false,
+        'supersetGroupId': exercise.supersetGroupId,
+        'supersetLabel': exercise.supersetLabel,
+        'supersetOrder': exercise.supersetOrder,
       });
     }
   }
@@ -139,11 +213,50 @@ List<Map<String, Object?>> lineupForWatch(
 }
 
 JournalExercise? watchExercise(List<JournalExercise> exercises) {
+  JournalExercise? firstStrength;
   for (final exercise in exercises) {
-    if (!exercise.isCardio && !exercise.isCircuit) return exercise;
+    if (exercise.isCardio || exercise.isCircuit) continue;
+    firstStrength ??= exercise;
+    if (_exerciseInProgress(exercise)) return exercise;
   }
+  if (firstStrength != null) return firstStrength;
   if (exercises.isEmpty) return null;
   return exercises.first;
+}
+
+bool _exerciseInProgress(JournalExercise exercise) {
+  if (exercise.sets.isEmpty) return true;
+  return exercise.sets.any((set) => !set.checked);
+}
+
+/// A phone republish clears a running watch rest only when the workout is
+/// locked or the phone cancelled rest. Sending the lineup does not.
+bool phonePayloadClearsWatchRest(Map<String, Object?> payload) {
+  if (payload['locked'] == true) return true;
+  return payload['restCancelled'] == true;
+}
+
+/// Slot to keep on screen when a lineup replaces the previous one.
+/// The set already showing stays when it is still in the lineup.
+int keptWatchSlotIndex({
+  required List<Map<String, Object?>> lineup,
+  String? currentExerciseId,
+  int? currentSetIndex,
+}) {
+  if (currentExerciseId != null && currentSetIndex != null) {
+    for (var i = 0; i < lineup.length; i++) {
+      final slot = lineup[i];
+      if (slot['exerciseId'] == currentExerciseId && slot['setIndex'] == currentSetIndex) {
+        return i;
+      }
+    }
+  }
+  final open = lineup.indexWhere(
+    (slot) => slot['checked'] != true && slot['done'] != true,
+  );
+  if (open >= 0) return open;
+  if (lineup.isEmpty) return 0;
+  return lineup.length - 1;
 }
 
 WatchSession buildWatchSession({
@@ -171,7 +284,7 @@ WatchSession buildWatchSession({
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     targetWeightDisplay: storedLbsToDisplay(weightRaw, weightUnit),
-    targetReps: repsRaw.trim(),
+    targetReps: companionReps(repsRaw),
     setCount: exercise.sets.isEmpty ? 1 : exercise.sets.length,
     currentSetIndex: openIndex,
     restSeconds: restSeconds,

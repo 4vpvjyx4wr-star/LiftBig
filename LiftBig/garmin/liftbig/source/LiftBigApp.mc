@@ -1,4 +1,5 @@
 import Toybox.Application;
+import Toybox.Background;
 import Toybox.Communications;
 import Toybox.Lang;
 import Toybox.System;
@@ -15,6 +16,7 @@ class LiftBigApp extends Application.AppBase {
         if (Communications has :registerForPhoneAppMessages) {
             Communications.registerForPhoneAppMessages(method(:onPhone));
         }
+        session.clearBackgroundRestAlert();
         session.restoreRest();
         session.ensureActivity();
         System.println("LiftBig ready on Venu 3: " + session.exerciseName());
@@ -22,6 +24,14 @@ class LiftBigApp extends Application.AppBase {
 
     function onStop(state as Dictionary?) as Void {
         session.persistRest();
+        // The in-app beep is the exact alert. This arms the system dialog
+        // only if the process is actually stopping with at least five
+        // minutes left. A shorter rest cannot be handed to the system.
+        session.armBackgroundRestAlert();
+    }
+
+    function getServiceDelegate() as [System.ServiceDelegate] {
+        return [new LiftBigServiceDelegate()];
     }
 
     function onEnterSleep() as Void {
@@ -46,4 +56,18 @@ class LiftBigApp extends Application.AppBase {
 
 function getApp() as LiftBigApp {
     return Application.getApp() as LiftBigApp;
+}
+
+// Runs only after the app process has stopped. Connect IQ will not
+// start this sooner than five minutes, and it cannot play a tone.
+(:background)
+class LiftBigServiceDelegate extends System.ServiceDelegate {
+    function initialize() {
+        ServiceDelegate.initialize();
+    }
+
+    function onTemporalEvent() as Void {
+        Background.requestApplicationWake("Rest complete");
+        Background.exit(null);
+    }
 }

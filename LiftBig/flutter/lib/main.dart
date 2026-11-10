@@ -11,6 +11,7 @@ import 'sync/sync_controller.dart';
 import 'theme.dart';
 import 'ui/app_shell.dart';
 import 'ui/rest_timer_scope.dart';
+import 'ui/rest_timer_tile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +61,7 @@ class LiftBigApp extends StatefulWidget {
 
 class _LiftBigAppState extends State<LiftBigApp> {
   late final LiftBigThemeController _themes;
+  final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -92,6 +94,7 @@ class _LiftBigAppState extends State<LiftBigApp> {
     return RestTimerScope(
       controller: widget.restTimer,
       child: MaterialApp(
+        navigatorKey: _navigatorKey,
         title: 'LiftBig',
         debugShowCheckedModeBanner: false,
         theme: buildLiftBigTheme(_themes.palette),
@@ -109,7 +112,16 @@ class _LiftBigAppState extends State<LiftBigApp> {
             ),
             child: ColoredBox(
               color: colors.background,
-              child: child ?? const SizedBox.shrink(),
+              child: Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  RestTimerOverlay(
+                    journal: widget.journal,
+                    controller: widget.restTimer,
+                    navigatorKey: _navigatorKey,
+                  ),
+                ],
+              ),
             ),
           );
         },

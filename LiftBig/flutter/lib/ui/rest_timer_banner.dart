@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import '../rest/rest_timer_state.dart';
 import '../theme.dart';
 
+const double restTimerTileWidth = 176;
+const double restTimerTileHeight = 72;
+
+/// Compact rest card: clock, pause, and dismiss. A tap on the clock edits
+/// the time still left. Only this card is painted, even when a parent stretches
+/// the slot.
 class RestTimerBanner extends StatelessWidget {
   const RestTimerBanner({
     super.key,
@@ -10,7 +16,7 @@ class RestTimerBanner extends StatelessWidget {
     required this.running,
     required this.exerciseName,
     required this.onPause,
-    required this.onReset,
+    required this.onEdit,
     required this.onDismiss,
   });
 
@@ -18,126 +24,109 @@ class RestTimerBanner extends StatelessWidget {
   final bool running;
   final String? exerciseName;
   final VoidCallback onPause;
-  final VoidCallback onReset;
+  final VoidCallback onEdit;
   final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
+    final card = SizedBox(
+      width: restTimerTileWidth,
+      child: _card(context),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stretched = constraints.hasTightWidth &&
+            constraints.maxWidth > restTimerTileWidth + 1;
+        if (!stretched) return card;
+        return Align(alignment: Alignment.topRight, child: card);
+      },
+    );
+  }
+
+  Widget _card(BuildContext context) {
     final done = remaining == 0;
-    final subtitle = exerciseName?.trim();
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: done ? const Color(0xFF163020) : context.liftBig.card,
-        border: Border(
-          bottom: BorderSide(
-            color: done ? context.liftBig.success : context.liftBig.primary,
-          ),
+    final name = exerciseName?.trim();
+    final border = done ? context.liftBig.success : context.liftBig.primary;
+    return Material(
+      color: done ? const Color(0xFF163020) : context.liftBig.card,
+      elevation: 8,
+      shadowColor: Colors.black54,
+      borderRadius: BorderRadius.circular(16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: border, width: 1.5),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 2, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    done ? 'Rest done' : 'Rest',
-                    style: TextStyle(
-                      color: done ? context.liftBig.success : context.liftBig.muted,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  if (subtitle != null && subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:  TextStyle(
-                        color: context.liftBig.foreground,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+                  GestureDetector(
+                    onTap: onEdit,
+                    child: Text(
+                      formatRestClock(remaining),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
+                        color: done ? context.liftBig.success : context.liftBig.foreground,
                       ),
                     ),
-                  Text(
-                    formatRestClock(remaining),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
+                  ),
+                  const Spacer(),
+                  if (!done)
+                    _iconButton(
+                      tooltip: running ? 'Pause' : 'Resume',
+                      icon: running ? Icons.pause : Icons.play_arrow,
+                      onPressed: onPause,
                     ),
+                  _iconButton(
+                    tooltip: 'Dismiss',
+                    icon: Icons.close,
+                    onPressed: onDismiss,
                   ),
                 ],
               ),
-            ),
-            RestTimerControls(
-              remaining: remaining,
-              running: running,
-              onPause: onPause,
-              onReset: onReset,
-            ),
-            TextButton(
-              onPressed: onDismiss,
-              child: Text(done ? 'Dismiss' : 'Cancel'),
-            ),
-          ],
+              if (done || (name != null && name.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 2),
+                  child: GestureDetector(
+                    onTap: done ? null : onEdit,
+                    child: Text(
+                      done ? 'Rest done' : (name ?? ''),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: done ? context.liftBig.success : context.liftBig.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
 
-class RestTimerControls extends StatelessWidget {
-  const RestTimerControls({
-    super.key,
-    required this.remaining,
-    required this.running,
-    required this.onPause,
-    required this.onReset,
-    this.compact = false,
-  });
-
-  final int remaining;
-  final bool running;
-  final VoidCallback onPause;
-  final VoidCallback onReset;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final done = remaining == 0;
-    if (done) {
-      return TextButton(
-        onPressed: onReset,
-        style: TextButton.styleFrom(
-          visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-          padding: compact ? const EdgeInsets.symmetric(horizontal: 6) : null,
-        ),
-        child: const Text('Reset'),
-      );
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextButton(
-          onPressed: onPause,
-          style: TextButton.styleFrom(
-            visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-            padding: compact ? const EdgeInsets.symmetric(horizontal: 6) : null,
-          ),
-          child: Text(running ? 'Pause' : 'Resume'),
-        ),
-        TextButton(
-          onPressed: onReset,
-          style: TextButton.styleFrom(
-            visualDensity: compact ? VisualDensity.compact : VisualDensity.standard,
-            padding: compact ? const EdgeInsets.symmetric(horizontal: 6) : null,
-          ),
-          child: const Text('Reset'),
-        ),
-      ],
+  Widget _iconButton({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      icon: Icon(icon, size: 20),
     );
   }
 }

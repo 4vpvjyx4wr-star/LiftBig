@@ -25,7 +25,7 @@ class KeyboardDismissScaffold extends StatelessWidget {
       appBar: AppBar(title: Text(title)),
       body: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (event) => _unfocusIfOutside(event.position),
+        onPointerDown: (event) => dismissKeyboardIfOutside(event.position),
         child: Stack(
           children: [
             Padding(
@@ -44,7 +44,7 @@ class KeyboardDismissScaffold extends StatelessWidget {
                 right: 0,
                 bottom: inset,
                 height: toolbarHeight,
-                child: const _KeyboardDoneBar(),
+                child: const KeyboardDoneBar(),
               ),
           ],
         ),
@@ -53,15 +53,15 @@ class KeyboardDismissScaffold extends StatelessWidget {
   }
 }
 
-class _KeyboardDoneBar extends StatelessWidget {
-  const _KeyboardDoneBar();
+class KeyboardDoneBar extends StatelessWidget {
+  const KeyboardDoneBar({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: context.liftBig.card,
       child: DecoratedBox(
-        decoration:  BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(top: BorderSide(color: context.liftBig.border)),
         ),
         child: Align(
@@ -76,7 +76,8 @@ class _KeyboardDoneBar extends StatelessWidget {
   }
 }
 
-void _unfocusIfOutside(Offset global) {
+/// Unfocuses the primary field when [global] is outside that field.
+void dismissKeyboardIfOutside(Offset global) {
   final focus = FocusManager.instance.primaryFocus;
   if (focus == null || !focus.hasFocus) return;
   final object = focus.context?.findRenderObject();

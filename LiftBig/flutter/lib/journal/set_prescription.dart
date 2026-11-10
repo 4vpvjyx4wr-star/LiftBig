@@ -87,22 +87,78 @@ String loggedRepsField(String storedReps) {
   return storedReps;
 }
 
-/// Slider and wheel value. Logged number wins, then a single goal, then the range middle.
+/// Logged count only. [goalReps] is the ghost hint and is not written on open.
 int? repSheetOpeningCount({
   required String loggedReps,
   required String? goalReps,
 }) {
   final logged = loggedRepsField(loggedReps).trim();
   if (isSingleRepCount(logged)) return int.parse(logged);
+  // [goalReps] is only the ghost hint, so an empty log does not open on a number.
+  if (goalReps != null) return null;
+  return null;
+}
+
+/// Null when the lifter did not pick a count, so Save writes nothing.
+String? repSheetValueOnSave({required bool chose, required String pending}) {
+  if (!chose) return null;
+  final trimmed = pending.trim();
+  if (!isSingleRepCount(trimmed)) return null;
+  return trimmed;
+}
+
+/// Five rows at 44px. 8-12 opens on 12, 11, 10, 9, 8.
+const double repSheetRowExtent = 44;
+const int repSheetVisibleRows = 5;
+const double repSheetViewportHeight = repSheetRowExtent * repSheetVisibleRows;
+
+/// Inclusive goal band. Null for AMRAP and goals that are not a finite count.
+({int min, int max})? repSheetGoalBand(String? goalReps) {
   final goal = (goalReps ?? '').trim();
   if (goal.isEmpty || isAmrap(goal)) return null;
-  if (isSingleRepCount(goal)) return int.parse(goal);
   if (!RegExp(r'\d').hasMatch(goal)) return null;
   final range = parseRepRange(goal);
-  if (range.min <= 0 || range.max >= 9999) return null;
-  final mid = ((range.min + range.max) / 2).round();
-  if (mid <= 0) return null;
-  return mid;
+  if (range.min <= 0 || range.max <= 0 || range.max >= 9999) return null;
+  if (range.min > range.max) return null;
+  return (min: range.min, max: range.max);
+}
+
+/// Index in a high-to-low list (picker max at 0) that should sit on row one.
+int? repSheetFiveRowAnchorIndex({
+  required int pickerMax,
+  required String? goalReps,
+}) {
+  final band = repSheetGoalBand(goalReps);
+  if (band == null || pickerMax < 1) return null;
+  if (band.max > pickerMax || band.max < 1) return null;
+  return pickerMax - band.max;
+}
+
+/// The five counts visible on open, high to low, top of the range first.
+List<String> repSheetOpeningWindow({
+  required int pickerMax,
+  required String? goalReps,
+}) {
+  final anchor = repSheetFiveRowAnchorIndex(
+    pickerMax: pickerMax,
+    goalReps: goalReps,
+  );
+  if (anchor == null) return const [];
+  final options = [for (var reps = pickerMax; reps >= 1; reps--) '$reps'];
+  if (anchor >= options.length) return const [];
+  final end = anchor + repSheetVisibleRows;
+  return options.sublist(anchor, end > options.length ? options.length : end);
+}
+
+/// Wheel and slider ceiling when a goal exists: five past the top of the range.
+/// Null when the goal is not a finite count, so the sheet keeps its default.
+int? repSheetGoalPickerMax(String? goalReps) {
+  final goal = (goalReps ?? '').trim();
+  if (goal.isEmpty || isAmrap(goal)) return null;
+  if (!RegExp(r'\d').hasMatch(goal)) return null;
+  final range = parseRepRange(goal);
+  if (range.max <= 0 || range.max >= 9999) return null;
+  return range.max + 5;
 }
 
 /// Edited rests are capped at 5:00. An untouched longer rest is returned as stored.

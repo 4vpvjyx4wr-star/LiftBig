@@ -12,9 +12,9 @@ const int repsPickerMax = 50;
 List<String> weightPickerOptions([WeightUnit unit = WeightUnit.lb]) =>
     weightPickerOptionsFor(unit);
 
-/// 50 down to 1. Same rows as the Vue reps menu.
-List<String> repsPickerOptions() => [
-  for (var reps = repsPickerMax; reps >= 1; reps--) '$reps',
+/// [max] down to 1. Same rows as the Vue reps menu when [max] is 50.
+List<String> repsPickerOptions({int max = repsPickerMax}) => [
+  for (var reps = max; reps >= 1; reps--) '$reps',
 ];
 
 /// Nearest 5 lb step from 0 to 500, matching `snapToPickerStoredLbs`.
@@ -98,6 +98,7 @@ class _SetValueSheetState extends State<_SetValueSheet> {
   late double _slider;
   final _scroll = ScrollController();
   var _sliderTouched = false;
+  var _chose = false;
 
   @override
   void initState() {
@@ -118,7 +119,7 @@ class _SetValueSheetState extends State<_SetValueSheet> {
           extentOffset: _text.text.length,
         );
       }
-      _scrollToCurrent();
+      _scrollToOpening();
     });
   }
 
@@ -142,6 +143,7 @@ class _SetValueSheetState extends State<_SetValueSheet> {
   }
 
   void _publish(String value, {bool fromSlider = false}) {
+    if (fromSlider) _chose = true;
     widget.onEdited(value);
     setState(() {
       _text.value = TextEditingValue(
@@ -157,6 +159,24 @@ class _SetValueSheetState extends State<_SetValueSheet> {
     });
   }
 
+  void _scrollToOpening() {
+    if (widget.weightUnit != null) {
+      _scrollToCurrent();
+      return;
+    }
+    final anchor = repSheetFiveRowAnchorIndex(
+      pickerMax: widget.sliderMax.round(),
+      goalReps: widget.goalLabel,
+    );
+    if (anchor == null || !_scroll.hasClients) {
+      _scrollToCurrent();
+      return;
+    }
+    final target = anchor * repSheetRowExtent;
+    final max = _scroll.position.maxScrollExtent;
+    _scroll.jumpTo(target.clamp(0, max));
+  }
+
   void _scrollToCurrent() {
     if (!_scroll.hasClients) return;
     final key = widget.weightUnit == null
@@ -164,13 +184,14 @@ class _SetValueSheetState extends State<_SetValueSheet> {
         : snapWeightOption(_text.text, widget.weightUnit!);
     final index = key == null ? -1 : widget.options.indexOf(key);
     if (index < 0) return;
-    const row = 44.0;
+    const row = repSheetRowExtent;
     final target = index * row;
     final max = _scroll.position.maxScrollExtent;
     _scroll.jumpTo(target.clamp(0, max));
   }
 
   void _choose(String value) {
+    _chose = true;
     liftBigSelectionHaptic();
     widget.onEdited(value);
     Navigator.of(context).pop(value);
@@ -197,50 +218,73 @@ class _SetValueSheetState extends State<_SetValueSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final shown = _text.text.trim().isEmpty ? '—' : _text.text.trim();
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final repsSheet = widget.weightUnit == null;
+    final typed = _text.text.trim();
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
     final goal = widget.goalLabel?.trim() ?? '';
+    final band = repsSheet ? repSheetGoalBand(goal) : null;
+    final anchor = repsSheet
+        ? repSheetFiveRowAnchorIndex(
+            pickerMax: widget.sliderMax.round(),
+            goalReps: goal,
+          )
+        : null;
+    final loggedOpening = widget.initial.trim().isNotEmpty;
     return LayoutBuilder(
       builder: (context, constraints) {
         final screen = MediaQuery.sizeOf(context).height;
+        final fraction = repsSheet ? 0.92 : 0.72;
         final cap = constraints.maxHeight.isFinite
-            ? constraints.maxHeight - bottom
-            : screen * 0.72;
-        final height = cap < screen * 0.72 ? cap : screen * 0.72;
-        return Padding(
-      padding: EdgeInsets.only(bottom: bottom),
-      child: SizedBox(
-        height: height < 160 ? 160 : height,
-        child: Column(
+            ? constraints.maxHeight - inset
+            : screen * fraction;
+        final height = cap < screen * fraction ? cap : screen * fraction;
+        final column = Column(
+          mainAxisSize: repsSheet ? MainAxisSize.min : MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Text(
-                widget.title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
+              child: goal.isEmpty
+                  ? Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Goal: $goal',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: context.liftBig.success,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
-            if (goal.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-                child: Text(
-                  'Goal $goal',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.liftBig.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Text(
-                shown,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
+              child: SizedBox(
+                height: 48,
+                child: Text(
+                  typed.isEmpty ? (repsSheet ? '' : '—') : typed,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
@@ -250,45 +294,67 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                 controller: _text,
                 autofocus: true,
                 textAlign: TextAlign.center,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
                 decoration: InputDecoration(
-                  hintText: widget.weightUnit == null
-                      ? 'Type reps'
+                  hintText: repsSheet
+                      ? (goal.isNotEmpty ? goal : 'Type reps')
                       : widget.weightUnit == WeightUnit.kg
                       ? 'Type kilograms'
                       : 'Type pounds',
+                  hintStyle: TextStyle(color: context.liftBig.muted),
                 ),
                 onChanged: (value) {
+                  _chose = true;
                   widget.onEdited(value);
                   setState(() => _slider = _sliderFor(value));
                 },
-                onSubmitted: _choose,
+                onSubmitted: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Slider(
+            if (repsSheet)
+              _RepTickRow(
                 min: widget.sliderMin,
                 max: widget.sliderMax,
-                divisions: widget.sliderDivisions,
-                value: _slider,
-                activeColor: context.liftBig.primary,
-                label: _sliderTouched || _text.text.trim().isNotEmpty
-                    ? _formatStep(_slider)
-                    : null,
+                goalMin: band?.min,
+                goalMax: band?.max,
+                value: loggedOpening || _chose ? _slider : null,
                 onChanged: (value) {
-                  final stepped = _applyStep(value);
-                  if (_lastSliderTick != stepped) {
-                    _lastSliderTick = stepped;
+                  if (_lastSliderTick != value) {
+                    _lastSliderTick = value;
                     liftBigSelectionHaptic();
                   }
-                  _publish(_formatStep(stepped), fromSlider: true);
+                  _publish(_formatStep(value), fromSlider: true);
                 },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Slider(
+                  min: widget.sliderMin,
+                  max: widget.sliderMax,
+                  divisions: widget.sliderDivisions,
+                  value: _slider,
+                  activeColor: context.liftBig.primary,
+                  label: _sliderTouched || typed.isNotEmpty
+                      ? _formatStep(_slider)
+                      : null,
+                  onChanged: (value) {
+                    final stepped = _applyStep(value);
+                    if (_lastSliderTick != stepped) {
+                      _lastSliderTick = stepped;
+                      liftBigSelectionHaptic();
+                    }
+                    _publish(_formatStep(stepped), fromSlider: true);
+                  },
+                ),
               ),
-            ),
             if (widget.pinnedValue != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -297,56 +363,244 @@ class _SetValueSheetState extends State<_SetValueSheet> {
                   child: Text('Goal ${widget.pinnedValue}'),
                 ),
               ),
-            Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                itemExtent: 44,
-                itemCount: widget.options.length,
-                itemBuilder: (context, index) {
-                  final option = widget.options[index];
-                  final selected = option == _text.text.trim() ||
-                      (widget.weightUnit != null &&
-                          option ==
-                              snapWeightOption(_text.text, widget.weightUnit!));
-                  return InkWell(
-                    onTap: () => _choose(option),
-                    child: ColoredBox(
-                      color: selected
-                          ? context.liftBig.primary.withValues(alpha: 0.16)
-                          : Colors.transparent,
-                      child: Center(
-                        child: Text(
-                          option,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                            color: selected
-                                ? context.liftBig.primary
-                                : context.liftBig.foreground,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            _valueList(
+              repsSheet: repsSheet,
+              anchor: anchor,
+              loggedOpening: loggedOpening,
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: FilledButton(
                 onPressed: () {
                   liftBigConfirmHaptic();
+                  if (repsSheet) {
+                    final saved = repSheetValueOnSave(
+                      chose: _chose,
+                      pending: _text.text,
+                    );
+                    Navigator.of(context).pop(saved ?? '');
+                    return;
+                  }
                   Navigator.of(context).pop(_text.text);
                 },
                 child: const Text('Save'),
               ),
             ),
           ],
-        ),
-      ),
-    );
+        );
+        return Padding(
+          padding: EdgeInsets.only(bottom: inset),
+          child: SizedBox(
+            height: height < 160 ? 160 : height,
+            child: repsSheet ? SingleChildScrollView(child: column) : column,
+          ),
+        );
       },
     );
+  }
+
+  Widget _valueList({
+    required bool repsSheet,
+    required int? anchor,
+    required bool loggedOpening,
+  }) {
+    final list = ListView.builder(
+      controller: _scroll,
+      itemExtent: repSheetRowExtent,
+      itemCount: widget.options.length,
+      itemBuilder: (context, index) {
+        final option = widget.options[index];
+        final typed = _text.text.trim();
+        final selected = repsSheet
+            ? typed.isNotEmpty &&
+                  option == typed &&
+                  (loggedOpening || _chose)
+            : option == typed ||
+                  (widget.weightUnit != null &&
+                      option == snapWeightOption(typed, widget.weightUnit!));
+        final outlined = anchor != null && index == anchor && !selected;
+        return InkWell(
+          onTap: () => _choose(option),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: selected
+                  ? context.liftBig.primary.withValues(alpha: 0.16)
+                  : Colors.transparent,
+              border: outlined
+                  ? Border.all(
+                      color: context.liftBig.success.withValues(alpha: 0.7),
+                    )
+                  : null,
+            ),
+            child: Center(
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: selected
+                      ? context.liftBig.primary
+                      : context.liftBig.foreground,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (repsSheet) {
+      return SizedBox(height: repSheetViewportHeight, child: list);
+    }
+    return Expanded(child: list);
+  }
+}
+
+class _RepTickRow extends StatelessWidget {
+  const _RepTickRow({
+    required this.min,
+    required this.max,
+    required this.value,
+    required this.onChanged,
+    this.goalMin,
+    this.goalMax,
+  });
+
+  final double min;
+  final double max;
+  final int? goalMin;
+  final int? goalMax;
+  final double? value;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final inside = context.liftBig.success;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          double xFor(double tick) {
+            if (max <= min) return width / 2;
+            final t = ((tick - min) / (max - min)).clamp(0.0, 1.0);
+            return t * width;
+          }
+
+          void pick(double dx) {
+            if (max <= min) {
+              onChanged(min);
+              return;
+            }
+            final t = (dx / width).clamp(0.0, 1.0);
+            final raw = min + t * (max - min);
+            onChanged(raw.roundToDouble().clamp(min, max).toDouble());
+          }
+
+          Widget arrow(int tick) {
+            final left = (xFor(tick.toDouble()) - 7).clamp(0.0, width - 14);
+            return Positioned(
+              left: left,
+              bottom: 0,
+              child: Icon(Icons.arrow_upward, size: 14, color: inside),
+            );
+          }
+
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) => pick(details.localPosition.dx),
+            onHorizontalDragStart: (details) => pick(details.localPosition.dx),
+            onHorizontalDragUpdate: (details) => pick(details.localPosition.dx),
+            child: SizedBox(
+              height: 48,
+              width: width,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _RepTickPainter(
+                        min: min,
+                        max: max,
+                        goalMin: goalMin,
+                        goalMax: goalMax,
+                        value: value,
+                        inside: inside,
+                        outside: context.liftBig.muted,
+                        chosen: context.liftBig.foreground,
+                      ),
+                    ),
+                  ),
+                  if (goalMin != null) arrow(goalMin!),
+                  if (goalMax != null && goalMax != goalMin) arrow(goalMax!),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RepTickPainter extends CustomPainter {
+  const _RepTickPainter({
+    required this.min,
+    required this.max,
+    required this.goalMin,
+    required this.goalMax,
+    required this.value,
+    required this.inside,
+    required this.outside,
+    required this.chosen,
+  });
+
+  final double min;
+  final double max;
+  final int? goalMin;
+  final int? goalMax;
+  final double? value;
+  final Color inside;
+  final Color outside;
+  final Color chosen;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (max < min) return;
+    final span = max - min;
+    for (var tick = min.round(); tick <= max.round(); tick++) {
+      final t = span == 0 ? 0.5 : (tick - min) / span;
+      final x = t.clamp(0.0, 1.0) * size.width;
+      final inGoal =
+          goalMin != null &&
+          goalMax != null &&
+          tick >= goalMin! &&
+          tick <= goalMax!;
+      final paint = Paint()
+        ..color = inGoal ? inside : outside
+        ..strokeWidth = inGoal ? 2 : 1
+        ..strokeCap = StrokeCap.round;
+      final inset = inGoal ? 0.0 : 4.0;
+      canvas.drawLine(
+        Offset(x, 4 + inset),
+        Offset(x, 28 - inset),
+        paint,
+      );
+    }
+    if (value != null) {
+      final t = span == 0 ? 0.5 : (value! - min) / span;
+      final x = t.clamp(0.0, 1.0) * size.width;
+      canvas.drawCircle(Offset(x, 16), 4.5, Paint()..color = chosen);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RepTickPainter oldDelegate) {
+    return oldDelegate.value != value ||
+        oldDelegate.min != min ||
+        oldDelegate.max != max ||
+        oldDelegate.goalMin != goalMin ||
+        oldDelegate.goalMax != goalMax ||
+        oldDelegate.inside != inside ||
+        oldDelegate.outside != outside;
   }
 }
 
@@ -428,65 +682,72 @@ class _RestDurationSheetState extends State<_RestDurationSheet> {
   Widget build(BuildContext context) {
     final picks = restEditorQuickPicks();
     final bottom = MediaQuery.paddingOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Rest timer',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    return ListView(
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(20, 8, 20, 16 + bottom + inset),
+      children: [
+        const Text(
+          'Rest timer',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          restEditorDurationLabel(_pending),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+        ),
+        TextField(
+          controller: _text,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          textAlign: TextAlign.center,
+          decoration: const InputDecoration(hintText: 'Seconds'),
+          onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+          onChanged: (value) {
+            final parsed = int.tryParse(value.trim());
+            if (parsed == null) return;
+            setState(() {
+              _edited = true;
+              _pending = parsed;
+              if (parsed >= restEditorMinSeconds &&
+                  parsed <= restEditorMaxSeconds) {
+                _sliderSeconds = snapRestEditorSeconds(parsed).toDouble();
+              }
+            });
+          },
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: const Text('Done'),
           ),
-          const SizedBox(height: 8),
-          Text(
-            restEditorDurationLabel(_pending),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
-          ),
-          TextField(
-            controller: _text,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            decoration: const InputDecoration(hintText: 'Seconds'),
-            onChanged: (value) {
-              final parsed = int.tryParse(value.trim());
-              if (parsed == null) return;
-              setState(() {
-                _edited = true;
-                _pending = parsed;
-                if (parsed >= restEditorMinSeconds &&
-                    parsed <= restEditorMaxSeconds) {
-                  _sliderSeconds = snapRestEditorSeconds(parsed).toDouble();
-                }
-              });
-            },
-          ),
-          Slider(
-            min: restEditorMinSeconds.toDouble(),
-            max: restEditorMaxSeconds.toDouble(),
-            divisions: (restEditorMaxSeconds - restEditorMinSeconds) ~/ 5,
-            value: _sliderSeconds,
-            activeColor: context.liftBig.primary,
-            label: restEditorDurationLabel(_sliderSeconds.round()),
-            onChanged: (value) => _setPending(value.round(), fromSlider: true),
-          ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final seconds in picks)
-                ChoiceChip(
-                  label: Text(restEditorDurationLabel(seconds)),
-                  selected: _pending == seconds,
-                  onSelected: (_) => _setPending(seconds, fromSlider: true),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: _save, child: const Text('Save')),
-        ],
-      ),
+        ),
+        Slider(
+          min: restEditorMinSeconds.toDouble(),
+          max: restEditorMaxSeconds.toDouble(),
+          divisions: (restEditorMaxSeconds - restEditorMinSeconds) ~/ 5,
+          value: _sliderSeconds,
+          activeColor: context.liftBig.primary,
+          label: restEditorDurationLabel(_sliderSeconds.round()),
+          onChanged: (value) => _setPending(value.round(), fromSlider: true),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final seconds in picks)
+              ChoiceChip(
+                label: Text(restEditorDurationLabel(seconds)),
+                selected: _pending == seconds,
+                onSelected: (_) => _setPending(seconds, fromSlider: true),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FilledButton(onPressed: _save, child: const Text('Save')),
+      ],
     );
   }
 }

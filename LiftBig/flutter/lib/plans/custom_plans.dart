@@ -37,6 +37,25 @@ Future<List<PremadePlan>> loadCustomPlans({
   return merged;
 }
 
+/// Favorites keep their relative order and sit above every other plan.
+List<PremadePlan> plansWithFavoritesFirst(
+  List<PremadePlan> plans,
+  Set<String> favoriteIds,
+) {
+  if (favoriteIds.isEmpty || plans.length < 2) return plans;
+  final favorites = <PremadePlan>[];
+  final others = <PremadePlan>[];
+  for (final plan in plans) {
+    if (favoriteIds.contains(plan.id)) {
+      favorites.add(plan);
+    } else {
+      others.add(plan);
+    }
+  }
+  if (favorites.isEmpty) return plans;
+  return [...favorites, ...others];
+}
+
 List<PremadePlan> parseCustomPlansFromTemplatesJson(
   String? raw,
   LiftBigCatalog catalog,

@@ -11,11 +11,40 @@ void main() {
     );
     expect(result.mode, VariableMachinePlateMode.perSide);
     expect(result.plates, [45, 10]);
+    expect(eachSidePlateSummary(result.plates), '1×45, 1×10');
     expect(result.addedPlateWeightLb, 110);
-    expect(
-      totalWeightLb(25, result.plates),
-      135,
+    expect(totalWeightLb(25, result.plates), 135);
+  });
+
+  test('leg press and hack squat load the same plates on each side', () {
+    for (final kind in [
+      VariableMachineKind.legPress,
+      VariableMachineKind.hackSquat,
+    ]) {
+      final split = machinePlatesForGoal(
+        goalLb: 295,
+        startingLb: 100,
+        kind: kind,
+      );
+      expect(split.mode, VariableMachinePlateMode.perSide);
+      expect(split.status, MachinePlatesStatus.platesComputed);
+      expect(split.plates, [45, 45, 5, 2.5]);
+      expect(split.plates, isNot([45, 45, 45, 25, 25, 5, 5]));
+      expect(eachSidePlateSummary(split.plates), '2×45, 1×5, 1×2.5');
+      expect(split.addedPlateWeightLb, 195);
+      expect(totalWeightLb(100, split.plates), 295);
+    }
+
+    final threeFortyFives = machinePlatesForGoal(
+      goalLb: 420,
+      startingLb: 100,
+      kind: VariableMachineKind.legPress,
     );
+    expect(threeFortyFives.plates, [45, 45, 45, 25]);
+    expect(eachSidePlateSummary(threeFortyFives.plates), '3×45, 1×25');
+    expect(eachSidePlateSummary([25, 45, 45, 45]), '3×45, 1×25');
+    expect(threeFortyFives.addedPlateWeightLb, 320);
+    expect(totalWeightLb(100, threeFortyFives.plates), 420);
   });
 
   test('leg press start 100 and goal 100 needs no plates', () {
@@ -49,10 +78,7 @@ void main() {
 
   test('variable machine detection matches intended lifts only', () {
     expect(
-      variableMachineKindForExercise(
-        libraryId: 'leg-press',
-        name: 'Leg Press',
-      ),
+      variableMachineKindForExercise(libraryId: 'leg-press', name: 'Leg Press'),
       VariableMachineKind.legPress,
     );
     expect(

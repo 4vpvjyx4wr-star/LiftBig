@@ -34,16 +34,33 @@ void main() {
     );
   });
 
-  test('rep sheet opens on a logged number or the middle of the goal', () {
-    expect(repSheetOpeningCount(loggedReps: '', goalReps: '8-12'), 10);
-    expect(repSheetOpeningCount(loggedReps: '', goalReps: '12'), 12);
+  test('rep sheet saves only a chosen count and anchors five rows on the goal', () {
+    expect(repSheetOpeningCount(loggedReps: '', goalReps: '8-12'), isNull);
+    expect(repSheetOpeningCount(loggedReps: '', goalReps: '12'), isNull);
     expect(repSheetOpeningCount(loggedReps: '7', goalReps: '8-12'), 7);
     expect(
       repSheetOpeningCount(
         loggedReps: '8-12',
         goalReps: goalRepsForSet(targetReps: null, storedReps: '8-12'),
       ),
-      10,
+      isNull,
+    );
+    expect(repSheetValueOnSave(chose: false, pending: '12'), isNull);
+    expect(repSheetValueOnSave(chose: true, pending: ''), isNull);
+    expect(repSheetValueOnSave(chose: true, pending: '10'), '10');
+    expect(repSheetGoalPickerMax('8-12'), 17);
+    expect(repSheetGoalPickerMax('12'), 17);
+    expect(repSheetGoalPickerMax(null), isNull);
+    expect(repSheetGoalPickerMax('AMRAP'), isNull);
+    expect(repSheetViewportHeight, 220);
+    expect(repSheetVisibleRows, 5);
+    expect(
+      repSheetFiveRowAnchorIndex(pickerMax: 17, goalReps: '8-12'),
+      5,
+    );
+    expect(
+      repSheetOpeningWindow(pickerMax: 17, goalReps: '8-12'),
+      ['12', '11', '10', '9', '8'],
     );
     expect(loggedRepsField('8-12'), isEmpty);
     expect(loggedRepsField('12'), '12');

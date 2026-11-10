@@ -130,17 +130,6 @@ class _WorkoutShuffleSheet extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: context.liftBig.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
         const Text(
           'Workout shuffle',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),

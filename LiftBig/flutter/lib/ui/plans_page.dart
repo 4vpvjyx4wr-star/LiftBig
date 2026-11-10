@@ -179,9 +179,7 @@ class _PlansPageState extends State<PlansPage> {
       );
     }
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${workout.name} added to today.')),
-    );
+    showLiftBigNotice(context, '${workout.name} added to today.');
   }
 
   Future<void> _schedulePlan(String planTitle, List<CatalogWorkout> workouts) async {
@@ -221,17 +219,12 @@ class _PlansPageState extends State<PlansPage> {
     );
     if (!mounted || daysWritten == null) return;
     if (daysWritten == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nothing was scheduled.')),
-      );
+      showLiftBigNotice(context, 'Nothing was scheduled.');
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$planTitle added to $daysWritten ${daysWritten == 1 ? 'day' : 'days'} on your calendar.',
-        ),
-      ),
+    showLiftBigNotice(
+      context,
+      '$planTitle added to $daysWritten ${daysWritten == 1 ? 'day' : 'days'} on your calendar.',
     );
     widget.onPlanScheduled?.call(startDateKey);
     await _loadCalendarPlan();
@@ -396,10 +389,10 @@ class _PlansBody extends StatelessWidget {
       ];
 
   Future<void> _changeCalendarPlan(BuildContext context) async {
-    final plans = [
+    final plans = plansWithFavoritesFirst([
       ..._premadePlans,
       ...customPlans.where((plan) => plan.workouts.isNotEmpty),
-    ];
+    ], favoritePlanIds);
     final picked = await showLiftBigSheet<PremadePlan>(
       context,
       backgroundColor: context.liftBig.background,
@@ -853,10 +846,10 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
   @override
   Widget build(BuildContext context) {
     final query = _search.text;
-    final filtered = [
+    final filtered = plansWithFavoritesFirst([
       for (final plan in widget.plans)
         if (planMatchesSearch(plan, widget.catalog, query)) plan,
-    ];
+    ], widget.favoritePlanIds);
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
