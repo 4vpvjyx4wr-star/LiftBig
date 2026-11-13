@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'companion/companion_bridge.dart';
 import 'data/app_database.dart';
 import 'journal/journal_repository.dart';
+import 'pro/pro_status.dart';
 import 'reminder/daily_lift_notifications.dart';
 import 'rest/rest_notifications.dart';
 import 'rest/rest_timer_controller.dart';
@@ -10,6 +12,7 @@ import 'sync/firebase_bootstrap.dart';
 import 'sync/sync_controller.dart';
 import 'theme.dart';
 import 'ui/app_shell.dart';
+import 'ui/theme_backdrop.dart';
 import 'ui/rest_timer_scope.dart';
 import 'ui/rest_timer_tile.dart';
 
@@ -19,6 +22,9 @@ Future<void> main() async {
   final journal = JournalRepository(AppDatabase.defaults());
   final sync = SyncController(journal: journal, firebaseReady: firebaseReady);
   await sync.load();
+  CompanionBridge.shared.setWatchCompanions(
+    await journal.loadWatchCompanionSettings(),
+  );
   final notifications = FlutterRestNotificationScheduler();
   await notifications.initialize();
   final dailyReminder = FlutterDailyLiftReminderScheduler(
@@ -59,32 +65,54 @@ class LiftBigApp extends StatefulWidget {
   State<LiftBigApp> createState() => _LiftBigAppState();
 }
 
-class _LiftBigAppState extends State<LiftBigApp> {
+class _LiftBigAppState extends State<LiftBigApp>
+    with SingleTickerProviderStateMixin {
   late final LiftBigThemeController _themes;
+  late final AnimationController _backdropMotion;
   final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
+    _backdropMotion = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 24),
+    );
     _themes = LiftBigThemeController();
     _themes.addListener(_onTheme);
     _loadTheme();
   }
 
   void _onTheme() {
+    _syncBackdropMotion();
     if (mounted) setState(() {});
+  }
+
+  /// Keeps the same clock running. Stopping holds the phase, and repeating
+  /// continues from that value instead of jumping back to the start.
+  void _syncBackdropMotion() {
+    final animated = LiftBigBackdrop.animates(_themes.palette.backdrop);
+    if (animated) {
+      if (!_backdropMotion.isAnimating) _backdropMotion.repeat();
+    } else if (_backdropMotion.isAnimating) {
+      _backdropMotion.stop();
+    }
   }
 
   Future<void> _loadTheme() async {
     final id = await widget.journal.loadColorThemeId();
+    final pro = await ProStatus(
+      unlockStore: JournalTesterUnlockStore(widget.journal),
+    ).refresh();
     if (!mounted) return;
-    _themes.applyStored(id);
+    _themes.applyStored(id, proActive: pro);
   }
 
   @override
   void dispose() {
     _themes.removeListener(_onTheme);
     _themes.dispose();
+    _backdropMotion.dispose();
     widget.restTimer.dispose();
     super.dispose();
   }
@@ -100,20 +128,33 @@ class _LiftBigAppState extends State<LiftBigApp> {
         theme: buildLiftBigTheme(_themes.palette),
         scrollBehavior: const LiftBigScrollBehavior(),
         builder: (context, child) {
-          final colors = Theme.of(context).extension<LiftBigPalette>() ??
+          final colors =
+              Theme.of(context).extension<LiftBigPalette>() ??
               liftBigThemePresets.first;
+          final base = colors.canvas;
           return AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle(
-              statusBarColor: colors.background,
+              statusBarColor: base,
               statusBarBrightness: Brightness.dark,
               statusBarIconBrightness: Brightness.light,
-              systemNavigationBarColor: colors.background,
+              systemNavigationBarColor: base,
               systemNavigationBarIconBrightness: Brightness.light,
             ),
             child: ColoredBox(
-              color: colors.background,
+              color: base,
               child: Stack(
                 children: [
+                  if (colors.backdrop != LiftBigBackdrop.none)
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: LiftBigThemeBackdrop(
+                          palette: colors,
+                          motion: LiftBigBackdrop.animates(colors.backdrop)
+                              ? _backdropMotion
+                              : null,
+                        ),
+                      ),
+                    ),
                   child ?? const SizedBox.shrink(),
                   RestTimerOverlay(
                     journal: widget.journal,

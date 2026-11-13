@@ -206,7 +206,7 @@ class BarbellSetPlateHint extends StatelessWidget {
               if (summary != null) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Each side: $summary',
+                  'Each Side: $summary',
                   style: TextStyle(
                     fontSize: 11,
                     color: context.liftBig.muted,
@@ -249,7 +249,7 @@ String? _formatHint(
     result.plates,
     label: (weightLb) => lbsToDisplayWeightString(weightLb, unit),
   );
-  var line = 'Each side: $summary';
+  var line = 'Each Side: $summary';
   if (result.status == MachinePlatesStatus.inexact &&
       result.remainderLb > 0.001) {
     line += ' (${formatWeightWithUnit(result.remainderLb, unit)} short)';

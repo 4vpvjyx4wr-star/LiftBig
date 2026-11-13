@@ -61,7 +61,7 @@ class _ProgressPageState extends State<ProgressPage> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
-              'Lifts over time',
+              'Lifts Over Time',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ),
@@ -70,7 +70,7 @@ class _ProgressPageState extends State<ProgressPage> {
               title: Text(item.name),
               subtitle: Text(
                 '${item.latestCompleted ? 'Completed' : 'Not completed'}'
-                ' · ${item.sessions.length} ${item.sessions.length == 1 ? 'time' : 'times'}',
+                ' · ${item.sessions.length} ${item.sessions.length == 1 ? 'time' : 'times'}.',
               ),
               trailing: item.name == _selected
                   ? Icon(Icons.check, color: context.liftBig.primary)
@@ -106,7 +106,7 @@ class _ProgressPageState extends State<ProgressPage> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
         const Text(
-          'Lifts over time',
+          'Lifts Over Time',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
@@ -139,7 +139,7 @@ class _ProgressPageState extends State<ProgressPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            selected?.name ?? 'Choose a lift',
+                            selected?.name ?? 'Choose a Lift',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
@@ -149,7 +149,7 @@ class _ProgressPageState extends State<ProgressPage> {
                             const SizedBox(height: 2),
                             Text(
                               '${selected.latestCompleted ? 'Completed' : 'Not completed'}'
-                              ' · ${selected.sessions.length} ${selected.sessions.length == 1 ? 'time' : 'times'}',
+                              ' · ${selected.sessions.length} ${selected.sessions.length == 1 ? 'time' : 'times'}.',
                               style: TextStyle(color: context.liftBig.muted),
                             ),
                           ],

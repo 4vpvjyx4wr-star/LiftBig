@@ -31,7 +31,12 @@ class MainActivity : FlutterFragmentActivity() {
                     stopAlarm()
                     result.success(true)
                 }
-                "play" -> result.success(playAlarm())
+                "play" -> result.success(
+                    playAlarm(
+                        call.argument<Boolean>("loop") == true,
+                        call.argument<String>("soundId"),
+                    )
+                )
                 "haptic" -> result.success(playHaptic())
                 else -> result.notImplemented()
             }
@@ -45,17 +50,32 @@ class MainActivity : FlutterFragmentActivity() {
             .build()
     }
 
-    private fun playAlarm(): Boolean {
+    private fun alarmRes(soundId: String?): Int {
+        return when (soundId) {
+            "bell" -> R.raw.bell
+            "chime" -> R.raw.chime
+            "horn" -> R.raw.horn
+            else -> R.raw.rest_alarm
+        }
+    }
+
+    private fun playAlarm(loop: Boolean, soundId: String?): Boolean {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         stopAlarm()
         requestDuck(audioManager)
-        val player = MediaPlayer.create(applicationContext, R.raw.rest_alarm)
+        val res = alarmRes(soundId)
+        var player = MediaPlayer.create(applicationContext, res)
+        if (player == null && res != R.raw.rest_alarm) {
+            player = MediaPlayer.create(applicationContext, R.raw.rest_alarm)
+        }
         if (player == null) {
             abandonDuck(audioManager)
             return false
         }
         player.setAudioAttributes(alarmAttributes())
+        player.isLooping = loop
         player.setOnCompletionListener {
+            if (it.isLooping) return@setOnCompletionListener
             it.release()
             if (alarmPlayer == it) alarmPlayer = null
             abandonDuck(audioManager)

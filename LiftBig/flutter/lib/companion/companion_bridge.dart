@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 
+import '../journal/app_settings.dart';
 import 'watch_session.dart';
 
 /// Phone side of the watch link. Native handlers may be absent; that means no watch.
@@ -19,6 +20,18 @@ class CompanionBridge {
   var _handlerInstalled = false;
   String? _lastRawSession;
   WatchRestPublish? _watchRest;
+  var _apple = WatchCompanionSettings.defaults.apple;
+  var _garmin = WatchCompanionSettings.defaults.garmin;
+
+  /// Highest rest revision seen from the watch, including the message in flight.
+  var latestRestRev = 0;
+
+  /// Apple and Garmin follow the Pro Smart Watch toggles.
+  /// Samsung is stored in settings and is never sent on this channel.
+  void setWatchCompanions(WatchCompanionSettings settings) {
+    _apple = settings.apple;
+    _garmin = settings.garmin;
+  }
 
   /// Remembers the phone rest clock and republishes the last workout with it.
   /// [WatchRestPublish.restCancelled] is sent once, then cleared.
@@ -39,6 +52,8 @@ class CompanionBridge {
     try {
       await _channel.invokeMethod<void>('startWorkout', {
         'sessionJson': annotateSession(sessionJson),
+        'apple': _apple,
+        'garmin': _garmin,
       });
     } on MissingPluginException {
       // No watch bridge in this build.
@@ -64,7 +79,10 @@ class CompanionBridge {
     if (decoded is! Map) return sessionJson;
     final next = withWatchRest(Map<String, Object?>.from(decoded), rest);
     if (rest.restCancelled) {
-      _watchRest = WatchRestPublish(soundEnabled: rest.soundEnabled);
+      _watchRest = WatchRestPublish(
+        soundEnabled: rest.soundEnabled,
+        alarmRinging: rest.alarmRinging,
+      );
     }
     return jsonEncode(next);
   }
@@ -73,6 +91,8 @@ class CompanionBridge {
     try {
       await _channel.invokeMethod<void>('publishSession', {
         'sessionJson': sessionJson,
+        'apple': _apple,
+        'garmin': _garmin,
       });
     } on MissingPluginException {
       // No watch bridge in this build.
@@ -101,6 +121,7 @@ class CompanionBridge {
       if (call.method != 'companionMessage') return;
       final json = _messageJson(call.arguments);
       if (json == null || _listeners.isEmpty) return;
+      _noteRestRev(json);
       for (final listener in List<void Function(String)>.of(_listeners)) {
         listener(json);
       }
@@ -114,5 +135,19 @@ class CompanionBridge {
       if (json is String) return json;
     }
     return null;
+  }
+
+  void _noteRestRev(String json) {
+    Object? decoded;
+    try {
+      decoded = jsonDecode(json);
+    } catch (_) {
+      return;
+    }
+    if (decoded is! Map) return;
+    final rev = decoded['restRev'];
+    if (rev is! num) return;
+    final next = rev.round();
+    if (next > latestRestRev) latestRestRev = next;
   }
 }

@@ -21,6 +21,26 @@ const Set<String> barbellPlateLibraryIds = {
   'good-morning',
 };
 
+/// Names listed under the Plate Graphic setting, in subtitle order.
+const List<String> plateGraphicExampleNames = [
+  'Squat',
+  'bench',
+  'decline bench',
+  'overhead press',
+  'deadlift variants',
+  'barbell row',
+  'Pendlay row',
+  'hip thrust',
+  'good morning',
+];
+
+/// Sentence form of [plateGraphicExampleNames], matching the warm-up subtitle.
+String get plateGraphicExamplesLabel {
+  final names = plateGraphicExampleNames;
+  final head = names.sublist(0, names.length - 1).join(', ');
+  return '$head, and ${names.last}.';
+}
+
 /// Back squat, bench, deadlift, rows, and the other loaded barbell compounds.
 ///
 /// Curls, shrugs, and skull crushers stay off, as do machines and dumbbells.

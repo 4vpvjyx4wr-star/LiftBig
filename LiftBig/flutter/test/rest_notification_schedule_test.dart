@@ -30,6 +30,26 @@ void main() {
     expect(loud.android?.sound, isA<RawResourceAndroidNotificationSound>());
     expect(loud.android?.audioAttributesUsage, AudioAttributesUsage.alarm);
     expect(loud.android?.channelId, 'liftbig_rest_tone_vibe');
+    expect(loud.android?.actions?.single.id, restAlarmStopActionId);
+    expect(loud.android?.actions?.single.title, 'Stop');
+    expect(loud.iOS?.categoryIdentifier, restAlarmDarwinCategoryId);
+
+    final bell = restFinishedNotificationDetails(
+      const RestFinishedNotificationOptions(
+        sound: true,
+        vibration: false,
+        soundId: 'bell',
+      ),
+    );
+    expect(bell.iOS?.sound, 'bell.wav');
+    expect(bell.android?.sound?.sound, 'bell');
+    expect(bell.android?.channelId, 'liftbig_rest_tone_bell');
+    expect(bell.android?.actions?.single.id, restAlarmStopActionId);
+
+    final unknown = restFinishedNotificationDetails(
+      const RestFinishedNotificationOptions(soundId: 'ringtone'),
+    );
+    expect(unknown.iOS?.sound, restAlarmSoundFile);
 
     final quiet = restFinishedNotificationDetails(
       const RestFinishedNotificationOptions(sound: false, vibration: true),

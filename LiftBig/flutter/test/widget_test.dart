@@ -77,6 +77,6 @@ void main() {
     expect(find.text('${monthNames[now.month - 1]} ${now.year}'), findsOneWidget);
     expect(find.text('Bench Press'), findsOneWidget);
     expect(find.textContaining('135 lb'), findsOneWidget);
-    expect(find.text('Sync this journal'), findsNothing);
+    expect(find.text('Sync This Journal'), findsNothing);
   });
 }

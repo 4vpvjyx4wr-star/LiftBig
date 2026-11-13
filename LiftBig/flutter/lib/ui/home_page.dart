@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (!mounted) return;
     if (finished == true) {
-      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow');
+      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow.');
     }
     await _reload();
   }
@@ -546,7 +546,7 @@ class _DayPanel extends StatelessWidget {
                           : Icons.open_in_new,
                       size: 18,
                     ),
-                    label: Text(exercises.isEmpty ? 'Log workout' : 'Open log'),
+                    label: Text(exercises.isEmpty ? 'Log Workout' : 'Open Log'),
                   ),
                 ),
                 if (showRest) ...[
@@ -569,7 +569,7 @@ class _DayPanel extends StatelessWidget {
                               : context.liftBig.border,
                         ),
                       ),
-                      child: Text(resting ? 'Clear rest' : 'Rest day'),
+                      child: Text(resting ? 'Clear Rest' : 'Rest Day'),
                     ),
                   ),
                 ],
@@ -589,7 +589,7 @@ class _DayPanel extends StatelessWidget {
                 size: 18,
                 color: context.liftBig.primary,
               ),
-              label: const Text('Assign a plan'),
+              label: const Text('Assign a Plan'),
             ),
             const SizedBox(height: 8),
             Row(
@@ -626,7 +626,7 @@ class _DayPanel extends StatelessWidget {
                   size: 16,
                   color: context.liftBig.primary,
                 ),
-                label: const Text('Clear day'),
+                label: const Text('Clear Day'),
               ),
             ],
             if (exercises.isNotEmpty) ...[
@@ -776,7 +776,7 @@ class _ExerciseCard extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: onEdit,
-                    tooltip: 'Edit lift',
+                    tooltip: 'Edit Lift',
                     style: IconButton.styleFrom(
                       foregroundColor: context.liftBig.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -788,7 +788,7 @@ class _ExerciseCard extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: onInfo,
-                    tooltip: 'Exercise info',
+                    tooltip: 'Exercise Info',
                     style: IconButton.styleFrom(
                       foregroundColor: context.liftBig.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -800,7 +800,7 @@ class _ExerciseCard extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: onDelete,
-                    tooltip: 'Delete exercise',
+                    tooltip: 'Delete Exercise',
                     style: IconButton.styleFrom(
                       foregroundColor: context.liftBig.primary,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -82,7 +82,7 @@ void main() {
 
     final single = prescriptionFromCatalogSets([(reps: '12', weight: '')]);
     expect(single.targetReps, '12');
-    expect(single.sets.single.reps, '12');
+    expect(single.sets.single.reps, isEmpty);
     expect(single.sets.single.weight, isEmpty);
   });
 }

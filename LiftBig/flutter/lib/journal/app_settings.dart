@@ -60,11 +60,24 @@ class RestTimerAlertSettings {
     required this.soundEnabled,
     required this.vibrationEnabled,
     required this.notificationEnabled,
+    this.ringUntilStopped = false,
+    this.soundId = defaultSoundId,
   });
 
   final bool soundEnabled;
   final bool vibrationEnabled;
   final bool notificationEnabled;
+
+  /// When rest ends, the in-app tone repeats until the lifter stops it.
+  /// Off unless the stored value is the word `true`. The lock-screen
+  /// notification stays a single play.
+  final bool ringUntilStopped;
+
+  /// Bundled tone id. One of [soundIds]. Unknown values become [defaultSoundId].
+  final String soundId;
+
+  static const defaultSoundId = 'rest_alarm';
+  static const soundIds = <String>['rest_alarm', 'bell', 'chime', 'horn'];
 
   static const defaults = RestTimerAlertSettings(
     soundEnabled: true,
@@ -72,15 +85,57 @@ class RestTimerAlertSettings {
     notificationEnabled: true,
   );
 
+  static String canonicalSoundId(String? raw) {
+    final id = raw?.trim() ?? '';
+    if (soundIds.contains(id)) return id;
+    return defaultSoundId;
+  }
+
   RestTimerAlertSettings copyWith({
     bool? soundEnabled,
     bool? vibrationEnabled,
     bool? notificationEnabled,
+    bool? ringUntilStopped,
+    String? soundId,
   }) {
     return RestTimerAlertSettings(
       soundEnabled: soundEnabled ?? this.soundEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       notificationEnabled: notificationEnabled ?? this.notificationEnabled,
+      ringUntilStopped: ringUntilStopped ?? this.ringUntilStopped,
+      soundId: soundId ?? this.soundId,
+    );
+  }
+}
+
+/// Which phone-to-watch links the user has left on.
+/// Apple and Garmin match today's sync. Samsung is stored only.
+class WatchCompanionSettings {
+  const WatchCompanionSettings({
+    required this.apple,
+    required this.garmin,
+    required this.samsung,
+  });
+
+  final bool apple;
+  final bool garmin;
+  final bool samsung;
+
+  static const defaults = WatchCompanionSettings(
+    apple: true,
+    garmin: true,
+    samsung: false,
+  );
+
+  WatchCompanionSettings copyWith({
+    bool? apple,
+    bool? garmin,
+    bool? samsung,
+  }) {
+    return WatchCompanionSettings(
+      apple: apple ?? this.apple,
+      garmin: garmin ?? this.garmin,
+      samsung: samsung ?? this.samsung,
     );
   }
 }

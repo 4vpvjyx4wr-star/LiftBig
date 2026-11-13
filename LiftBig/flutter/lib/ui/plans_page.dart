@@ -10,6 +10,7 @@ import '../plans/plan_schedule.dart';
 import '../plans/workout_shuffle.dart';
 import '../theme.dart';
 import 'catalog_load_state.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 import 'plan_schedule_sheet.dart';
 import 'plan_workout_row.dart';
@@ -200,7 +201,7 @@ class _PlansPageState extends State<PlansPage> {
         final ok = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Dates already have workouts'),
+            title: const Text('Dates Already Have Workouts'),
             content: Text(message),
             actions: [
               TextButton(
@@ -285,7 +286,8 @@ class _PlansPageState extends State<PlansPage> {
 
   @override
   Widget build(BuildContext context) {
-    return CatalogLoadScope(
+    return KeyboardDismiss(
+      child: CatalogLoadScope(
       builder: (context, catalog) {
         _customPlansFuture ??= loadCustomPlans(
           journal: widget.journal,
@@ -337,6 +339,7 @@ class _PlansPageState extends State<PlansPage> {
           },
         );
       },
+      ),
     );
   }
 }
@@ -401,7 +404,7 @@ class _PlansBody extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: Text(
-              'Change the calendar plan',
+              'Change the Calendar Plan',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ),
@@ -412,7 +415,7 @@ class _PlansBody extends StatelessWidget {
           for (final plan in plans)
             ListTile(
               title: Text(plan.name),
-              subtitle: Text('${plan.workouts.length} workouts'),
+              subtitle: Text('${plan.workouts.length} workouts.'),
               onTap: () => Navigator.of(context).pop(plan),
             ),
         ],
@@ -477,7 +480,7 @@ class _PlansBody extends StatelessWidget {
         const SizedBox(height: 16),
         OutlinedButton(
           onPressed: onOpenShuffle,
-          child: const Text('Shuffle a workout'),
+          child: const Text('Shuffle a Workout'),
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(
@@ -528,7 +531,7 @@ class _CalendarPlanHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = planName?.trim();
-    final showing = name == null || name.isEmpty ? 'No plan on the calendar' : name;
+    final showing = name == null || name.isEmpty ? 'No plan on the calendar.' : name;
     return Material(
       color: context.liftBig.card,
       shape: RoundedRectangleBorder(
@@ -544,7 +547,7 @@ class _CalendarPlanHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Calendar plan',
+                'Calendar Plan',
                 style: TextStyle(
                   color: context.liftBig.muted,
                   fontWeight: FontWeight.w700,
@@ -561,7 +564,7 @@ class _CalendarPlanHeader extends StatelessWidget {
                   Icon(Icons.edit_calendar_outlined, size: 18, color: context.liftBig.primary),
                   const SizedBox(width: 6),
                   Text(
-                    'Tap to change the plan',
+                    'Tap to change the plan.',
                     style: TextStyle(
                       color: context.liftBig.primary,
                       fontWeight: FontWeight.w700,
@@ -596,7 +599,7 @@ class _PlanTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ExpansionTile(
         leading: IconButton(
-          tooltip: favorited ? 'Remove favorite' : 'Favorite plan',
+          tooltip: favorited ? 'Remove Favorite' : 'Favorite Plan',
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
@@ -620,7 +623,7 @@ class _PlanTile extends StatelessWidget {
               key: ValueKey('${plan.workouts[i].id}:$i'),
               workout: plan.workouts[i],
               trailing: IconButton(
-                tooltip: 'Log this workout today',
+                tooltip: 'Log This Workout Today',
                 onPressed: () => onLog(plan.workouts[i], plan.name),
                 icon: const Icon(Icons.add),
               ),
@@ -667,7 +670,7 @@ class _Quiz extends StatelessWidget {
             TextButton(onPressed: onBack, child: const Text('Back')),
             const Spacer(),
             Text(
-              results ? 'Your recommendations' : 'Step ${step + 1} of 6',
+              results ? 'Your Recommendations' : 'Step ${step + 1} of 6',
               style:  TextStyle(color: context.liftBig.muted, fontWeight: FontWeight.w700),
             ),
           ],
@@ -717,7 +720,7 @@ class _Quiz extends StatelessWidget {
                   match.entry.title,
                   workoutsFor(match.entry.workoutIds),
                 ),
-                child: const Text('Add to calendar'),
+                child: const Text('Add to Calendar'),
               ),
             ],
             for (final workout in workoutsFor(match.entry.workoutIds)) ...[
@@ -731,13 +734,13 @@ class _Quiz extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: () => onLog(workout, match.entry.title),
-                  child: const Text('Log this workout today'),
+                  child: const Text('Log This Workout Today'),
                 ),
               ),
             ],
             const SizedBox(height: 12),
           ],
-          OutlinedButton(onPressed: onRestart, child: const Text('Start over')),
+          OutlinedButton(onPressed: onRestart, child: const Text('Start Over')),
         ],
       ],
     );
@@ -766,46 +769,46 @@ const _titles = [
 
 const _choices = <List<_QuizChoice>>[
   [
-    _QuizChoice('beginner', 'Beginner', 'New to lifting or inconsistent'),
-    _QuizChoice('intermediate', 'Intermediate', 'Comfortable in the gym'),
-    _QuizChoice('experienced', 'Experienced', 'Several years of training'),
-    _QuizChoice('liftaholic', 'Liftaholic', 'Lives in the gym'),
+    _QuizChoice('beginner', 'Beginner', 'New to lifting or inconsistent.'),
+    _QuizChoice('intermediate', 'Intermediate', 'Comfortable in the gym.'),
+    _QuizChoice('experienced', 'Experienced', 'Several years of training.'),
+    _QuizChoice('liftaholic', 'Liftaholic', 'Lives in the gym.'),
   ],
   [
-    _QuizChoice('strength', 'Build Strength', 'Increase compound lifts'),
-    _QuizChoice('size', 'Build Size', 'Hypertrophy and aesthetics'),
-    _QuizChoice('weightLoss', 'Lose Weight', 'Keep muscle while burning more'),
-    _QuizChoice('liftBig', 'I Just Wanna Lift Big', 'High-volume balanced training'),
+    _QuizChoice('strength', 'Build Strength', 'Increase compound lifts.'),
+    _QuizChoice('size', 'Build Size', 'Hypertrophy and aesthetics.'),
+    _QuizChoice('weightLoss', 'Lose Weight', 'Keep muscle while burning more.'),
+    _QuizChoice('liftBig', 'I Just Wanna Lift Big', 'High-volume balanced training.'),
   ],
   [
-    _QuizChoice(2, '2 days', 'Minimal commitment'),
-    _QuizChoice(3, '3 days', 'Balanced weekly load'),
-    _QuizChoice(4, '4 days', 'Balanced weekly load'),
-    _QuizChoice(5, '5 days', 'Balanced weekly load'),
-    _QuizChoice(6, '6 days', 'High frequency'),
-    _QuizChoice(7, '7 days', 'High frequency'),
+    _QuizChoice(2, '2 Days', 'Minimal commitment.'),
+    _QuizChoice(3, '3 Days', 'Balanced weekly load.'),
+    _QuizChoice(4, '4 Days', 'Balanced weekly load.'),
+    _QuizChoice(5, '5 Days', 'Balanced weekly load.'),
+    _QuizChoice(6, '6 Days', 'High frequency.'),
+    _QuizChoice(7, '7 Days', 'High frequency.'),
   ],
   [
-    _QuizChoice('quick', 'Quick (about 30 min)', 'Short, focused sessions'),
-    _QuizChoice('standard', 'Standard (about 60 min)', 'Classic gym session'),
-    _QuizChoice('long', 'Long (60–90+ min)', 'More volume and accessories'),
+    _QuizChoice('quick', 'Quick (about 30 min)', 'Short, focused sessions.'),
+    _QuizChoice('standard', 'Standard (about 60 min)', 'Classic gym session.'),
+    _QuizChoice('long', 'Long (60–90+ min)', 'More volume and accessories.'),
   ],
   [
-    _QuizChoice('commercialGym', 'Commercial Gym', 'Barbells and machines'),
-    _QuizChoice('planetFitness', 'Planet Fitness', 'Full gym access'),
-    _QuizChoice('homeGym', 'Home Gym', 'Barbell, rack, and some equipment'),
-    _QuizChoice('dumbbellsOnly', 'Dumbbells Only', 'Pairs of dumbbells'),
-    _QuizChoice('minimalEquipment', 'Minimal Equipment', 'Bodyweight and bands'),
+    _QuizChoice('commercialGym', 'Commercial Gym', 'Barbells and machines.'),
+    _QuizChoice('planetFitness', 'Planet Fitness', 'Full gym access.'),
+    _QuizChoice('homeGym', 'Home Gym', 'Barbell, rack, and some equipment.'),
+    _QuizChoice('dumbbellsOnly', 'Dumbbells Only', 'Pairs of dumbbells.'),
+    _QuizChoice('minimalEquipment', 'Minimal Equipment', 'Bodyweight and bands.'),
   ],
   [
-    _QuizChoice('balanced', 'Balanced', 'Compounds and accessories'),
-    _QuizChoice('compound', 'Heavy Compound Focus', 'Squat, bench, deadlift'),
-    _QuizChoice('bodybuilding', 'Bodybuilding', 'Isolation and pump'),
-    _QuizChoice('minimalist', 'Minimalist', 'Few exercises, high quality'),
-    _QuizChoice('supersets', 'Supersets / Fast Pace', 'Keep the heart rate up'),
-    _QuizChoice('machines', 'Machines Preferred', 'Stable paths'),
-    _QuizChoice('aesthetic', 'Aesthetic / V-Taper', 'Shoulders, back, proportions'),
-    _QuizChoice('athletic', 'Athletic', 'Power and conditioning'),
+    _QuizChoice('balanced', 'Balanced', 'Compounds and accessories.'),
+    _QuizChoice('compound', 'Heavy Compound Focus', 'Squat, bench, deadlift.'),
+    _QuizChoice('bodybuilding', 'Bodybuilding', 'Isolation and pump.'),
+    _QuizChoice('minimalist', 'Minimalist', 'Few exercises, high quality.'),
+    _QuizChoice('supersets', 'Supersets / Fast Pace', 'Keep the heart rate up.'),
+    _QuizChoice('machines', 'Machines Preferred', 'Stable paths.'),
+    _QuizChoice('aesthetic', 'Aesthetic / V-Taper', 'Shoulders, back, proportions.'),
+    _QuizChoice('athletic', 'Athletic', 'Power and conditioning.'),
   ],
 ];
 
@@ -867,7 +870,7 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
           TextField(
             controller: _search,
             decoration: const InputDecoration(
-              hintText: 'Search plans',
+              hintText: 'Search plans.',
               prefixIcon: Icon(Icons.search),
             ),
             onChanged: (_) => setState(() {}),

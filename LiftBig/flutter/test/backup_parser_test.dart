@@ -370,4 +370,115 @@ void main() {
       throwsA(isA<BackupParseException>()),
     );
   });
+
+  test('preferences round-trip and older backups still parse', () {
+    final encoded = encodeLiftBigBackup(
+      days: const [],
+      templatesJson: '[{"id":"push","name":"Push"}]',
+      settingsJson: '{"weightUnit":"kg"}',
+      weightUnit: 'kg',
+      preferences: const {
+        'templates_json': '[{"id":"push","name":"Push"}]',
+        'favorite_plan_ids': '["plan-a","plan-b"]',
+        'color_theme_id': 'forest',
+        'weight_unit': 'kg',
+        'distance_unit': 'km',
+        'height_inches': '70.5',
+        'body_weight_lbs': '190',
+        'auto_fill_sets': 'false',
+        'start_timer_on_done': 'true',
+        'prescribe_warmup_sets': 'true',
+        'log_set_difficulty': 'true',
+        'show_plate_graphic': 'false',
+        'plate_bar_lb': '35',
+        'machine_start_lb_smith': '15',
+        'rest_timer_sound': 'false',
+        'rest_timer_vibration': 'true',
+        'rest_timer_notification': 'false',
+        'rest_timer_ring_until_stopped': 'true',
+        'average_rest_seconds': '90',
+        'watch_apple_enabled': 'false',
+        'watch_samsung_enabled': 'true',
+        'daily_lift_reminder_enabled': 'true',
+        'daily_lift_reminder_time': '06:30',
+        'daily_lift_reminder_days': '[1,3,5]',
+        'apple_health_enabled': 'true',
+        'pro_tester_unlock': 'true',
+        'rest_timer_state': 'live-countdown',
+        'password': 'secret',
+      },
+      now: DateTime.utc(2026, 11, 1),
+    );
+    expect(encoded, isNot(contains('live-countdown')));
+    expect(encoded, isNot(contains('secret')));
+    final parsed = parseLiftBigBackup(encoded);
+    final preferences = parsed.preferences;
+    expect(preferences, isNotNull);
+    expect(preferences!['templates_json'], contains('Push'));
+    expect(preferences['favorite_plan_ids'], '["plan-a","plan-b"]');
+    expect(preferences['color_theme_id'], 'forest');
+    expect(preferences['weight_unit'], 'kg');
+    expect(preferences['distance_unit'], 'km');
+    expect(preferences['height_inches'], '70.5');
+    expect(preferences['body_weight_lbs'], '190');
+    expect(preferences['plate_bar_lb'], '35');
+    expect(preferences['machine_start_lb_smith'], '15');
+    expect(preferences['rest_timer_ring_until_stopped'], 'true');
+    expect(preferences['pro_tester_unlock'], 'true');
+    expect(preferences['daily_lift_reminder_time'], '06:30');
+    expect(preferences.containsKey('rest_timer_state'), isFalse);
+    expect(preferences.containsKey('password'), isFalse);
+    expect(parsed.templatesJson, contains('Push'));
+
+    final legacy = parseLiftBigBackup(
+      jsonEncode({
+        'exportedAt': '2026-10-03T12:00:00.000Z',
+        'liftbig_workouts': {
+          '2026-10-01': {
+            'exercises': [
+              {
+                'id': 'ex',
+                'name': 'Squat',
+                'sets': [
+                  {'id': 's', 'reps': '5', 'weight': '225'},
+                ],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    expect(legacy.preferences, isNull);
+    expect(legacy.days, hasLength(1));
+
+    final noisy = parseLiftBigBackup(
+      jsonEncode({
+        'exportedAt': '2026-11-01T00:00:00.000Z',
+        'liftbig_workouts': {},
+        'liftbig_preferences': {
+          'pro_tester_unlock': true,
+          'rest_timer_ring_until_stopped': true,
+          'favorite_plan_ids': ['plan-a'],
+          'templates_json': [
+            {'id': 'push'},
+          ],
+          'height_inches': 70.5,
+          'rest_timer_state': {'active': true},
+          'password': 'secret',
+          'sync_enabled': 'true',
+        },
+      }),
+    );
+    expect(noisy.preferences!['pro_tester_unlock'], 'true');
+    expect(noisy.preferences!['rest_timer_ring_until_stopped'], 'true');
+    expect(noisy.preferences!['favorite_plan_ids'], '["plan-a"]');
+    expect(noisy.preferences!['templates_json'], '[{"id":"push"}]');
+    expect(noisy.preferences!['height_inches'], '70.5');
+    expect(noisy.preferences!.containsKey('rest_timer_state'), isFalse);
+    expect(noisy.preferences!.containsKey('password'), isFalse);
+    expect(noisy.preferences!.containsKey('sync_enabled'), isFalse);
+
+    final kept = dropStaleBackupDays(parsed, const {});
+    expect(kept.preferences!['pro_tester_unlock'], 'true');
+  });
 }

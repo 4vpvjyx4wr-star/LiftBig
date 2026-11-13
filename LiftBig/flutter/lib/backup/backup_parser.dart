@@ -14,6 +14,7 @@ class ParsedBackup {
     this.weightUnit,
     this.bodyWeightLbs,
     this.settingsUpdatedAt,
+    this.preferences,
   });
 
   final List<JournalDay> days;
@@ -23,7 +24,69 @@ class ParsedBackup {
   final String? weightUnit;
   final double? bodyWeightLbs;
   final String? settingsUpdatedAt;
+
+  /// Flutter settings from `liftbig_preferences`, keyed by the local setting
+  /// name. Null when the backup has no preferences object. The live rest
+  /// countdown and sign-in secrets are never included.
+  final Map<String, String>? preferences;
 }
+
+/// Settings copied with a backup. `templates_json` stays the saved-plan payload.
+/// Order is the order written into the file.
+const List<String> liftBigPreferenceBackupKeys = [
+  'templates_json',
+  'favorite_plan_ids',
+  'color_theme_id',
+  'weight_unit',
+  'distance_unit',
+  'height_inches',
+  'body_weight_lbs',
+  'auto_fill_sets',
+  'auto_advance_weight_to_reps',
+  'start_timer_on_done',
+  'save_reps_marks_done',
+  'prescribe_warmup_sets',
+  'log_set_difficulty',
+  'show_plate_graphic',
+  'plate_bar_lb',
+  'machine_start_lb_smith',
+  'machine_start_lb_leg_press',
+  'machine_start_lb_hack_squat',
+  'rest_timer_sound',
+  'rest_timer_sound_id',
+  'rest_timer_vibration',
+  'rest_timer_notification',
+  'rest_timer_ring_until_stopped',
+  'average_rest_seconds',
+  'average_lift_seconds',
+  'watch_apple_enabled',
+  'watch_garmin_enabled',
+  'watch_samsung_enabled',
+  'daily_lift_reminder_enabled',
+  'daily_lift_reminder_time',
+  'daily_lift_reminder_days',
+  'daily_lift_reminder_message',
+  'apple_health_enabled',
+  'health_workout_writes',
+  'pro_tester_unlock',
+];
+
+const _jsonPreferenceKeys = {
+  'templates_json',
+  'favorite_plan_ids',
+  'daily_lift_reminder_days',
+};
+
+const _numericPreferenceKeys = {
+  'height_inches',
+  'body_weight_lbs',
+  'plate_bar_lb',
+  'machine_start_lb_smith',
+  'machine_start_lb_leg_press',
+  'machine_start_lb_hack_squat',
+  'average_rest_seconds',
+  'average_lift_seconds',
+};
 
 class BackupParseException implements Exception {
   BackupParseException(this.message);
@@ -67,6 +130,7 @@ ParsedBackup parseLiftBigBackup(String text, {DateTime? now}) {
   );
   final settingsRaw = _field(bundle, root, inner, 'liftbig_settings');
   final stampsRaw = _field(bundle, root, inner, 'liftbig_day_stamps');
+  final preferencesRaw = _field(bundle, root, inner, 'liftbig_preferences');
 
   if (workoutsRaw == null && templatesRaw == null && settingsRaw == null) {
     throw BackupParseException(missingBackupMessage);
@@ -114,6 +178,7 @@ ParsedBackup parseLiftBigBackup(String text, {DateTime? now}) {
     settingsUpdatedAt: templatesRaw != null || settingsRaw != null
         ? fallbackStamp
         : null,
+    preferences: _parsePreferences(preferencesRaw),
   );
 }
 
@@ -140,6 +205,7 @@ ParsedBackup dropStaleBackupDays(
     weightUnit: backup.weightUnit,
     bodyWeightLbs: backup.bodyWeightLbs,
     settingsUpdatedAt: backup.settingsUpdatedAt,
+    preferences: backup.preferences,
   );
 }
 
@@ -349,6 +415,7 @@ String encodeLiftBigBackup({
   String? settingsJson,
   String? weightUnit,
   double? bodyWeightLbs,
+  Map<String, String>? preferences,
   DateTime? now,
 }) {
   final exportedAt = (now ?? DateTime.now()).toUtc().toIso8601String();
@@ -393,6 +460,7 @@ String encodeLiftBigBackup({
       if (bodyWeightLbs != null) 'bodyWeightLbs': bodyWeightLbs,
     };
   }
+  final preferenceObject = _encodePreferences(preferences);
   return jsonEncode({
     'formatVersion': 2,
     'exportedAt': exportedAt,
@@ -401,5 +469,71 @@ String encodeLiftBigBackup({
     'liftbig_day_stamps': stamps,
     'liftbig_templates': templates,
     'liftbig_settings': settings,
+    'liftbig_preferences': ?preferenceObject,
   });
+}
+
+/// Missing preferences stay null so an older backup still imports.
+Map<String, String>? _parsePreferences(Object? raw) {
+  if (raw == null) return null;
+  final map = _asMap(_decodeMaybe(raw) ?? raw);
+  if (map == null) return const {};
+  final out = <String, String>{};
+  for (final key in liftBigPreferenceBackupKeys) {
+    if (!map.containsKey(key) || map[key] == null) continue;
+    final stored = _preferenceStoredString(key, map[key]);
+    if (stored == null) continue;
+    out[key] = stored;
+  }
+  return out;
+}
+
+Map<String, Object?>? _encodePreferences(Map<String, String>? preferences) {
+  if (preferences == null) return null;
+  final out = <String, Object?>{};
+  for (final key in liftBigPreferenceBackupKeys) {
+    final raw = preferences[key];
+    if (raw == null) continue;
+    out[key] = _preferenceExportValue(key, raw);
+  }
+  return out;
+}
+
+Object _preferenceExportValue(String key, String raw) {
+  if (_jsonPreferenceKeys.contains(key)) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+    try {
+      return jsonDecode(trimmed);
+    } catch (_) {
+      return raw;
+    }
+  }
+  if (raw == 'true') return true;
+  if (raw == 'false') return false;
+  if (_numericPreferenceKeys.contains(key)) {
+    final number = num.tryParse(raw.trim());
+    if (number != null) return number;
+  }
+  return raw;
+}
+
+String? _preferenceStoredString(String key, Object? value) {
+  if (value == null) return null;
+  if (_jsonPreferenceKeys.contains(key)) {
+    if (value is String) return value.trim();
+    try {
+      return jsonEncode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+  if (value is bool) return value ? 'true' : 'false';
+  if (value is num) {
+    final asDouble = value.toDouble();
+    if (asDouble == asDouble.roundToDouble()) return asDouble.round().toString();
+    return asDouble.toString();
+  }
+  if (value is String) return value.trim();
+  return null;
 }

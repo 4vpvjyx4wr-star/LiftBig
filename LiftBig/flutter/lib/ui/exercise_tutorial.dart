@@ -127,7 +127,7 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
           onTap: _play,
           child: Semantics(
             button: true,
-            label: 'Play tutorial',
+            label: 'Play Tutorial',
             child: AspectRatio(
               aspectRatio: 16 / 9,
               child: Stack(
@@ -177,7 +177,7 @@ class _ExerciseTutorialState extends State<ExerciseTutorial> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
         icon: const Icon(Icons.open_in_new, size: 16),
-        label: const Text('Watch the tutorial'),
+        label: const Text('Watch the Tutorial'),
       ),
     );
   }

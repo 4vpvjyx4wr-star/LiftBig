@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../companion/companion_bridge.dart';
 import '../companion/watch_session.dart';
 import '../date_key.dart';
-import '../health/journal_health_sync.dart';
 import '../journal/journal_repository.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../sync/sync_controller.dart';
@@ -16,6 +15,7 @@ import 'progress_page.dart';
 import 'settings_page.dart';
 import 'liftbig_sheet.dart';
 import 'shell_tabs.dart';
+import 'theme_backdrop.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -40,21 +40,18 @@ class _AppShellState extends State<AppShell> {
   var _refresh = 0;
   final _opened = <int>{0};
   String? _homeFocusDateKey;
-  late final JournalHealthSync _healthSync;
   final _companion = CompanionBridge.shared;
   Future<void> _watchWrites = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
-    _healthSync = JournalHealthSync(journal: widget.journal);
     _companion.addListener(_onWatchMessage);
   }
 
   @override
   void dispose() {
     _companion.removeListener(_onWatchMessage);
-    _healthSync.dispose();
     super.dispose();
   }
 
@@ -68,12 +65,16 @@ class _AppShellState extends State<AppShell> {
     if (message == null) return;
     if (message.isFinish) {
       if (message.activeKcal != null) {
-        await widget.journal.setHealthEnergyKcal(message.dateKey, message.activeKcal);
-      } else {
-        await _healthSync.syncDay(message.dateKey, honorToggle: false);
+        await widget.journal.setHealthEnergyKcal(
+          message.dateKey,
+          message.activeKcal,
+        );
       }
     } else if (message.isSetRest && message.restSeconds != null) {
-      await widget.journal.setChosenRestSeconds(message.dateKey, message.restSeconds!);
+      await widget.journal.setChosenRestSeconds(
+        message.dateKey,
+        message.restSeconds!,
+      );
     } else if (!message.isSkipRest) {
       await widget.journal.persistCompanionMessage(message);
     }
@@ -119,27 +120,30 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final today = todayKey();
-    return Scaffold(
-      backgroundColor: context.liftBig.background,
-      body: Column(
-        children: [
-          _ShellHeader(
-            showTagline: _index == ShellTab.home.index,
-            onSettings: _openSettings,
-          ),
-          Expanded(
-            child: IndexedStack(
-              index: _index,
-              children: [
-                for (var tab = 0; tab < ShellTab.values.length; tab++)
-                  _opened.contains(tab)
-                      ? _page(tab, today)
-                      : const SizedBox.shrink(),
-              ],
+    return LiftBigRouteUnderlay(
+      child: Scaffold(
+        backgroundColor: context.liftBig.background,
+        body: Column(
+          children: [
+            _ShellHeader(
+              showTagline: _index == ShellTab.home.index,
+              compact: _index == ShellTab.lift.index,
+              onSettings: _openSettings,
             ),
-          ),
-          _ShellBar(index: _index, onSelect: _select),
-        ],
+            Expanded(
+              child: IndexedStack(
+                index: _index,
+                children: [
+                  for (var tab = 0; tab < ShellTab.values.length; tab++)
+                    _opened.contains(tab)
+                        ? _page(tab, today)
+                        : const SizedBox.shrink(),
+                ],
+              ),
+            ),
+            _ShellBar(index: _index, onSelect: _select),
+          ],
+        ),
       ),
     );
   }
@@ -161,13 +165,14 @@ class _AppShellState extends State<AppShell> {
         dateKey: today,
         refreshToken: _refresh,
         embedRestBanner: false,
+        underShellHeader: true,
         onOpenSettings: _openSettings,
         onWorkoutFinished: () {
           if (!mounted) return;
           _select(ShellTab.home.index);
           showLiftBigNotice(
             context,
-            'Congrats on lifting big - see you tomorrow',
+            'Congrats on lifting big - see you tomorrow.',
           );
         },
       ),
@@ -182,28 +187,38 @@ class _AppShellState extends State<AppShell> {
 }
 
 class _ShellHeader extends StatelessWidget {
-  const _ShellHeader({required this.showTagline, required this.onSettings});
+  const _ShellHeader({
+    required this.showTagline,
+    required this.compact,
+    required this.onSettings,
+  });
 
   final bool showTagline;
+  final bool compact;
   final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     return DecoratedBox(
-      decoration:  BoxDecoration(
+      decoration: BoxDecoration(
         color: context.liftBig.background,
         border: Border(bottom: BorderSide(color: context.liftBig.border)),
       ),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, top + 8, 8, 8),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          top + (compact ? 4 : 8),
+          compact ? 4 : 8,
+          compact ? 2 : 8,
+        ),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
+                  Text(
                     'LIFTBIG',
                     style: TextStyle(
                       color: context.liftBig.primary,
@@ -213,7 +228,7 @@ class _ShellHeader extends StatelessWidget {
                     ),
                   ),
                   if (showTagline)
-                     Text(
+                    Text(
                       'TRAINING JOURNAL',
                       style: TextStyle(
                         color: context.liftBig.muted,
@@ -228,6 +243,11 @@ class _ShellHeader extends StatelessWidget {
             IconButton(
               tooltip: 'Settings',
               onPressed: onSettings,
+              visualDensity: compact ? VisualDensity.compact : null,
+              padding: compact ? const EdgeInsets.all(8) : null,
+              constraints: compact
+                  ? const BoxConstraints(minWidth: 40, minHeight: 40)
+                  : null,
               icon: const Icon(Icons.settings_outlined),
             ),
           ],
@@ -247,7 +267,7 @@ class _ShellBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
     return DecoratedBox(
-      decoration:  BoxDecoration(
+      decoration: BoxDecoration(
         color: context.liftBig.card,
         border: Border(top: BorderSide(color: context.liftBig.border)),
       ),
@@ -350,7 +370,7 @@ class _LiftButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Open today\'s workout log',
+      label: 'Open Today\'s Workout Log',
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
@@ -363,7 +383,7 @@ class _LiftButton extends StatelessWidget {
               child: Container(
                 width: 77,
                 height: 77,
-                decoration:  BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: context.liftBig.background,
                 ),
@@ -372,11 +392,11 @@ class _LiftButton extends StatelessWidget {
                   width: 67,
                   height: 67,
                   alignment: Alignment.center,
-                  decoration:  BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: context.liftBig.primary,
                   ),
-                  child:  Text(
+                  child: Text(
                     'LIFT',
                     style: TextStyle(
                       color: context.liftBig.foreground,

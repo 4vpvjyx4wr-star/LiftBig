@@ -200,6 +200,41 @@ class BodyWeightHealthSync {
     }
   }
 
+  /// Writes the workout and returns its Health UUID.
+  Future<String?> writeWorkoutUuid(HealthWorkoutWrite write) async {
+    if (kIsWeb) return null;
+    await _ensureConfigured();
+    try {
+      final activity = healthPluginActivity(write.activity);
+      final kcal = write.energyKcal;
+      final uuid = await _health.writeWorkoutDataUUID(
+        activityType: activity,
+        start: DateTime.fromMillisecondsSinceEpoch(write.startMs),
+        end: DateTime.fromMillisecondsSinceEpoch(write.endMs),
+        totalEnergyBurned: kcal == null ? null : kcal.round(),
+        totalEnergyBurnedUnit: HealthDataUnit.KILOCALORIE,
+        totalDistance: write.distanceMeters == null
+            ? null
+            : write.distanceMeters!.round(),
+        totalDistanceUnit: HealthDataUnit.METER,
+        title: 'LiftBig',
+        recordingMethod: RecordingMethod.manual,
+      );
+      if (uuid == null || uuid.isEmpty || uuid == 'null') return null;
+      return uuid;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> deleteWorkout(String uuid) async {
+    if (kIsWeb || uuid.isEmpty) return;
+    await _ensureConfigured();
+    try {
+      await _health.deleteByUUID(uuid: uuid, type: HealthDataType.WORKOUT);
+    } catch (_) {}
+  }
+
   /// Writes the workout. Calories are only attached when [write.energyKcal] is set.
   Future<bool> writeWorkout(HealthWorkoutWrite write) async {
     if (kIsWeb) return false;

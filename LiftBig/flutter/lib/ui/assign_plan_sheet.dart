@@ -4,6 +4,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../plans/custom_plans.dart';
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 import 'plan_workout_row.dart';
 
@@ -126,9 +127,8 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+    return KeyboardDismiss(
+      fill: false,
       child: SizedBox(
         height: liftBigPreferredHeight(context, 0.72),
         child: Column(
@@ -137,7 +137,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
               child: Text(
-                'Assign a plan',
+                'Assign a Plan',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
             ),
@@ -154,7 +154,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
                 controller: _search,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                  hintText: 'Search plans or exercises',
+                  hintText: 'Search plans or exercises.',
                   isDense: true,
                   prefixIcon: Icon(Icons.search, size: 20),
                 ),
@@ -177,7 +177,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
             children: [
               const Text('Could not load plans.'),
               const SizedBox(height: 12),
-              FilledButton(onPressed: _load, child: const Text('Try again')),
+              FilledButton(onPressed: _load, child: const Text('Try Again')),
             ],
           ),
         ),
@@ -204,7 +204,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
         if (!_choosingPlan && selected != null) ...[
           const SizedBox(height: 12),
           Text(
-            'Adding from ${selected.name}',
+            'Adding from ${selected.name}.',
             style: TextStyle(
               color: context.liftBig.primary,
               fontWeight: FontWeight.w800,
@@ -248,13 +248,13 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          selected?.name ?? 'Choose a plan',
+                          selected?.name ?? 'Choose a Plan',
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                         ),
                         if (selected != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            'This plan will be assigned',
+                            'This plan will be assigned.',
                             style: TextStyle(
                               color: context.liftBig.primary,
                               fontSize: 12,
@@ -302,7 +302,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
       key: ValueKey('${plan.id}:${workout.id}:$index'),
       workout: workout,
       trailing: IconButton(
-        tooltip: 'Add to this day',
+        tooltip: 'Add to This Day',
         onPressed: () {
           Navigator.pop(
             context,

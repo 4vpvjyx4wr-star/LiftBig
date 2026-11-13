@@ -22,8 +22,9 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
     private var watchActivated = false
     private var pendingSession: String?
     private var garminReady = false
-    private var askedForDevices = false
     private var devices: [IQDevice] = []
+    private var appleEnabled = true
+    private var garminEnabled = true
 
     private override init() {
         super.init()
@@ -47,14 +48,20 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
             case "publishSession":
                 let json = (call.arguments as? [String: Any])?["sessionJson"] as? String
                     ?? "{\"version\":1,\"locked\":true,\"reason\":\"idle\"}"
-                self.publish(json)
+                self.publish(
+                    json,
+                    apple: self.flag(call, "apple"),
+                    garmin: self.flag(call, "garmin")
+                )
                 result(nil)
             case "startWorkout":
                 let json = (call.arguments as? [String: Any])?["sessionJson"] as? String
                     ?? "{\"version\":1,\"locked\":true,\"reason\":\"idle\"}"
-                self.publish(json)
-                self.launchWatch(json)
-                self.openGarminApp()
+                let apple = self.flag(call, "apple")
+                self.publish(json, apple: apple, garmin: self.flag(call, "garmin"))
+                if apple {
+                    self.launchWatch(json)
+                }
                 result(nil)
             default:
                 result(FlutterMethodNotImplemented)
@@ -82,10 +89,25 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
         return true
     }
 
-    private func publish(_ json: String) {
+    private func flag(_ call: FlutterMethodCall, _ key: String) -> Bool {
+        guard let args = call.arguments as? [String: Any], let value = args[key] as? Bool else {
+            return true
+        }
+        return value
+    }
+
+    /// Apple Watch and Garmin each stay quiet when that companion is turned off.
+    /// Opening a workout never launches the Connect IQ phone app.
+    private func publish(_ json: String, apple: Bool, garmin: Bool) {
         pendingSession = json
-        sendWatch(json)
-        sendGarmin(json)
+        appleEnabled = apple
+        garminEnabled = garmin
+        if apple {
+            sendWatch(json)
+        }
+        if garmin {
+            sendGarmin(json)
+        }
     }
 
     private func deliver(messageJson: String) {
@@ -125,7 +147,7 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-        if let pendingSession {
+        if appleEnabled, let pendingSession {
             sendWatch(pendingSession)
         }
     }
@@ -176,31 +198,16 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
     /// Garmin Connect is missing, or the user has not shared a watch. Do nothing.
     func needsToInstallConnectMobile() {}
 
+    /// Sends only to a watch that is connected right now. Never opens Garmin Connect.
     private func sendGarmin(_ json: String) {
-        guard garminConnectInstalled() else { return }
+        guard garminEnabled, garminConnectInstalled() else { return }
         startGarmin()
-        guard garminReady, let payload = garminPayload(from: json) else { return }
-        if devices.isEmpty {
-            if !askedForDevices, let iq = connectIQ() {
-                askedForDevices = true
-                iq.showDeviceSelection()
-            }
-            return
-        }
-        guard let iq = connectIQ() else { return }
-        for device in devices {
+        guard garminReady, let payload = garminPayload(from: json), let iq = connectIQ() else { return }
+        let connected = devices.filter { iq.getDeviceStatus($0) == .connected }
+        if connected.isEmpty { return }
+        for device in connected {
             guard let app = garminApp(on: device) else { continue }
             iq.sendMessage(payload, to: app, progress: { _, _ in }, completion: { _ in })
-        }
-    }
-
-    private func openGarminApp() {
-        guard garminConnectInstalled() else { return }
-        startGarmin()
-        guard garminReady, let iq = connectIQ() else { return }
-        for device in devices {
-            guard let app = garminApp(on: device) else { continue }
-            iq.openAppRequest(app) { _ in }
         }
     }
 
@@ -219,7 +226,7 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
     }
 
     func deviceStatusChanged(_ device: IQDevice, status: IQDeviceStatus) {
-        guard status == .connected, let pendingSession else { return }
+        guard garminEnabled, status == .connected, let pendingSession else { return }
         sendGarmin(pendingSession)
     }
 

@@ -9,8 +9,12 @@ import 'package:liftbig/date_key.dart';
 import 'package:liftbig/journal/journal_repository.dart';
 import 'package:liftbig/journal/logged_day.dart';
 import 'package:liftbig/model/journal_day.dart';
+import 'package:liftbig/rest/rest_timer_state.dart';
 import 'package:liftbig/sync/day_remote.dart';
 import 'package:liftbig/sync/journal_sync.dart';
+import 'package:liftbig/utils/distance_units.dart';
+import 'package:liftbig/utils/variable_machine.dart';
+import 'package:liftbig/utils/weight_units.dart';
 
 JournalDay sampleDay({
   String dateKey = '2026-10-01',
@@ -879,7 +883,7 @@ void main() {
     expect(swapped.targetReps, '8-12');
     expect(swapped.sets.map((set) => set.isWarmup), everyElement(isFalse));
     expect(swapped.sets.map((set) => set.weight), ['310', '310', '100']);
-    expect(swapped.sets.map((set) => set.reps), ['8', '8', '3']);
+    expect(swapped.sets.map((set) => set.reps), ['', '', '3']);
     expect(swapped.sets.last.checked, isTrue);
 
     await journal.updateExerciseGoal(
@@ -932,7 +936,7 @@ void main() {
     expect(withWarmup.sets.first.reps, '5');
     expect(withWarmup.sets.first.weight, '105');
     expect(withWarmup.sets.skip(1).map((set) => set.weight), ['205', '205']);
-    expect(withWarmup.sets.skip(1).map((set) => set.reps), ['5', '5']);
+    expect(withWarmup.sets.skip(1).map((set) => set.reps), ['', '']);
     expect(withWarmup.targetWeight, '205');
 
     await journal.db.close();
@@ -1153,5 +1157,191 @@ void main() {
 
     await journal.db.close();
     if (file.existsSync()) file.deleteSync();
+  });
+
+  test('backup copies preferences and skips the live rest countdown', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(journal.db.close);
+    final backup = jsonEncode({
+      'exportedAt': '2026-11-01T00:00:00.000Z',
+      'liftbig_workouts': {},
+      'liftbig_templates': [
+        {'id': 'push', 'name': 'Push'},
+      ],
+      'liftbig_settings': {'weightUnit': 'lb', 'bodyWeightLbs': 180},
+      'liftbig_preferences': {
+        'templates_json': [
+          {'id': 'push', 'name': 'Push'},
+        ],
+        'favorite_plan_ids': ['plan-b', 'plan-a'],
+        'color_theme_id': 'forest',
+        'weight_unit': 'kg',
+        'distance_unit': 'km',
+        'height_inches': 70.5,
+        'body_weight_lbs': 190,
+        'auto_fill_sets': false,
+        'auto_advance_weight_to_reps': false,
+        'start_timer_on_done': true,
+        'prescribe_warmup_sets': true,
+        'log_set_difficulty': true,
+        'show_plate_graphic': false,
+        'plate_bar_lb': 35,
+        'machine_start_lb_smith': 15,
+        'rest_timer_sound': false,
+        'rest_timer_vibration': true,
+        'rest_timer_notification': false,
+        'rest_timer_ring_until_stopped': true,
+        'average_rest_seconds': 90,
+        'average_lift_seconds': 45,
+        'watch_apple_enabled': false,
+        'watch_garmin_enabled': true,
+        'watch_samsung_enabled': true,
+        'daily_lift_reminder_enabled': true,
+        'daily_lift_reminder_time': '06:30',
+        'daily_lift_reminder_days': [1, 3, 5],
+        'daily_lift_reminder_message': 'Lift',
+        'apple_health_enabled': true,
+        'pro_tester_unlock': true,
+        'rest_timer_state': {'active': true, 'exerciseName': 'LIVE'},
+        'password': 'secret',
+        'sync_enabled': 'true',
+      },
+    });
+
+    await journal.importBackup(parseLiftBigBackup(backup));
+    expect(await journal.storedWeightUnit(), WeightUnit.kg);
+    expect(await journal.storedDistanceUnit(), DistanceUnit.km);
+    expect(await journal.storedHeightInches(), closeTo(70.5, 0.01));
+    expect(await journal.storedBodyWeightLbs(), closeTo(190, 0.01));
+    expect(await journal.autoFillSetsEnabled(), isFalse);
+    expect(await journal.autoAdvanceWeightToRepsEnabled(), isFalse);
+    expect(await journal.startTimerOnDone(), isTrue);
+    expect(await journal.prescribeWarmupEnabled(), isTrue);
+    expect(await journal.logSetDifficultyEnabled(), isTrue);
+    expect(await journal.showPlateGraphicEnabled(), isFalse);
+    expect(await journal.storedPlateBarLb(), 35);
+    expect(
+      await journal.storedMachineStartingWeightLbs(VariableMachineKind.smith),
+      15,
+    );
+    expect(await journal.favoritePlanIds(), {'plan-a', 'plan-b'});
+    expect(await journal.loadColorThemeId(), 'forest');
+    expect(await journal.proTesterUnlockEnabled(), isTrue);
+    expect(await journal.appleHealthSyncEnabled(), isTrue);
+    expect(await journal.storedAverageRestSeconds(), 90);
+    expect(await journal.storedAverageLiftSeconds(), 45);
+    expect(await journal.isSyncEnabled(), isFalse);
+    final alerts = await journal.loadRestTimerAlertSettings();
+    expect(alerts.soundEnabled, isFalse);
+    expect(alerts.vibrationEnabled, isTrue);
+    expect(alerts.notificationEnabled, isFalse);
+    expect(alerts.ringUntilStopped, isTrue);
+    final watches = await journal.loadWatchCompanionSettings();
+    expect(watches.apple, isFalse);
+    expect(watches.garmin, isTrue);
+    expect(watches.samsung, isTrue);
+    final reminder = await journal.loadDailyLiftReminderSettings();
+    expect(reminder.enabled, isTrue);
+    expect(reminder.timeHHmm, '06:30');
+    expect(reminder.weekdays, [1, 3, 5]);
+    expect(reminder.customMessage, 'Lift');
+    expect((await journal.localCloudSettings())!.templatesJson, contains('Push'));
+
+    await journal.saveRestTimerState(
+      const RestTimerSnapshot(
+        active: true,
+        exerciseId: 'live',
+        exerciseName: 'SHOULD-NOT-EXPORT-REST',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: 1,
+      ),
+    );
+    final exported = await journal.exportBackupJson();
+    expect(exported, isNot(contains('SHOULD-NOT-EXPORT-REST')));
+    expect(exported, isNot(contains('secret')));
+    final roundTrip = parseLiftBigBackup(exported);
+    expect(roundTrip.preferences?['pro_tester_unlock'], 'true');
+    expect(roundTrip.preferences?['rest_timer_ring_until_stopped'], 'true');
+    expect(roundTrip.preferences?.containsKey('rest_timer_state'), isFalse);
+
+    final older = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(older.db.close);
+    await older.setColorThemeId('loud');
+    await older.setProTesterUnlock();
+    await older.importBackup(
+      parseLiftBigBackup(
+        jsonEncode({
+          'exportedAt': '2026-01-01T00:00:00.000Z',
+          'liftbig_workouts': {},
+          'liftbig_settings': {'weightUnit': 'lb'},
+        }),
+      ),
+    );
+    expect(await older.loadColorThemeId(), 'loud');
+    expect(await older.proTesterUnlockEnabled(), isTrue);
+  });
+
+  test('warmup setting adds one set and keeps a warmup the plan already has', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(journal.db.close);
+
+    await journal.addExercise(
+      dateKey: '2026-07-01',
+      name: 'Back Squat',
+      prescribeWarmup: false,
+      sets: const [
+        JournalSet(id: 'w', sortOrder: 0, reps: '5', weight: '45', isWarmup: true),
+        JournalSet(id: 's', sortOrder: 1, reps: '5', weight: '225'),
+      ],
+    );
+    final kept = (await journal.getDay('2026-07-01'))!.exercises.single;
+    expect(kept.sets.where((set) => set.isWarmup), hasLength(1));
+    expect(kept.sets.first.weight, '45');
+
+    final untouched = await journal.withPrescribedWarmup(
+      dateKey: '2026-07-01',
+      exercises: [kept],
+      enabled: false,
+    );
+    expect(untouched.single.sets.where((set) => set.isWarmup), hasLength(1));
+    expect(untouched.single.sets.first.weight, '45');
+
+    await journal.addExercise(
+      dateKey: '2026-07-02',
+      name: 'Bench Press',
+      prescribeWarmup: true,
+      sets: const [
+        JournalSet(id: 'bw', sortOrder: 0, reps: '5', weight: '45', isWarmup: true),
+        JournalSet(id: 'b1', sortOrder: 1, reps: '5', weight: '185'),
+      ],
+    );
+    final bench = (await journal.getDay('2026-07-02'))!.exercises.single;
+    expect(bench.sets.where((set) => set.isWarmup), hasLength(1));
+
+    await journal.addExercise(
+      dateKey: '2026-07-03',
+      name: 'Deadlift',
+      prescribeWarmup: true,
+      sets: const [
+        JournalSet(id: 'd1', sortOrder: 0, reps: '5', weight: '315'),
+      ],
+    );
+    final dead = (await journal.getDay('2026-07-03'))!.exercises.single;
+    expect(dead.sets, hasLength(2));
+    expect(dead.sets.first.isWarmup, isTrue);
+    expect(dead.sets.last.isWarmup, isFalse);
+
+    await journal.addExercise(
+      dateKey: '2026-07-04',
+      name: 'Lat Pulldown',
+      prescribeWarmup: true,
+      sets: const [
+        JournalSet(id: 'l1', sortOrder: 0, reps: '10', weight: '100'),
+      ],
+    );
+    final pulldown = (await journal.getDay('2026-07-04'))!.exercises.single;
+    expect(pulldown.sets, hasLength(1));
+    expect(pulldown.sets.single.isWarmup, isFalse);
   });
 }

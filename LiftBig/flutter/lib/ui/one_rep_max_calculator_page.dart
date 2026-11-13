@@ -74,7 +74,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
         : values.reduce((a, b) => a + b) / values.length;
 
     return KeyboardDismissScaffold(
-      title: 'One rep max',
+      title: 'One Rep Max',
       body: _loadingUnit
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -82,7 +82,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'Weight lifted ($unitLabel)',
+                  'Weight Lifted ($unitLabel)',
                   style:  TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -114,7 +114,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Reps (to failure)',
+                  'Reps (to Failure)',
                   style:  TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -146,7 +146,7 @@ class _OneRepMaxCalculatorPageState extends State<OneRepMaxCalculatorPage> {
                   const SizedBox(height: 24),
                   if (average != null)
                     Text(
-                      'Average estimate: ${_formatEstimate(average)}',
+                      'Average estimate: ${_formatEstimate(average)}.',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,

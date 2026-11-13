@@ -2,6 +2,7 @@ import AVFoundation
 import CoreHaptics
 import Flutter
 import Foundation
+import MediaPlayer
 
 /// Playback session that ducks other audio for the rest alarm, then hands the
 /// volume back. A silent loop keeps the process alive while rest is running
@@ -14,10 +15,16 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
     private var alarmPlayer: AVAudioPlayer?
     private var hapticEngine: CHHapticEngine?
     private var playingAlarm = false
+    private var loopingAlarm = false
     private var sessionActive = false
+    private var channel: FlutterMethodChannel?
+    private var remoteStopAdded = false
+    private var remoteStopVisible = false
+    private static let toneIds = ["rest_alarm", "bell", "chime", "horn"]
 
     static func register(messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "liftbig/rest_alarm", binaryMessenger: messenger)
+        shared.channel = channel
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "deviceTimeZone":
@@ -27,7 +34,12 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
             case "stopKeepAlive":
                 shared.stopKeepAlive(result: result)
             case "play":
-                shared.play(result: result)
+                let args = call.arguments as? [String: Any]
+                shared.play(
+                    loop: Self.boolArg(args?["loop"]),
+                    soundId: Self.soundId(args?["soundId"]),
+                    result: result
+                )
             case "haptic":
                 shared.playHaptic(result: result)
             default:
@@ -38,10 +50,7 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
 
     private func startKeepAlive(result: @escaping FlutterResult) {
         DispatchQueue.main.async {
-            if self.playingAlarm {
-                result(true)
-                return
-            }
+            self.stopAlarmPlayer()
             do {
                 try self.activateSilent()
                 result(true)
@@ -58,7 +67,7 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    private func play(result: @escaping FlutterResult) {
+    private func play(loop: Bool, soundId: String, result: @escaping FlutterResult) {
         DispatchQueue.main.async {
             let session = AVAudioSession.sharedInstance()
             do {
@@ -66,17 +75,20 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
                 try session.setCategory(.playback, mode: .default, options: [.duckOthers])
                 try session.setActive(true)
                 self.sessionActive = true
-                let data = self.bundledAlarm() ?? Self.alarmWav()
+                let data = self.bundledTone(soundId) ?? self.bundledTone("rest_alarm") ?? Self.alarmWav()
                 let player = try AVAudioPlayer(data: data)
                 player.delegate = self
+                player.numberOfLoops = loop ? -1 : 0
                 player.prepareToPlay()
                 self.alarmPlayer = player
                 self.playingAlarm = true
+                self.loopingAlarm = loop
                 guard player.play() else {
                     self.deactivate()
                     result(false)
                     return
                 }
+                self.setLoopingRemoteStop(loop)
                 result(true)
             } catch {
                 self.deactivate()
@@ -85,8 +97,43 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
         }
     }
 
+    /// Lock-screen Stop is only offered while the tone is looping.
+    private func setLoopingRemoteStop(_ enabled: Bool) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { self.setLoopingRemoteStop(enabled) }
+            return
+        }
+        let command = MPRemoteCommandCenter.shared().stopCommand
+        if enabled {
+            if !remoteStopAdded {
+                command.addTarget(self, action: #selector(handleRemoteStop(_:)))
+                remoteStopAdded = true
+            }
+            command.isEnabled = true
+            remoteStopVisible = true
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+                MPMediaItemPropertyTitle: "Rest is done",
+                MPMediaItemPropertyArtist: "LiftBig",
+                MPNowPlayingInfoPropertyPlaybackRate: 1.0,
+                MPNowPlayingInfoPropertyElapsedPlaybackTime: 0,
+            ]
+        } else if remoteStopVisible {
+            remoteStopVisible = false
+            command.isEnabled = false
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        }
+    }
+
+    @objc private func handleRemoteStop(_ event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        guard playingAlarm else { return .commandFailed }
+        deactivate()
+        channel?.invokeMethod("alarmStopped", arguments: nil)
+        return .success
+    }
+
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         guard player === alarmPlayer else { return }
+        if loopingAlarm { return }
         deactivate()
     }
 
@@ -112,18 +159,36 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
     }
 
     private func deactivate() {
+        stopAlarmPlayer()
         silentPlayer?.stop()
         silentPlayer = nil
-        alarmPlayer?.stop()
-        alarmPlayer = nil
-        playingAlarm = false
         guard sessionActive else { return }
         sessionActive = false
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 
-    private func bundledAlarm() -> Data? {
-        guard let url = Bundle.main.url(forResource: "rest_alarm", withExtension: "wav") else {
+    private func stopAlarmPlayer() {
+        loopingAlarm = false
+        playingAlarm = false
+        alarmPlayer?.delegate = nil
+        alarmPlayer?.stop()
+        alarmPlayer = nil
+        setLoopingRemoteStop(false)
+    }
+
+    private static func boolArg(_ value: Any?) -> Bool {
+        if let value = value as? Bool { return value }
+        if let value = value as? NSNumber { return value.boolValue }
+        return false
+    }
+
+    private static func soundId(_ value: Any?) -> String {
+        guard let raw = value as? String, toneIds.contains(raw) else { return "rest_alarm" }
+        return raw
+    }
+
+    private func bundledTone(_ soundId: String) -> Data? {
+        guard let url = Bundle.main.url(forResource: soundId, withExtension: "wav") else {
             return nil
         }
         return try? Data(contentsOf: url)

@@ -5,6 +5,7 @@ import '../theme.dart';
 import '../utils/youtube_video_id.dart';
 import 'catalog_load_state.dart';
 import 'exercise_tutorial.dart';
+import 'keyboard_dismiss.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -25,13 +26,15 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return CatalogLoadScope(
+    return KeyboardDismiss(
+      child: CatalogLoadScope(
       builder: (context, catalog) => _LibraryBody(
         catalog: catalog,
         query: _query,
         muscle: _muscle,
         onMuscleChanged: (value) => setState(() => _muscle = value),
         onQueryChanged: () => setState(() {}),
+      ),
       ),
     );
   }
@@ -81,7 +84,7 @@ class _LibraryBody extends StatelessWidget {
               TextField(
                 controller: query,
                 decoration: const InputDecoration(
-                  labelText: 'Search lifts',
+                  labelText: 'Search Lifts',
                   prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (_) => onQueryChanged(),
@@ -171,7 +174,7 @@ class LiftDetailPage extends StatelessWidget {
           if (lift.instructions.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
-              'How to perform it',
+              'How to Perform It',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),

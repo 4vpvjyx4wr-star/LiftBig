@@ -42,6 +42,24 @@ void main() {
         60,
       );
     });
+
+    test('ring until stopped defaults off', () {
+      expect(RestTimerAlertSettings.defaults.ringUntilStopped, isFalse);
+      expect(
+        RestTimerAlertSettings.defaults.copyWith(ringUntilStopped: true).ringUntilStopped,
+        isTrue,
+      );
+    });
+
+    test('watch companions default apple and garmin on, samsung off', () {
+      expect(WatchCompanionSettings.defaults.apple, isTrue);
+      expect(WatchCompanionSettings.defaults.garmin, isTrue);
+      expect(WatchCompanionSettings.defaults.samsung, isFalse);
+      expect(
+        WatchCompanionSettings.defaults.copyWith(samsung: true).samsung,
+        isTrue,
+      );
+    });
   });
 
   group('body weight prediction', () {

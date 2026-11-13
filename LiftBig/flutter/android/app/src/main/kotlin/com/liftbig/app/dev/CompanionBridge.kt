@@ -39,9 +39,12 @@ object CompanionBridge {
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "publishSession" -> {
-                    val json = call.argument<String>("sessionJson")
-                        ?: """{"version":1,"locked":true,"reason":"idle"}"""
-                    publish(json)
+                    val garmin = call.argument<Boolean>("garmin") ?: true
+                    if (garmin) {
+                        val json = call.argument<String>("sessionJson")
+                            ?: """{"version":1,"locked":true,"reason":"idle"}"""
+                        publish(json)
+                    }
                     result.success(null)
                 }
                 else -> result.notImplemented()

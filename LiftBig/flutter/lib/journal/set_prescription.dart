@@ -34,7 +34,7 @@ class AssignedPrescription {
   final List<AssignedSet> sets;
 }
 
-/// Catalog reps and weight land on the lift goal. A single number is also logged.
+/// Catalog reps and weight land on the lift goal. Logged reps stay empty.
 AssignedPrescription prescriptionFromCatalogSets(
   List<({String reps, String weight})> sets,
 ) {
@@ -48,7 +48,7 @@ AssignedPrescription prescriptionFromCatalogSets(
     if (targetWeight == null && weight.isNotEmpty) targetWeight = weight;
     logged.add(
       AssignedSet(
-        reps: isSingleRepCount(reps) ? reps : '',
+        reps: '',
         weight: isSingleWeight(weight) ? weight.replaceAll(',', '.') : '',
       ),
     );

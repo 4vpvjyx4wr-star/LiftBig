@@ -34,8 +34,11 @@ import 'machine_plates_hint.dart';
 import 'exercise_info_sheet.dart';
 import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
+import 'rest_timer_banner.dart';
+import 'rest_timer_tile.dart';
 import 'set_value_sheet.dart';
 import 'swap_exercise_sheet.dart';
+import 'tool_icons.dart';
 import 'workout_details_section.dart';
 
 const List<String> commonLifts = [
@@ -57,6 +60,7 @@ class DayPage extends StatefulWidget {
     required this.dateKey,
     this.refreshToken = 0,
     this.embedRestBanner = false,
+    this.underShellHeader = false,
     this.onOpenSettings,
     this.onWorkoutFinished,
     this.initialExerciseId,
@@ -79,6 +83,10 @@ class DayPage extends StatefulWidget {
   /// inset for a caller that still wants the log clear of that card.
   final bool embedRestBanner;
 
+  /// Lift tab sits under the shell title, so the date bar must not repeat
+  /// the status-bar inset or an implied back button.
+  final bool underShellHeader;
+
   @override
   State<DayPage> createState() => _DayPageState();
 }
@@ -89,6 +97,8 @@ class _DayPageState extends State<DayPage> {
   final _dayNotes = TextEditingController();
   final _workoutNameFocus = FocusNode();
   final _dayNotesFocus = FocusNode();
+  final _addNameFocus = FocusNode();
+  final _addExerciseKey = GlobalKey();
   final _reps = <String, TextEditingController>{};
   final _weights = <String, TextEditingController>{};
   final _durations = <String, TextEditingController>{};
@@ -113,6 +123,7 @@ class _DayPageState extends State<DayPage> {
   RestTimerController? _restTimer;
   var _autoAdvance = true;
   var _startTimerOnDone = false;
+  var _saveRepsMarksDone = false;
   var _logDifficulty = false;
   var _showPlateGraphic = true;
   var _barLb = defaultBarLb;
@@ -121,8 +132,12 @@ class _DayPageState extends State<DayPage> {
   late final JournalHealthSync _healthSync;
   late final CompanionBridge _companion;
   late final ProStatus _proStatus;
+  var _pro = false;
+  var _predictedReps = const <String, String>{};
   LiftBigCatalog? _catalog;
   var _assigning = false;
+  var _notesOpen = false;
+  String? _notesOpenDate;
 
   @override
   void initState() {
@@ -201,6 +216,7 @@ class _DayPageState extends State<DayPage> {
     _dayNotes.dispose();
     _workoutNameFocus.dispose();
     _dayNotesFocus.dispose();
+    _addNameFocus.dispose();
     _bodyWeight.dispose();
     _bodyWeightFocus.dispose();
     for (final controller in _reps.values) {
@@ -230,9 +246,12 @@ class _DayPageState extends State<DayPage> {
       final autoFill = await widget.journal.autoFillSetsEnabled();
       final autoAdvance = await widget.journal.autoAdvanceWeightToRepsEnabled();
       final timerOnDone = await widget.journal.startTimerOnDone();
+      final saveRepsMarksDone = await widget.journal.saveRepsMarksSetDoneEnabled();
       final logDifficulty = await widget.journal.logSetDifficultyEnabled();
       final showPlateGraphic = await widget.journal.showPlateGraphicEnabled();
       final barLb = await widget.journal.storedPlateBarLb();
+      final watches = await widget.journal.loadWatchCompanionSettings();
+      _companion.setWatchCompanions(watches);
       var bodyLbs = await _bodyWeightService.importFromHealthIfEmpty();
       bodyLbs ??= await widget.journal.storedBodyWeightLbs();
       if (!mounted) return;
@@ -250,6 +269,9 @@ class _DayPageState extends State<DayPage> {
         widget.dateKey,
         day?.exercises ?? const [],
       );
+      final predictedReps = autoFill
+          ? await widget.journal.predictedRepsByExercise(widget.dateKey)
+          : const <String, String>{};
       if (!mounted) return;
       await _ensureMachineStartingControllers(weightUnit);
       if (!mounted) return;
@@ -265,9 +287,11 @@ class _DayPageState extends State<DayPage> {
         _averageRest = averageRest;
         _autoAdvance = autoAdvance;
         _startTimerOnDone = timerOnDone;
+        _saveRepsMarksDone = saveRepsMarksDone;
         _logDifficulty = logDifficulty;
         _showPlateGraphic = showPlateGraphic;
         _barLb = barLb;
+        _predictedReps = predictedReps;
       });
       if (syncHealth) _healthSync.scheduleDay(widget.dateKey);
       _scheduleScrollToExercise();
@@ -341,6 +365,10 @@ class _DayPageState extends State<DayPage> {
   void _applyHeader(JournalDay? day) {
     _setIfIdle(_workoutName, _workoutNameFocus, day?.workoutName ?? '');
     _setIfIdle(_dayNotes, _dayNotesFocus, day?.notes ?? '');
+    if (_notesOpenDate != widget.dateKey) {
+      _notesOpenDate = widget.dateKey;
+      _notesOpen = (day?.notes ?? '').trim().isNotEmpty;
+    }
   }
 
   void _setIfIdle(TextEditingController controller, FocusNode focus, String value) {
@@ -737,8 +765,8 @@ class _DayPageState extends State<DayPage> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
-        labelText: 'Body weight ($unit)',
-        hintText: 'Optional — same as Settings',
+        labelText: 'Body Weight ($unit)',
+        hintText: 'Optional — same as Settings.',
       ),
       onChanged: _saveBodyWeight,
       onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
@@ -808,6 +836,17 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  /// The date-row timer starts a rest. An active countdown opens the same menu
+  /// as the floating card, including while that countdown is paused.
+  void _onHeaderTimer() {
+    final rest = _restTimer;
+    if (rest != null && rest.isActive) {
+      showRestTimerMenu(context, rest);
+      return;
+    }
+    _startDayRest();
+  }
+
   Future<void> _pickDayRest() async {
     final initial = _day?.chosenRestSeconds ?? _averageRest;
     final picked = await showDayRestPicker(context, initialSeconds: initial);
@@ -829,6 +868,7 @@ class _DayPageState extends State<DayPage> {
   Future<String?> _watchSessionJson() async {
     final pro = await _proStatus.refresh();
     if (!mounted) return null;
+    if (pro != _pro) setState(() => _pro = pro);
     final day = _day;
     final rest = day?.chosenRestSeconds ?? _averageRest;
     final session = buildWatchSession(
@@ -964,7 +1004,42 @@ class _DayPageState extends State<DayPage> {
         await _copyDay();
       case 'move':
         await _moveDay();
+      case 'notes':
+        _toggleNotes();
+      case 'plan':
+        if (!_assigning) await _assignPlan();
+      case 'clear':
+        await _clearDay();
+      case 'add':
+        _focusAddLift();
     }
+  }
+
+  void _toggleNotes() {
+    final open = !_notesOpen;
+    setState(() => _notesOpen = open);
+    if (open) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _dayNotesFocus.requestFocus();
+      });
+    } else {
+      _dayNotesFocus.unfocus();
+    }
+  }
+
+  void _focusAddLift() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = _addExerciseKey.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.1,
+          duration: const Duration(milliseconds: 250),
+        );
+      }
+      _addNameFocus.requestFocus();
+    });
   }
 
   void _startRest(JournalExercise exercise) {
@@ -1068,13 +1143,15 @@ class _DayPageState extends State<DayPage> {
       loggedReps: field.isNotEmpty ? field : set.reps,
       goalReps: goal,
     );
-    final opening = openingCount?.toString() ?? field;
+    final opening = openingCount?.toString() ?? '';
+    final predicted = opening.isEmpty ? _predictedReps[exercise.id] : null;
     final pickerMax = repSheetGoalPickerMax(goal) ?? repsPickerMax;
     final next = await showSetValueSheet(
       context,
       title: 'Reps',
       initial: opening,
       goalLabel: goal,
+      predictedLabel: predicted,
       selectAll: opening.isNotEmpty,
       options: repsPickerOptions(max: pickerMax),
       sliderMin: 1,
@@ -1088,6 +1165,10 @@ class _DayPageState extends State<DayPage> {
     _reps[set.id]?.text = trimmed;
     await _saveReps(set.id, trimmed);
     if (!mounted) return;
+    if (_saveRepsMarksDone && !set.checked) {
+      await _setChecked(exercise, set, true);
+      if (!mounted) return;
+    }
     final nextIndex = index + 1;
     if (nextIndex >= exercise.sets.length) return;
     final nextSet = exercise.sets[nextIndex];
@@ -1294,7 +1375,7 @@ class _DayPageState extends State<DayPage> {
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
-              'Link with',
+              'Link With',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
           ),
@@ -1350,6 +1431,132 @@ class _DayPageState extends State<DayPage> {
     showLiftBigNotice(context, message);
   }
 
+  Widget _notesButton() {
+    return _headerToolButton(
+      tooltip: _notesOpen ? 'Hide notes' : 'Notes',
+      onPressed: _toggleNotes,
+      icon: const Icon(Icons.note_outlined, size: 22),
+    );
+  }
+
+  /// Right to left: Plan, Add, trash, notes, calculator, plates, 1RM, watch.
+  Widget _pinnedLiftTools({required bool hasExercises}) {
+    return SizedBox(
+      height: 36,
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          child: Row(
+            textDirection: TextDirection.rtl,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _headerToolButton(
+                tooltip: 'Assign a Plan',
+                onPressed: () {
+                  if (!_assigning) _assignPlan();
+                },
+                icon: const Icon(Icons.assignment_outlined, size: 22),
+              ),
+              _headerToolButton(
+                tooltip: 'Add lift',
+                onPressed: _focusAddLift,
+                icon: const Icon(Icons.add, size: 22),
+              ),
+              if (hasExercises)
+                _headerToolButton(
+                  tooltip: 'Clear Day',
+                  onPressed: _clearDay,
+                  icon: const Icon(Icons.delete_outline, size: 22),
+                ),
+              _notesButton(),
+              _headerToolButton(
+                tooltip: 'Calculator',
+                onPressed: () => _onMenu('calculator'),
+                icon: const Icon(Icons.calculate_outlined, size: 22),
+              ),
+              _headerToolButton(
+                tooltip: 'Plate Calculator',
+                onPressed: () => _onMenu('plates'),
+                icon: const Plate45Icon(size: 22),
+              ),
+              _headerToolButton(
+                tooltip: '1RM Calculator',
+                onPressed: () => _onMenu('orm'),
+                icon: const Icon(Icons.fitness_center, size: 22),
+              ),
+              if (hasExercises)
+                _headerToolButton(
+                  tooltip: 'Start Workout',
+                  onPressed: _startOnWatch,
+                  icon: const Icon(Icons.watch, size: 22),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _headerToolButton({
+    required String tooltip,
+    required Widget icon,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.all(6),
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      style: IconButton.styleFrom(
+        foregroundColor: Colors.white,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: icon,
+    );
+  }
+
+  Widget _dayNotesField() {
+    return TextField(
+      controller: _dayNotes,
+      focusNode: _dayNotesFocus,
+      minLines: 1,
+      maxLines: 4,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: const InputDecoration(
+        labelText: 'Notes',
+        hintText: 'Notes for this day.',
+        isDense: true,
+      ),
+      onChanged: _saveDayNotes,
+    );
+  }
+
+  Widget _workoutNameSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          key: const ValueKey('workout-name'),
+          controller: _workoutName,
+          focusNode: _workoutNameFocus,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Workout Name',
+            hintText: 'Workout name.',
+          ),
+          onChanged: _saveWorkoutName,
+        ),
+        if (_notesOpen) ...[
+          const SizedBox(height: 8),
+          _dayNotesField(),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final day = _day;
@@ -1373,69 +1580,12 @@ class _DayPageState extends State<DayPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _workoutName,
-                      focusNode: _workoutNameFocus,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Workout Name',
-                        hintText: 'Workout name',
-                      ),
-                      onChanged: _saveWorkoutName,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Tooltip(
-                    message: 'Assign a plan',
-                    child: OutlinedButton(
-                      onPressed: _assigning ? null : _assignPlan,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(0, 56),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        foregroundColor: context.liftBig.foreground,
-                        backgroundColor: context.liftBig.cardInner,
-                        side:  BorderSide(color: context.liftBig.border),
-                      ),
-                      child:  Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.assignment_outlined,
-                            size: 18,
-                            color: context.liftBig.primary,
-                          ),
-                          SizedBox(width: 6),
-                          Text('Plan'),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (exercises.isNotEmpty)
-                    IconButton(
-                      tooltip: 'Clear day',
-                      onPressed: _clearDay,
-                      color: context.liftBig.primary,
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                ],
-              ),
+              _workoutNameSection(),
               if (day?.planName != null) ...[
                 const SizedBox(height: 6),
                 Text(
                   day!.planName!,
                   style:  TextStyle(color: context.liftBig.muted),
-                ),
-              ],
-              if (exercises.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _startOnWatch,
-                  icon: const Icon(Icons.watch),
-                  label: const Text('Start workout'),
                 ),
               ],
               if (workoutNotes != null && workoutNotes.trim().isNotEmpty) ...[
@@ -1446,20 +1596,6 @@ class _DayPageState extends State<DayPage> {
                   style:  TextStyle(color: context.liftBig.foreground),
                 ),
               ],
-              const SizedBox(height: 8),
-              TextField(
-                controller: _dayNotes,
-                focusNode: _dayNotesFocus,
-                minLines: 1,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  hintText: 'Notes for this day',
-                  isDense: true,
-                ),
-                onChanged: _saveDayNotes,
-              ),
               if (exercises.isEmpty) ...[
                 const SizedBox(height: 12),
                 OutlinedButton(
@@ -1478,7 +1614,7 @@ class _DayPageState extends State<DayPage> {
                           : context.liftBig.border,
                     ),
                   ),
-                  child: Text(restDay ? 'Clear rest' : 'Rest day'),
+                  child: Text(restDay ? 'Clear Rest' : 'Rest Day'),
                 ),
                 if (!restDay)
                    Padding(
@@ -1532,7 +1668,9 @@ class _DayPageState extends State<DayPage> {
                   exerciseKey: _exerciseKey,
                 ),
               _AddExerciseCard(
+                key: _addExerciseKey,
                 name: _customName,
+                nameFocus: _addNameFocus,
                 error: _nameError,
                 onAddNamed: _addNamed,
                 onAddCustom: _addCustom,
@@ -1564,72 +1702,157 @@ class _DayPageState extends State<DayPage> {
             ),
           );
     final chosenRest = day?.chosenRestSeconds ?? _averageRest;
+    final rest = _restTimer;
+    final anchored = rest?.showsAnchored ?? false;
+    final embedded = widget.underShellHeader;
+    final hasExercises = exercises.isNotEmpty;
     return Scaffold(
+      primary: !embedded,
       resizeToAvoidBottomInset: false,
       backgroundColor: context.liftBig.background,
       appBar: AppBar(
+        primary: !embedded,
+        automaticallyImplyLeading: !embedded,
         backgroundColor: context.liftBig.background,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
-        titleSpacing: 12,
-        title: Row(
-          children: [
-            Flexible(
-              child: Text(
-                formatDisplayDate(widget.dateKey),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-            ),
-            IconButton(
-              tooltip: 'Start rest',
-              onPressed: _startDayRest,
-              icon: const Icon(Icons.timer_outlined),
-            ),
-            InkWell(
-              onTap: _pickDayRest,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  border: Border.all(color: context.liftBig.border),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  formatRestDurationLabel(chosenRest),
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-          ],
-        ),
+        titleSpacing: embedded ? 16 : 12,
+        toolbarHeight:
+            (anchored ? 112 : (embedded ? 48 : kToolbarHeight)) + 36,
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Menu',
             icon: const Icon(Icons.menu),
             onSelected: _onMenu,
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'settings', child: Text('Settings')),
-              const PopupMenuItem(value: 'calculator', child: Text('Calculator')),
+              const PopupMenuItem(
+                value: 'settings',
+                child: ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.settings_outlined),
+                  label: 'Settings',
+                ),
+              ),
+              PopupMenuItem(
+                value: 'calculator',
+                child: ToolMenuLabel(
+                  icon: const ForegroundIcon(Icons.calculate_outlined),
+                  label: 'Calculator',
+                ),
+              ),
               const PopupMenuItem(
                 value: 'plates',
-                child: Text('Plate calculator'),
+                child: ToolMenuLabel(
+                  icon: Plate45Icon(),
+                  label: 'Plate Calculator',
+                ),
               ),
-              const PopupMenuItem(value: 'orm', child: Text('1RM calculator')),
+              PopupMenuItem(
+                value: 'orm',
+                child: ToolMenuLabel(
+                  icon: const ForegroundIcon(Icons.fitness_center),
+                  label: '1RM Calculator',
+                ),
+              ),
               PopupMenuItem(
                 value: 'copy',
                 enabled: exercises.isNotEmpty,
-                child: const Text('Copy'),
+                child: const ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.content_copy_outlined),
+                  label: 'Copy',
+                ),
               ),
               PopupMenuItem(
                 value: 'move',
                 enabled: exercises.isNotEmpty,
-                child: const Text('Move'),
+                child: const ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.drive_file_move_outlined),
+                  label: 'Move',
+                ),
+              ),
+              PopupMenuItem(
+                value: 'notes',
+                child: ToolMenuLabel(
+                  icon: const ForegroundIcon(Icons.note_outlined),
+                  label: _notesOpen ? 'Hide notes' : 'Notes',
+                ),
+              ),
+              PopupMenuItem(
+                value: 'plan',
+                child: const ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.assignment_outlined),
+                  label: 'Plan',
+                ),
+              ),
+              PopupMenuItem(
+                value: 'clear',
+                enabled: hasExercises,
+                child: const ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.delete_outline),
+                  label: 'Clear Day',
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'add',
+                child: ToolMenuLabel(
+                  icon: ForegroundIcon(Icons.add),
+                  label: 'Add lift',
+                ),
               ),
             ],
           ),
         ],
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (anchored && rest != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: AnchoredRestTimer(
+                  remaining: rest.remaining,
+                  running: rest.isRunning,
+                  onPause: rest.togglePause,
+                  onReset: rest.reset,
+                  onFloat: () => rest.setChrome(RestTimerChrome.floating),
+                  onCancel: rest.dismiss,
+                ),
+              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    formatDisplayDate(widget.dateKey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  tooltip: (rest?.isActive ?? false) ? 'Rest Timer' : 'Start Rest',
+                  onPressed: _onHeaderTimer,
+                  visualDensity: embedded ? VisualDensity.compact : null,
+                  icon: const Icon(Icons.timer_outlined),
+                ),
+                InkWell(
+                  onTap: _pickDayRest,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: context.liftBig.border),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      formatRestDurationLabel(chosenRest),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            _pinnedLiftTools(hasExercises: hasExercises),
+          ],
+        ),
       ),
       body: Listener(
         behavior: HitTestBehavior.translucent,
@@ -1642,7 +1865,10 @@ class _DayPageState extends State<DayPage> {
               child: PlateGraphicConfig(
                 showGraphic: _showPlateGraphic,
                 barLb: _barLb,
-                child: logBody,
+                child: PredictedRepsScope(
+                  reps: _predictedReps,
+                  child: logBody,
+                ),
               ),
             ),
             if (keyboardOpen)
@@ -1658,6 +1884,20 @@ class _DayPageState extends State<DayPage> {
       ),
     );
   }
+}
+
+class PredictedRepsScope extends InheritedWidget {
+  const PredictedRepsScope({required this.reps, required super.child});
+
+  final Map<String, String> reps;
+
+  static Map<String, String> of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<PredictedRepsScope>()?.reps ??
+        const {};
+  }
+
+  @override
+  bool updateShouldNotify(PredictedRepsScope oldWidget) => oldWidget.reps != reps;
 }
 
 class _ExerciseBlock extends StatelessWidget {
@@ -1788,7 +2028,7 @@ class _ExerciseBlock extends StatelessWidget {
                   onPressed: () => onSwapSupersetOrder(
                     exercises.first.supersetGroupId ?? '',
                   ),
-                  child: const Text('Swap order'),
+                  child: const Text('Swap Order'),
                 ),
                 TextButton(
                   onPressed: () =>
@@ -1962,7 +2202,7 @@ class _ExerciseCard extends StatelessWidget {
       onDelete: () => onDeleteSet(set.id),
       onEditWeight: () => onEditWeight(exercise, set, index),
       onEditReps: () => onEditReps(exercise, set, index),
-      repsHint: _repsGhost(set),
+      repsHint: _repsGhost(context, set),
       machineKind: kind,
       machineStarting: starting,
       weightUnit: weightUnit,
@@ -1973,7 +2213,12 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 
-  String _repsGhost(JournalSet set) {
+  String _repsGhost(BuildContext context, JournalSet set) {
+    final logged = (reps[set.id]?.text ?? loggedRepsField(set.reps)).trim();
+    if (logged.isEmpty) {
+      final predicted = PredictedRepsScope.of(context)[exercise.id] ?? '';
+      if (predicted.isNotEmpty) return predicted;
+    }
     final goal = goalRepsForSet(
       targetReps: exercise.targetReps,
       storedReps: set.reps,
@@ -2021,7 +2266,7 @@ class _ExerciseCard extends StatelessWidget {
                   onMoveDown: onMoveDown,
                 ),
               IconButton(
-                tooltip: 'Exercise info',
+                tooltip: 'Exercise Info',
                 onPressed: onInfo,
                 color: context.liftBig.primary,
                 iconSize: 28,
@@ -2030,14 +2275,14 @@ class _ExerciseCard extends StatelessWidget {
                 icon: const Icon(Icons.info_outline),
               ),
               IconButton(
-                tooltip: 'Swap lift',
+                tooltip: 'Swap Lift',
                 onPressed: onSwap,
                 visualDensity: VisualDensity.compact,
                 color: context.liftBig.primary,
                 icon: const Icon(Icons.swap_horiz, size: 20),
               ),
               IconButton(
-                tooltip: 'Delete exercise',
+                tooltip: 'Delete Exercise',
                 onPressed: onDeleteExercise,
                 icon: const Icon(Icons.delete_outline),
               ),
@@ -2061,7 +2306,7 @@ class _ExerciseCard extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(child: _goalRichText(context, exercise, weightUnit)),
-                  _GoalEditPencil(tooltip: 'Edit goal', onPressed: onEditGoal),
+                  _GoalEditPencil(tooltip: 'Edit Goal', onPressed: onEditGoal),
                 ],
               ),
             )
@@ -2081,7 +2326,7 @@ class _ExerciseCard extends StatelessWidget {
                     const Spacer(),
                   if (_canOfferSupersetLink)
                     _GoalEditPencil(
-                      tooltip: 'Link exercises',
+                      tooltip: 'Link Exercises',
                       onPressed: onEditGoal,
                     ),
                 ],
@@ -2147,7 +2392,7 @@ class _ExerciseCard extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onAddSet,
                   icon: const Icon(Icons.add),
-                  label: Text(exercise.isCircuit ? 'Add round' : 'Add set'),
+                  label: Text(exercise.isCircuit ? 'Add Round' : 'Add Set'),
                 ),
                 const Spacer(),
                 _ExerciseRestButton(
@@ -2182,12 +2427,12 @@ class _MoveButtons extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Move up',
+          tooltip: 'Move Up',
           onPressed: canMoveUp ? onMoveUp : null,
           icon: const Icon(Icons.arrow_upward),
         ),
         IconButton(
-          tooltip: 'Move down',
+          tooltip: 'Move Down',
           onPressed: canMoveDown ? onMoveDown : null,
           icon: const Icon(Icons.arrow_downward),
         ),
@@ -2239,7 +2484,7 @@ class _CardioFields extends StatelessWidget {
           controller: duration,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            labelText: 'Duration (minutes)',
+            labelText: 'Duration (Minutes)',
             hintText: exercise.targetDuration?.trim().isNotEmpty == true
                 ? '${exercise.targetDuration} min goal'
                 : 'Minutes',
@@ -2266,7 +2511,7 @@ class _CardioFields extends StatelessWidget {
             controller: calories,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Calories (optional)',
+              labelText: 'Calories (Optional)',
             ),
             onChanged: onCalories,
           ),
@@ -2337,7 +2582,7 @@ class _CircuitRow extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Delete set',
+            tooltip: 'Delete Set',
             onPressed: onDelete,
             icon:  Icon(Icons.close, size: 16, color: context.liftBig.muted),
           ),
@@ -2487,7 +2732,7 @@ class _DifficultyChoice extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: selected ? context.liftBig.foreground : context.liftBig.muted,
+                  color: selected ? context.liftBig.onPrimary : context.liftBig.muted,
                 ),
               ),
             ),
@@ -2617,7 +2862,7 @@ class _SetFields extends StatelessWidget {
                     width: 32,
                     height: 32,
                     child: IconButton(
-                      tooltip: 'Delete set',
+                      tooltip: 'Delete Set',
                       onPressed: onDelete,
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
@@ -2718,17 +2963,17 @@ class _SetColumnHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             flex: 3,
-            child: Text('WEIGHT', textAlign: TextAlign.center, style: style),
+            child: Text('Weight', textAlign: TextAlign.center, style: style),
           ),
           const SizedBox(width: 8),
           Expanded(
             flex: 2,
-            child: Text('REPS', textAlign: TextAlign.center, style: style),
+            child: Text('Reps', textAlign: TextAlign.center, style: style),
           ),
           if (showTime) ...[
             const SizedBox(width: 8),
             Expanded(
-              child: Text('TIME', textAlign: TextAlign.center, style: style),
+              child: Text('Time', textAlign: TextAlign.center, style: style),
             ),
           ],
           const SizedBox(width: 8),
@@ -2815,7 +3060,7 @@ String? _goalLine(JournalExercise exercise) {
     final distance = exercise.targetDistance?.trim() ?? '';
     if (duration.isNotEmpty) parts.add('$duration min');
     if (distance.isNotEmpty) parts.add(distance);
-    if (parts.isEmpty) return 'No duration goal';
+    if (parts.isEmpty) return 'No duration goal.';
     return 'Goal: ${parts.join(' · ')}';
   }
   if (exercise.isCircuit) return null;
@@ -2823,7 +3068,7 @@ String? _goalLine(JournalExercise exercise) {
   final weight = exercise.targetWeight?.trim() ?? '';
   final time = exercise.targetTimeSeconds?.trim() ?? '';
   if (reps.isEmpty && weight.isEmpty && time.isEmpty) {
-    return exercise.isCore ? 'Log reps and/or time per set' : null;
+    return exercise.isCore ? 'Log reps and/or time per set.' : null;
   }
   final count = exercise.sets.length;
   final mid = reps.isNotEmpty ? '$count × $reps' : '$count sets';
@@ -2884,13 +3129,16 @@ InputDecoration _setInputDecoration(BuildContext context, String hint) {
 
 class _AddExerciseCard extends StatefulWidget {
   const _AddExerciseCard({
+    super.key,
     required this.name,
+    required this.nameFocus,
     required this.error,
     required this.onAddNamed,
     required this.onAddCustom,
   });
 
   final TextEditingController name;
+  final FocusNode nameFocus;
   final String? error;
   final void Function(
     String name, {
@@ -2954,7 +3202,7 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Add exercise',
+              'Add Exercise',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
@@ -2986,10 +3234,11 @@ class _AddExerciseCardState extends State<_AddExerciseCard> {
                 Expanded(
                   child: TextField(
                     controller: widget.name,
+                    focusNode: widget.nameFocus,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
-                      labelText: 'Exercise name',
+                      labelText: 'Exercise Name',
                     ),
                     onSubmitted: (_) => widget.onAddCustom(),
                   ),
@@ -3097,8 +3346,8 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
   Widget build(BuildContext context) {
     final priorCount = widget.priorNotes.length;
     final subtitle = priorCount == 0
-        ? 'Notes for this lift'
-        : '$priorCount earlier ${priorCount == 1 ? 'note' : 'notes'}';
+        ? 'Notes for this lift.'
+        : '$priorCount earlier ${priorCount == 1 ? 'note' : 'notes'}.';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -3175,8 +3424,8 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
                     minLines: 2,
                     maxLines: 5,
                     decoration: const InputDecoration(
-                      labelText: 'This session',
-                      hintText: 'Notes for this lift today…',
+                      labelText: 'This Session',
+                      hintText: 'Notes for this lift today.',
                       alignLabelWithHint: true,
                     ),
                     onChanged: (_) => _scheduleSave(),
@@ -3346,7 +3595,9 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
   Widget build(BuildContext context) {
     final unit = widget.unit == WeightUnit.kg ? 'kg' : 'lb';
     final links = widget.showLinkWithNext || widget.showLinkWithPartner;
-    return AlertDialog(
+    return KeyboardDismiss(
+      fill: false,
+      child: AlertDialog(
       title: Text(widget.exercise.name),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3379,12 +3630,12 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
                   if (widget.showLinkWithNext)
                     TextButton(
                       onPressed: () => _popLink(next: true),
-                      child: const Text('Link with next'),
+                      child: const Text('Link with Next'),
                     ),
                   if (widget.showLinkWithPartner)
                     TextButton(
                       onPressed: () => _popLink(next: false),
-                      child: const Text('Link with another'),
+                      child: const Text('Link with Another'),
                     ),
                 ],
               ),
@@ -3397,7 +3648,7 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
             onPressed: () => Navigator.of(context).pop(
               const _GoalEdit(setCount: 0, reps: '', weight: '', revert: true),
             ),
-            child: const Text('Revert to plan'),
+            child: const Text('Revert to Plan'),
           ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -3419,6 +3670,7 @@ class _GoalEditDialogState extends State<_GoalEditDialog> {
             child: const Text('Save'),
           ),
       ],
+      ),
     );
   }
 }

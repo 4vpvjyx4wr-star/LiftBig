@@ -9,7 +9,9 @@ import 'rest_alarm.dart';
 ///
 /// [onAlarmPlayed] runs only after the in-process tone has started, so the
 /// pending notification can be cancelled and a living app does not double-ring.
-Future<void> playRestTimerFinishedAlerts(
+/// Returns true when that tone is looping until the lifter stops it.
+/// The killed-app notification is scheduled separately and plays once.
+Future<bool> playRestTimerFinishedAlerts(
   RestTimerAlertSettings settings, {
   Future<void> Function()? onAlarmPlayed,
 }) async {
@@ -18,14 +20,19 @@ Future<void> playRestTimerFinishedAlerts(
   }
   if (!settings.soundEnabled) {
     await RestAlarm.stopKeepAlive();
-    return;
+    return false;
   }
-  final played = await RestAlarm.play();
+  final loop = settings.ringUntilStopped;
+  final played = await RestAlarm.play(
+    loop: loop,
+    soundId: settings.soundId,
+  );
   if (played) {
     await onAlarmPlayed?.call();
-    return;
+    return loop;
   }
   await SystemSound.play(SystemSoundType.alert);
+  return false;
 }
 
 Future<void> _pulseHaptics() async {

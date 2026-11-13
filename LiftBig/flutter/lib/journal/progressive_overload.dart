@@ -325,6 +325,29 @@ PredictedGoals predictWorkoutGoals(
   );
 }
 
+/// Working-set count the algorithm expects. Empty when there is no history.
+String predictedRepCount({
+  required String exerciseName,
+  required List<HistorySet> history,
+  String? currentTargetReps,
+  String? excludeDateKey,
+  String displayUnit = 'lb',
+}) {
+  final predicted = predictWorkoutGoals(
+    exerciseName,
+    history,
+    currentTargetReps: currentTargetReps,
+    excludeDateKey: excludeDateKey,
+    lockRepGoal: (currentTargetReps ?? '').trim().isNotEmpty,
+    ignoreStoredGoalWeight: true,
+    displayUnit: displayUnit,
+  );
+  if (!predicted.hasHistory) return '';
+  final reps = predicted.suggestedLogReps.trim();
+  if (!RegExp(r'^\d+$').hasMatch(reps)) return '';
+  return reps;
+}
+
 String formatPredictedWeight(double lbs) {
   if (lbs.isNaN || lbs.isInfinite) return '';
   final scaled = (lbs * 1000).round() / 1000;

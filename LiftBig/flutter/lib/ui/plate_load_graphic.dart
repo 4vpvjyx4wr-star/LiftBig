@@ -63,7 +63,7 @@ class PlateLoadGraphic extends StatelessWidget {
     final empty = shown.isEmpty;
     final semantic = empty
         ? (centerLabel == 'BAR' ? 'Bar only' : 'Sled only')
-        : 'Plates per side: ${shown.map((plate) => plateFaceLabel(plate, unit)).join(', ')}';
+        : 'Plates per Side: ${shown.map((plate) => plateFaceLabel(plate, unit)).join(', ')}';
 
     return Semantics(
       label: semantic,
@@ -119,8 +119,8 @@ class PlateLoadGraphic extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 centerLabel == 'BAR'
-                    ? 'Just the bar — no plates needed'
-                    : 'Just the sled — no plates needed',
+                    ? 'Just the bar — no plates needed.'
+                    : 'Just the sled — no plates needed.',
                 style: TextStyle(
                   color: context.liftBig.muted,
                   fontSize: compact ? 12 : 13,

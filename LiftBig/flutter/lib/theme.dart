@@ -3,18 +3,40 @@ import 'package:flutter/material.dart';
 /// Default orange and navy. Screens read [LiftBigPalette] from the theme.
 abstract final class LiftBigColors {
   static const background = Color(0xFF0A0F1E);
-  static const card = Color(0xFF111827);
-  static const cardInner = Color(0xFF0D1526);
-  static const border = Color(0xFF1E2A45);
+  static const card = Color(0xFF1C2738);
+  static const cardInner = Color(0xFF141E30);
+  static const border = Color(0xFF3A4E72);
   static const primary = Color(0xFFF4501E);
   static const foreground = Color(0xFFF0F4FF);
-  static const muted = Color(0xFF4A5A7A);
+  static const muted = Color(0xFF8A97B0);
   static const success = Color(0xFF4ADE80);
 }
 
 const String defaultLiftBigThemeId = 'default';
 
-/// Named Vue presets from `main.css`. Custom editing stays out of this pass.
+/// Backdrop ids. [none] is a flat color. The others are Pro patterns.
+abstract final class LiftBigBackdrop {
+  static const none = 'none';
+  static const plateStack = 'plate-stack';
+  static const chalkGrid = 'chalk-grid';
+  static const hazardStripe = 'hazard-stripe';
+  static const signalSweep = 'signal-sweep';
+  static const emberDrift = 'ember-drift';
+  static const barPath = 'bar-path';
+  static const rackGlow = 'rack-glow';
+  static const knurl = 'knurl';
+
+  /// Slow motion. Static patterns stay off this list so they paint once.
+  static bool animates(String id) {
+    return id == signalSweep ||
+        id == emberDrift ||
+        id == barPath ||
+        id == rackGlow;
+  }
+}
+
+/// Named Vue presets from `main.css`, plus Pro backdrops.
+/// Custom editing stays out of this pass.
 class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
   const LiftBigPalette({
     required this.id,
@@ -28,11 +50,21 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
     required this.muted,
     required this.success,
     required this.blue,
-  });
+    Color? canvas,
+    this.proOnly = false,
+    this.backdrop = LiftBigBackdrop.none,
+  }) : canvas = canvas ?? background;
 
   final String id;
   final String label;
+
+  /// Page fill. Pro themes leave this transparent so the backdrop painted
+  /// behind the app can show through scaffolds that use this color.
   final Color background;
+
+  /// Solid color under a Pro backdrop. Free themes keep this equal to
+  /// [background].
+  final Color canvas;
   final Color card;
   final Color cardInner;
   final Color border;
@@ -41,6 +73,15 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
   final Color muted;
   final Color success;
   final Color blue;
+  final bool proOnly;
+  final String backdrop;
+
+  /// Near-black on a light primary, white on a dark one.
+  Color get onPrimary {
+    final light =
+        ThemeData.estimateBrightnessForColor(primary) == Brightness.light;
+    return light ? const Color(0xFF111111) : const Color(0xFFFFFFFF);
+  }
 
   static LiftBigPalette of(BuildContext context) {
     return Theme.of(context).extension<LiftBigPalette>() ??
@@ -52,6 +93,7 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
     String? id,
     String? label,
     Color? background,
+    Color? canvas,
     Color? card,
     Color? cardInner,
     Color? border,
@@ -60,11 +102,14 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
     Color? muted,
     Color? success,
     Color? blue,
+    bool? proOnly,
+    String? backdrop,
   }) {
     return LiftBigPalette(
       id: id ?? this.id,
       label: label ?? this.label,
       background: background ?? this.background,
+      canvas: canvas ?? this.canvas,
       card: card ?? this.card,
       cardInner: cardInner ?? this.cardInner,
       border: border ?? this.border,
@@ -73,6 +118,8 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
       muted: muted ?? this.muted,
       success: success ?? this.success,
       blue: blue ?? this.blue,
+      proOnly: proOnly ?? this.proOnly,
+      backdrop: backdrop ?? this.backdrop,
     );
   }
 
@@ -83,6 +130,7 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
       id: t < 0.5 ? id : other.id,
       label: t < 0.5 ? label : other.label,
       background: Color.lerp(background, other.background, t)!,
+      canvas: Color.lerp(canvas, other.canvas, t)!,
       card: Color.lerp(card, other.card, t)!,
       cardInner: Color.lerp(cardInner, other.cardInner, t)!,
       border: Color.lerp(border, other.border, t)!,
@@ -91,6 +139,8 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
       muted: Color.lerp(muted, other.muted, t)!,
       success: Color.lerp(success, other.success, t)!,
       blue: Color.lerp(blue, other.blue, t)!,
+      proOnly: t < 0.5 ? proOnly : other.proOnly,
+      backdrop: t < 0.5 ? backdrop : other.backdrop,
     );
   }
 
@@ -99,6 +149,7 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
     return other is LiftBigPalette &&
         other.id == id &&
         other.background == background &&
+        other.canvas == canvas &&
         other.card == card &&
         other.cardInner == cardInner &&
         other.border == border &&
@@ -106,13 +157,16 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
         other.foreground == foreground &&
         other.muted == muted &&
         other.success == success &&
-        other.blue == blue;
+        other.blue == blue &&
+        other.proOnly == proOnly &&
+        other.backdrop == backdrop;
   }
 
   @override
   int get hashCode => Object.hash(
     id,
     background,
+    canvas,
     card,
     cardInner,
     border,
@@ -121,6 +175,8 @@ class LiftBigPalette extends ThemeExtension<LiftBigPalette> {
     muted,
     success,
     blue,
+    proOnly,
+    backdrop,
   );
 }
 
@@ -129,30 +185,50 @@ extension LiftBigThemeContext on BuildContext {
 }
 
 /// Saved id, unknown values, and blank storage all resolve to orange/navy.
-LiftBigPalette liftBigPaletteById(String? id) {
+/// A Pro id resolves to that same default when [proActive] is false.
+LiftBigPalette liftBigPaletteById(String? id, {bool proActive = true}) {
   final key = id?.trim() ?? '';
   for (final palette in liftBigThemePresets) {
-    if (palette.id == key) return palette;
+    if (palette.id != key) continue;
+    if (palette.proOnly && !proActive) return liftBigThemePresets.first;
+    return palette;
   }
   return liftBigThemePresets.first;
 }
 
 class LiftBigThemeController extends ChangeNotifier {
   String id = defaultLiftBigThemeId;
+  bool proActive = false;
 
-  LiftBigPalette get palette => liftBigPaletteById(id);
+  /// Pro ids stay stored. The painted palette falls back while Pro is off.
+  LiftBigPalette get palette => liftBigPaletteById(id, proActive: proActive);
 
-  void applyStored(String? raw) {
-    final next = liftBigPaletteById(raw).id;
-    if (next == id) return;
+  void applyStored(String? raw, {bool proActive = false}) {
+    final key = raw?.trim() ?? '';
+    var next = defaultLiftBigThemeId;
+    for (final palette in liftBigThemePresets) {
+      if (palette.id == key) {
+        next = palette.id;
+        break;
+      }
+    }
+    final changed = next != id || proActive != this.proActive;
     id = next;
+    this.proActive = proActive;
+    if (changed) notifyListeners();
+  }
+
+  void setProActive(bool active) {
+    if (active == proActive) return;
+    proActive = active;
     notifyListeners();
   }
 
   void select(String raw) {
-    final next = liftBigPaletteById(raw).id;
-    if (next == id) return;
-    id = next;
+    final next = liftBigPaletteById(raw);
+    if (next.proOnly && !proActive) return;
+    if (next.id == id) return;
+    id = next.id;
     notifyListeners();
   }
 }
@@ -172,6 +248,19 @@ const List<LiftBigPalette> liftBigThemePresets = [
     blue: Color(0xFF1D4ED8),
   ),
   LiftBigPalette(
+    id: 'retrowave',
+    label: 'Retrowave',
+    background: Color(0xFF0A0418),
+    card: Color(0xFF281050),
+    cardInner: Color(0xFF1C0838),
+    border: Color(0xFFFF2A92),
+    primary: Color(0xFFFF6EC7),
+    blue: Color(0xFF00D4FF),
+    foreground: Color(0xFFFFF0F9),
+    muted: Color(0xFFD880B4),
+    success: Color(0xFFBBF7D0),
+  ),
+  LiftBigPalette(
     id: 'forest',
     label: 'Forest',
     background: Color(0xFF021408),
@@ -181,7 +270,7 @@ const List<LiftBigPalette> liftBigThemePresets = [
     primary: Color(0xFF4ADE80),
     blue: Color(0xFFFBBF24),
     foreground: Color(0xFFF0FDF4),
-    muted: Color(0xFF4D8B6A),
+    muted: Color(0xFF7DB095),
     success: Color(0xFF5EEAD4),
   ),
   LiftBigPalette(
@@ -240,9 +329,9 @@ const List<LiftBigPalette> liftBigThemePresets = [
     id: 'iron',
     label: 'Iron & Steel',
     background: Color(0xFF0F1115),
-    card: Color(0xFF181B22),
-    cardInner: Color(0xFF12151C),
-    border: Color(0xFF3D4454),
+    card: Color(0xFF242830),
+    cardInner: Color(0xFF1A1E26),
+    border: Color(0xFF5C6578),
     primary: Color(0xFFF97316),
     blue: Color(0xFF64748B),
     foreground: Color(0xFFF1F5F9),
@@ -523,30 +612,145 @@ const List<LiftBigPalette> liftBigThemePresets = [
     success: Color(0xFFFEF9C3),
   ),
   LiftBigPalette(
-    id: 'retrowave',
-    label: 'Retrowave',
-    background: Color(0xFF0A0418),
-    card: Color(0xFF281050),
-    cardInner: Color(0xFF1C0838),
-    border: Color(0xFFFF2A92),
-    primary: Color(0xFFFF6EC7),
-    blue: Color(0xFF00D4FF),
-    foreground: Color(0xFFFFF0F9),
-    muted: Color(0xFFD880B4),
-    success: Color(0xFFBBF7D0),
-  ),
-  LiftBigPalette(
     id: 'titanium',
     label: 'Titanium',
     background: Color(0xFF08090E),
-    card: Color(0xFF12141C),
-    cardInner: Color(0xFF0E1016),
-    border: Color(0xFF64748B),
+    card: Color(0xFF1C202C),
+    cardInner: Color(0xFF141820),
+    border: Color(0xFF7D8CA3),
     primary: Color(0xFF94A3B8),
     blue: Color(0xFFF97316),
     foreground: Color(0xFFF1F5F9),
     muted: Color(0xFF8494A8),
     success: Color(0xFFA5F3FC),
+  ),
+  LiftBigPalette(
+    id: 'plate-stack',
+    label: 'Plate Stack',
+    background: Colors.transparent,
+    canvas: Color(0xFF0E1116),
+    card: Color(0xFF1E2633),
+    cardInner: Color(0xFF161C28),
+    border: Color(0xFF4A566C),
+    primary: Color(0xFFE25A2A),
+    blue: Color(0xFF8B9BB0),
+    foreground: Color(0xFFF3F5F8),
+    muted: Color(0xFFA8B4C8),
+    success: Color(0xFF4ADE80),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.plateStack,
+  ),
+  LiftBigPalette(
+    id: 'chalk-grid',
+    label: 'Chalk Grid',
+    background: Colors.transparent,
+    canvas: Color(0xFF161816),
+    card: Color(0xFF262A26),
+    cardInner: Color(0xFF1E221E),
+    border: Color(0xFF5A6156),
+    primary: Color(0xFFE6E1D2),
+    blue: Color(0xFF9AA58E),
+    foreground: Color(0xFFF6F3EA),
+    muted: Color(0xFFC8C4B6),
+    success: Color(0xFFB6E2A1),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.chalkGrid,
+  ),
+  LiftBigPalette(
+    id: 'hazard-stripe',
+    label: 'Hazard Stripe',
+    background: Colors.transparent,
+    canvas: Color(0xFF12110C),
+    card: Color(0xFF2A2618),
+    cardInner: Color(0xFF1E1C12),
+    border: Color(0xFF8A7018),
+    primary: Color(0xFFF5C518),
+    blue: Color(0xFFF97316),
+    foreground: Color(0xFFFFF8E4),
+    muted: Color(0xFFE0D2A0),
+    success: Color(0xFFD6F5A3),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.hazardStripe,
+  ),
+  LiftBigPalette(
+    id: 'signal-sweep',
+    label: 'Signal Sweep',
+    background: Colors.transparent,
+    canvas: Color(0xFF061410),
+    card: Color(0xFF123028),
+    cardInner: Color(0xFF0C241E),
+    border: Color(0xFF1F6B52),
+    primary: Color(0xFF3DDC97),
+    blue: Color(0xFF5EEAD4),
+    foreground: Color(0xFFE9FFF6),
+    muted: Color(0xFF9AD4C0),
+    success: Color(0xFFBBF7D0),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.signalSweep,
+  ),
+  LiftBigPalette(
+    id: 'ember-drift',
+    label: 'Ember Drift',
+    background: Colors.transparent,
+    canvas: Color(0xFF160806),
+    card: Color(0xFF3A1810),
+    cardInner: Color(0xFF2A100C),
+    border: Color(0xFF9A3412),
+    primary: Color(0xFFFB923C),
+    blue: Color(0xFFF43F5E),
+    foreground: Color(0xFFFFF7ED),
+    muted: Color(0xFFF0C0A0),
+    success: Color(0xFFFDE68A),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.emberDrift,
+  ),
+  LiftBigPalette(
+    id: 'bar-path',
+    label: 'Bar Path',
+    background: Colors.transparent,
+    canvas: Color(0xFF0C1018),
+    card: Color(0xFF1A2433),
+    cardInner: Color(0xFF121A28),
+    border: Color(0xFF3D5270),
+    primary: Color(0xFF7DD3FC),
+    blue: Color(0xFFA5B4FC),
+    foreground: Color(0xFFF0F9FF),
+    muted: Color(0xFFB6C8DC),
+    success: Color(0xFF86EFAC),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.barPath,
+  ),
+  LiftBigPalette(
+    id: 'rack-glow',
+    label: 'Rack Glow',
+    background: Colors.transparent,
+    canvas: Color(0xFF140E0A),
+    card: Color(0xFF2E2218),
+    cardInner: Color(0xFF22180F),
+    border: Color(0xFF8A6240),
+    primary: Color(0xFFFBBF24),
+    blue: Color(0xFFFB7185),
+    foreground: Color(0xFFFFF7ED),
+    muted: Color(0xFFE6C9A4),
+    success: Color(0xFFD9F99D),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.rackGlow,
+  ),
+  LiftBigPalette(
+    id: 'knurl',
+    label: 'Knurl',
+    background: Colors.transparent,
+    canvas: Color(0xFF121416),
+    card: Color(0xFF262A2E),
+    cardInner: Color(0xFF1C2024),
+    border: Color(0xFF5E6872),
+    primary: Color(0xFFE7EEF5),
+    blue: Color(0xFF94A3B8),
+    foreground: Color(0xFFF8FAFC),
+    muted: Color(0xFFC9D2DC),
+    success: Color(0xFFA7F3D0),
+    proOnly: true,
+    backdrop: LiftBigBackdrop.knurl,
   ),
 ];
 
@@ -571,29 +775,31 @@ void showLiftBigNotice(BuildContext context, String message) {
 
 ThemeData buildLiftBigTheme([LiftBigPalette? palette]) {
   final colors = palette ?? liftBigThemePresets.first;
+  final base = colors.canvas;
+  final patterned = colors.backdrop != LiftBigBackdrop.none;
   final shape = RoundedRectangleBorder(
     borderRadius: const BorderRadius.all(Radius.circular(16)),
     side: BorderSide(color: colors.border),
   );
   return ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: colors.background,
+    scaffoldBackgroundColor: patterned ? Colors.transparent : base,
     extensions: [colors],
     colorScheme: ColorScheme.dark(
       primary: colors.primary,
-      onPrimary: Colors.white,
-      surface: colors.background,
+      onPrimary: colors.onPrimary,
+      surface: base,
       onSurface: colors.foreground,
       secondary: colors.primary,
       surfaceTint: Colors.transparent,
-      surfaceContainerLowest: colors.background,
-      surfaceContainerLow: colors.background,
-      surfaceContainer: colors.background,
-      surfaceContainerHigh: colors.background,
+      surfaceContainerLowest: base,
+      surfaceContainerLow: base,
+      surfaceContainer: base,
+      surfaceContainerHigh: base,
       surfaceContainerHighest: colors.card,
     ),
     appBarTheme: AppBarTheme(
-      backgroundColor: colors.background,
+      backgroundColor: patterned ? Colors.transparent : base,
       foregroundColor: colors.foreground,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -623,7 +829,7 @@ ThemeData buildLiftBigTheme([LiftBigPalette? palette]) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: colors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: colors.onPrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
@@ -643,6 +849,22 @@ ThemeData buildLiftBigTheme([LiftBigPalette? palette]) {
         color: colors.foreground,
         fontSize: 14,
         fontWeight: FontWeight.w600,
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: colors.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(28)),
+        side: BorderSide(color: colors.primary, width: 1.5),
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: colors.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(4)),
+        side: BorderSide(color: colors.primary, width: 1.5),
       ),
     ),
   );

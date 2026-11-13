@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../backup/backup_parser.dart';
 import '../journal/journal_repository.dart';
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 
 Future<String?> showImportSheet(
@@ -132,7 +133,7 @@ class _ImportSheetState extends State<_ImportSheet> {
     if (!mounted) return;
     final text = data?.text ?? '';
     if (text.trim().isEmpty) {
-      setState(() => _error = 'Copy the backup first, then tap Paste backup.');
+      setState(() => _error = 'Copy the backup first, then tap Paste Backup.');
       return;
     }
     await _importText(text);
@@ -186,17 +187,18 @@ class _ImportSheetState extends State<_ImportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final safe = MediaQuery.paddingOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + keyboard + safe),
+    return KeyboardDismiss(
+      fill: false,
+      child: Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + safe),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Import backup',
+              'Import Backup',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
@@ -208,13 +210,13 @@ class _ImportSheetState extends State<_ImportSheet> {
             FilledButton.icon(
               onPressed: _busy ? null : _chooseFile,
               icon: const Icon(Icons.folder_open),
-              label: const Text('Choose backup file'),
+              label: const Text('Choose Backup File'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: _busy ? null : _pasteBackup,
               icon: const Icon(Icons.content_paste),
-              label: const Text('Paste backup'),
+              label: const Text('Paste Backup'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
@@ -239,6 +241,7 @@ class _ImportSheetState extends State<_ImportSheet> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

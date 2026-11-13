@@ -17,6 +17,7 @@ class JournalHealthSync {
   final BodyWeightHealthSync _health;
   final void Function()? onStored;
   Timer? _timer;
+  static final _inflight = <String, Future<void>>{};
 
   void scheduleDay(String dateKey) {
     _timer?.cancel();
@@ -29,7 +30,17 @@ class JournalHealthSync {
     _timer?.cancel();
   }
 
-  Future<void> syncDay(String dateKey, {bool honorToggle = true}) async {
+  Future<void> syncDay(String dateKey, {bool honorToggle = true}) {
+    final running = _inflight[dateKey];
+    if (running != null) return running;
+    final run = _syncDayNow(dateKey, honorToggle: honorToggle);
+    _inflight[dateKey] = run;
+    return run.whenComplete(() {
+      if (identical(_inflight[dateKey], run)) _inflight.remove(dateKey);
+    });
+  }
+
+  Future<void> _syncDayNow(String dateKey, {bool honorToggle = true}) async {
     if (honorToggle && !await journal.appleHealthSyncEnabled()) return;
     final granted = await _health.requestAccess();
     if (!granted) return;
@@ -81,6 +92,8 @@ class JournalHealthSync {
       return appleKcal;
     }
 
+    final storedWrites = await journal.loadHealthWorkoutWrites();
+    var writesChanged = false;
     for (final write in writes) {
       final read = writes.length == 1
           ? dayEnergy
@@ -91,10 +104,23 @@ class JournalHealthSync {
       final minutes = (write.endMs - write.startMs).abs() / 60000;
       final apple = read.succeeded ? read.kcal : null;
       write.energyKcal = kcalForWindow(apple, minutes);
-      if (!await _health.workoutAlreadyWritten(write)) {
-        await _health.writeWorkout(write);
+      final previous = storedWrites[write.id];
+      final action = healthWriteAction(stored: previous, next: write);
+      if (action == HealthWriteAction.skip) continue;
+      if (action == HealthWriteAction.replace && previous != null) {
+        await _health.deleteWorkout(previous.uuid);
       }
+      final uuid = await _health.writeWorkoutUuid(write);
+      if (uuid == null) continue;
+      storedWrites[write.id] = StoredHealthWrite(
+        uuid: uuid,
+        minutes: healthWriteMinutes(write),
+        meters: (write.distanceMeters ?? 0).round(),
+        kcal: (write.energyKcal ?? -1).round(),
+      );
+      writesChanged = true;
     }
+    if (writesChanged) await journal.saveHealthWorkoutWrites(storedWrites);
     final dayMinutes = (endMs - startMs).abs() / 60000;
     final appleDay = dayEnergy.succeeded ? dayEnergy.kcal : null;
     final stored = kcalForWindow(appleDay, dayMinutes);

@@ -59,7 +59,7 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Merge to canonical name'),
+        title: const Text('Merge to Canonical Name'),
         content: Text(
           'Rename ${group.variants.join(', ')} to ${group.canonicalName}?',
         ),
@@ -87,12 +87,12 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
   @override
   Widget build(BuildContext context) {
     final subtitle = _loading
-        ? 'Checking your log…'
+        ? 'Checking your log.'
         : _catalogError != null
         ? 'Library unavailable.'
         : _groups.isEmpty
         ? 'No duplicate spellings.'
-        : '${_groups.length} name${_groups.length == 1 ? '' : 's'} to merge';
+        : '${_groups.length} name${_groups.length == 1 ? '' : 's'} to merge.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +117,7 @@ class _LiftNameConvergenceSectionState extends State<LiftNameConvergenceSection>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Lift name overlap',
+                          'Lift Name Overlap',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -201,7 +201,7 @@ class _DuplicateCard extends StatelessWidget {
             const SizedBox(height: 8),
             TextButton(
               onPressed: onMerge,
-              child: const Text('Merge to canonical name'),
+              child: const Text('Merge to Canonical Name'),
             ),
           ],
         ),

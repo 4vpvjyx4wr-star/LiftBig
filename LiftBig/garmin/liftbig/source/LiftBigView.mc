@@ -46,15 +46,21 @@ class LiftBigView extends WatchUi.View {
 
         var nameY = layout["nameY"] as Number;
         var navR = layout["navR"] as Number;
-        drawChevron(dc, layout["prevX"] as Number, nameY, -1, session.canMove(-1), navR);
-        drawChevron(dc, layout["nextX"] as Number, nameY, 1, session.canMove(1), navR);
+        var prevX = layout["prevX"] as Number;
+        var nextX = layout["nextX"] as Number;
+        drawChevron(dc, prevX, nameY, -1, session.canMoveExercise(-1), navR);
+        drawChevron(dc, nextX, nameY, 1, session.canMoveExercise(1), navR);
 
-        var name = session.exerciseName();
         var nameFont = Graphics.FONT_TINY;
-        var nameLimit = (layout["nextX"] as Number) - (layout["prevX"] as Number) - 52;
-        if (dc.getTextWidthInPixels(name, nameFont) > nameLimit) {
+        var nameLimit = nextX - prevX - (navR * 2) - 8;
+        if (nameLimit < 40) {
+            nameLimit = 40;
+        }
+        var fullName = session.exerciseName();
+        if (dc.getTextWidthInPixels(fullName, nameFont) > nameLimit) {
             nameFont = Graphics.FONT_XTINY;
         }
+        var name = fitExerciseName(dc, fullName, nameFont, nameLimit);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, nameY, nameFont, name, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
@@ -69,7 +75,7 @@ class LiftBigView extends WatchUi.View {
 class LiftBigDelegate extends WatchUi.BehaviorDelegate {
     var lastBackMs as Number = -1000;
     var lastTapMs as Number = -10000;
-    var selectArmed as Boolean = false;
+    var physicalSelect as Boolean = false;
     var selectTimer as Timer.Timer = new Timer.Timer();
 
     function initialize() {
@@ -83,8 +89,8 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         }
         lastBackMs = now;
         var session = getApp().session;
-        if (session.canMove(-1)) {
-            session.move(-1);
+        if (session.canMoveExercise(-1)) {
+            session.moveExercise(-1);
             return;
         }
         // leaveNow() clears the timer. Stay up until the buzz instead.
@@ -97,7 +103,7 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
 
     function onTap(evt as ClickEvent) as Boolean {
         lastTapMs = System.getTimer();
-        selectArmed = false;
+        physicalSelect = false;
         selectTimer.stop();
         var coords = evt.getCoordinates();
         var x = coords[0] as Number;
@@ -138,11 +144,11 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         var nameY = layout["nameY"] as Number;
         var navR = layout["navR"] as Number;
         if (inCircle(x, y, layout["prevX"] as Number, nameY, navR)) {
-            session.move(-1);
+            session.moveExercise(-1);
             return true;
         }
         if (inCircle(x, y, layout["nextX"] as Number, nameY, navR)) {
-            session.move(1);
+            session.moveExercise(1);
             return true;
         }
         var btnX = layout["btnX"] as Number;
@@ -182,29 +188,29 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    // A screen touch arrives as Select as well as onTap. Ignore that Select
-    // when a tap just happened so the touch does not also complete the set.
-    // A real upper-button press, with no recent tap, still toggles.
+    // A screen touch is also Select. That path must not complete the set.
+    // The drawn Set done control, and the physical Start button, do that.
     function onSelect() as Boolean {
-        armSelect();
         return true;
     }
 
-    function armSelect() as Void {
+    // Start can arrive just before the tap coordinates. Wait long enough to
+    // see the tap, then do nothing if the touch already handled itself.
+    function armPhysicalSelect() as Void {
         var now = System.getTimer();
         if (now - lastTapMs < 400) {
             return;
         }
-        selectArmed = true;
+        physicalSelect = true;
         selectTimer.stop();
-        selectTimer.start(method(:commitSelect), 400, false);
+        selectTimer.start(method(:commitPhysicalSelect), 300, false);
     }
 
-    function commitSelect() as Void {
-        if (selectArmed == false) {
+    function commitPhysicalSelect() as Void {
+        if (physicalSelect == false) {
             return;
         }
-        selectArmed = false;
+        physicalSelect = false;
         if (System.getTimer() - lastTapMs < 400) {
             return;
         }
@@ -214,26 +220,30 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
     function onKey(evt as KeyEvent) as Boolean {
         var key = evt.getKey();
         if (key == WatchUi.KEY_ENTER || key == WatchUi.KEY_START) {
-            armSelect();
+            armPhysicalSelect();
             return true;
         }
         if (key == WatchUi.KEY_ESC) {
             stepBack();
             return true;
         }
-        if (key == WatchUi.KEY_UP) {
-            getApp().session.move(-1);
-            return true;
-        }
-        if (key == WatchUi.KEY_DOWN) {
-            getApp().session.move(1);
+        // Venu 3 has no up or down button. These are swipe and page events.
+        if (key == WatchUi.KEY_UP || key == WatchUi.KEY_DOWN) {
             return true;
         }
         return false;
     }
 
+    function onNextPage() as Boolean {
+        return true;
+    }
+
+    function onPreviousPage() as Boolean {
+        return true;
+    }
+
     function onSwipe(evt as SwipeEvent) as Boolean {
-        return false;
+        return true;
     }
 
     function onBack() as Boolean {
@@ -444,6 +454,29 @@ function drawRestArc(dc as Graphics.Dc, session as Session, cx as Number, cy as 
         dc.setColor(0xFF6A1A, Graphics.COLOR_TRANSPARENT);
     }
     dc.drawArc(cx, cy, radius, Graphics.ARC_CLOCKWISE, 90, end);
+}
+
+// The title sits between the arrows. Cut it instead of drawing through them.
+function fitExerciseName(dc as Graphics.Dc, name as String, font as Graphics.FontType, limit as Number) as String {
+    if (limit < 1) {
+        return "";
+    }
+    if (dc.getTextWidthInPixels(name, font) <= limit) {
+        return name;
+    }
+    var ellipsis = "...";
+    if (dc.getTextWidthInPixels(ellipsis, font) > limit) {
+        return "";
+    }
+    var trimmed = name;
+    while (trimmed.length() > 1) {
+        trimmed = trimmed.substring(0, trimmed.length() - 1);
+        var candidate = trimmed + ellipsis;
+        if (dc.getTextWidthInPixels(candidate, font) <= limit) {
+            return candidate;
+        }
+    }
+    return ellipsis;
 }
 
 function nearChevron(x as Number, y as Number, cx as Number, cy as Number) as Boolean {

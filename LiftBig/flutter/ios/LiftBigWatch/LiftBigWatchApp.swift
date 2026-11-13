@@ -57,6 +57,7 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
     @Published var phoneLink = "Connecting to iPhone…"
     @Published var restRemaining = 0
     @Published var restPaused = false
+    @Published var alarmRinging = false
     @Published var restPreset = 60
     @Published var viewIndex = 0
     @Published var revision = 0
@@ -197,6 +198,13 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
         scheduleRestAlert()
         WKInterfaceDevice.current().play(.start)
         armRestTimer()
+    }
+
+    func stopAlarm() {
+        guard RestAlertPlan.showsStop(alarmRinging: alarmRinging) else { return }
+        alarmRinging = false
+        WKInterfaceDevice.current().play(.stop)
+        send(kind: RestAlertPlan.stopMessageKind)
     }
 
     func cancelRest() {
@@ -743,6 +751,9 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
 
     /// Phone rest is absolute. A missing end leaves a watch-started countdown alone.
     private func adoptPhoneRest(_ dict: [String: Any]) {
+        if let ringing = boolValue(dict["alarmRinging"]) {
+            alarmRinging = ringing
+        }
         let soundChanged = boolValue(dict["soundEnabled"]) != nil
         if let sound = boolValue(dict["soundEnabled"]) {
             soundEnabled = sound
@@ -793,6 +804,7 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
         restRemaining = 0
         restPaused = false
         restEndsAt = nil
+        alarmRinging = false
         playedRestDoneCue = true
         persistRest()
         cancelRestAlert()
@@ -889,6 +901,19 @@ struct WatchSessionView: View {
 
     private func workout(value: CGFloat, control: CGFloat, spacing: CGFloat) -> some View {
         VStack(spacing: spacing) {
+            if RestAlertPlan.showsStop(alarmRinging: model.alarmRinging) {
+                Button {
+                    model.stopAlarm()
+                } label: {
+                    Text("Stop")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color.lbNavy)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Capsule().fill(Color.lbOrange))
+                }
+                .buttonStyle(LbPressStyle())
+            }
             if model.restRemaining > 0 {
                 HStack(spacing: 8) {
                     pill(model.restPaused ? "Resume" : "Pause", filled: !model.restPaused) {

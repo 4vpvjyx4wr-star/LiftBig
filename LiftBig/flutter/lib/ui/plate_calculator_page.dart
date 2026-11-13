@@ -117,7 +117,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
   Widget build(BuildContext context) {
     final unitLabel = _unit == WeightUnit.lb ? 'lb' : 'kg';
     return KeyboardDismissScaffold(
-      title: 'Plate calculator',
+      title: 'Plate Calculator',
       body: _loadingUnit
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -125,7 +125,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
                 _SectionCard(
-                  label: 'Bar weight',
+                  label: 'Bar Weight',
                   child: Column(
                     children: [
                       Row(
@@ -159,7 +159,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
                 ),
                 const SizedBox(height: 12),
                 _SectionCard(
-                  label: 'Target weight ($unitLabel)',
+                  label: 'Target Weight ($unitLabel)',
                   child: TextField(
                     controller: _targetController,
                     keyboardType: const TextInputType.numberWithOptions(
@@ -330,7 +330,7 @@ class _CustomBarField extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w800),
               decoration: InputDecoration(
-                labelText: 'Custom bar',
+                labelText: 'Custom Bar',
                 hintText: unit == WeightUnit.lb ? 'lb' : 'kg',
                 isDense: true,
                 filled: true,
@@ -373,14 +373,14 @@ class _PlateResult extends StatelessWidget {
     final unitWord = unit == WeightUnit.lb ? 'lb' : 'kg';
     final String caption;
     if (underBar) {
-      caption = 'Target is under the bar';
+      caption = 'Target is under the bar.';
     } else if (result.plates.isEmpty && !exact) {
       caption = 'No plates fit — check bar and target.';
     } else if (exact) {
-      caption = 'Exact weight';
+      caption = 'Exact weight.';
     } else {
       caption =
-          'Closest load — ${formatWeightWithUnit(result.remainder * 2, unit)} short';
+          'Closest load — ${formatWeightWithUnit(result.remainder * 2, unit)} short.';
     }
     final accent = exact ? context.liftBig.success : const Color(0xFFF59E0B);
     return Column(
@@ -456,7 +456,7 @@ class _PlateSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Each side',
+            'Each Side',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
@@ -543,7 +543,7 @@ class _QuickReference extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'QUICK REFERENCE',
+              'Quick Reference',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,

@@ -66,7 +66,7 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'Add to calendar',
+            'Add to Calendar',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
@@ -77,13 +77,13 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           Text(
-            '${widget.workoutCount} workouts · one per day in order',
+            '${widget.workoutCount} workouts · one per day in order.',
             textAlign: TextAlign.center,
             style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
           ),
           const SizedBox(height: 16),
            Text(
-            'START DATE',
+            'Start Date',
             style: TextStyle(
               color: context.liftBig.muted,
               fontSize: 10,
@@ -112,7 +112,7 @@ class _PlanScheduleStartSheetState extends State<_PlanScheduleStartSheet> {
               Expanded(
                 child: FilledButton(
                   onPressed: _apply,
-                  child: const Text('Apply to calendar'),
+                  child: const Text('Apply to Calendar'),
                 ),
               ),
             ],

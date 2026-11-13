@@ -204,6 +204,101 @@ void main() {
     }), isTrue);
   });
 
+  test('alarm ringing leaves watch slots unchanged and stopAlarm is its own kind', () {
+    final session = buildWatchSession(
+      dateKey: '2026-11-12',
+      exercises: [
+        _exercise(
+          id: 'squat',
+          name: 'Back Squat',
+          sets: [
+            _set(id: 's1', order: 0, reps: '5', weight: '225'),
+            _set(id: 's2', order: 1, reps: '5', weight: '225'),
+          ],
+        ),
+      ],
+      restSeconds: 90,
+      weightUnit: WeightUnit.lb,
+      pro: true,
+    );
+    final json = session.toJson();
+    final lineup = json['lineup']! as List<Object?>;
+    final before = [
+      for (final slot in lineup) Map<String, Object?>.from(slot! as Map),
+    ];
+    final slotKeys = before.first.keys.toList()..sort();
+
+    final stamped = withWatchRest(
+      json,
+      const WatchRestPublish(
+        soundEnabled: true,
+        restEndsAtEpochSeconds: 1700000100,
+        alarmRinging: true,
+      ),
+    );
+    final after = [
+      for (final slot in stamped['lineup']! as List<Object?>)
+        Map<String, Object?>.from(slot! as Map),
+    ];
+    expect(after, before);
+    expect((after.first.keys.toList()..sort()), slotKeys);
+    expect(stamped['alarmRinging'], isTrue);
+    expect(stamped.containsKey('slots'), isFalse);
+    expect(phonePayloadClearsWatchRest(stamped), isFalse);
+
+    final stop = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'stopAlarm',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+        'reps': '5',
+        'weightDisplay': '225',
+        'weightUnit': 'lb',
+      }),
+      fallbackUnit: WeightUnit.lb,
+    );
+    expect(stop, isNotNull);
+    expect(stop!.kind, 'stopAlarm');
+    expect(stop.isStopAlarm, isTrue);
+    expect(stop.isCompleteSet, isFalse);
+    expect(stop.isAdjustSet, isFalse);
+    expect(stop.isSetRest, isFalse);
+    expect(stop.isSkipRest, isFalse);
+    expect(stop.isFinish, isFalse);
+
+    final day = JournalDay(
+      dateKey: '2026-11-12',
+      updatedAt: '2026-11-12T00:00:00.000Z',
+      exercises: [
+        JournalExercise(
+          id: 'squat',
+          sortOrder: 0,
+          name: 'Back Squat',
+          sets: const [
+            JournalSet(id: 's1', sortOrder: 0, reps: '5', weight: '225'),
+          ],
+        ),
+      ],
+    );
+    expect(identical(applyCompanionMessage(day, stop), day), isTrue);
+
+    final done = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'completeSet',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+      }),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(done.isStopAlarm, isFalse);
+    expect(done.isCompleteSet, isTrue);
+    expect(applyCompanionMessage(day, done).exercises.single.sets.single.checked, isTrue);
+  });
+
   test('cardio does not hide the strength lift still in progress', () {
     final exercise = watchExercise([
       _exercise(id: 'run', name: 'Run', isCardio: true),
@@ -214,5 +309,96 @@ void main() {
       ),
     ]);
     expect(exercise?.id, 'squat');
+  });
+
+  test('pause and resume do not check a set, and the rest revision is echoed', () {
+    final day = JournalDay(
+      dateKey: '2026-11-12',
+      updatedAt: '2026-11-12T00:00:00.000Z',
+      exercises: [
+        JournalExercise(
+          id: 'squat',
+          sortOrder: 0,
+          name: 'Back Squat',
+          sets: const [
+            JournalSet(id: 's1', sortOrder: 0, reps: '5', weight: '225'),
+          ],
+        ),
+      ],
+    );
+    final pause = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'pauseRest',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+        'reps': '5',
+        'weightDisplay': '225',
+        'weightUnit': 'lb',
+        'restRemaining': 42,
+        'restRev': 3,
+      }),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(pause.isPauseRest, isTrue);
+    expect(pause.isCompleteSet, isFalse);
+    expect(pause.restRemaining, 42);
+    expect(pause.restRevision, 3);
+    expect(identical(applyCompanionMessage(day, pause), day), isTrue);
+
+    final resume = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'resumeRest',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+        'restRev': 4,
+      }),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(resume.isResumeRest, isTrue);
+    expect(identical(applyCompanionMessage(day, resume), day), isTrue);
+
+    final skip = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'skipRest',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+        'restRev': 5,
+      }),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(skip.isSkipRest, isTrue);
+    expect(identical(applyCompanionMessage(day, skip), day), isTrue);
+
+    final echoed = withWatchRest(
+      {'version': 1, 'locked': false},
+      const WatchRestPublish(
+        soundEnabled: true,
+        restPaused: true,
+        restRemaining: 42,
+        restRevision: 3,
+      ),
+    );
+    expect(echoed['restPaused'], isTrue);
+    expect(echoed['restRemaining'], 42);
+    expect(echoed['restRev'], 3);
+    expect(echoed.containsKey('restEndsAt'), isFalse);
+
+    final cancelled = withWatchRest(
+      {'version': 1},
+      const WatchRestPublish(
+        soundEnabled: true,
+        restCancelled: true,
+        restRevision: 5,
+      ),
+    );
+    expect(cancelled['restCancelled'], isTrue);
+    expect(cancelled['restRev'], 5);
+    expect(cancelled.containsKey('restEndsAt'), isFalse);
   });
 }

@@ -5,6 +5,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 
 /// Lists similar lifts first, then the rest of the library. Returns true when swapped.
@@ -84,9 +85,8 @@ class _SwapExerciseSheetState extends State<_SwapExerciseSheet> {
   @override
   Widget build(BuildContext context) {
     final lifts = _visible;
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottom),
+    return KeyboardDismiss(
+      fill: false,
       child: SizedBox(
         height: liftBigPreferredHeight(context, 0.72),
         child: Column(
@@ -104,7 +104,7 @@ class _SwapExerciseSheetState extends State<_SwapExerciseSheet> {
               child: TextField(
                 controller: _search,
                 decoration: const InputDecoration(
-                  hintText: 'Search lifts',
+                  hintText: 'Search lifts.',
                 ),
               ),
             ),

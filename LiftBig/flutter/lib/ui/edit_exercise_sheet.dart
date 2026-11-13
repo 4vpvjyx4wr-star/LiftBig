@@ -5,6 +5,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 
 /// Edits one logged lift: swap it from the library, and change goal reps and sets.
@@ -130,11 +131,10 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
     final replacement = _replacement;
     final matches = _matches;
-    return Padding(
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+    return KeyboardDismiss(
+      fill: false,
       child: SizedBox(
         height: liftBigPreferredHeight(context, 0.72),
         child: Column(
@@ -160,7 +160,7 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
                 controller: _search,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
-                  hintText: 'Search to swap lifts',
+                  hintText: 'Search to swap lifts.',
                   isDense: true,
                   prefixIcon: Icon(Icons.search, size: 20),
                 ),
@@ -180,12 +180,12 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Swap to ${replacement.name}',
+                        'Swap to ${replacement.name}.',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Keep current lift',
+                      tooltip: 'Keep Current Lift',
                       onPressed: () => setState(() => _replacement = null),
                       icon: const Icon(Icons.close, size: 18),
                     ),
@@ -201,7 +201,7 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
                       controller: _reps,
                       textInputAction: TextInputAction.done,
                       decoration: const InputDecoration(
-                        labelText: 'Goal reps',
+                        labelText: 'Goal Reps',
                         isDense: true,
                       ),
                       onSubmitted: (_) =>

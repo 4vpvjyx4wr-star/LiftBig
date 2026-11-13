@@ -15,8 +15,7 @@ const BACKGROUND_REST_FLOOR = 300;
 
 // In-memory workout. A phone message can replace the baked-in sample.
 // Slots are one set each, in workout order. The arrows and the back
-// button jump to the previous or next exercise. Up and down still
-// walk one set at a time.
+// button jump to the previous or next exercise.
 class Session {
     var locked as Boolean = false;
     var dateKey as String = "sample";
@@ -35,6 +34,10 @@ class Session {
     var toneTimer as Timer.Timer = new Timer.Timer();
     var tonesLeft as Number = 0;
     var restEndedOnItsOwn as Boolean = false;
+    // Bumped on every local rest change. An older phone echo is ignored.
+    var restRev as Number = 0;
+    // Pause or cancel is in charge until the phone catches that revision.
+    var restHold as Boolean = false;
 
     function initialize() {
         loadSample();
@@ -371,12 +374,12 @@ class Session {
             return;
         }
         slot["done"] = true;
-        send("completeSet");
-        cueSetDone();
         var advance = advanceAfterComplete(index);
         if (advance["rest"] == true) {
             startRest();
         }
+        send("completeSet");
+        cueSetDone();
         var nextIndex = advance["index"] as Number;
         if (nextIndex >= 0 && nextIndex < slots.size()) {
             index = nextIndex;
@@ -462,6 +465,8 @@ class Session {
     }
 
     function startRest() as Void {
+        bumpRestRev();
+        restHold = true;
         restEndedOnItsOwn = false;
         restPaused = false;
         restRemaining = restPreset;
@@ -484,9 +489,41 @@ class Session {
 
     // Phone rest is an absolute end. A payload without restEndsAt leaves a
     // watch-started countdown alone. restCancelled stops it without a buzz.
+    function bumpRestRev() as Void {
+        restRev = restRev + 1;
+        if (restRev > 1000000) {
+            restRev = 1;
+        }
+    }
+
     function applyPhoneRest(data as Dictionary) as Void {
         if (data["soundEnabled"] != null) {
             soundEnabled = data["soundEnabled"] == true;
+        }
+        if (data["restRev"] != null) {
+            var incoming = asInt(data["restRev"]);
+            if (incoming < restRev) {
+                return;
+            }
+            restRev = incoming;
+            restHold = false;
+        } else if (restRev > 0 || restHold) {
+            if (data["restCancelled"] == true) {
+                stopRest();
+                return;
+            }
+            if (restHold && data["restPaused"] == true) {
+                var held = asInt(data["restRemaining"]);
+                restPaused = true;
+                restRemaining = held;
+                restEndsAt = 0;
+                timer.stop();
+                persistRest();
+                clearBackgroundRestAlert();
+                return;
+            }
+            // A lineup that still carries the old end must not restart rest.
+            return;
         }
         if (data["restCancelled"] == true) {
             stopRest();
@@ -527,10 +564,13 @@ class Session {
         if (restRemaining <= 0) {
             return;
         }
+        bumpRestRev();
+        restHold = true;
         restPaused = true;
         restEndsAt = 0;
         timer.stop();
         persistRest();
+        send("pauseRest");
         WatchUi.requestUpdate();
     }
 
@@ -538,11 +578,14 @@ class Session {
         if (restRemaining <= 0 || restPaused == false) {
             return;
         }
+        bumpRestRev();
+        restHold = true;
         restPaused = false;
         restEndsAt = unixNow() + restRemaining;
         timer.stop();
         timer.start(method(:tickRest), 1000, true);
         persistRest();
+        send("resumeRest");
         WatchUi.requestUpdate();
     }
 
@@ -552,7 +595,10 @@ class Session {
         }
         var leaving = exitAfterRest;
         exitAfterRest = false;
+        bumpRestRev();
+        restHold = true;
         stopRest();
+        send("skipRest");
         if (leaving) {
             leaveNow();
             return;
@@ -818,7 +864,9 @@ class Session {
             "reps" => (slot["reps"] as Number).toString(),
             "weightDisplay" => (slot["weight"] as Number).toString(),
             "weightUnit" => weightUnit,
-            "restSeconds" => restPreset
+            "restSeconds" => restPreset,
+            "restRemaining" => restRemaining,
+            "restRev" => restRev
         };
         try {
             Communications.transmit(message, null, new PhoneListener());

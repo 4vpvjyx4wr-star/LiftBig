@@ -17,7 +17,7 @@ Future<bool> confirmClearDay(BuildContext context) async {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear day'),
+            child: const Text('Clear Day'),
           ),
         ],
       );

@@ -42,7 +42,7 @@ void main() {
       );
 
       expect(find.text('BAR'), findsNWidgets(2));
-      expect(find.text('Just the bar — no plates needed'), findsOneWidget);
+      expect(find.text('Just the bar — no plates needed.'), findsOneWidget);
       expect(find.text('SLED'), findsOneWidget);
       expect(
         tester.getSize(find.text('SLED')).height,
@@ -73,7 +73,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Each side: 3×45, 1×25'), findsOneWidget);
+    expect(find.text('Each Side: 3×45, 1×25'), findsOneWidget);
     expect(find.text('SLED'), findsOneWidget);
     expect(find.textContaining('45, 45, 45, 25'), findsNothing);
 
@@ -93,7 +93,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Each side: 1×45, 1×10'), findsOneWidget);
+    expect(find.text('Each Side: 1×45, 1×10'), findsOneWidget);
     expect(find.text('BAR'), findsOneWidget);
   });
 }

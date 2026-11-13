@@ -7,7 +7,12 @@ import WatchKit
 enum RestAlertPlan {
     static let identifier = "liftbig.rest"
 
-    static let soundName = UNNotificationSoundName("rest_alarm.wav")
+    /// Phone message that stops the looping rest tone. Garmin has no Stop control.
+    static let stopMessageKind = "stopAlarm"
+
+    static func showsStop(alarmRinging: Bool) -> Bool {
+        alarmRinging
+    }
 
     static func makeRequest(endsAt: Date, now: Date, soundEnabled: Bool) -> UNNotificationRequest? {
         let interval = endsAt.timeIntervalSince(now)
@@ -16,11 +21,8 @@ enum RestAlertPlan {
         content.title = "Rest complete"
         content.body = "Time for the next set."
         content.interruptionLevel = .timeSensitive
-        if soundEnabled {
-            content.sound = UNNotificationSound(named: soundName)
-        } else {
-            content.sound = nil
-        }
+        // watchOS cannot play a named file. The default tone is the sound it can own.
+        content.sound = soundEnabled ? .default : nil
         content.userInfo = ["endsAt": endsAt.timeIntervalSince1970]
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         return UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)

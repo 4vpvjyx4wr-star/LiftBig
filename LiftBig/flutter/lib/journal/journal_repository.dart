@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../backup/backup_parser.dart';
+import '../health/health_workout.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../data/app_database.dart';
 import '../date_key.dart';
@@ -42,17 +43,25 @@ abstract final class SettingKeys {
   static const restTimerSound = 'rest_timer_sound';
   static const restTimerVibration = 'rest_timer_vibration';
   static const restTimerNotification = 'rest_timer_notification';
+  static const restTimerRingUntilStopped = 'rest_timer_ring_until_stopped';
+  static const restTimerSoundId = 'rest_timer_sound_id';
   static const appleHealthEnabled = 'apple_health_enabled';
+  static const healthWorkoutWrites = 'health_workout_writes';
   static const templatesJson = 'templates_json';
   static const settingsJson = 'settings_json';
   static const autoFillSets = 'auto_fill_sets';
   static const autoAdvanceWeightToReps = 'auto_advance_weight_to_reps';
   static const startTimerOnDone = 'start_timer_on_done';
+  static const saveRepsMarksDone = 'save_reps_marks_done';
   static const logSetDifficulty = 'log_set_difficulty';
   static const showPlateGraphic = 'show_plate_graphic';
   static const plateBarLb = 'plate_bar_lb';
   static const proTesterUnlock = 'pro_tester_unlock';
   static const restTimerState = 'rest_timer_state';
+  static const restTimerChrome = 'rest_timer_chrome';
+  static const watchApple = 'watch_apple_enabled';
+  static const watchGarmin = 'watch_garmin_enabled';
+  static const watchSamsung = 'watch_samsung_enabled';
   static const dailyLiftReminderEnabled = 'daily_lift_reminder_enabled';
   static const dailyLiftReminderTime = 'daily_lift_reminder_time';
   static const dailyLiftReminderDays = 'daily_lift_reminder_days';
@@ -188,8 +197,10 @@ class JournalRepository {
   }
 
   /// Append one exercise and its sets. Clears a rest-day flag on that date.
-  /// A warmup set is inserted only when [prescribeWarmup] is true and the lift
-  /// qualifies. Existing days are never rewritten by this path.
+  /// A warmup set is inserted only when [prescribeWarmup] is true, the lift is
+  /// a heavy compound, and the sets do not already include one. Warmups that
+  /// arrived with the plan stay put when the setting is off. Existing days
+  /// are never rewritten by this path.
   Future<void> addExercise({
     required String dateKey,
     required String name,
@@ -305,8 +316,9 @@ class JournalRepository {
     await mergeExactLibraryMatchesFromCatalog();
   }
 
-  /// Prepends one warmup set on new barbell compounds. Existing warmups stay put.
-  /// [enabled] false returns [exercises] unchanged, so older days are not rewritten.
+  /// Prepends one warmup set on a heavy compound that does not already have one.
+  /// Existing warmups stay put, including plan warmups. [enabled] false returns
+  /// [exercises] unchanged, so the setting never strips a warmup.
   Future<List<JournalExercise>> withPrescribedWarmup({
     required String dateKey,
     required List<JournalExercise> exercises,
@@ -423,7 +435,7 @@ class JournalRepository {
       final id = newId();
       final ordered = [...existing]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final previous = ordered.isEmpty ? null : ordered.last;
-      final reps = previous != null ? previous.reps : (fill?.reps ?? '');
+      final reps = previous != null ? previous.reps : '';
       final weight = previous != null ? previous.weight : (fill?.weight ?? '');
       await db.into(db.workoutSets).insert(
         WorkoutSetsCompanion.insert(
@@ -773,7 +785,7 @@ class JournalRepository {
           )..where((row) => row.id.equals(set.id))).go();
           continue;
         }
-        final reps = set.isWarmup ? (fill == null ? '' : '5') : (fill?.reps ?? '');
+        final reps = set.isWarmup ? (fill == null ? '' : '5') : '';
         final weight = set.isWarmup ? warmWeight : (fill?.weight ?? '');
         await (db.update(
           db.workoutSets,
@@ -1199,6 +1211,13 @@ class JournalRepository {
       if (backup.settingsUpdatedAt != null) {
         await _put(SettingKeys.settingsUpdatedAt, backup.settingsUpdatedAt!);
       }
+      final preferences = backup.preferences;
+      if (preferences != null) {
+        for (final entry in preferences.entries) {
+          if (!liftBigPreferenceBackupKeys.contains(entry.key)) continue;
+          await _put(entry.key, entry.value);
+        }
+      }
       return backup.days.length;
     });
   }
@@ -1241,6 +1260,15 @@ class JournalRepository {
 
   Future<void> setStartTimerOnDone(bool enabled) {
     return _put(SettingKeys.startTimerOnDone, enabled ? 'true' : 'false');
+  }
+
+  /// Off unless the stored value is the word `true`.
+  Future<bool> saveRepsMarksSetDoneEnabled() async {
+    return (await _get(SettingKeys.saveRepsMarksDone)) == 'true';
+  }
+
+  Future<void> setSaveRepsMarksSetDone(bool enabled) {
+    return _put(SettingKeys.saveRepsMarksDone, enabled ? 'true' : 'false');
   }
 
   /// Off until the lifter turns on per-set difficulty in Settings.
@@ -1346,6 +1374,69 @@ class JournalRepository {
         ),
       );
     });
+  }
+
+  Future<Map<String, StoredHealthWrite>> loadHealthWorkoutWrites() async {
+    final raw = await _get(SettingKeys.healthWorkoutWrites);
+    if (raw == null || raw.trim().isEmpty) return {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return {};
+      final writes = <String, StoredHealthWrite>{};
+      for (final entry in decoded.entries) {
+        final value = entry.value;
+        if (value is! Map) continue;
+        final uuid = '${value['uuid'] ?? ''}'.trim();
+        if (uuid.isEmpty) continue;
+        writes['${entry.key}'] = StoredHealthWrite(
+          uuid: uuid,
+          minutes: (value['minutes'] as num?)?.round() ?? 0,
+          meters: (value['meters'] as num?)?.round() ?? 0,
+          kcal: (value['kcal'] as num?)?.round() ?? -1,
+        );
+      }
+      return writes;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> saveHealthWorkoutWrites(Map<String, StoredHealthWrite> writes) {
+    return _put(
+      SettingKeys.healthWorkoutWrites,
+      jsonEncode({
+        for (final entry in writes.entries)
+          entry.key: {
+            'uuid': entry.value.uuid,
+            'minutes': entry.value.minutes,
+            'meters': entry.value.meters,
+            'kcal': entry.value.kcal,
+          },
+      }),
+    );
+  }
+
+  /// Anticipated working-set reps when Strength Prediction is on.
+  /// Empty when the toggle is off or this lift has no history.
+  Future<Map<String, String>> predictedRepsByExercise(String dateKey) async {
+    if (!await autoFillSetsEnabled()) return {};
+    final day = await getDay(dateKey);
+    if (day == null) return {};
+    final history = historySetsFromDays(await allDays());
+    final displayUnit = (await storedWeightUnit()) == WeightUnit.kg ? 'kg' : 'lb';
+    final reps = <String, String>{};
+    for (final exercise in day.exercises) {
+      if (exercise.isCardio || exercise.isCircuit) continue;
+      final count = predictedRepCount(
+        exerciseName: exercise.name,
+        history: history,
+        currentTargetReps: exercise.targetReps,
+        excludeDateKey: dateKey,
+        displayUnit: displayUnit,
+      );
+      if (count.isNotEmpty) reps[exercise.id] = count;
+    }
+    return reps;
   }
 
   Future<void> setHealthEnergyKcal(String dateKey, double? kcal) async {
@@ -1556,6 +1647,38 @@ class JournalRepository {
     return _put(SettingKeys.restTimerState, '');
   }
 
+  /// True when the user last parked the rest timer on the Lift tab.
+  Future<bool> loadRestTimerAnchored() async {
+    return (await _get(SettingKeys.restTimerChrome)) == 'anchored';
+  }
+
+  Future<void> saveRestTimerAnchored(bool anchored) {
+    return _put(SettingKeys.restTimerChrome, anchored ? 'anchored' : 'floating');
+  }
+
+  Future<WatchCompanionSettings> loadWatchCompanionSettings() async {
+    return WatchCompanionSettings(
+      apple: boolSettingFromStored(
+        await _get(SettingKeys.watchApple),
+        defaultValue: true,
+      ),
+      garmin: boolSettingFromStored(
+        await _get(SettingKeys.watchGarmin),
+        defaultValue: true,
+      ),
+      samsung: boolSettingFromStored(
+        await _get(SettingKeys.watchSamsung),
+        defaultValue: false,
+      ),
+    );
+  }
+
+  Future<void> saveWatchCompanionSettings(WatchCompanionSettings settings) async {
+    await _put(SettingKeys.watchApple, settings.apple ? 'true' : 'false');
+    await _put(SettingKeys.watchGarmin, settings.garmin ? 'true' : 'false');
+    await _put(SettingKeys.watchSamsung, settings.samsung ? 'true' : 'false');
+  }
+
   Future<WeightUnit> storedWeightUnit() async {
     return weightUnitFromStored(await _get(SettingKeys.weightUnit));
   }
@@ -1614,10 +1737,14 @@ class JournalRepository {
     final sound = await _get(SettingKeys.restTimerSound);
     final vibration = await _get(SettingKeys.restTimerVibration);
     final notification = await _get(SettingKeys.restTimerNotification);
+    final ring = await _get(SettingKeys.restTimerRingUntilStopped);
+    final soundId = await _get(SettingKeys.restTimerSoundId);
     return RestTimerAlertSettings(
       soundEnabled: boolSettingFromStored(sound, defaultValue: true),
       vibrationEnabled: boolSettingFromStored(vibration, defaultValue: true),
       notificationEnabled: boolSettingFromStored(notification, defaultValue: true),
+      ringUntilStopped: boolSettingFromStored(ring, defaultValue: false),
+      soundId: RestTimerAlertSettings.canonicalSoundId(soundId),
     );
   }
 
@@ -1633,6 +1760,14 @@ class JournalRepository {
     await _put(
       SettingKeys.restTimerNotification,
       settings.notificationEnabled ? 'true' : 'false',
+    );
+    await _put(
+      SettingKeys.restTimerRingUntilStopped,
+      settings.ringUntilStopped ? 'true' : 'false',
+    );
+    await _put(
+      SettingKeys.restTimerSoundId,
+      RestTimerAlertSettings.canonicalSoundId(settings.soundId),
     );
   }
 
@@ -1808,7 +1943,25 @@ class JournalRepository {
       settingsJson: await _get(SettingKeys.settingsJson),
       weightUnit: await _get(SettingKeys.weightUnit),
       bodyWeightLbs: body,
+      preferences: await _preferenceBackup(),
     );
+  }
+
+  /// Saved plans, Pro unlock, and settings. The live rest countdown and
+  /// sign-in secrets are left out. Unset keys stay absent so an older phone
+  /// keeps its own value for anything this backup never stored.
+  Future<Map<String, String>> _preferenceBackup() async {
+    final out = <String, String>{};
+    for (final key in liftBigPreferenceBackupKeys) {
+      final value = await _get(key);
+      if (key == SettingKeys.proTesterUnlock) {
+        out[key] = value == 'true' ? 'true' : 'false';
+        continue;
+      }
+      if (value == null) continue;
+      out[key] = value;
+    }
+    return out;
   }
 
   Future<CloudSettings?> localCloudSettings() async {
@@ -1959,6 +2112,9 @@ class JournalRepository {
         );
   }
 
+  /// Adds one warmup to a heavy compound that does not already have one.
+  /// [prescribeWarmup] false returns the sets unchanged, so a plan warmup is
+  /// not removed when the setting is off.
   Future<List<JournalSet>> _setsForNewExercise({
   required String name,
   required String? libraryId,
@@ -2055,8 +2211,9 @@ String? _blankToNull(String? value) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
-/// A rep goal replaces a blank or a stored range. A number already entered stays.
+/// A range goal replaces a blank or a stored range. A single count stays a hint.
 bool _replaceEmptyRepField(String stored, String nextReps) {
-  if (nextReps.trim().isEmpty) return false;
+  final next = nextReps.trim();
+  if (next.isEmpty || RegExp(r'^\d+$').hasMatch(next)) return false;
   return !RegExp(r'^\d+$').hasMatch(stored.trim());
 }

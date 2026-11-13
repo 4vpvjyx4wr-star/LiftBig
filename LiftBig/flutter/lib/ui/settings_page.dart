@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 
+import '../companion/companion_bridge.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
-import '../journal/strength_standards.dart';
 import '../pro/pro_status.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../sync/sync_controller.dart';
 import '../theme.dart';
-import 'liftbig_sheet.dart';
+import '../utils/barbell_compound.dart';
 import '../utils/distance_units.dart';
 import '../utils/weight_units.dart';
-import 'rest_timer_scope.dart';
 import 'basic_calculator_page.dart';
 import 'import_sheet.dart';
+import 'keyboard_dismiss.dart';
 import 'lift_name_convergence_section.dart';
+import 'liftbig_sheet.dart';
 import 'one_rep_max_calculator_page.dart';
 import 'plate_calculator_page.dart';
+import 'rest_timer_scope.dart';
+import 'theme_backdrop.dart';
+import 'tool_icons.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -46,6 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
   var _autoFill = true;
   var _autoAdvanceWeightToReps = true;
   var _timerOnDone = false;
+  var _saveRepsMarksDone = false;
   var _logDifficulty = false;
   var _prescribeWarmup = false;
   var _showPlateGraphic = true;
@@ -58,9 +64,14 @@ class _SettingsPageState extends State<SettingsPage> {
   var _weightUnit = WeightUnit.lb;
   var _distanceUnit = DistanceUnit.mi;
   final _bodyWeight = TextEditingController();
-  final _averageRest = TextEditingController(text: '$defaultAverageRestSeconds');
-  final _averageLift = TextEditingController(text: '$defaultAverageLiftSeconds');
+  final _averageRest = TextEditingController(
+    text: '$defaultAverageRestSeconds',
+  );
+  final _averageLift = TextEditingController(
+    text: '$defaultAverageLiftSeconds',
+  );
   var _restAlerts = RestTimerAlertSettings.defaults;
+  var _watches = WatchCompanionSettings.defaults;
   var _appleHealth = false;
   String? _healthNote;
   var _loadingPrefs = true;
@@ -101,6 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final rest = await journal.storedAverageRestSeconds();
     final lift = await journal.storedAverageLiftSeconds();
     final alerts = await journal.loadRestTimerAlertSettings();
+    final watches = await journal.loadWatchCompanionSettings();
     final appleHealth = await journal.appleHealthSyncEnabled();
     var bodyLbs = await _bodyWeightService.importFromHealthIfEmpty();
     bodyLbs ??= await journal.storedBodyWeightLbs();
@@ -117,6 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _averageRest.text = '$rest';
       _averageLift.text = '$lift';
       _restAlerts = alerts;
+      _watches = watches;
       _appleHealth = appleHealth;
       _heightStored = height;
       _loadingPrefs = false;
@@ -146,6 +159,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final autoFill = await journal.autoFillSetsEnabled();
     final autoAdvance = await journal.autoAdvanceWeightToRepsEnabled();
     final timerOnDone = await journal.startTimerOnDone();
+    final saveRepsMarksDone = await journal.saveRepsMarksSetDoneEnabled();
     final logDifficulty = await journal.logSetDifficultyEnabled();
     final prescribeWarmup = await journal.prescribeWarmupEnabled();
     final showPlateGraphic = await journal.showPlateGraphicEnabled();
@@ -154,6 +168,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _autoFill = autoFill;
       _autoAdvanceWeightToReps = autoAdvance;
       _timerOnDone = timerOnDone;
+      _saveRepsMarksDone = saveRepsMarksDone;
       _logDifficulty = logDifficulty;
       _prescribeWarmup = prescribeWarmup;
       _showPlateGraphic = showPlateGraphic;
@@ -163,6 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadPro() async {
     final active = await _proStatus.refresh();
     if (!mounted) return;
+    widget.themes.setProActive(active);
     setState(() => _proActive = active);
   }
 
@@ -171,6 +187,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (code == null || !mounted) return;
     final result = await _proStatus.restorePurchases(code);
     if (!mounted) return;
+    widget.themes.setProActive(result.isPro);
     setState(() => _proActive = result.isPro);
     final message = result.codeMatched
         ? 'Pro is unlocked on this device.'
@@ -186,12 +203,14 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          scrollable: true,
           title: const Text('Restore Purchases'),
           content: TextField(
             controller: controller,
             autofocus: true,
             autocorrect: false,
             enableSuggestions: false,
+            textInputAction: TextInputAction.done,
             decoration: const InputDecoration(labelText: 'Code'),
             onSubmitted: (value) => Navigator.pop(context, value),
           ),
@@ -231,7 +250,10 @@ class _SettingsPageState extends State<SettingsPage> {
       final granted = await widget.dailyReminder.requestPermissionIfNeeded();
       if (!granted) {
         if (!mounted) return;
-        showLiftBigNotice(context, 'Notification permission is required for reminders.');
+        showLiftBigNotice(
+          context,
+          'Notification permission is required for reminders.',
+        );
         return;
       }
     }
@@ -292,6 +314,11 @@ class _SettingsPageState extends State<SettingsPage> {
     await widget.sync.journal.setStartTimerOnDone(value);
   }
 
+  Future<void> _setSaveRepsMarksDone(bool value) async {
+    setState(() => _saveRepsMarksDone = value);
+    await widget.sync.journal.setSaveRepsMarksSetDone(value);
+  }
+
   Future<void> _setLogDifficulty(bool value) async {
     setState(() => _logDifficulty = value);
     await widget.sync.journal.setLogSetDifficultyEnabled(value);
@@ -324,7 +351,8 @@ class _SettingsPageState extends State<SettingsPage> {
       inches = cm == null ? null : cm / 2.54;
     } else {
       final feet = double.tryParse(_heightFeet.text.trim()) ?? 0;
-      final inch = double.tryParse(_heightInches.text.trim().replaceAll(',', '.')) ?? 0;
+      final inch =
+          double.tryParse(_heightInches.text.trim().replaceAll(',', '.')) ?? 0;
       final total = feet * 12 + inch;
       inches = total <= 0 ? null : total;
     }
@@ -337,8 +365,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _applyHeightFields(stored, _weightUnit);
     if (wrote == false) {
       setState(() {
-        _healthNote =
-            'Saved on this device. Apple Health needs permission to sync height.';
+        _healthNote = 'Saved on this device. Apple Health needs permission to sync height.';
       });
     }
   }
@@ -350,9 +377,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _saveBodyWeight() async {
     final raw = _bodyWeight.text.trim();
-    final lbs = raw.isEmpty
-        ? null
-        : displayWeightToLbs(raw, _weightUnit);
+    final lbs = raw.isEmpty ? null : displayWeightToLbs(raw, _weightUnit);
     final result = await _bodyWeightService.saveBodyWeightLbs(
       lbs,
       tryHealthWrite: _appleHealth,
@@ -360,8 +385,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!mounted) return;
     if (result.healthWriteSucceeded == false) {
       setState(() {
-        _healthNote =
-            'Saved on this device. Apple Health needs permission to sync body weight.';
+        _healthNote = 'Saved on this device. Apple Health needs permission to sync body weight.';
       });
     } else {
       setState(() => _healthNote = null);
@@ -369,6 +393,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _selectTheme(String id) async {
+    final palette = liftBigPaletteById(id);
+    if (palette.proOnly && !_proActive) {
+      if (!mounted) return;
+      showLiftBigNotice(context, 'LiftBig Pro unlocks this theme.');
+      return;
+    }
     widget.themes.select(id);
     liftBigSelectionHaptic();
     await widget.sync.journal.setColorThemeId(widget.themes.palette.id);
@@ -394,18 +424,54 @@ class _SettingsPageState extends State<SettingsPage> {
     bool? sound,
     bool? vibration,
     bool? notification,
+    bool? ringUntilStopped,
+    String? soundId,
   }) async {
     final next = _restAlerts.copyWith(
       soundEnabled: sound,
       vibrationEnabled: vibration,
       notificationEnabled: notification,
+      ringUntilStopped: ringUntilStopped,
+      soundId: soundId,
     );
     setState(() => _restAlerts = next);
     await widget.sync.journal.saveRestTimerAlertSettings(next);
     if (!mounted) return;
     try {
-      await RestTimerScope.of(context).reloadAlertSettings();
+      RestTimerScope.of(context).reloadAlertSettings();
     } catch (_) {}
+  }
+
+  String _alarmToneLabel(String id) {
+    return switch (RestTimerAlertSettings.canonicalSoundId(id)) {
+      'bell' => 'Bell',
+      'chime' => 'Chime',
+      'horn' => 'Horn',
+      _ => 'Beep',
+    };
+  }
+
+  Future<void> _pickAlarmTone() async {
+    final picked = await showLiftBigSheet<String>(
+      context,
+      builder: (context) {
+        return ListView(
+          shrinkWrap: true,
+          children: [
+            for (final id in RestTimerAlertSettings.soundIds)
+              ListTile(
+                title: Text(_alarmToneLabel(id)),
+                trailing: id == _restAlerts.soundId
+                    ? Icon(Icons.check, color: context.liftBig.primary)
+                    : null,
+                onTap: () => Navigator.of(context).pop(id),
+              ),
+          ],
+        );
+      },
+    );
+    if (picked == null || picked == _restAlerts.soundId) return;
+    await _setRestAlert(soundId: picked);
   }
 
   Future<void> _setAppleHealth(bool enabled) async {
@@ -414,8 +480,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!granted && mounted) {
         setState(() {
           _appleHealth = true;
-          _healthNote =
-              'Turned on. Grant Apple Health access when prompted to sync weight, height, and workouts.';
+          _healthNote = 'Turned on. Grant Apple Health access when prompted to sync weight, height, and workouts.';
         });
         return;
       }
@@ -444,7 +509,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final json = await widget.sync.journal.exportBackupJson();
       final saved = await FilePicker.saveFile(
-        dialogTitle: 'Export LiftBig backup',
+        dialogTitle: 'Export LiftBig Backup',
         fileName: 'liftbig-backup.json',
         mimeType: 'application/json',
         bytes: Uint8List.fromList(utf8.encode(json)),
@@ -458,34 +523,29 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _pickTheme() async {
-    final selected = widget.themes.palette.id;
-    final picked = await showLiftBigSheet<String>(
-      context,
-      builder: (context) => ListView(
-        shrinkWrap: true,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text(
-              'Theme',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-          ),
-          for (final palette in liftBigThemePresets)
-            ListTile(
-              leading: _ThemeSwatch(palette: palette),
-              title: Text(palette.label),
-              trailing: palette.id == selected
-                  ? Icon(Icons.check, color: context.liftBig.primary)
-                  : null,
-              onTap: () => Navigator.of(context).pop(palette.id),
-            ),
-        ],
+  Widget _themeStrip({
+    required List<LiftBigPalette> palettes,
+    required String selectedId,
+  }) {
+    return SizedBox(
+      height: 136,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        primary: false,
+        padding: const EdgeInsets.only(top: 4, bottom: 2),
+        itemCount: palettes.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final palette = palettes[index];
+          return _ThemePreviewCard(
+            palette: palette,
+            selected: palette.id == selectedId,
+            locked: palette.proOnly && !_proActive,
+            onTap: () => _selectTheme(palette.id),
+          );
+        },
       ),
     );
-    if (picked == null) return;
-    await _selectTheme(picked);
   }
 
   @override
@@ -512,15 +572,19 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _authError = error);
   }
 
+  Future<void> _setWatch(WatchCompanionSettings next) async {
+    setState(() => _watches = next);
+    await widget.sync.journal.saveWatchCompanionSettings(next);
+    CompanionBridge.shared.setWatchCompanions(next);
+    await CompanionBridge.shared.republishSession();
+  }
+
   List<Widget> _toolSection(SyncController sync) {
     return [
-      const Text(
-        'Tools',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-      ),
       ListTile(
         contentPadding: EdgeInsets.zero,
-        title: const Text('Plate calculator'),
+        leading: const Plate45Icon(),
+        title: const Text('Plate Calculator'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(context).push(
@@ -532,7 +596,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       ListTile(
         contentPadding: EdgeInsets.zero,
-        title: const Text('One rep max'),
+        leading: const ForegroundIcon(Icons.fitness_center),
+        title: const Text('One Rep Max'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(context).push(
@@ -544,6 +609,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       ListTile(
         contentPadding: EdgeInsets.zero,
+        leading: const ForegroundIcon(Icons.calculate_outlined),
         title: const Text('Calculator'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
@@ -554,46 +620,89 @@ class _SettingsPageState extends State<SettingsPage> {
           );
         },
       ),
+    ];
+  }
+
+  List<Widget> _sectionHeading(String title, {bool first = false}) {
+    return [
+      if (!first) ...[
+        const SizedBox(height: 24),
+        Divider(height: 1, thickness: 1, color: context.liftBig.border),
+        const SizedBox(height: 24),
+      ],
+      Text(
+        title,
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+      ),
       const SizedBox(height: 8),
+    ];
+  }
+
+  List<Widget> _proSection() {
+    return [
       ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(_proActive ? 'Pro · Active' : 'Pro'),
-        subtitle: Text(
-          _proActive
-              ? 'Watch companions are unlocked.'
-              : 'Restore purchases. The journal stays available.',
-          style:  TextStyle(color: context.liftBig.muted),
-        ),
+        subtitle: _proActive
+            ? Text(
+                'Watch sync is active.',
+                style: TextStyle(color: context.liftBig.muted),
+              )
+            : null,
         trailing: TextButton(
           onPressed: _restorePro,
           child: const Text('Restore Purchases'),
         ),
       ),
-      const SizedBox(height: 24),
+    ];
+  }
+
+  List<Widget> _watchSection() {
+    if (!_proActive) return const [];
+    return [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Apple'),
+        value: _watches.apple,
+        activeThumbColor: context.liftBig.primary,
+        onChanged: (value) => _setWatch(_watches.copyWith(apple: value)),
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Garmin'),
+        value: _watches.garmin,
+        activeThumbColor: context.liftBig.primary,
+        onChanged: (value) => _setWatch(_watches.copyWith(garmin: value)),
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: const Text('Samsung'),
+        subtitle: Text(
+          'To be added in future update.',
+          style: TextStyle(color: context.liftBig.muted),
+        ),
+        value: _watches.samsung,
+        activeThumbColor: context.liftBig.primary,
+        onChanged: (value) => _setWatch(_watches.copyWith(samsung: value)),
+      ),
     ];
   }
 
   List<Widget> _cloudSection(SyncController sync) {
     return [
-      const SizedBox(height: 24),
-      const Text(
-        'Cloud sync',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 8),
-       Text(
+      Text(
         'The journal is stored on this phone. Sync stays off until you sign in and turn this switch on.',
         style: TextStyle(color: context.liftBig.muted),
       ),
       const SizedBox(height: 8),
       SwitchListTile(
         contentPadding: EdgeInsets.zero,
-        title: const Text('Sync this journal'),
+        title: const Text('Sync This Journal'),
         subtitle: Text(
           sync.syncEnabled
               ? 'On. Still uploads nothing until you are signed in.'
               : 'Off by default.',
-          style:  TextStyle(color: context.liftBig.muted),
+          style: TextStyle(color: context.liftBig.muted),
         ),
         value: sync.syncEnabled,
         activeThumbColor: context.liftBig.primary,
@@ -601,10 +710,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       if (sync.status != null) ...[
         const SizedBox(height: 8),
-        Text(
-          sync.status!,
-          style:  TextStyle(color: context.liftBig.foreground),
-        ),
+        Text(sync.status!, style: TextStyle(color: context.liftBig.foreground)),
       ],
       const SizedBox(height: 24),
       if (!sync.firebaseReady) const _FirebaseSetupCard(),
@@ -623,33 +729,30 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         if (_authError != null) ...[
           const SizedBox(height: 8),
-          Text(
-            _authError!,
-            style:  TextStyle(color: context.liftBig.primary),
-          ),
+          Text(_authError!, style: TextStyle(color: context.liftBig.primary)),
         ],
         const SizedBox(height: 12),
         FilledButton(
           onPressed: sync.busy ? null : () => _auth(false),
-          child: const Text('Sign in'),
+          child: const Text('Sign In'),
         ),
         const SizedBox(height: 8),
         OutlinedButton(
           onPressed: sync.busy ? null : () => _auth(true),
-          child: const Text('Create account'),
+          child: const Text('Create Account'),
         ),
       ],
       if (sync.signedIn) ...[
-        Text('Signed in as ${sync.email}'),
+        Text('Signed in as ${sync.email}.'),
         const SizedBox(height: 12),
         FilledButton(
           onPressed: sync.busy || !sync.syncEnabled ? null : sync.syncNow,
-          child: Text(sync.busy ? 'Syncing…' : 'Sync now'),
+          child: Text(sync.busy ? 'Syncing…' : 'Sync Now'),
         ),
         const SizedBox(height: 8),
         OutlinedButton(
           onPressed: sync.busy ? null : sync.signOut,
-          child: const Text('Sign out'),
+          child: const Text('Sign Out'),
         ),
       ],
     ];
@@ -657,404 +760,449 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListenableBuilder(
-        listenable: widget.sync,
-        builder: (context, _) {
-          final sync = widget.sync;
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              ..._toolSection(sync),
-              const Text(
-                'Logging',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Fill in predicted weight and reps'),
-                subtitle:  Text(
-                  'On by default. New sets start from your earlier work on that lift.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _autoFill,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setAutoFill,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Open reps after saving weight'),
-                subtitle: Text(
-                  'On by default. Saving a weight opens reps when that set has none yet.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _autoAdvanceWeightToReps,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setAutoAdvanceWeightToReps,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Start the timer when Done is tapped'),
-                subtitle: Text(
-                  'Off by default. The rest button on the exercise still starts the timer.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _timerOnDone,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setTimerOnDone,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Add a warmup set on new barbell compounds'),
-                subtitle:  Text(
-                  'Off by default. New squats, benches, and deadlifts get one warmup set. Pull-ups and lat pulldowns do not. Days already logged stay as they are.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _prescribeWarmup,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setPrescribeWarmup,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Plate graphic'),
-                subtitle: Text(
-                  'On by default. Off hides the plate graphic on machines and barbells.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _showPlateGraphic,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setShowPlateGraphic,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Rate set difficulty'),
-                subtitle:  Text(
-                  'Off by default. When on, each set can be marked Easy, Moderate, or Difficult. Leave it unset if you skip it.',
-                  style: TextStyle(color: context.liftBig.muted),
-                ),
-                value: _logDifficulty,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setLogDifficulty,
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Color',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Named color schemes. The orange and navy look stays the default.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              ListenableBuilder(
-                listenable: widget.themes,
-                builder: (context, _) {
-                  final palette = widget.themes.palette;
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: _ThemeSwatch(palette: palette),
-                    title: const Text('Theme'),
-                    subtitle: Text(palette.label),
-                    trailing: Icon(Icons.expand_more, color: context.liftBig.primary),
-                    onTap: _pickTheme,
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Units',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'Weights stay in pounds and distances in miles in your journal. These toggles change display and entry only.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              if (_loadingPrefs)
-                const LinearProgressIndicator()
-              else ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SegmentedButton<WeightUnit>(
-                        segments: const [
-                          ButtonSegment(value: WeightUnit.lb, label: Text('lb')),
-                          ButtonSegment(value: WeightUnit.kg, label: Text('kg')),
-                        ],
-                        selected: {_weightUnit},
-                        onSelectionChanged: (value) {
-                          liftBigSelectionHaptic();
-                          _setWeightUnit(value.first);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SegmentedButton<DistanceUnit>(
-                        segments: const [
-                          ButtonSegment(value: DistanceUnit.mi, label: Text('mi')),
-                          ButtonSegment(value: DistanceUnit.km, label: Text('km')),
-                        ],
-                        selected: {_distanceUnit},
-                        onSelectionChanged: (value) {
-                          liftBigSelectionHaptic();
-                          _setDistanceUnit(value.first);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 24),
-              const Text(
-                'Body & timing',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'Body weight powers strength estimates when you have no history. Time averages feed shuffle and rest defaults.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _bodyWeight,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Body weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
-                  hintText: 'Optional',
-                  helperText:
-                      'Leave blank to use the labeled $defaultAssumedBodyWeightLabel default in predictions.',
-                ),
-                onSubmitted: (_) => _saveBodyWeight(),
-                onEditingComplete: _saveBodyWeight,
-              ),
-              const SizedBox(height: 12),
-              if (_weightUnit == WeightUnit.lb)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _heightFeet,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Height (ft)'),
-                        onSubmitted: (_) => _saveHeight(),
-                        onEditingComplete: _saveHeight,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _heightInches,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Height (in)'),
-                        onSubmitted: (_) => _saveHeight(),
-                        onEditingComplete: _saveHeight,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                TextField(
-                  controller: _heightCm,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Height (cm)'),
-                  onSubmitted: (_) => _saveHeight(),
-                  onEditingComplete: _saveHeight,
-                ),
-              const SizedBox(height: 12),
-              Row(
+    final colors = context.liftBig;
+    final patterned = colors.backdrop != LiftBigBackdrop.none;
+    return LiftBigRouteUnderlay(
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          title: const Text('Settings'),
+          backgroundColor: colors.background,
+          surfaceTintColor: Colors.transparent,
+          forceMaterialTransparency: patterned,
+        ),
+        body: KeyboardDismiss(
+          child: ListenableBuilder(
+            listenable: widget.sync,
+            builder: (context, _) {
+              final sync = widget.sync;
+              return ListView(
+                padding: const EdgeInsets.all(20),
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _averageRest,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Average rest (sec)',
-                        helperText: '5–600',
-                      ),
-                      onSubmitted: (_) => _saveAverageRest(),
-                      onEditingComplete: _saveAverageRest,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _averageLift,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Average lift (sec)',
-                        helperText: '5–600',
-                      ),
-                      onSubmitted: (_) => _saveAverageLift(),
-                      onEditingComplete: _saveAverageLift,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'When rest finishes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'Choose sound, vibration, and/or the lock-screen notification.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Alarm sound'),
-                value: _restAlerts.soundEnabled,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: (value) => _setRestAlert(sound: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Vibration'),
-                value: _restAlerts.vibrationEnabled,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: (value) => _setRestAlert(vibration: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Lock-screen notification'),
-                value: _restAlerts.notificationEnabled,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: (value) => _setRestAlert(notification: value),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Apple Health',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'Reads and writes body weight, height, and workouts. Calories are Apple’s active energy for the workout window, never a LiftBig estimate.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Sync with Apple Health'),
-                value: _appleHealth,
-                activeThumbColor: context.liftBig.primary,
-                onChanged: _setAppleHealth,
-              ),
-              if (_healthNote != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  _healthNote!,
-                  style:  TextStyle(color: context.liftBig.muted, height: 1.35),
-                ),
-              ],
-              const SizedBox(height: 24),
-              const Text(
-                'Daily lift reminder',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'Local notification on the days and time you choose.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              if (_loadingReminder)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: LinearProgressIndicator(),
-                )
-              else ...[
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Enable daily reminder'),
-                  subtitle: Text(
-                    _reminder.enabled
-                        ? 'Scheduled for ${_reminder.timeHHmm}'
-                        : 'Off by default.',
-                    style:  TextStyle(color: context.liftBig.muted),
-                  ),
-                  value: _reminder.enabled,
-                  activeThumbColor: context.liftBig.primary,
-                  onChanged: _setReminderEnabled,
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  enabled: _reminder.enabled,
-                  title: const Text('Reminder time'),
-                  subtitle: Text(_reminder.timeHHmm),
-                  trailing: const Icon(Icons.schedule),
-                  onTap: _reminder.enabled ? _pickReminderTime : null,
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8, bottom: 4),
-                  child: Text(
-                    'Days',
-                    style: TextStyle(
-                      color: _reminder.enabled
-                          ? context.liftBig.foreground
-                          : context.liftBig.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final day in DailyLiftReminderSettings.allWeekdays)
-                      FilterChip(
-                        label: Text(_weekdayLabels[day]!),
-                        selected: _reminder.weekdays.contains(day),
-                        onSelected: _reminder.enabled
-                            ? (value) => _toggleWeekday(day, value)
-                            : null,
-                      ),
+                  ..._sectionHeading('Tools', first: true),
+                  ..._toolSection(sync),
+                  ..._sectionHeading('Pro'),
+                  ..._proSection(),
+                  if (_proActive) ...[
+                    ..._sectionHeading('Smart Watch'),
+                    ..._watchSection(),
                   ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _reminderMessage,
-                  enabled: _reminder.enabled,
-                  decoration: InputDecoration(
-                    labelText: 'Notification message',
-                    hintText: dailyLiftReminderDefaultBody,
-                    helperText: 'Leave blank to use the default sentence.',
+                  ..._sectionHeading('Logging'),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Strength Prediction'),
+                    subtitle: Text(
+                      'Use data from old lifts to predict new lifts.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _autoFill,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setAutoFill,
                   ),
-                  onSubmitted: (_) => _saveReminderMessage(),
-                  onEditingComplete: _saveReminderMessage,
-                ),
-              ],
-              const SizedBox(height: 24),
-              LiftNameConvergenceSection(journal: sync.journal),
-              const SizedBox(height: 24),
-              const Text(
-                'Backup',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-               Text(
-                'JSON import is the legacy path for an existing LiftBig backup.',
-                style: TextStyle(color: context.liftBig.muted),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: _import,
-                child: const Text('Import backup'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: _export,
-                child: const Text('Export backup'),
-              ),
-              ..._cloudSection(sync),
-            ],
-          );
-        },
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Open Reps After Saving Weight'),
+                    subtitle: Text(
+                      'Saving a weight opens reps input when that set has none yet.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _autoAdvanceWeightToReps,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setAutoAdvanceWeightToReps,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Done Button Starts Timer'),
+                    subtitle: Text(
+                      'The rest button on the exercise still starts the timer.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _timerOnDone,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setTimerOnDone,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Saving Reps Marks the Set Done'),
+                    subtitle: Text(
+                      'Saving a rep count checks the set off. An empty save does not.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _saveRepsMarksDone,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setSaveRepsMarksDone,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    subtitle: Text(
+                      'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _prescribeWarmup,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setPrescribeWarmup,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Plate Graphic'),
+                    subtitle: Text(
+                      plateGraphicExamplesLabel,
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _showPlateGraphic,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setShowPlateGraphic,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Rate Set Difficulty'),
+                    subtitle: Text(
+                      'Set difficulty can be tracked with easy, moderate, or difficult, which factors into your strength predictions. Unrated sets carry default weight.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _logDifficulty,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setLogDifficulty,
+                  ),
+                  ..._sectionHeading('Themes'),
+                  ListenableBuilder(
+                    listenable: widget.themes,
+                    builder: (context, _) {
+                      final selectedId = widget.themes.palette.id;
+                      final free = [
+                        for (final palette in liftBigThemePresets)
+                          if (!palette.proOnly) palette,
+                      ];
+                      final pro = [
+                        for (final palette in liftBigThemePresets)
+                          if (palette.proOnly) palette,
+                      ];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _themeStrip(palettes: free, selectedId: selectedId),
+                          ..._sectionHeading('LiftBig Pro'),
+                          if (!_proActive)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'LiftBig Pro unlocks these themes.',
+                                style: TextStyle(color: context.liftBig.muted),
+                              ),
+                            ),
+                          _themeStrip(palettes: pro, selectedId: selectedId),
+                        ],
+                      );
+                    },
+                  ),
+                  ..._sectionHeading('Units'),
+                  if (_loadingPrefs)
+                    const LinearProgressIndicator()
+                  else ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SegmentedButton<WeightUnit>(
+                            segments: const [
+                              ButtonSegment(
+                                value: WeightUnit.lb,
+                                label: Text('lb'),
+                              ),
+                              ButtonSegment(
+                                value: WeightUnit.kg,
+                                label: Text('kg'),
+                              ),
+                            ],
+                            selected: {_weightUnit},
+                            onSelectionChanged: (value) {
+                              liftBigSelectionHaptic();
+                              _setWeightUnit(value.first);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SegmentedButton<DistanceUnit>(
+                            segments: const [
+                              ButtonSegment(
+                                value: DistanceUnit.mi,
+                                label: Text('mi'),
+                              ),
+                              ButtonSegment(
+                                value: DistanceUnit.km,
+                                label: Text('km'),
+                              ),
+                            ],
+                            selected: {_distanceUnit},
+                            onSelectionChanged: (value) {
+                              liftBigSelectionHaptic();
+                              _setDistanceUnit(value.first);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  ..._sectionHeading('Your Stats'),
+                  if (_weightUnit == WeightUnit.lb)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _heightFeet,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Height (ft)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _heightInches,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Height (in)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    TextField(
+                      controller: _heightCm,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Height (cm)',
+                      ),
+                      onSubmitted: (_) => _saveHeight(),
+                      onEditingComplete: _saveHeight,
+                    ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _bodyWeight,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                    ],
+                    decoration: InputDecoration(
+                      labelText:
+                          'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
+                      hintText: 'Optional',
+                      helperText: 'Default = 180',
+                    ),
+                    onSubmitted: (_) => _saveBodyWeight(),
+                    onEditingComplete: _saveBodyWeight,
+                  ),
+                  ..._sectionHeading('Timer and Reminders'),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Alarm Sound'),
+                    value: _restAlerts.soundEnabled,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: (value) => _setRestAlert(sound: value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Vibration'),
+                    value: _restAlerts.vibrationEnabled,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: (value) => _setRestAlert(vibration: value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Lock-Screen Notification'),
+                    value: _restAlerts.notificationEnabled,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: (value) => _setRestAlert(notification: value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Ring Until Stopped'),
+                    subtitle: Text(
+                      'The in-app tone repeats until you stop it from the timer. The lock-screen notification still plays once.',
+                      style: TextStyle(color: context.liftBig.muted),
+                    ),
+                    value: _restAlerts.ringUntilStopped,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: (value) =>
+                        _setRestAlert(ringUntilStopped: value),
+                  ),
+                  if (_proActive)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Alarm Tone'),
+                      subtitle: Text(
+                        _alarmToneLabel(_restAlerts.soundId),
+                        style: TextStyle(color: context.liftBig.muted),
+                      ),
+                      trailing: Icon(
+                        Icons.expand_more,
+                        color: context.liftBig.primary,
+                      ),
+                      onTap: _pickAlarmTone,
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _averageRest,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Average Rest (sec)',
+                            helperText: '5–600',
+                          ),
+                          onSubmitted: (_) => _saveAverageRest(),
+                          onEditingComplete: _saveAverageRest,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _averageLift,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Average Lift (sec)',
+                            helperText: '5–600',
+                          ),
+                          onSubmitted: (_) => _saveAverageLift(),
+                          onEditingComplete: _saveAverageLift,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_loadingReminder)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: LinearProgressIndicator(),
+                    )
+                  else ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Enable Daily Reminder'),
+                      subtitle: _reminder.enabled
+                          ? Text(
+                              'Scheduled for ${_reminder.timeHHmm}.',
+                              style: TextStyle(color: context.liftBig.muted),
+                            )
+                          : null,
+                      value: _reminder.enabled,
+                      activeThumbColor: context.liftBig.primary,
+                      onChanged: _setReminderEnabled,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      enabled: _reminder.enabled,
+                      title: const Text('Reminder Time'),
+                      subtitle: Text(_reminder.timeHHmm),
+                      trailing: const Icon(Icons.schedule),
+                      onTap: _reminder.enabled ? _pickReminderTime : null,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 4),
+                      child: Text(
+                        'Days',
+                        style: TextStyle(
+                          color: _reminder.enabled
+                              ? context.liftBig.foreground
+                              : context.liftBig.muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final day in DailyLiftReminderSettings.allWeekdays)
+                          FilterChip(
+                            label: Text(_weekdayLabels[day]!),
+                            selected: _reminder.weekdays.contains(day),
+                            onSelected: _reminder.enabled
+                                ? (value) => _toggleWeekday(day, value)
+                                : null,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _reminderMessage,
+                      enabled: _reminder.enabled,
+                      decoration: InputDecoration(
+                        labelText: 'Notification Message',
+                        hintText: dailyLiftReminderDefaultBody,
+                        helperText: 'Leave blank to use the default sentence.',
+                      ),
+                      onSubmitted: (_) => _saveReminderMessage(),
+                      onEditingComplete: _saveReminderMessage,
+                    ),
+                  ],
+                  ..._sectionHeading('Apple Health Sync'),
+                  Text(
+                    'Reads and writes body weight, height, and workouts. Calories are Apple’s active energy for the workout window.',
+                    style: TextStyle(color: context.liftBig.muted),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Sync with Apple Health'),
+                    value: _appleHealth,
+                    activeThumbColor: context.liftBig.primary,
+                    onChanged: _setAppleHealth,
+                  ),
+                  if (_healthNote != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _healthNote!,
+                      style: TextStyle(
+                        color: context.liftBig.muted,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                  ..._sectionHeading('Lift Name Overlap'),
+                  LiftNameConvergenceSection(journal: sync.journal),
+                  ..._sectionHeading('Backup'),
+                  Text(
+                    'JSON import is the legacy path for an existing LiftBig backup.',
+                    style: TextStyle(color: context.liftBig.muted),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _import,
+                    child: const Text('Import Backup'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _export,
+                    child: const Text('Export Backup'),
+                  ),
+                  ..._sectionHeading('Cloud Sync'),
+                  ..._cloudSection(sync),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -1087,29 +1235,127 @@ class _FirebaseSetupCard extends StatelessWidget {
   }
 }
 
-class _ThemeSwatch extends StatelessWidget {
-  const _ThemeSwatch({required this.palette});
+class _ThemePreviewCard extends StatelessWidget {
+  const _ThemePreviewCard({
+    required this.palette,
+    required this.selected,
+    required this.locked,
+    required this.onTap,
+  });
 
   final LiftBigPalette palette;
+  final bool selected;
+  final bool locked;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: palette.border),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            palette.background,
-            palette.background,
-            palette.primary,
-            palette.blue,
-          ],
-          stops: const [0, 0.54, 0.77, 1],
+    final colors = context.liftBig;
+    final label = locked
+        ? '${palette.label}. LiftBig Pro unlocks this theme.'
+        : palette.label;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: SizedBox(
+        width: 112,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            children: [
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: selected ? colors.primary : colors.border,
+                      width: selected ? 2.5 : 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(selected ? 1.5 : 3),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(13),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          LiftBigThemePreview(palette: palette),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: palette.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: palette.card,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: palette.border),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (selected)
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              child: Icon(
+                                Icons.check_circle,
+                                size: 16,
+                                color: colors.primary,
+                              ),
+                            ),
+                          if (locked)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: palette.card,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Icon(
+                                    Icons.lock_outline,
+                                    size: 14,
+                                    color: palette.foreground,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                palette.label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.15,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  color: locked ? colors.muted : colors.foreground,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

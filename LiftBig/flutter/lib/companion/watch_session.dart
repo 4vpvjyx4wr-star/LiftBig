@@ -30,6 +30,8 @@ class WatchRestPublish {
     this.restPaused = false,
     this.restRemaining,
     this.restCancelled = false,
+    this.alarmRinging = false,
+    this.restRevision,
   });
 
   final bool soundEnabled;
@@ -39,6 +41,13 @@ class WatchRestPublish {
   final bool restPaused;
   final int? restRemaining;
   final bool restCancelled;
+
+  /// True while the phone tone is looping. The Apple Watch shows Stop.
+  /// Garmin has no Stop control.
+  final bool alarmRinging;
+
+  /// Watch rest change this publish belongs to. Older echoes are ignored.
+  final int? restRevision;
 }
 
 /// Adds the phone rest clock and the alarm-sound preference.
@@ -50,9 +59,14 @@ Map<String, Object?> withWatchRest(
   final next = Map<String, Object?>.from(payload);
   next['soundEnabled'] = rest.soundEnabled;
   next['restCancelled'] = rest.restCancelled;
+  next['alarmRinging'] = rest.alarmRinging;
   next.remove('restEndsAt');
   next.remove('restPaused');
   next.remove('restRemaining');
+  next.remove('restRev');
+  if (rest.restRevision != null) {
+    next['restRev'] = rest.restRevision;
+  }
   if (rest.restCancelled) return next;
   if (rest.restPaused) {
     next['restPaused'] = true;
@@ -147,6 +161,8 @@ class CompanionMessage {
     this.weightLbs,
     this.activeKcal,
     this.restSeconds,
+    this.restRemaining,
+    this.restRevision,
   });
 
   final String kind;
@@ -164,11 +180,20 @@ class CompanionMessage {
   /// Rest duration the watch chose, in seconds.
   final int? restSeconds;
 
+  /// Seconds left when the watch pauses rest.
+  final int? restRemaining;
+
+  /// Monotonic rest change from the watch. The phone echoes it back.
+  final int? restRevision;
+
   bool get isCompleteSet => kind == 'completeSet';
   bool get isAdjustSet => kind == 'adjustSet';
   bool get isSkipRest => kind == 'skipRest';
   bool get isFinish => kind == 'finishWorkout';
   bool get isSetRest => kind == 'setRest';
+  bool get isStopAlarm => kind == 'stopAlarm';
+  bool get isPauseRest => kind == 'pauseRest';
+  bool get isResumeRest => kind == 'resumeRest';
 }
 
 int firstOpenSetIndex(JournalExercise exercise) {
@@ -296,7 +321,12 @@ WatchSession buildWatchSession({
 /// Applies a companion message onto [day]. [skipRest] and unknown exercises
 /// leave the day unchanged. Missing set rows are appended empty, then filled.
 JournalDay applyCompanionMessage(JournalDay day, CompanionMessage message) {
-  if (message.kind == 'skipRest' || message.kind == 'finishWorkout' || message.kind == 'setRest') {
+  if (message.isStopAlarm) return day;
+  if (message.kind == 'skipRest' ||
+      message.kind == 'pauseRest' ||
+      message.kind == 'resumeRest' ||
+      message.kind == 'finishWorkout' ||
+      message.kind == 'setRest') {
     return day;
   }
   if (message.dateKey != day.dateKey) return day;
@@ -391,5 +421,9 @@ CompanionMessage? parseCompanionMessage(
     weightLbs: weightLbs,
     activeKcal: activeKcal,
     restSeconds: json['restSeconds'] is num ? (json['restSeconds'] as num).round() : null,
+    restRemaining: json['restRemaining'] is num
+        ? (json['restRemaining'] as num).round()
+        : null,
+    restRevision: json['restRev'] is num ? (json['restRev'] as num).round() : null,
   );
 }

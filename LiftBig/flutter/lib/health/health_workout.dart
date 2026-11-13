@@ -191,6 +191,42 @@ bool healthWorkoutDuplicates({
   return sameDay && (existingMinutes - nextMinutes).abs() <= 1;
 }
 
+/// A LiftBig workout already stored in Apple Health or Health Connect.
+class StoredHealthWrite {
+  const StoredHealthWrite({
+    required this.uuid,
+    required this.minutes,
+    required this.meters,
+    required this.kcal,
+  });
+
+  final String uuid;
+  final int minutes;
+  final int meters;
+  final int kcal;
+}
+
+enum HealthWriteAction { skip, insert, replace }
+
+int healthWriteMinutes(HealthWorkoutWrite write) =>
+    ((write.endMs - write.startMs).abs() / 60000).round();
+
+bool healthWriteMatches(StoredHealthWrite stored, HealthWorkoutWrite next) {
+  return stored.minutes == healthWriteMinutes(next) &&
+      stored.meters == (next.distanceMeters ?? 0).round() &&
+      stored.kcal == (next.energyKcal ?? -1).round();
+}
+
+/// [stored] is the last workout this app saved for [next.id].
+HealthWriteAction healthWriteAction({
+  required StoredHealthWrite? stored,
+  required HealthWorkoutWrite next,
+}) {
+  if (stored == null || stored.uuid.isEmpty) return HealthWriteAction.insert;
+  if (healthWriteMatches(stored, next)) return HealthWriteAction.skip;
+  return HealthWriteAction.replace;
+}
+
 /// Strength work at about 6 METs: kcal = 6 * kg * hours.
 /// Uses 80 kg when [bodyWeightLbs] is missing.
 double estimateStrengthKcal({

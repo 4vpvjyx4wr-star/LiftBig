@@ -167,7 +167,7 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
                       )
                     else ...[
                       Text(
-                        'Heaviest working set ($unitLabel)',
+                        'Heaviest Working Set ($unitLabel)',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -208,7 +208,7 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
                       if (lift != null && _hasWrittenInstructions(lift)) ...[
                         const SizedBox(height: 20),
                         const Text(
-                          'How to perform it',
+                          'How to Perform It',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,

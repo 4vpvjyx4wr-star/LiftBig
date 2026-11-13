@@ -20,6 +20,9 @@
 		LB2F10072FE100010072D401 /* RestAlarmPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */; };
 		LBALM0012FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0112FE100010072D401 /* rest_alarm.wav */; };
 		LBALM0022FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0122FE100010072D401 /* rest_alarm.wav */; };
+		LBBEL0012FE100010072D401 /* bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBEL0112FE100010072D401 /* bell.wav */; };
+		LBCHM0012FE100010072D401 /* chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBCHM0112FE100010072D401 /* chime.wav */; };
+		LBHRN0012FE100010072D401 /* horn.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBHRN0112FE100010072D401 /* horn.wav */; };
 		LBCIQ0012FE100010072D401 /* ConnectIQ.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; };
 		LBCIQ0022FE100010072D401 /* ConnectIQ.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		LB2F10022FE100010072D401 /* ProBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10122FE100010072D401 /* ProBridge.swift */; };
@@ -113,6 +116,9 @@
 		LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestAlarmPlayer.swift; sourceTree = "<group>"; };
 		LBALM0112FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
 		LBALM0122FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
+		LBBEL0112FE100010072D401 /* bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bell.wav; sourceTree = "<group>"; };
+		LBCHM0112FE100010072D401 /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
+		LBHRN0112FE100010072D401 /* horn.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = horn.wav; sourceTree = "<group>"; };
 		LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ConnectIQ.xcframework; sourceTree = "<group>"; };
 		LB2F10122FE100010072D401 /* ProBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProBridge.swift; sourceTree = "<group>"; };
 		LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftBigWatchApp.swift; sourceTree = "<group>"; };
@@ -212,6 +218,9 @@
 				LB2F10112FE100010072D401 /* CompanionBridge.swift */,
 				LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */,
 				LBALM0112FE100010072D401 /* rest_alarm.wav */,
+				LBBEL0112FE100010072D401 /* bell.wav */,
+				LBCHM0112FE100010072D401 /* chime.wav */,
+				LBHRN0112FE100010072D401 /* horn.wav */,
 				LB2F10122FE100010072D401 /* ProBridge.swift */,
 			);
 			path = Runner;
@@ -398,6 +407,9 @@
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				LBALM0012FE100010072D401 /* rest_alarm.wav in Resources */,
+				LBBEL0012FE100010072D401 /* bell.wav in Resources */,
+				LBCHM0012FE100010072D401 /* chime.wav in Resources */,
+				LBHRN0012FE100010072D401 /* horn.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

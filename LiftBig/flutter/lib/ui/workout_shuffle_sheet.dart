@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../plans/workout_shuffle.dart';
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 
 Future<void> showWorkoutShuffleSheet(
@@ -126,12 +127,14 @@ class _WorkoutShuffleSheet extends StatelessWidget {
     final shuffledWorkout = shuffled();
     final note = shuffleNote();
 
-    return ListView(
+    return KeyboardDismiss(
+      fill: false,
+      child: ListView(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         const Text(
-          'Workout shuffle',
+          'Workout Shuffle',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
@@ -182,12 +185,12 @@ class _WorkoutShuffleSheet extends StatelessWidget {
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Include cardio'),
+          title: const Text('Include Cardio'),
           value: includeCardioValue,
           activeThumbColor: context.liftBig.primary,
           onChanged: onIncludeCardioChanged,
         ),
-        const Text('Time you have', style: TextStyle(fontWeight: FontWeight.w700)),
+        const Text('Time You Have', style: TextStyle(fontWeight: FontWeight.w700)),
         Wrap(
           spacing: 8,
           children: [
@@ -207,7 +210,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
                 controller: liftSeconds,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Seconds per lift'),
+                decoration: const InputDecoration(labelText: 'Seconds per Lift'),
               ),
             ),
             const SizedBox(width: 8),
@@ -216,13 +219,13 @@ class _WorkoutShuffleSheet extends StatelessWidget {
                 controller: restSeconds,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Seconds per rest'),
+                decoration: const InputDecoration(labelText: 'Seconds per Rest'),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        FilledButton(onPressed: onShuffle, child: const Text('Shuffle a workout')),
+        FilledButton(onPressed: onShuffle, child: const Text('Shuffle a Workout')),
         if (note != null) ...[
           const SizedBox(height: 8),
           Text(note, style:  TextStyle(color: context.liftBig.primary)),
@@ -273,10 +276,11 @@ class _WorkoutShuffleSheet extends StatelessWidget {
               );
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Log this workout today'),
+            child: const Text('Log This Workout Today'),
           ),
         ],
       ],
+      ),
     );
   }
 }
