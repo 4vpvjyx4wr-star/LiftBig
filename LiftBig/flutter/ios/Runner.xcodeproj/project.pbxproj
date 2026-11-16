@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,25 +17,25 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		LB2F10012FE100010072D401 /* CompanionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10112FE100010072D401 /* CompanionBridge.swift */; };
+		LB2F10022FE100010072D401 /* ProBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10122FE100010072D401 /* ProBridge.swift */; };
+		LB2F10032FE100010072D401 /* LiftBigWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */; };
+		LB2F10042FE100010072D401 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LB2F10142FE100010072D401 /* Assets.xcassets */; };
+		LB2F10052FE100010072D401 /* LiftBigWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = LB2F10162FE100010072D401 /* LiftBigWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		LB2F10062FE100010072D401 /* RestAlertPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10172FE100010072D401 /* RestAlertPlan.swift */; };
 		LB2F10072FE100010072D401 /* RestAlarmPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */; };
+		LB2F20012FE100010072D401 /* LiftBigComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F20112FE100010072D401 /* LiftBigComplication.swift */; };
+		LB2F20022FE100010072D401 /* LiftBigWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LB2F20122FE100010072D401 /* LiftBigWatchWidgets.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		LBALM0012FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0112FE100010072D401 /* rest_alarm.wav */; };
 		LBALM0022FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0122FE100010072D401 /* rest_alarm.wav */; };
 		LBBEL0012FE100010072D401 /* bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBEL0112FE100010072D401 /* bell.wav */; };
 		LBCHM0012FE100010072D401 /* chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBCHM0112FE100010072D401 /* chime.wav */; };
-		LBHRN0012FE100010072D401 /* horn.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBHRN0112FE100010072D401 /* horn.wav */; };
-		LBWHI0012FE100010072D401 /* whistle.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBWHI0112FE100010072D401 /* whistle.wav */; };
-		LBPUL0012FE100010072D401 /* pulse.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBPUL0112FE100010072D401 /* pulse.wav */; };
-		LBGNG0012FE100010072D401 /* gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBGNG0112FE100010072D401 /* gong.wav */; };
-		LBDIG0012FE100010072D401 /* digital.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBDIG0112FE100010072D401 /* digital.wav */; };
 		LBCIQ0012FE100010072D401 /* ConnectIQ.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; };
 		LBCIQ0022FE100010072D401 /* ConnectIQ.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		LB2F10022FE100010072D401 /* ProBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10122FE100010072D401 /* ProBridge.swift */; };
-		LB2F10032FE100010072D401 /* LiftBigWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */; };
-		LB2F10062FE100010072D401 /* RestAlertPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F10172FE100010072D401 /* RestAlertPlan.swift */; };
-		LB2F10042FE100010072D401 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LB2F10142FE100010072D401 /* Assets.xcassets */; };
-		LB2F10052FE100010072D401 /* LiftBigWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = LB2F10162FE100010072D401 /* LiftBigWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		LB2F20012FE100010072D401 /* LiftBigComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2F20112FE100010072D401 /* LiftBigComplication.swift */; };
-		LB2F20022FE100010072D401 /* LiftBigWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LB2F20122FE100010072D401 /* LiftBigWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		LBDIG0012FE100010072D401 /* digital.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBDIG0112FE100010072D401 /* digital.wav */; };
+		LBGNG0012FE100010072D401 /* gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBGNG0112FE100010072D401 /* gong.wav */; };
+		LBHRN0012FE100010072D401 /* horn.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBHRN0112FE100010072D401 /* horn.wav */; };
+		LBPUL0012FE100010072D401 /* pulse.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBPUL0112FE100010072D401 /* pulse.wav */; };
+		LBWHI0012FE100010072D401 /* whistle.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBWHI0112FE100010072D401 /* whistle.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -117,27 +117,27 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LB2F10112FE100010072D401 /* CompanionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionBridge.swift; sourceTree = "<group>"; };
-		LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestAlarmPlayer.swift; sourceTree = "<group>"; };
-		LBALM0112FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
-		LBALM0122FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
-		LBBEL0112FE100010072D401 /* bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bell.wav; sourceTree = "<group>"; };
-		LBCHM0112FE100010072D401 /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
-		LBHRN0112FE100010072D401 /* horn.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = horn.wav; sourceTree = "<group>"; };
-		LBWHI0112FE100010072D401 /* whistle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = whistle.wav; sourceTree = "<group>"; };
-		LBPUL0112FE100010072D401 /* pulse.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pulse.wav; sourceTree = "<group>"; };
-		LBGNG0112FE100010072D401 /* gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = gong.wav; sourceTree = "<group>"; };
-		LBDIG0112FE100010072D401 /* digital.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = digital.wav; sourceTree = "<group>"; };
-		LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ConnectIQ.xcframework; sourceTree = "<group>"; };
 		LB2F10122FE100010072D401 /* ProBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProBridge.swift; sourceTree = "<group>"; };
 		LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftBigWatchApp.swift; sourceTree = "<group>"; };
-		LB2F10172FE100010072D401 /* RestAlertPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestAlertPlan.swift; sourceTree = "<group>"; };
 		LB2F10142FE100010072D401 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		LB2F10152FE100010072D401 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LB2F10162FE100010072D401 /* LiftBigWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiftBigWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		LB2F10172FE100010072D401 /* RestAlertPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestAlertPlan.swift; sourceTree = "<group>"; };
+		LB2F10182FE100010072D401 /* RestAlarmPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestAlarmPlayer.swift; sourceTree = "<group>"; };
 		LB2F20112FE100010072D401 /* LiftBigComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftBigComplication.swift; sourceTree = "<group>"; };
 		LB2F20122FE100010072D401 /* LiftBigWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiftBigWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		LB2F20132FE100010072D401 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		LB2F20142FE100010072D401 /* LiftBigWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LiftBigWatchWidgets.entitlements; sourceTree = "<group>"; };
+		LBALM0112FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
+		LBALM0122FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
+		LBBEL0112FE100010072D401 /* bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bell.wav; sourceTree = "<group>"; };
+		LBCHM0112FE100010072D401 /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
+		LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ConnectIQ.xcframework; sourceTree = "<group>"; };
+		LBDIG0112FE100010072D401 /* digital.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = digital.wav; sourceTree = "<group>"; };
+		LBGNG0112FE100010072D401 /* gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = gong.wav; sourceTree = "<group>"; };
+		LBHRN0112FE100010072D401 /* horn.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = horn.wav; sourceTree = "<group>"; };
+		LBPUL0112FE100010072D401 /* pulse.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pulse.wav; sourceTree = "<group>"; };
+		LBWHI0112FE100010072D401 /* whistle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = whistle.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -619,17 +619,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 785SB3QS9S;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -803,17 +803,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 785SB3QS9S;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -828,17 +828,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 785SB3QS9S;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -849,11 +849,13 @@
 		LB2F10A12FE100010072D401 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ARCHS = "arm64 arm64_32";
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatch/LiftBigWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -863,7 +865,8 @@
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -879,11 +882,13 @@
 		LB2F10B12FE100010072D401 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ARCHS = "arm64 arm64_32";
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatch/LiftBigWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -893,7 +898,8 @@
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -907,11 +913,13 @@
 		LB2F10C12FE100010072D401 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ARCHS = "arm64 arm64_32";
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatch/LiftBigWatch.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -921,7 +929,8 @@
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.liftbig.app.dev;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -936,10 +945,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				ARCHS = "arm64 arm64_32";
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatchWidgets/LiftBigWatchWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -951,7 +962,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch.widgets;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -969,10 +981,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				ARCHS = "arm64 arm64_32";
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatchWidgets/LiftBigWatchWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -984,7 +998,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch.widgets;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1000,10 +1015,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				ARCHS = "arm64 arm64_32";
+				ARCHS = (
+					arm64,
+					arm64_32,
+				);
 				CODE_SIGN_ENTITLEMENTS = LiftBigWatchWidgets/LiftBigWatchWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				ONLY_ACTIVE_ARCH = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 785SB3QS9S;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1015,7 +1032,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.dev.watch.widgets;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.liftbig.app.watch.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;

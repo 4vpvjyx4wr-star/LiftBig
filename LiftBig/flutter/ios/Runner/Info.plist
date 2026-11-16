@@ -22,16 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>LiftBig can notify you when your rest timer finishes, even on the lock screen.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>LiftBig can read your body weight, height, workouts, and active energy from Apple Health when you allow it.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>LiftBig can save your body weight, height, and workouts to Apple Health when you allow it.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -43,12 +33,22 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>gcm-ciq</string>
 	</array>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>LiftBig uses Bluetooth to send the open workout to a paired Garmin watch.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>LiftBig can read your body weight, height, workouts, and active energy from Apple Health when you allow it.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>LiftBig can save your body weight, height, and workouts to Apple Health when you allow it.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>LiftBig can notify you when your rest timer finishes, even on the lock screen.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -70,12 +70,12 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 	</array>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

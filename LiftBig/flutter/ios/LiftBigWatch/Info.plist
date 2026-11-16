@@ -2,22 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDisplayName</key>
-	<string>LiftBig</string>
-	<key>WKApplication</key>
-	<true/>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
-	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.liftbig.app.dev</string>
-	<key>WKRunsIndependentlyOfCompanionApp</key>
-	<false/>
-	<key>WKSupportsAlwaysOnDisplay</key>
-	<true/>
-	<key>WKBackgroundModes</key>
-	<array>
-		<string>self-care</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -29,5 +15,13 @@
 			</array>
 		</dict>
 	</array>
+	<key>WKApplication</key>
+	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>self-care</string>
+	</array>
+	<key>WKSupportsAlwaysOnDisplay</key>
+	<true/>
 </dict>
 </plist>

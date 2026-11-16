@@ -20,8 +20,8 @@
 		LB1000032FE100010072D401 /* RestActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB1000042FE100010072D401 /* RestActivityAttributes.swift */; };
 		LB1000052FE100010072D401 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = LB1000062FE100010072D401 /* PrivacyInfo.xcprivacy */; };
 		LB2000032FE100010072D401 /* LiftBigWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB2000022FE100010072D401 /* LiftBigWatchApp.swift */; };
-		LB2000132FE100010072D401 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LB2000122FE100010072D401 /* Assets.xcassets */; };
 		LB2000082FE100010072D401 /* LiftBigWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = LB2000012FE100010072D401 /* LiftBigWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		LB2000132FE100010072D401 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = LB2000122FE100010072D401 /* Assets.xcassets */; };
 		LB3000032FE100010072D401 /* LiftBigWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB3000022FE100010072D401 /* LiftBigWidgets.swift */; };
 		LB3000042FE100010072D401 /* RestActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = LB1000042FE100010072D401 /* RestActivityAttributes.swift */; };
 		LB30000B2FE100010072D401 /* LiftBigWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = LB3000012FE100010072D401 /* LiftBigWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -519,7 +519,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -542,7 +542,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -563,7 +563,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
@@ -586,7 +586,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWatch/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
@@ -608,7 +608,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
@@ -631,7 +631,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LiftBigWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiftBig;
