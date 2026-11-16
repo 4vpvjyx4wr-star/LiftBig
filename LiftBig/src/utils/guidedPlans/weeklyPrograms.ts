@@ -123,7 +123,7 @@ const REPEAT_VARIANT_PLANS: WorkoutTemplate[] = [
     te('plan-catalog-pf-a', 'rdl', 'Romanian Deadlift', 3, '10-12', '95', false, 'romanian-deadlift'),
     te('plan-catalog-pf-a', 'ohp', 'Dumbbell Shoulder Press', 3, '10-12', '25', false, 'dumbbell-shoulder-press'),
     te('plan-catalog-pf-a', 'lat', 'Lat Pulldown', 2, '10-12', '90', false, 'lat-pulldown'),
-  ], 'Full-body session using barbells, dumbbells, and cables at Planet Fitness.'),
+  ], 'Full-body session with barbells, dumbbells, cables, and machines in a large gym.'),
   day('plan-catalog-pf-b', 'PF Full Body B', PF, [
     te('plan-catalog-pf-b', 'leg-press', 'Leg Press', 3, '12-15', '270', false, 'leg-press'),
     te('plan-catalog-pf-b', 'incline', 'Incline Dumbbell Press', 3, '10-12', '40', false, 'incline-dumbbell-press'),

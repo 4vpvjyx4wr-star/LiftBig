@@ -14,6 +14,7 @@ import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
 import 'plan_schedule_sheet.dart';
 import 'plan_workout_row.dart';
+import 'build_plan_sheet.dart';
 import 'workout_shuffle_sheet.dart';
 
 class PlansPage extends StatefulWidget {
@@ -251,6 +252,22 @@ class _PlansPageState extends State<PlansPage> {
     });
   }
 
+  Future<void> _openBuildPlanSheet(LiftBigCatalog catalog) async {
+    final saved = await showBuildPlanSheet(
+      context,
+      catalog: catalog,
+      journal: widget.journal,
+    );
+    if (!mounted || saved != true) return;
+    setState(() {
+      _customPlansFuture = loadCustomPlans(
+        journal: widget.journal,
+        catalog: catalog,
+      );
+    });
+    showLiftBigNotice(context, 'Plan saved under Custom Plans.');
+  }
+
   void _openShuffleSheet(LiftBigCatalog catalog) {
     showWorkoutShuffleSheet(
       context,
@@ -332,6 +349,7 @@ class _PlansPageState extends State<PlansPage> {
               onLogWorkout: _logWorkout,
               onSchedulePlan: _schedulePlan,
               onOpenShuffle: () => _openShuffleSheet(catalog),
+              onBuildPlan: () => _openBuildPlanSheet(catalog),
               favoritePlanIds: _favoritePlanIds,
               onFavoriteChanged: _setFavorite,
               calendarPlanName: _calendarPlanName,
@@ -358,6 +376,7 @@ class _PlansBody extends StatelessWidget {
     required this.onLogWorkout,
     required this.onSchedulePlan,
     required this.onOpenShuffle,
+    required this.onBuildPlan,
     required this.favoritePlanIds,
     required this.onFavoriteChanged,
     required this.calendarPlanName,
@@ -376,6 +395,7 @@ class _PlansBody extends StatelessWidget {
   final Future<void> Function(String planTitle, List<CatalogWorkout> workouts)
       onSchedulePlan;
   final VoidCallback onOpenShuffle;
+  final VoidCallback onBuildPlan;
   final Set<String> favoritePlanIds;
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
   final String? calendarPlanName;
@@ -501,9 +521,27 @@ class _PlansBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        OutlinedButton(
+        FilledButton.icon(
           onPressed: onOpenShuffle,
-          child: const Text('Shuffle a Workout'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(56),
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          icon: const Icon(Icons.shuffle),
+          label: const Text('Workout Shuffle'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: onBuildPlan,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(56),
+            foregroundColor: context.liftBig.primary,
+            side: BorderSide(color: context.liftBig.border),
+            backgroundColor: context.liftBig.card,
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          icon: const Icon(Icons.edit),
+          label: const Text('Build Your Own Plan'),
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(
@@ -707,6 +745,11 @@ class _Quiz extends StatelessWidget {
             _titles[step],
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, height: 1.2),
           ),
+          const SizedBox(height: 8),
+          Text(
+            _helpers[step],
+            style: TextStyle(color: context.liftBig.muted, fontSize: 16, height: 1.35),
+          ),
           const SizedBox(height: 14),
           for (final choice in _choices[step])
             Padding(
@@ -748,47 +791,14 @@ class _Quiz extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           for (final match in matches) ...[
-            Text(
-              match.badge,
-              style: TextStyle(
-                color: context.liftBig.primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-              ),
+            _QuizResultCard(
+              match: match,
+              answers: answers,
+              workouts: workoutsFor(match.entry.workoutIds),
+              onLog: onLog,
+              onSchedulePlan: onSchedulePlan,
             ),
-            Text(match.entry.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-            Text(match.entry.description),
-            if (match.reasons.isNotEmpty)
-              Text(
-                match.reasons.join(' · '),
-                style:  TextStyle(color: context.liftBig.muted),
-              ),
-            if (workoutsFor(match.entry.workoutIds).isNotEmpty) ...[
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: () => onSchedulePlan(
-                  match.entry.title,
-                  workoutsFor(match.entry.workoutIds),
-                ),
-                child: const Text('Add to Calendar'),
-              ),
-            ],
-            for (final workout in workoutsFor(match.entry.workoutIds)) ...[
-              const SizedBox(height: 6),
-              Text(workout.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              Text(
-                workout.lifts.map((lift) => lift.name).join(', '),
-                style:  TextStyle(color: context.liftBig.muted),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => onLog(workout, match.entry.title),
-                  child: const Text('Log This Workout Today'),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
           ],
           OutlinedButton(onPressed: onRestart, child: const Text('Start Over')),
         ],
@@ -814,53 +824,182 @@ const _titles = [
   'How many days can you train?',
   'How long are your sessions?',
   'What equipment do you have?',
-  'What training style do you prefer?',
+  'What kind of workouts do you like?',
+];
+
+const _helpers = [
+  'This keeps the plan from being too hard or too easy.',
+  'We use this to pick the kind of work in the plan.',
+  'We look for a plan close to the days you can show up.',
+  'We look for sessions that fit the time you have.',
+  'We only suggest plans you can actually do with this setup.',
+  'Pick what sounds good. Not sure is fine.',
 ];
 
 const _choices = <List<_QuizChoice>>[
   [
-    _QuizChoice('beginner', 'Beginner', 'New to lifting or inconsistent.'),
-    _QuizChoice('intermediate', 'Intermediate', 'Comfortable in the gym.'),
-    _QuizChoice('experienced', 'Experienced', 'Several years of training.'),
-    _QuizChoice('liftaholic', 'Liftaholic', 'Lives in the gym.'),
+    _QuizChoice('beginner', 'Beginner', 'New to lifting, or coming back after a long break.'),
+    _QuizChoice('intermediate', 'Intermediate', 'You train most weeks and know the basic lifts.'),
+    _QuizChoice('experienced', 'Experienced', 'You have trained for years and want a harder plan.'),
+    _QuizChoice('liftaholic', 'Liftaholic', 'You train most days and want a lot of work.'),
   ],
   [
-    _QuizChoice('strength', 'Build Strength', 'Increase compound lifts.'),
-    _QuizChoice('size', 'Build Size', 'Hypertrophy and aesthetics.'),
-    _QuizChoice('weightLoss', 'Lose Weight', 'Keep muscle while burning more.'),
-    _QuizChoice('liftBig', 'I Just Wanna Lift Big', 'High-volume balanced training.'),
+    _QuizChoice('strength', 'Get Stronger', 'Add weight to the big lifts.'),
+    _QuizChoice('size', 'Build Muscle', 'Grow the muscles you can see.'),
+    _QuizChoice('weightLoss', 'Lose Weight', 'Burn more while keeping the muscle you have.'),
+    _QuizChoice('liftBig', 'Just Train Hard', 'A lot of work for your whole body.'),
   ],
   [
-    _QuizChoice(2, '2 Days', 'Minimal commitment.'),
-    _QuizChoice(3, '3 Days', 'Balanced weekly load.'),
-    _QuizChoice(4, '4 Days', 'Balanced weekly load.'),
-    _QuizChoice(5, '5 Days', 'Balanced weekly load.'),
-    _QuizChoice(6, '6 Days', 'High frequency.'),
-    _QuizChoice(7, '7 Days', 'High frequency.'),
+    _QuizChoice(2, '2 Days', 'Two workouts a week. Good when life is full.'),
+    _QuizChoice(3, '3 Days', 'Three workouts. A solid start for most people.'),
+    _QuizChoice(4, '4 Days', 'Four workouts. Room to split upper and lower body.'),
+    _QuizChoice(5, '5 Days', 'Five workouts. You can train most weekdays.'),
+    _QuizChoice(6, '6 Days', 'Six workouts. You recover well and like the gym.'),
+    _QuizChoice(7, '7 Days', 'Every day. Only if you already train this much.'),
   ],
   [
-    _QuizChoice('quick', 'Quick (about 30 min)', 'Short, focused sessions.'),
-    _QuizChoice('standard', 'Standard (about 60 min)', 'Classic gym session.'),
-    _QuizChoice('long', 'Long (60–90+ min)', 'More volume and accessories.'),
+    _QuizChoice('quick', 'About 30 minutes', 'In and out. Short sessions.'),
+    _QuizChoice('standard', 'About an hour', 'A normal gym visit.'),
+    _QuizChoice('long', 'More than an hour', 'Extra exercises after the main lifts.'),
   ],
   [
-    _QuizChoice('commercialGym', 'Commercial Gym', 'Barbells and machines.'),
-    _QuizChoice('planetFitness', 'Planet Fitness', 'Full gym access.'),
-    _QuizChoice('homeGym', 'Home Gym', 'Barbell, rack, and some equipment.'),
-    _QuizChoice('dumbbellsOnly', 'Dumbbells Only', 'Pairs of dumbbells.'),
-    _QuizChoice('minimalEquipment', 'Minimal Equipment', 'Bodyweight and bands.'),
+    _QuizChoice(
+      'apartmentGym',
+      'Apartment Gym',
+      'A small building gym with dumbbells, cables, and a few machines, and usually no squat rack or heavy barbells.',
+    ),
+    _QuizChoice(
+      'commercialGym',
+      'Commercial Gym',
+      'A large gym with barbells, dumbbells, cables, and machines, including big-box and club gyms.',
+    ),
+    _QuizChoice('homeGym', 'Home Gym', 'You have a barbell and a rack at home.'),
+    _QuizChoice('dumbbellsOnly', 'Dumbbells Only', 'You train with dumbbells and no barbell.'),
+    _QuizChoice('minimalEquipment', 'Minimal Equipment', 'Bodyweight, and maybe a band.'),
   ],
   [
-    _QuizChoice('balanced', 'Balanced', 'Compounds and accessories.'),
-    _QuizChoice('compound', 'Heavy Compound Focus', 'Squat, bench, deadlift.'),
-    _QuizChoice('bodybuilding', 'Bodybuilding', 'Isolation and pump.'),
-    _QuizChoice('minimalist', 'Minimalist', 'Few exercises, high quality.'),
-    _QuizChoice('supersets', 'Supersets / Fast Pace', 'Keep the heart rate up.'),
-    _QuizChoice('machines', 'Machines Preferred', 'Stable paths.'),
-    _QuizChoice('aesthetic', 'Aesthetic / V-Taper', 'Shoulders, back, proportions.'),
-    _QuizChoice('athletic', 'Athletic', 'Power and conditioning.'),
+    _QuizChoice('balanced', 'Not sure — pick for me', 'We will choose a balanced mix.'),
+    _QuizChoice('balanced', 'Balanced', 'A mix of big lifts and smaller exercises.'),
+    _QuizChoice('compound', 'Big Lifts', 'Mostly squat, bench, deadlift, and similar lifts.'),
+    _QuizChoice('bodybuilding', 'Bodybuilding', 'More exercises for each muscle.'),
+    _QuizChoice('minimalist', 'Keep It Simple', 'Fewer exercises, done well.'),
+    _QuizChoice('supersets', 'Fast Pace', 'Pair exercises and keep moving.'),
+    _QuizChoice('machines', 'Machines', 'Guided machines that are easier on your joints.'),
+    _QuizChoice('aesthetic', 'Look and Proportions', 'Extra work for shoulders, back, and how you look.'),
+    _QuizChoice('athletic', 'Athletic', 'Power, conditioning, and movement.'),
   ],
 ];
+
+class _QuizResultCard extends StatelessWidget {
+  const _QuizResultCard({
+    required this.match,
+    required this.answers,
+    required this.workouts,
+    required this.onLog,
+    required this.onSchedulePlan,
+  });
+
+  final PlanMatch match;
+  final QuizAnswers answers;
+  final List<CatalogWorkout> workouts;
+  final Future<void> Function(CatalogWorkout workout, String? planName) onLog;
+  final Future<void> Function(String planTitle, List<CatalogWorkout> workouts) onSchedulePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = match.entry;
+    final bullets = [
+      quizDaysBullet(entry.days),
+      quizSessionBullet(entry.estimatedMinutes),
+      quizEquipmentBullet(entry.equipment),
+      quizAudienceBullet(entry),
+    ];
+    return Material(
+      color: context.liftBig.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: context.liftBig.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              match.badge,
+              style: TextStyle(
+                color: context.liftBig.primary,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              entry.title,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, height: 1.15),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              quizFitSentence(entry, answers),
+              style: const TextStyle(fontSize: 16, height: 1.35),
+            ),
+            const SizedBox(height: 12),
+            for (final bullet in bullets)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('• $bullet', style: const TextStyle(fontSize: 16, height: 1.3)),
+              ),
+            if (workouts.isNotEmpty) ...[
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'See the workouts',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  children: [
+                    for (final workout in workouts) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          workout.name,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      for (final lift in workout.lifts)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            lift.name,
+                            style: TextStyle(color: context.liftBig.muted),
+                          ),
+                        ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => onLog(workout, entry.title),
+                          child: const Text('Log This Workout Today'),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              FilledButton(
+                onPressed: () => onSchedulePlan(entry.title, workouts),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                child: const Text('Add to Calendar'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _SearchablePlanSection extends StatefulWidget {
   const _SearchablePlanSection({

@@ -18,7 +18,7 @@ const DAY_BUCKETS = [2, 3, 4, 5, 6]
 const DURATIONS: WorkoutDuration[] = ['quick', 'standard', 'long']
 const EQUIPMENT = [
   'commercialGym',
-  'planetFitness',
+  'apartmentGym',
   'homeGym',
   'dumbbellsOnly',
   'minimalEquipment',

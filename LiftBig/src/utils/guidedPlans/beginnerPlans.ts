@@ -103,9 +103,10 @@ export const BEGINNER_PLANS: WorkoutTemplate[] = [
   },
   {
     id: 'plan-guided-beg-planet-fitness',
-    name: 'Planet Fitness Starter',
+    name: 'Commercial Gym Starter',
     folderId: F,
-    notes: 'Full-body session using barbells, dumbbells, and cables — a solid intro to compound lifting at Planet Fitness.',
+    notes:
+      'Full-body session with barbells, dumbbells, cables, and machines. A simple start in a large gym.',
     exercises: [
       te('plan-guided-beg-planet-fitness', 'squat', 'Barbell Back Squat', 3, '8-10', '95', false, 'squat'),
       te('plan-guided-beg-planet-fitness', 'bench', 'Barbell Bench Press', 3, '8-10', '95', false, 'bench-press'),

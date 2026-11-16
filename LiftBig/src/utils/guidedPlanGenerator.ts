@@ -11,7 +11,7 @@ import type { TrainingEnvironment } from '@/types/planCatalog'
 
 const EQUIPMENT_FILTER_MAP: Record<TrainingEnvironment, string[]> = {
   commercialGym: [],
-  planetFitness: [],
+  apartmentGym: ['Dumbbell', 'Cable', 'Machine'],
   homeGym: ['dumbbell', 'barbell', 'bench'],
   dumbbellsOnly: ['dumbbell'],
   minimalEquipment: ['bodyweight', 'dumbbell'],

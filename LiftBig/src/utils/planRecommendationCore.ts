@@ -71,9 +71,42 @@ function equipmentMatches(
   answer: TrainingEnvironment,
   entryEquipment: TrainingEnvironment[],
 ): boolean {
-  if (entryEquipment.includes(answer)) return true
-  // Planet Fitness locations now offer barbells and full free-weight areas comparable to commercial gyms.
-  if (answer === 'planetFitness' && entryEquipment.includes('commercialGym')) return true
+  return entryEquipment.includes(answer)
+}
+
+/** Equipment is a gate. Apartment answers only see apartment plans. */
+export function equipmentAllowed(
+  answer: TrainingEnvironment | null,
+  entryEquipment: TrainingEnvironment[],
+): boolean {
+  if (!answer) return true
+  if (answer === 'apartmentGym') return entryEquipment.includes('apartmentGym')
+  if (!entryEquipment.includes(answer)) return false
+  // A commercial answer cannot be filled with an apartment-only plan.
+  if (answer === 'commercialGym' && entryEquipment.includes('apartmentGym') && !entryEquipment.includes('commercialGym')) {
+    return false
+  }
+  return true
+}
+
+/** Experience is a gate. Beginners do not get experienced or liftaholic plans. */
+export function experienceAllowed(
+  answer: ExperienceLevel | null,
+  entry: PlanCatalogEntry,
+): boolean {
+  if (!answer) return true
+  const levels = entry.experienceLevels
+  if (levels.includes(answer)) {
+    if (answer === 'beginner' && (entry.category === 'experienced' || entry.category === 'liftaholic')) {
+      return false
+    }
+    return true
+  }
+  if (answer === 'beginner') {
+    if (entry.category === 'experienced' || entry.category === 'liftaholic') return false
+    if (levels.some((level) => level === 'experienced' || level === 'liftaholic')) return false
+    return levels.includes('intermediate')
+  }
   return false
 }
 
@@ -156,6 +189,11 @@ export function recommendPlansRaw(
   catalog: PlanCatalogEntry[] = ALL_PLAN_CATALOG,
 ): PlanRecommendationBase[] {
   const scored = catalog
+    .filter(
+      (entry) =>
+        experienceAllowed(answers.experienceLevel, entry) &&
+        equipmentAllowed(answers.equipment, entry.equipment),
+    )
     .map((entry) => ({ entry, score: scoreCatalogEntry(entry, answers) }))
     .sort((a, b) => b.score - a.score)
 

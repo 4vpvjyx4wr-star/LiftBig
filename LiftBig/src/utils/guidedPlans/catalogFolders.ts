@@ -37,8 +37,8 @@ export const CATALOG_WEEKLY_FOLDERS: TemplateFolder[] = [
   ),
   catalogFolder(
     'planet-fitness-starter',
-    'Planet Fitness Starter',
-    'Full-body barbell and dumbbell training for Planet Fitness — compounds plus cable accessories.',
+    'Commercial Gym Starter',
+    'Full-body training for a large gym: barbells, dumbbells, cables, and machines.',
   ),
   catalogFolder(
     'dumbbell-starter',

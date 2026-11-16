@@ -390,6 +390,10 @@ class _LiftButton extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: context.liftBig.background,
+                  border: Border.all(
+                    color: context.liftBig.primary,
+                    width: 2,
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: Container(

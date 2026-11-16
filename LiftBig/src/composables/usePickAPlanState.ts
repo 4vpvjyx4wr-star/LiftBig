@@ -49,8 +49,20 @@ export const DURATION_OPTIONS: StepOption<WorkoutDuration>[] = [
 ]
 
 export const EQUIPMENT_OPTIONS: StepOption<TrainingEnvironment>[] = [
-  { value: 'commercialGym', emoji: '🏢', title: 'Commercial Gym', description: 'Full gym with barbells and machines.' },
-  { value: 'planetFitness', emoji: '🪐', title: 'Planet Fitness', description: 'Barbells, dumbbells, machines, and cables — full gym access.' },
+  {
+    value: 'apartmentGym',
+    emoji: '🏢',
+    title: 'Apartment Gym',
+    description:
+      'A small building gym with dumbbells, cables, and a few machines, and usually no squat rack or heavy barbells.',
+  },
+  {
+    value: 'commercialGym',
+    emoji: '🏋️',
+    title: 'Commercial Gym',
+    description:
+      'A large gym with barbells, dumbbells, cables, and machines, including big-box and club gyms.',
+  },
   { value: 'homeGym', emoji: '🏠', title: 'Home Gym', description: 'Barbell, rack, and some equipment.' },
   { value: 'dumbbellsOnly', emoji: '🏋️', title: 'Dumbbells Only', description: 'Pairs of dumbbells at home.' },
   { value: 'minimalEquipment', emoji: '🎒', title: 'Minimal Equipment', description: 'Bodyweight and bands.' },

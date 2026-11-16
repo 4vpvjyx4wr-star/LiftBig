@@ -3,7 +3,7 @@ export type TrainingGoal = 'strength' | 'size' | 'weightLoss' | 'liftBig'
 export type WorkoutDuration = 'quick' | 'standard' | 'long'
 export type TrainingEnvironment =
   | 'commercialGym'
-  | 'planetFitness'
+  | 'apartmentGym'
   | 'homeGym'
   | 'dumbbellsOnly'
   | 'minimalEquipment'

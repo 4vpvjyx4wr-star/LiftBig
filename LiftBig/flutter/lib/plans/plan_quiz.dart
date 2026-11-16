@@ -148,7 +148,8 @@ String quizHeadline(QuizAnswers answers) {
 List<PlanMatch> recommendPlans(List<QuizEntry> catalog, QuizAnswers answers) {
   final scored = [
     for (final entry in catalog)
-      (entry: entry, score: scoreQuizEntry(entry, answers)),
+      if (_planAllowed(entry, answers))
+        (entry: entry, score: scoreQuizEntry(entry, answers)),
   ]..sort((a, b) => b.score.compareTo(a.score));
 
   final picked = <({QuizEntry entry, int score})>[];
@@ -213,6 +214,102 @@ int _durationScore(String? answer, List<String> targets) {
 }
 
 bool _equipmentMatches(String answer, List<String> equipment) {
-  if (equipment.contains(answer)) return true;
-  return answer == 'planetFitness' && equipment.contains('commercialGym');
+  return equipment.contains(answer);
+}
+
+bool _planAllowed(QuizEntry entry, QuizAnswers answers) {
+  return _experienceAllowed(answers.experience, entry) &&
+      _equipmentAllowed(answers.equipment, entry.equipment);
+}
+
+/// Apartment answers only receive apartment plans. A commercial answer is not
+/// filled with an apartment-only plan.
+bool _equipmentAllowed(String? answer, List<String> equipment) {
+  if (answer == null) return true;
+  if (answer == 'apartmentGym') return equipment.contains('apartmentGym');
+  if (!equipment.contains(answer)) return false;
+  if (answer == 'commercialGym' &&
+      equipment.contains('apartmentGym') &&
+      !equipment.contains('commercialGym')) {
+    return false;
+  }
+  return true;
+}
+
+/// A beginner cannot be given an experienced or liftaholic plan.
+bool _experienceAllowed(String? answer, QuizEntry entry) {
+  if (answer == null) return true;
+  final levels = entry.experienceLevels;
+  if (levels.contains(answer)) {
+    if (answer == 'beginner' &&
+        (entry.category == 'experienced' || entry.category == 'liftaholic')) {
+      return false;
+    }
+    return true;
+  }
+  if (answer == 'beginner') {
+    if (entry.category == 'experienced' || entry.category == 'liftaholic') {
+      return false;
+    }
+    if (levels.contains('experienced') || levels.contains('liftaholic')) {
+      return false;
+    }
+    return levels.contains('intermediate');
+  }
+  return false;
+}
+
+String quizFitSentence(QuizEntry entry, QuizAnswers answers) {
+  final who = quizAudienceBullet(entry).replaceFirst('For ', '');
+  final days = answers.daysPerWeek;
+  final goal = switch (answers.goal) {
+    'strength' => 'to get stronger',
+    'size' => 'to build muscle',
+    'weightLoss' => 'to lose weight while keeping muscle',
+    'liftBig' => 'to train hard and often',
+    _ => null,
+  };
+  if (days != null && goal != null) {
+    final dayWord = days == 1 ? 'day' : 'days';
+    return 'Chosen for ${who.toLowerCase()} who can train $days $dayWord a week and want $goal.';
+  }
+  return 'Chosen for ${who.toLowerCase()} from the answers you gave.';
+}
+
+String quizDaysBullet(List<int> days) {
+  if (days.isEmpty) return 'Flexible weekly schedule';
+  final sorted = [...days]..sort();
+  if (sorted.length == 1) return '${sorted.first} days a week';
+  return '${sorted.first}–${sorted.last} days a week';
+}
+
+String quizSessionBullet(int minutes) {
+  if (minutes <= 0) return 'Session length varies';
+  return 'About $minutes minutes';
+}
+
+String quizEquipmentBullet(List<String> equipment) {
+  const labels = {
+    'commercialGym': 'Large gym',
+    'apartmentGym': 'Apartment gym',
+    'homeGym': 'Home gym',
+    'dumbbellsOnly': 'Dumbbells',
+    'minimalEquipment': 'Minimal equipment',
+  };
+  if (equipment.isEmpty) return 'Any setup';
+  return equipment.map((item) => labels[item] ?? item).join(', ');
+}
+
+String quizAudienceBullet(QuizEntry entry) {
+  const labels = {
+    'beginner': 'Beginners',
+    'intermediate': 'People who train regularly',
+    'experienced': 'Experienced lifters',
+    'liftaholic': 'People who train most days',
+  };
+  if (entry.experienceLevels.isEmpty) {
+    return entry.difficulty.isEmpty ? 'For most lifters' : 'For ${entry.difficulty}';
+  }
+  final who = entry.experienceLevels.map((level) => labels[level] ?? level).join(' and ');
+  return 'For $who';
 }

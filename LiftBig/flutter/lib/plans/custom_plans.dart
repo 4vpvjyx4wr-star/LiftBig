@@ -209,6 +209,93 @@ CatalogSet _templateSet(Map<String, Object?> json) {
   );
 }
 
+class BuiltPlanWorkout {
+  const BuiltPlanWorkout({required this.name, required this.lifts});
+
+  final String name;
+  final List<LibraryLift> lifts;
+}
+
+const defaultBuiltSetCount = 3;
+const defaultBuiltReps = '8-12';
+
+/// Appends a user-built plan to the `templates_json` payload Custom Plans reads.
+/// Returns null when [existing] is not empty and is not a JSON list or object.
+String? appendBuiltPlanToTemplatesJson({
+  required String? existing,
+  required String planName,
+  required List<BuiltPlanWorkout> workouts,
+  required String Function() createId,
+}) {
+  final name = planName.trim();
+  if (name.isEmpty) return null;
+  final sessions = [
+    for (final workout in workouts)
+      if (workout.lifts.isNotEmpty)
+        (name: workout.name.trim().isEmpty ? 'Workout' : workout.name.trim(), lifts: workout.lifts),
+  ];
+  if (sessions.isEmpty) return null;
+
+  final decoded = _decodeTemplatesPayload(existing);
+  if (decoded == null) return null;
+  final templates = decoded.templates;
+  final folders = decoded.folders;
+  final planId = createId();
+  folders.add({
+    'id': planId,
+    'name': name,
+    'purpose': 'Built by you',
+  });
+  for (var i = 0; i < sessions.length; i++) {
+    final session = sessions[i];
+    templates.add({
+      'id': createId(),
+      'name': session.name,
+      'folderId': planId,
+      'notes': '',
+      'exercises': [
+        for (final lift in session.lifts)
+          {
+            'name': lift.name,
+            'libraryId': lift.id,
+            'isCardio': lift.isCardio,
+            'isCore': lift.isCore,
+            'isCircuit': false,
+            'sets': [
+              for (var set = 0; set < defaultBuiltSetCount; set++)
+                {'targetReps': defaultBuiltReps, 'targetWeight': ''},
+            ],
+          },
+      ],
+    });
+  }
+  return jsonEncode({'templates': templates, 'folders': folders});
+}
+
+({List<Object?> templates, List<Object?> folders})? _decodeTemplatesPayload(String? existing) {
+  if (existing == null || existing.trim().isEmpty) {
+    return (templates: <Object?>[], folders: <Object?>[]);
+  }
+  try {
+    final decoded = jsonDecode(existing);
+    if (decoded is List) {
+      return (templates: List<Object?>.from(decoded), folders: <Object?>[]);
+    }
+    if (decoded is Map) {
+      final map = Map<String, Object?>.from(decoded);
+      final templates = map['templates'];
+      final folders = map['folders'];
+      return (
+        templates: templates is List ? List<Object?>.from(templates) : <Object?>[],
+        folders: folders is List ? List<Object?>.from(folders) : <Object?>[],
+      );
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
 bool planMatchesSearch(PremadePlan plan, LiftBigCatalog catalog, String query) {
   final q = query.trim().toLowerCase();
   if (q.isEmpty) return true;

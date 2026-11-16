@@ -2057,6 +2057,18 @@ class JournalRepository {
     return out;
   }
 
+  /// Reads the saved-plan payload even when cloud settings were never stamped.
+  Future<String?> templatesJson() => _get(SettingKeys.templatesJson);
+
+  /// Writes `templates_json` and stamps settings so Custom Plans can read it.
+  Future<void> saveTemplatesJson(String raw) async {
+    await _put(SettingKeys.templatesJson, raw);
+    await _put(
+      SettingKeys.settingsUpdatedAt,
+      DateTime.now().toUtc().toIso8601String(),
+    );
+  }
+
   Future<CloudSettings?> localCloudSettings() async {
     final updatedAt = await _get(SettingKeys.settingsUpdatedAt);
     if (updatedAt == null || updatedAt.isEmpty) return null;

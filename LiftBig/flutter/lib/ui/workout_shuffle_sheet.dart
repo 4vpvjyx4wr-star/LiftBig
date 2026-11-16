@@ -225,7 +225,7 @@ class _WorkoutShuffleSheet extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        FilledButton(onPressed: onShuffle, child: const Text('Shuffle a Workout')),
+        FilledButton(onPressed: onShuffle, child: const Text('Workout Shuffle')),
         if (note != null) ...[
           const SizedBox(height: 8),
           Text(note, style:  TextStyle(color: context.liftBig.primary)),

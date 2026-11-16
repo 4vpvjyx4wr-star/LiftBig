@@ -248,7 +248,7 @@ final class CompanionBridge: NSObject, WCSessionDelegate, IQUIOverrideDelegate, 
             return (false, false)
         }
         if connectedDevices(iq).isEmpty {
-            iq.showConnectIQDeviceSelection()
+            iq.showDeviceSelection()
             return (false, true)
         }
         return (false, false)

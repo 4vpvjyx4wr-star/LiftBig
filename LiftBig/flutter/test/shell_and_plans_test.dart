@@ -94,7 +94,7 @@ void main() {
 
     expect(matches.first.entry.id, 'beginner');
     expect(matches.first.badge, 'Best Match');
-    expect(matches.first.score, greaterThan(matches.last.score));
+    expect(matches.map((match) => match.entry.id), isNot(contains('elite')));
   });
 
   test('shuffle uses equipment, focus, and the time budget', () {
@@ -210,7 +210,7 @@ void main() {
     expect(catalog.liftById('sit-up')!.tutorialUrl, 'https://www.youtube.com/watch?v=jDwoBqPH0jk');
     expect(catalog.liftById('sit-up')!.tips, isNotEmpty);
     expect(catalog.lifts.length, 179);
-    expect(catalog.plans.length, 56);
+    expect(catalog.plans.length, 62);
     final joeyC4 = catalog.plans.singleWhere((plan) => plan.name == 'Joey C4');
     final monday = joeyC4.workouts.singleWhere((workout) => workout.id == 'plan-joey-c4-mon');
     expect(monday.lifts.first.name, 'Incline DB Press');
@@ -228,7 +228,7 @@ void main() {
         "Joey's Summer PPL/Core/Cut Split",
       ]),
     );
-    expect(catalog.quiz.length, 53);
+    expect(catalog.quiz.length, 59);
     expect(catalog.plans, isNotEmpty);
     expect(catalog.quiz, isNotEmpty);
     expect(
