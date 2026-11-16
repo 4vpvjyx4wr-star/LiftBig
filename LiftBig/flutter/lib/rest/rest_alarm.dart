@@ -69,7 +69,9 @@ class RestAlarm {
 
   /// Plays the bundled alarm, ducking other audio, then hands volume back.
   /// True when that tone started. [loop] repeats it until [stopKeepAlive].
-  /// [soundId] is `rest_alarm`, `bell`, `chime`, or `horn`.
+  /// [soundId] is one of [RestTimerAlertSettings.soundIds]
+  /// (`rest_alarm`, `bell`, `chime`, `horn`, `whistle`, `pulse`, `gong`,
+  /// `digital`).
   /// The killed-app notification does not use this path and stays one play.
   static Future<bool> play({
     bool loop = false,

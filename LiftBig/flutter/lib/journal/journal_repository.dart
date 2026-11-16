@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../backup/backup_parser.dart';
 import '../health/health_workout.dart';
+import '../theme.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../data/app_database.dart';
 import '../date_key.dart';
@@ -71,6 +72,95 @@ abstract final class SettingKeys {
   static const machineStartHackSquatLb = 'machine_start_lb_hack_squat';
   static const favoritePlanIds = 'favorite_plan_ids';
   static const colorThemeId = 'color_theme_id';
+}
+
+/// Backup string for one settings key. Null means leave the key out.
+///
+/// Switches, units, theme, rest alerts, and the other values the app fills in
+/// when a row is missing are written as that effective value. Saved plans,
+/// health-write ids, and machine starting weights have no stand-in, so a
+/// missing row stays out of the file. Height and body weight are included
+/// either way: an empty string is "not set" (the 180 lb suggestion is not
+/// stored). The live rest countdown is not a key here.
+String? _effectivePreferenceBackupValue(
+  String key,
+  String? raw, {
+  String? settingsJson,
+}) {
+  switch (key) {
+    case SettingKeys.templatesJson:
+    case SettingKeys.healthWorkoutWrites:
+    case SettingKeys.machineStartSmithLb:
+    case SettingKeys.machineStartLegPressLb:
+    case SettingKeys.machineStartHackSquatLb:
+      return raw;
+    case SettingKeys.favoritePlanIds:
+      final ids = favoritePlanIdsFromStored(raw).toList()..sort();
+      return jsonEncode(ids);
+    case SettingKeys.colorThemeId:
+      final id = raw?.trim() ?? '';
+      return id.isEmpty ? defaultLiftBigThemeId : id;
+    case SettingKeys.weightUnit:
+      return weightUnitFromStored(raw) == WeightUnit.kg ? 'kg' : 'lb';
+    case SettingKeys.distanceUnit:
+      return distanceUnitFromStored(raw) == DistanceUnit.km ? 'km' : 'mi';
+    case SettingKeys.heightInches:
+      final height = sanitizeHeightInches(double.tryParse(raw?.trim() ?? ''));
+      return height == null ? '' : _backupNumber(height);
+    case SettingKeys.bodyWeightLbs:
+      final body = sanitizeBodyWeightLbs(double.tryParse(raw?.trim() ?? ''));
+      return body == null ? '' : _backupNumber(body);
+    case SettingKeys.autoFillSets:
+      return autoFillSetsFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.autoAdvanceWeightToReps:
+      return autoAdvanceWeightToRepsFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.startTimerOnDone:
+      return startTimerOnDoneFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.saveRepsMarksDone:
+      return raw == 'true' ? 'true' : 'false';
+    case SettingKeys.prescribeWarmup:
+      return prescribeWarmupFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.logSetDifficulty:
+      return logSetDifficultyFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.showPlateGraphic:
+      return showPlateGraphicFromStored(raw) ? 'true' : 'false';
+    case SettingKeys.plateBarLb:
+      return _backupNumber(standardBarLbFromStored(raw));
+    case SettingKeys.restTimerSound:
+    case SettingKeys.restTimerVibration:
+    case SettingKeys.restTimerNotification:
+      return boolSettingFromStored(raw, defaultValue: true) ? 'true' : 'false';
+    case SettingKeys.restTimerRingUntilStopped:
+      return boolSettingFromStored(raw, defaultValue: false) ? 'true' : 'false';
+    case SettingKeys.restTimerSoundId:
+      return RestTimerAlertSettings.canonicalSoundId(raw);
+    case SettingKeys.averageRestSeconds:
+      return '${resolveAverageRestSeconds(storedKeyValue: raw, settingsJson: settingsJson)}';
+    case SettingKeys.averageLiftSeconds:
+      return '${resolveAverageLiftSeconds(storedKeyValue: raw, settingsJson: settingsJson)}';
+    case SettingKeys.watchApple:
+    case SettingKeys.watchGarmin:
+      return boolSettingFromStored(raw, defaultValue: true) ? 'true' : 'false';
+    case SettingKeys.watchSamsung:
+      return boolSettingFromStored(raw, defaultValue: false) ? 'true' : 'false';
+    case SettingKeys.dailyLiftReminderEnabled:
+    case SettingKeys.appleHealthEnabled:
+    case SettingKeys.proTesterUnlock:
+      return raw == 'true' ? 'true' : 'false';
+    case SettingKeys.dailyLiftReminderTime:
+      return sanitizeReminderTimeHHmm(raw ?? dailyLiftReminderDefaultTime);
+    case SettingKeys.dailyLiftReminderDays:
+      return encodeReminderWeekdays(decodeReminderWeekdays(raw));
+    case SettingKeys.dailyLiftReminderMessage:
+      return raw?.trim() ?? '';
+    default:
+      return raw;
+  }
+}
+
+String _backupNumber(double value) {
+  if (value == value.roundToDouble()) return value.round().toString();
+  return value.toString();
 }
 
 /// Plan ids stored as a JSON string array. Blank or unreadable values are none.
@@ -1937,27 +2027,30 @@ class JournalRepository {
   Future<String> exportBackupJson() async {
     final days = await allDays();
     final body = await storedBodyWeightLbs();
+    final unit = await storedWeightUnit();
     return encodeLiftBigBackup(
       days: days,
       templatesJson: await _get(SettingKeys.templatesJson),
       settingsJson: await _get(SettingKeys.settingsJson),
-      weightUnit: await _get(SettingKeys.weightUnit),
+      weightUnit: unit == WeightUnit.kg ? 'kg' : 'lb',
       bodyWeightLbs: body,
       preferences: await _preferenceBackup(),
     );
   }
 
   /// Saved plans, Pro unlock, and settings. The live rest countdown and
-  /// sign-in secrets are left out. Unset keys stay absent so an older phone
-  /// keeps its own value for anything this backup never stored.
+  /// sign-in secrets are left out. Theme, height, body weight, both units,
+  /// and the other settings switches are the values the app is already using,
+  /// including defaults when that row was never written.
   Future<Map<String, String>> _preferenceBackup() async {
+    final settingsJson = await _get(SettingKeys.settingsJson);
     final out = <String, String>{};
     for (final key in liftBigPreferenceBackupKeys) {
-      final value = await _get(key);
-      if (key == SettingKeys.proTesterUnlock) {
-        out[key] = value == 'true' ? 'true' : 'false';
-        continue;
-      }
+      final value = _effectivePreferenceBackupValue(
+        key,
+        await _get(key),
+        settingsJson: settingsJson,
+      );
       if (value == null) continue;
       out[key] = value;
     }

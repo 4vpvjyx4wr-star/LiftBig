@@ -446,37 +446,60 @@ class _PlansBody extends StatelessWidget {
           planName: calendarPlanName,
           onChange: () => _changeCalendarPlan(context),
         ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              alignment: Alignment.centerLeft,
-              foregroundColor: context.liftBig.primary,
-            ),
-            onPressed: showQuiz ? null : onStartQuiz,
-            child: const Text(
-              'Not sure which plan to use? Get a recommendation.',
-              textAlign: TextAlign.left,
+        const SizedBox(height: 20),
+        Material(
+          color: context.liftBig.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.liftBig.primary, width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Not sure which plan to use? Get a recommendation.',
+                  style: TextStyle(
+                    color: context.liftBig.foreground,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (!showQuiz)
+                  FilledButton(
+                    onPressed: onStartQuiz,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      textStyle: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: const Text('Get a recommendation'),
+                  )
+                else
+                  _Quiz(
+                    step: step,
+                    answers: answers,
+                    catalog: catalog.quiz,
+                    onBack: onQuizBack,
+                    onChoose: onQuizChoose,
+                    onRestart: onQuizRestart,
+                    workoutsFor: (ids) => [
+                      for (final id in ids)
+                        if (catalog.workoutById(id) != null)
+                          catalog.workoutById(id)!,
+                    ],
+                    onLog: onLogWorkout,
+                    onSchedulePlan: onSchedulePlan,
+                  ),
+              ],
             ),
           ),
         ),
-        if (showQuiz)
-          _Quiz(
-            step: step,
-            answers: answers,
-            catalog: catalog.quiz,
-            onBack: onQuizBack,
-            onChoose: onQuizChoose,
-            onRestart: onQuizRestart,
-            workoutsFor: (ids) => [
-              for (final id in ids)
-                if (catalog.workoutById(id) != null) catalog.workoutById(id)!,
-            ],
-            onLog: onLogWorkout,
-            onSchedulePlan: onSchedulePlan,
-          ),
         const SizedBox(height: 16),
         OutlinedButton(
           onPressed: onOpenShuffle,
@@ -671,30 +694,47 @@ class _Quiz extends StatelessWidget {
             const Spacer(),
             Text(
               results ? 'Your Recommendations' : 'Step ${step + 1} of 6',
-              style:  TextStyle(color: context.liftBig.muted, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: context.liftBig.muted,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
         if (!results) ...[
           Text(
             _titles[step],
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, height: 1.2),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           for (final choice in _choices[step])
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 12),
               child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(76),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  alignment: Alignment.centerLeft,
+                ),
                 onPressed: () => onChoose(_apply(answers, step, choice.value), step == 5),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(choice.title),
+                      Text(
+                        choice.title,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         choice.detail,
-                        style:  TextStyle(color: context.liftBig.muted, fontSize: 12),
+                        style: TextStyle(
+                          color: context.liftBig.muted,
+                          fontSize: 15,
+                          height: 1.3,
+                        ),
                       ),
                     ],
                   ),
@@ -702,11 +742,21 @@ class _Quiz extends StatelessWidget {
               ),
             ),
         ] else ...[
-          Text(quizHeadline(answers)),
-          const SizedBox(height: 12),
+          Text(
+            quizHeadline(answers),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, height: 1.3),
+          ),
+          const SizedBox(height: 16),
           for (final match in matches) ...[
-            Text(match.badge, style:  TextStyle(color: context.liftBig.primary, fontWeight: FontWeight.w800)),
-            Text(match.entry.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(
+              match.badge,
+              style: TextStyle(
+                color: context.liftBig.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            Text(match.entry.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
             Text(match.entry.description),
             if (match.reasons.isNotEmpty)
               Text(

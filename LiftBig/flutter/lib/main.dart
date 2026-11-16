@@ -146,6 +146,7 @@ class _LiftBigAppState extends State<LiftBigApp>
                 children: [
                   if (colors.backdrop != LiftBigBackdrop.none)
                     Positioned.fill(
+                      key: const ValueKey('liftbig-backdrop'),
                       child: RepaintBoundary(
                         child: LiftBigThemeBackdrop(
                           palette: colors,
@@ -155,8 +156,12 @@ class _LiftBigAppState extends State<LiftBigApp>
                         ),
                       ),
                     ),
-                  child ?? const SizedBox.shrink(),
+                  KeyedSubtree(
+                    key: const ValueKey('liftbig-navigator'),
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                   RestTimerOverlay(
+                    key: const ValueKey('liftbig-rest-overlay'),
                     journal: widget.journal,
                     controller: widget.restTimer,
                     navigatorKey: _navigatorKey,

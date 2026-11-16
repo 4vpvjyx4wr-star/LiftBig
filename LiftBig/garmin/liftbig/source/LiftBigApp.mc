@@ -19,6 +19,7 @@ class LiftBigApp extends Application.AppBase {
         session.clearBackgroundRestAlert();
         session.restoreRest();
         session.ensureActivity();
+        session.send("requestLineup");
         System.println("LiftBig ready on Venu 3: " + session.exerciseName());
     }
 
@@ -47,10 +48,16 @@ class LiftBigApp extends Application.AppBase {
     }
 
     function onPhone(msg as Communications.PhoneAppMessage) as Void {
-        if (msg.data instanceof Dictionary) {
-            session.applyPhone(msg.data as Dictionary);
-            WatchUi.requestUpdate();
+        if (!(msg.data instanceof Dictionary)) {
+            return;
         }
+        // A bad payload must not kill the process. That relaunch used to
+        // land back on the sample lifts.
+        try {
+            session.applyPhone(msg.data as Dictionary);
+        } catch (ex) {
+        }
+        WatchUi.requestUpdate();
     }
 }
 

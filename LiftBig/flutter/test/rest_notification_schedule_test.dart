@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liftbig/journal/app_settings.dart';
 import 'package:liftbig/rest/rest_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -50,6 +51,23 @@ void main() {
       const RestFinishedNotificationOptions(soundId: 'ringtone'),
     );
     expect(unknown.iOS?.sound, restAlarmSoundFile);
+
+    expect(
+      RestTimerAlertSettings.soundIds,
+      containsAll(['whistle', 'pulse', 'gong', 'digital']),
+    );
+    for (final id in ['whistle', 'pulse', 'gong', 'digital']) {
+      final tone = restFinishedNotificationDetails(
+        RestFinishedNotificationOptions(
+          sound: true,
+          vibration: false,
+          soundId: id,
+        ),
+      );
+      expect(tone.iOS?.sound, '$id.wav');
+      expect(tone.android?.sound?.sound, id);
+      expect(tone.android?.channelId, 'liftbig_rest_tone_$id');
+    }
 
     final quiet = restFinishedNotificationDetails(
       const RestFinishedNotificationOptions(sound: false, vibration: true),

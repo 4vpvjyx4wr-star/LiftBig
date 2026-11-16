@@ -213,18 +213,7 @@ class _SetValueSheetState extends State<_SetValueSheet> {
       _scrollToCurrent();
       return;
     }
-    final predicted = widget.predictedLabel?.trim() ?? '';
-    if (widget.initial.trim().isEmpty &&
-        predicted.isNotEmpty &&
-        _scroll.hasClients) {
-      final index = widget.options.indexOf(predicted);
-      if (index >= 0) {
-        final target = index * repSheetRowExtent;
-        final max = _scroll.position.maxScrollExtent;
-        _scroll.jumpTo(target.clamp(0, max));
-        return;
-      }
-    }
+    // An empty log is not a predicted count. Open on the goal range.
     final anchor = repSheetFiveRowAnchorIndex(
       pickerMax: widget.sliderMax.round(),
       goalReps: widget.goalLabel,

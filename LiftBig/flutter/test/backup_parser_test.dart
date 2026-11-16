@@ -477,6 +477,26 @@ void main() {
     expect(noisy.preferences!.containsKey('rest_timer_state'), isFalse);
     expect(noisy.preferences!.containsKey('password'), isFalse);
     expect(noisy.preferences!.containsKey('sync_enabled'), isFalse);
+    expect(noisy.preferences!.containsKey('color_theme_id'), isFalse);
+    expect(noisy.preferences!.containsKey('weight_unit'), isFalse);
+
+    final cleared = encodeLiftBigBackup(
+      days: const [],
+      preferences: const {
+        'height_inches': '',
+        'body_weight_lbs': '',
+        'color_theme_id': 'default',
+        'weight_unit': 'lb',
+        'distance_unit': 'mi',
+      },
+    );
+    final parsedCleared = parseLiftBigBackup(cleared);
+    expect(parsedCleared.preferences!['height_inches'], '');
+    expect(parsedCleared.preferences!['body_weight_lbs'], '');
+    expect(parsedCleared.preferences!['color_theme_id'], 'default');
+    expect(parsedCleared.preferences!['weight_unit'], 'lb');
+    expect(parsedCleared.preferences!['distance_unit'], 'mi');
+    expect(parsedCleared.preferences!.containsKey('rest_timer_state'), isFalse);
 
     final kept = dropStaleBackupDays(parsed, const {});
     expect(kept.preferences!['pro_tester_unlock'], 'true');

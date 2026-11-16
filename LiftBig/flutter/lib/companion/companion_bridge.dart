@@ -6,6 +6,33 @@ import 'package:flutter/services.dart';
 import '../journal/app_settings.dart';
 import 'watch_session.dart';
 
+/// What the phone actually started. A flag that is off stays false.
+class WatchStartOutcome {
+  const WatchStartOutcome({
+    this.appleStarted = false,
+    this.garminStarted = false,
+    this.garminNeedsChoice = false,
+  });
+
+  final bool appleStarted;
+  final bool garminStarted;
+
+  /// Garmin is on, but no shared watch is connected, so Connect must ask.
+  final bool garminNeedsChoice;
+
+  static const none = WatchStartOutcome();
+
+  factory WatchStartOutcome.fromChannel(Object? value) {
+    if (value is! Map) return none;
+    bool flag(String key) => value[key] == true;
+    return WatchStartOutcome(
+      appleStarted: flag('appleStarted'),
+      garminStarted: flag('garminStarted'),
+      garminNeedsChoice: flag('garminNeedsChoice'),
+    );
+  }
+}
+
 /// Phone side of the watch link. Native handlers may be absent; that means no watch.
 class CompanionBridge {
   CompanionBridge({MethodChannel? channel})
@@ -47,18 +74,21 @@ class CompanionBridge {
     return true;
   }
 
-  Future<void> startWorkout(String sessionJson) async {
+  Future<WatchStartOutcome> startWorkout(String sessionJson) async {
     _lastRawSession = sessionJson;
     try {
-      await _channel.invokeMethod<void>('startWorkout', {
+      final result = await _channel.invokeMethod<dynamic>('startWorkout', {
         'sessionJson': annotateSession(sessionJson),
         'apple': _apple,
         'garmin': _garmin,
       });
+      return WatchStartOutcome.fromChannel(result);
     } on MissingPluginException {
       // No watch bridge in this build.
+      return WatchStartOutcome.none;
     } on PlatformException {
       // The watch can be unpaired or asleep. The phone workout still continues.
+      return WatchStartOutcome.none;
     }
   }
 

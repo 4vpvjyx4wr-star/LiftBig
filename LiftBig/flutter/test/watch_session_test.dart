@@ -401,4 +401,45 @@ void main() {
     expect(cancelled['restRev'], 5);
     expect(cancelled.containsKey('restEndsAt'), isFalse);
   });
+
+  test('requestLineup leaves the day unchanged', () {
+    final day = JournalDay(
+      dateKey: '2026-11-12',
+      updatedAt: '2026-11-12T00:00:00.000Z',
+      exercises: [
+        JournalExercise(
+          id: 'squat',
+          sortOrder: 0,
+          name: 'Back Squat',
+          sets: const [
+            JournalSet(id: 's1', sortOrder: 0, reps: '5', weight: '225'),
+          ],
+        ),
+      ],
+    );
+    final request = parseCompanionMessage(
+      jsonEncode({
+        'version': 1,
+        'kind': 'requestLineup',
+        'dateKey': '2026-11-12',
+        'exerciseId': 'squat',
+        'setIndex': 0,
+        'reps': '1',
+        'weightDisplay': '5',
+        'weightUnit': 'lb',
+      }),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(request.isRequestLineup, isTrue);
+    expect(request.isSkipRest, isFalse);
+    expect(identical(applyCompanionMessage(day, request), day), isTrue);
+
+    final bare = parseCompanionMessage(
+      jsonEncode({'version': 1, 'kind': 'requestLineup'}),
+      fallbackUnit: WeightUnit.lb,
+    )!;
+    expect(bare.isRequestLineup, isTrue);
+    expect(bare.exerciseId, isEmpty);
+    expect(identical(applyCompanionMessage(day, bare), day), isTrue);
+  });
 }

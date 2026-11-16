@@ -109,5 +109,47 @@ void main() {
       ),
       isNull,
     );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: 'standing-calf-raise',
+        name: 'Leg Press Calf Raise',
+      ),
+      VariableMachineKind.legPress,
+    );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: 'leg-press-calf-raise',
+        name: 'Calf Raise',
+      ),
+      VariableMachineKind.legPress,
+    );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: null,
+        name: 'Single-Leg Press Calf Raise',
+      ),
+      VariableMachineKind.legPress,
+    );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: 'standing-calf-raise',
+        name: 'Standing Calf Raise',
+      ),
+      isNull,
+    );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: 'seated-calf-raise',
+        name: 'Seated Calf Raise',
+      ),
+      isNull,
+    );
+    expect(
+      variableMachineKindForExercise(
+        libraryId: 'calf-raise',
+        name: 'Calf Raise',
+      ),
+      isNull,
+    );
   });
 }

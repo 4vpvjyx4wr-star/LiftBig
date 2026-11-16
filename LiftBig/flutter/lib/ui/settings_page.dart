@@ -12,6 +12,7 @@ import '../journal/logged_day.dart';
 import '../pro/pro_status.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
+import '../rest/rest_alarm.dart';
 import '../sync/sync_controller.dart';
 import '../theme.dart';
 import '../utils/barbell_compound.dart';
@@ -77,6 +78,9 @@ class _SettingsPageState extends State<SettingsPage> {
   var _loadingPrefs = true;
   DailyLiftReminderSettings _reminder = DailyLiftReminderSettings.defaults();
   final _reminderMessage = TextEditingController();
+  final _scroll = ScrollController();
+  final _freeThemeScroll = ScrollController();
+  final _proThemeScroll = ScrollController();
   var _loadingReminder = true;
   late final BodyWeightSettingsService _bodyWeightService;
 
@@ -447,8 +451,20 @@ class _SettingsPageState extends State<SettingsPage> {
       'bell' => 'Bell',
       'chime' => 'Chime',
       'horn' => 'Horn',
+      'whistle' => 'Whistle',
+      'pulse' => 'Pulse',
+      'gong' => 'Gong',
+      'digital' => 'Digital',
       _ => 'Beep',
     };
+  }
+
+  /// One-shot preview of the selected tone. A rest alarm that is already
+  /// looping is left alone.
+  Future<void> _previewAlarmTone() async {
+    final scope = context.getInheritedWidgetOfExactType<RestTimerScope>();
+    if (scope != null && scope.controller.alarmRinging) return;
+    await RestAlarm.play(loop: false, soundId: _restAlerts.soundId);
   }
 
   Future<void> _pickAlarmTone() async {
@@ -502,6 +518,22 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _import() async {
     final message = await showImportSheet(context, widget.sync.journal);
     if (message == null || !mounted) return;
+    final themeId = await widget.sync.journal.loadColorThemeId();
+    final pro = await _proStatus.refresh();
+    if (!mounted) return;
+    widget.themes.applyStored(themeId, proActive: pro);
+    setState(() => _proActive = pro);
+    await _loadLogging();
+    await _loadPrefs();
+    await _loadReminder();
+    if (!mounted) return;
+    final scope = context.getInheritedWidgetOfExactType<RestTimerScope>();
+    if (scope != null) {
+      try {
+        await scope.controller.reloadAlertSettings();
+      } catch (_) {}
+    }
+    if (!mounted) return;
     showLiftBigNotice(context, message);
   }
 
@@ -526,10 +558,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _themeStrip({
     required List<LiftBigPalette> palettes,
     required String selectedId,
+    required ScrollController controller,
   }) {
     return SizedBox(
       height: 136,
       child: ListView.separated(
+        controller: controller,
         scrollDirection: Axis.horizontal,
         primary: false,
         padding: const EdgeInsets.only(top: 4, bottom: 2),
@@ -559,6 +593,9 @@ class _SettingsPageState extends State<SettingsPage> {
     _heightCm.dispose();
     _averageRest.dispose();
     _averageLift.dispose();
+    _scroll.dispose();
+    _freeThemeScroll.dispose();
+    _proThemeScroll.dispose();
     super.dispose();
   }
 
@@ -777,6 +814,8 @@ class _SettingsPageState extends State<SettingsPage> {
             builder: (context, _) {
               final sync = widget.sync;
               return ListView(
+                controller: _scroll,
+                primary: false,
                 padding: const EdgeInsets.all(20),
                 children: [
                   ..._sectionHeading('Tools', first: true),
@@ -881,7 +920,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          _themeStrip(palettes: free, selectedId: selectedId),
+                          _themeStrip(
+                            palettes: free,
+                            selectedId: selectedId,
+                            controller: _freeThemeScroll,
+                          ),
                           ..._sectionHeading('LiftBig Pro'),
                           if (!_proActive)
                             Padding(
@@ -891,7 +934,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                 style: TextStyle(color: context.liftBig.muted),
                               ),
                             ),
-                          _themeStrip(palettes: pro, selectedId: selectedId),
+                          _themeStrip(
+                            palettes: pro,
+                            selectedId: selectedId,
+                            controller: _proThemeScroll,
+                          ),
                         ],
                       );
                     },
@@ -1048,9 +1095,22 @@ class _SettingsPageState extends State<SettingsPage> {
                         _alarmToneLabel(_restAlerts.soundId),
                         style: TextStyle(color: context.liftBig.muted),
                       ),
-                      trailing: Icon(
-                        Icons.expand_more,
-                        color: context.liftBig.primary,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Play tone',
+                            onPressed: _previewAlarmTone,
+                            icon: Icon(
+                              Icons.play_arrow,
+                              color: context.liftBig.primary,
+                            ),
+                          ),
+                          Icon(
+                            Icons.expand_more,
+                            color: context.liftBig.primary,
+                          ),
+                        ],
                       ),
                       onTap: _pickAlarmTone,
                     ),
@@ -1307,9 +1367,8 @@ class _ThemePreviewCard extends StatelessWidget {
                             ),
                           ),
                           if (selected)
-                            Positioned(
-                              top: 6,
-                              left: 6,
+                            Align(
+                              alignment: Alignment.center,
                               child: Icon(
                                 Icons.check_circle,
                                 size: 16,

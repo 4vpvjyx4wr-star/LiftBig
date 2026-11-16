@@ -100,8 +100,22 @@ void main() {
     expect(find.byTooltip('Start Workout'), findsNothing);
 
     final date = tester.getTopLeft(find.text('November 10, 2026'));
+    final add = tester.getTopLeft(find.byTooltip('Add lift'));
     final plan = tester.getTopLeft(find.byTooltip('Assign a Plan'));
+    final notes = tester.getTopLeft(find.byTooltip('Notes'));
+    final calculator = tester.getTopLeft(find.byTooltip('Calculator'));
+    final plates = tester.getTopLeft(find.byTooltip('Plate Calculator'));
+    final orm = tester.getTopLeft(find.byTooltip('1RM Calculator'));
+    expect(add.dy, greaterThan(date.dy));
     expect(plan.dy, greaterThan(date.dy));
+    expect(add.dx, lessThan(40));
+    expect(add.dx, lessThan(plan.dx));
+    expect(plan.dx, lessThan(notes.dx));
+    expect(notes.dx, lessThan(calculator.dx));
+    expect(calculator.dx, lessThan(plates.dx));
+    expect(plates.dx, lessThan(orm.dx));
+    expect(add.dy, closeTo(plan.dy, 1));
+    expect(orm.dy, closeTo(add.dy, 1));
 
     await tester.tap(find.byTooltip('Menu'));
     await tester.pumpAndSettle();
@@ -109,5 +123,52 @@ void main() {
     expect(find.text('Plan'), findsOneWidget);
     expect(find.text('Clear Day'), findsOneWidget);
     expect(find.text('Notes'), findsWidgets);
+  });
+
+  testWidgets('the header add button opens the exercise sheet', (tester) async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    final restTimer = RestTimerController(journal: journal);
+    addTearDown(() async {
+      restTimer.dispose();
+      await journal.db.close();
+    });
+
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      RestTimerScope(
+        controller: restTimer,
+        child: MaterialApp(
+          theme: buildLiftBigTheme(),
+          home: DayPage(
+            journal: journal,
+            dateKey: '2026-11-10',
+            underShellHeader: true,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final pageName = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Exercise Name',
+      ),
+    );
+    expect(pageName.focusNode?.hasFocus, isFalse);
+
+    await tester.tap(find.byTooltip('Add lift'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Pick a common lift or type a name.'), findsNWidgets(2));
+    expect(find.text('Bench Press'), findsWidgets);
+    expect(pageName.focusNode?.hasFocus, isFalse);
   });
 }

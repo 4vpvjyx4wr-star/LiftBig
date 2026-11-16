@@ -9,6 +9,10 @@ import Toybox.WatchUi;
 var drawnWidth as Number = 454;
 var drawnHeight as Number = 454;
 
+// Tall enough for a finger, short of the next row. A press in the gap
+// between these bands is not a control.
+const FINGER = 44;
+
 class LiftBigView extends WatchUi.View {
     function initialize() {
         View.initialize();
@@ -106,8 +110,8 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         physicalSelect = false;
         selectTimer.stop();
         var coords = evt.getCoordinates();
-        var x = coords[0] as Number;
-        var y = coords[1] as Number;
+        var x = asInt(coords[0]);
+        var y = asInt(coords[1]);
         var width = drawnWidth;
         var height = drawnHeight;
         if (width < 100 || height < 100) {
@@ -117,7 +121,7 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
         }
         var layout = screenLayout(width, height);
         var session = getApp().session;
-        if (session.locked) {
+        if (session.locked || session.slots.size() == 0) {
             return true;
         }
         var resting = session.restRemaining > 0;
@@ -139,59 +143,70 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
             return true;
         }
 
-        // Hit the drawn circles, not coarse left/right bands. A tap that
-        // misses every control still returns true so it does not toggle the set.
-        var nameY = layout["nameY"] as Number;
-        var navR = layout["navR"] as Number;
-        if (inCircle(x, y, layout["prevX"] as Number, nameY, navR)) {
+        // The row is the control. The 22px disc is only what we draw.
+        // Left of the title is minus or previous. Right is plus or next.
+        // The title itself does nothing. A gap between rows does nothing.
+        var nameSide = rowSide(x, y, layout["nameY"] as Number, layout["nameDeadL"] as Number, layout["nameDeadR"] as Number);
+        if (nameSide == -1) {
             session.moveExercise(-1);
             return true;
         }
-        if (inCircle(x, y, layout["nextX"] as Number, nameY, navR)) {
+        if (nameSide == 1) {
             session.moveExercise(1);
             return true;
         }
-        var btnX = layout["btnX"] as Number;
-        var plusX = layout["plusX"] as Number;
-        var btnR = layout["btnR"] as Number;
-        var weightY = layout["weightY"] as Number;
-        if (inCircle(x, y, btnX, weightY, btnR)) {
+        if (nameSide == 2) {
+            return true;
+        }
+        var deadL = layout["labelDeadL"] as Number;
+        var deadR = layout["labelDeadR"] as Number;
+        var weightSide = rowSide(x, y, layout["weightY"] as Number, deadL, deadR);
+        if (weightSide == -1) {
             session.adjustWeight(-5);
             return true;
         }
-        if (inCircle(x, y, plusX, weightY, btnR)) {
+        if (weightSide == 1) {
             session.adjustWeight(5);
             return true;
         }
-        var repsY = layout["repsY"] as Number;
-        if (inCircle(x, y, btnX, repsY, btnR)) {
+        if (weightSide == 2) {
+            return true;
+        }
+        var repsSide = rowSide(x, y, layout["repsY"] as Number, deadL, deadR);
+        if (repsSide == -1) {
             session.adjustReps(-1);
             return true;
         }
-        if (inCircle(x, y, plusX, repsY, btnR)) {
+        if (repsSide == 1) {
             session.adjustReps(1);
             return true;
         }
-        var restY = layout["restY"] as Number;
-        if (inCircle(x, y, btnX, restY, btnR)) {
+        if (repsSide == 2) {
+            return true;
+        }
+        var restSide = rowSide(x, y, layout["restY"] as Number, deadL, deadR);
+        if (restSide == -1) {
             session.adjustRest(-5);
             return true;
         }
-        if (inCircle(x, y, plusX, restY, btnR)) {
+        if (restSide == 1) {
             session.adjustRest(5);
             return true;
         }
-        if (inRect(x, y, layout["doneX"] as Number, layout["doneY"] as Number, layout["doneW"] as Number, layout["doneH"] as Number)) {
+        if (restSide == 2) {
+            return true;
+        }
+        if (inFingerPill(x, y, layout["doneX"] as Number, layout["doneY"] as Number, layout["doneW"] as Number, layout["doneH"] as Number)) {
             session.toggleSet();
             return true;
         }
         return true;
     }
 
-    // A screen touch is also Select. That path must not complete the set.
-    // The drawn Set done control, and the physical Start button, do that.
+    // A Venu 3 tap is also Select. Returning true consumes that touch, so
+    // onTap never runs. This must not complete a set.
     function onSelect() as Boolean {
-        return true;
+        return false;
     }
 
     // Start can arrive just before the tap coordinates. Wait long enough to
@@ -243,7 +258,7 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onSwipe(evt as SwipeEvent) as Boolean {
-        return true;
+        return false;
     }
 
     function onBack() as Boolean {
@@ -252,18 +267,25 @@ class LiftBigDelegate extends WatchUi.BehaviorDelegate {
     }
 }
 
-// 454x454 round Venu 3. Hit radius matches the drawn disc so neighboring
-// circles do not overlap. Row pitch is wider than the diameter, and the
-// centers stay inside the round bezel. Previous and next sit clear of
-// the weight row. Pause and cancel use the top band.
+// 454x454 round Venu 3. Row centers stay farther apart than a finger,
+// so a press between rows is not a control. Previous and next are the
+// sides of the name row, outside the title. Pause and cancel use the top band.
 function screenLayout(width as Number, height as Number) as Dictionary {
     var cx = width / 2;
     var navSpan = width * 28 / 100;
+    var prevX = cx - navSpan;
+    var nextX = cx + navSpan;
+    var navR = 22;
+    var labelHalf = width * 18 / 100;
     return {
         "cx" => cx,
-        "prevX" => cx - navSpan,
-        "nextX" => cx + navSpan,
-        "navR" => 22,
+        "prevX" => prevX,
+        "nextX" => nextX,
+        "navR" => navR,
+        "nameDeadL" => prevX + navR + 8,
+        "nameDeadR" => nextX - navR - 8,
+        "labelDeadL" => cx - labelHalf,
+        "labelDeadR" => cx + labelHalf,
         "setY" => height * 28 / 100,
         "nameY" => height * 36 / 100,
         "weightY" => height * 49 / 100,
@@ -398,15 +420,15 @@ function hitTop(x as Number, y as Number, width as Number, height as Number, res
     var w = row["w"] as Number;
     var h = row["h"] as Number;
     if (resting) {
-        if (inRect(x, y, row["x0"] as Number, top, w, h)) {
+        if (inFingerPill(x, y, row["x0"] as Number, top, w, h)) {
             return 1;
         }
-        if (inRect(x, y, row["x1"] as Number, top, w, h)) {
+        if (inFingerPill(x, y, row["x1"] as Number, top, w, h)) {
             return 2;
         }
         return -1;
     }
-    if (showFinish && inRect(x, y, width / 2 - w / 2, top, w, h)) {
+    if (showFinish && inFingerPill(x, y, width / 2 - w / 2, top, w, h)) {
         return 1;
     }
     return -1;
@@ -491,4 +513,32 @@ function inCircle(x as Number, y as Number, cx as Number, cy as Number, radius a
 
 function inRect(x as Number, y as Number, left as Number, top as Number, width as Number, height as Number) as Boolean {
     return x >= left && x <= left + width && y >= top && y <= top + height;
+}
+
+// Pause, Cancel, Finish, and Set done keep the drawn pill width.
+// The vertical band grows to a finger when the pill is shorter than that.
+function inFingerPill(x as Number, y as Number, left as Number, top as Number, width as Number, height as Number) as Boolean {
+    var band = height;
+    var origin = top;
+    if (band < FINGER) {
+        origin = top - ((FINGER - band) / 2);
+        band = FINGER;
+    }
+    return inRect(x, y, left, origin, width, band);
+}
+
+// 0 is outside the row. -1 is the left side, 1 is the right side.
+// 2 is the title in the center, which is not a control.
+function rowSide(x as Number, y as Number, rowY as Number, deadL as Number, deadR as Number) as Number {
+    var half = FINGER / 2;
+    if (y < rowY - half || y > rowY + half) {
+        return 0;
+    }
+    if (x < deadL) {
+        return -1;
+    }
+    if (x > deadR) {
+        return 1;
+    }
+    return 2;
 }

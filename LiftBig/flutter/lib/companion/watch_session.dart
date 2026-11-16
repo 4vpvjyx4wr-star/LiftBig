@@ -194,6 +194,7 @@ class CompanionMessage {
   bool get isStopAlarm => kind == 'stopAlarm';
   bool get isPauseRest => kind == 'pauseRest';
   bool get isResumeRest => kind == 'resumeRest';
+  bool get isRequestLineup => kind == 'requestLineup';
 }
 
 int firstOpenSetIndex(JournalExercise exercise) {
@@ -318,15 +319,17 @@ WatchSession buildWatchSession({
   );
 }
 
-/// Applies a companion message onto [day]. [skipRest] and unknown exercises
-/// leave the day unchanged. Missing set rows are appended empty, then filled.
+/// Applies a companion message onto [day]. [skipRest], [requestLineup], and
+/// unknown exercises leave the day unchanged. Missing set rows are appended
+/// empty, then filled.
 JournalDay applyCompanionMessage(JournalDay day, CompanionMessage message) {
   if (message.isStopAlarm) return day;
   if (message.kind == 'skipRest' ||
       message.kind == 'pauseRest' ||
       message.kind == 'resumeRest' ||
       message.kind == 'finishWorkout' ||
-      message.kind == 'setRest') {
+      message.kind == 'setRest' ||
+      message.kind == 'requestLineup') {
     return day;
   }
   if (message.dateKey != day.dateKey) return day;
@@ -378,9 +381,25 @@ CompanionMessage? parseCompanionMessage(
   final json = Map<String, Object?>.from(decoded);
   if (json['version'] != 1) return null;
   final kind = json['kind'];
+  if (kind is! String) return null;
+  // The watch asks with no lineup, so the set fields may be absent.
+  if (kind == 'requestLineup') {
+    final setIndexRaw = json['setIndex'];
+    final setIndex = setIndexRaw is int
+        ? setIndexRaw
+        : setIndexRaw is num
+        ? setIndexRaw.round()
+        : int.tryParse('$setIndexRaw');
+    return CompanionMessage(
+      kind: kind,
+      dateKey: json['dateKey'] is String ? json['dateKey'] as String : '',
+      exerciseId: json['exerciseId'] is String ? json['exerciseId'] as String : '',
+      setIndex: setIndex != null && setIndex >= 0 ? setIndex : 0,
+    );
+  }
   final dateKey = json['dateKey'];
   final exerciseId = json['exerciseId'];
-  if (kind is! String || dateKey is! String || exerciseId is! String) return null;
+  if (dateKey is! String || exerciseId is! String) return null;
   if (dateKey.isEmpty || exerciseId.isEmpty) return null;
   final setIndexRaw = json['setIndex'];
   final setIndex = setIndexRaw is int

@@ -63,6 +63,10 @@ class _AppShellState extends State<AppShell> {
     final unit = await widget.journal.storedWeightUnit();
     final message = parseCompanionMessage(raw, fallbackUnit: unit);
     if (message == null) return;
+    if (message.isRequestLineup) {
+      await _companion.republishSession();
+      return;
+    }
     if (message.isFinish) {
       if (message.activeKcal != null) {
         await widget.journal.setHealthEnergyKcal(

@@ -13,9 +13,10 @@ import Toybox.WatchUi;
 // Temporal background events cannot be scheduled sooner than 5 minutes.
 const BACKGROUND_REST_FLOOR = 300;
 
-// In-memory workout. A phone message can replace the baked-in sample.
-// Slots are one set each, in workout order. The arrows and the back
-// button jump to the previous or next exercise.
+// In-memory workout. Slots are one set each, in workout order.
+// The arrows and the back button jump to the previous or next exercise.
+// A launch with nothing stored waits for the iPhone. The last phone
+// lineup is restored so the baked-in sample is never drawn.
 class Session {
     var locked as Boolean = false;
     var dateKey as String = "sample";
@@ -40,9 +41,12 @@ class Session {
     var restHold as Boolean = false;
 
     function initialize() {
-        loadSample();
+        restoreLineup();
     }
 
+    // Bench Press, Barbell Row, and Back Squat. This is the old baked-in
+    // sample. The screen does not draw it. With no lineup, the view tells
+    // the user to open the workout on the iPhone.
     function loadSample() as Void {
         locked = false;
         dateKey = "sample";
@@ -124,6 +128,7 @@ class Session {
                 slots = next;
                 index = indexForSlot(keepId, keepSet);
                 ensureActivity();
+                persistLineup();
             }
             return;
         }
@@ -151,6 +156,7 @@ class Session {
         slots = built;
         index = indexForSlot(keepId, keepSet);
         ensureActivity();
+        persistLineup();
     }
 
     function current() as Dictionary? {
@@ -849,8 +855,24 @@ class Session {
     }
 
     function send(kind as String) as Void {
+        if (!(Communications has :transmit)) {
+            return;
+        }
+        // A launch with no lineup still has to ask the phone. The slot
+        // check below would drop that request.
+        if (kind.equals("requestLineup")) {
+            var request = {
+                "version" => 1,
+                "kind" => "requestLineup"
+            };
+            try {
+                Communications.transmit(request, null, new PhoneListener());
+            } catch (ex) {
+            }
+            return;
+        }
         var slot = current();
-        if (slot == null || !(Communications has :transmit)) {
+        if (slot == null) {
             return;
         }
         // completeSet and undoSet send the set on screen, then completeSet
@@ -898,6 +920,85 @@ class Session {
         return slots.size() - 1;
     }
 
+    // The next launch shows this workout immediately. A newer phone
+    // message replaces it. Storage trouble leaves the memory copy alone.
+    function persistLineup() as Void {
+        if (slots.size() == 0 || dateKey.length() == 0 || dateKey.equals("sample")) {
+            return;
+        }
+        try {
+            var saved = [] as Array<Dictionary>;
+            for (var i = 0; i < slots.size(); i++) {
+                saved.add(lineupRecord(slots[i]));
+            }
+            Storage.setValue("lbLineup", {
+                "dateKey" => dateKey,
+                "weightUnit" => weightUnit,
+                "restSeconds" => restPreset,
+                "index" => index,
+                "slots" => saved
+            });
+        } catch (ex) {
+        }
+    }
+
+    // A bad or missing record stays on the waiting screen. It must not
+    // fall back to the sample lifts.
+    function restoreLineup() as Void {
+        try {
+            var raw = Storage.getValue("lbLineup");
+            if (!(raw instanceof Dictionary)) {
+                return;
+            }
+            var data = raw as Dictionary;
+            if (!(data["slots"] instanceof Array)) {
+                return;
+            }
+            var list = data["slots"] as Array;
+            var next = [] as Array<Dictionary>;
+            for (var i = 0; i < list.size(); i++) {
+                if (!(list[i] instanceof Dictionary)) {
+                    continue;
+                }
+                next.add(normalizeSlot(list[i] as Dictionary));
+            }
+            if (next.size() == 0) {
+                return;
+            }
+            var savedKey = "";
+            if (data["dateKey"] instanceof String) {
+                savedKey = data["dateKey"] as String;
+            }
+            if (savedKey.length() == 0 || savedKey.equals("sample")) {
+                return;
+            }
+            var savedUnit = weightUnit;
+            if (data["weightUnit"] instanceof String) {
+                savedUnit = data["weightUnit"] as String;
+            }
+            var savedRest = restPreset;
+            if (data["restSeconds"] != null) {
+                savedRest = clampRest(asInt(data["restSeconds"]));
+            }
+            var savedIndex = 0;
+            if (data["index"] != null) {
+                savedIndex = asInt(data["index"]);
+            }
+            slots = next;
+            dateKey = savedKey;
+            weightUnit = savedUnit;
+            restPreset = savedRest;
+            if (savedIndex < 0 || savedIndex >= slots.size()) {
+                index = firstOpen();
+            } else {
+                index = savedIndex;
+            }
+        } catch (ex) {
+            slots = [] as Array<Dictionary>;
+            index = 0;
+        }
+    }
+
     private function clampRest(seconds as Number) as Number {
         if (seconds < 5) {
             return 5;
@@ -919,6 +1020,28 @@ function makeSlot(id as String, name as String, setIndex as Number, setCount as 
         "weight" => weight,
         "done" => false
     };
+}
+
+function lineupRecord(slot as Dictionary) as Dictionary {
+    var record = {
+        "exerciseId" => slot["exerciseId"],
+        "exerciseName" => slot["exerciseName"],
+        "setIndex" => slot["setIndex"],
+        "setCount" => slot["setCount"],
+        "reps" => slot["reps"],
+        "weight" => slot["weight"],
+        "done" => slot["done"] == true
+    };
+    if (slot["supersetGroupId"] instanceof String) {
+        record["supersetGroupId"] = slot["supersetGroupId"];
+    }
+    if (slot["supersetLabel"] instanceof String) {
+        record["supersetLabel"] = slot["supersetLabel"];
+    }
+    if (slot["supersetOrder"] != null) {
+        record["supersetOrder"] = asInt(slot["supersetOrder"]);
+    }
+    return record;
 }
 
 function normalizeSlot(raw as Dictionary) as Dictionary {

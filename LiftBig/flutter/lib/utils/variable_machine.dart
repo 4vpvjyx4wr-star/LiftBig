@@ -113,7 +113,11 @@ VariableMachineKind? variableMachineKindForExercise({
   final id = libraryId?.trim().toLowerCase() ?? '';
   final normalizedName = name.trim().toLowerCase();
 
-  if (id == 'leg-press' || normalizedName == 'leg press') {
+  // Leg-press calf raises share the sled.
+  // Standing and seated calf raises do not.
+  final legPressCalfRaise = id == 'leg-press-calf-raise' ||
+      (normalizedName.contains('leg press') && normalizedName.contains('calf'));
+  if (id == 'leg-press' || normalizedName == 'leg press' || legPressCalfRaise) {
     return VariableMachineKind.legPress;
   }
   if (id == 'hack-squat' || normalizedName == 'hack squat') {

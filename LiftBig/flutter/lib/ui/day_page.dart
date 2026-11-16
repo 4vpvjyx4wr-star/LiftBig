@@ -23,6 +23,7 @@ import '../utils/weight_units.dart';
 import '../rest/rest_timer_controller.dart';
 import '../rest/rest_timer_state.dart';
 import '../theme.dart';
+import 'add_exercise_sheet.dart';
 import 'assign_plan_sheet.dart';
 import 'basic_calculator_page.dart';
 import 'clear_day.dart';
@@ -40,17 +41,6 @@ import 'set_value_sheet.dart';
 import 'swap_exercise_sheet.dart';
 import 'tool_icons.dart';
 import 'workout_details_section.dart';
-
-const List<String> commonLifts = [
-  'Bench Press',
-  'Squat',
-  'Deadlift',
-  'Overhead Press',
-  'Barbell Row',
-  'Pull-Up',
-  'Romanian Deadlift',
-  'Lat Pulldown',
-];
 
 /// Every exercise stored for one calendar day, with set editing.
 class DayPage extends StatefulWidget {
@@ -98,7 +88,7 @@ class _DayPageState extends State<DayPage> {
   final _workoutNameFocus = FocusNode();
   final _dayNotesFocus = FocusNode();
   final _addNameFocus = FocusNode();
-  final _addExerciseKey = GlobalKey();
+  final _logScroll = ScrollController();
   final _reps = <String, TextEditingController>{};
   final _weights = <String, TextEditingController>{};
   final _durations = <String, TextEditingController>{};
@@ -217,6 +207,7 @@ class _DayPageState extends State<DayPage> {
     _workoutNameFocus.dispose();
     _dayNotesFocus.dispose();
     _addNameFocus.dispose();
+    _logScroll.dispose();
     _bodyWeight.dispose();
     _bodyWeightFocus.dispose();
     for (final controller in _reps.values) {
@@ -882,12 +873,15 @@ class _DayPageState extends State<DayPage> {
   }
 
   Future<void> _startOnWatch() async {
-    final json = await _watchSessionJson();
-    if (json == null) return;
-    await _companion.publishSession(json);
-    await _companion.startWorkout(json);
+    final watches = await widget.journal.loadWatchCompanionSettings();
     if (!mounted) return;
-    _snack('Sent to your Apple Watch. This workout stays on your iPhone.');
+    _companion.setWatchCompanions(watches);
+    final json = await _watchSessionJson();
+    if (json == null || !mounted) return;
+    await _companion.publishSession(json);
+    final outcome = await _companion.startWorkout(json);
+    if (!mounted) return;
+    _snack(watchStartNotice(outcome));
   }
 
   Future<void> _finishWorkout() async {
@@ -903,7 +897,8 @@ class _DayPageState extends State<DayPage> {
 
   Future<void> _onCompanionMessage(String raw) async {
     final message = parseCompanionMessage(raw, fallbackUnit: _weightUnit);
-    if (message == null || message.dateKey != widget.dateKey) return;
+    if (message == null || message.isRequestLineup) return;
+    if (message.dateKey != widget.dateKey) return;
     if (message.isFinish) {
       if (message.activeKcal != null) {
         await widget.journal.setHealthEnergyKcal(widget.dateKey, message.activeKcal);
@@ -1011,7 +1006,7 @@ class _DayPageState extends State<DayPage> {
       case 'clear':
         await _clearDay();
       case 'add':
-        _focusAddLift();
+        _openAddExercise();
     }
   }
 
@@ -1027,19 +1022,17 @@ class _DayPageState extends State<DayPage> {
     }
   }
 
-  void _focusAddLift() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final target = _addExerciseKey.currentContext;
-      if (target != null) {
-        Scrollable.ensureVisible(
-          target,
-          alignment: 0.1,
-          duration: const Duration(milliseconds: 250),
-        );
-      }
-      _addNameFocus.requestFocus();
-    });
+  /// Opens the add-exercise sheet. Does not focus or scroll the bottom card.
+  Future<void> _openAddExercise() async {
+    if (!mounted) return;
+    _addNameFocus.unfocus();
+    _addNameFocus.canRequestFocus = false;
+    try {
+      await showAddExerciseSheet(context, onAddNamed: _addNamed);
+    } finally {
+      _addNameFocus.canRequestFocus = true;
+      if (mounted) _addNameFocus.unfocus();
+    }
   }
 
   void _startRest(JournalExercise exercise) {
@@ -1439,60 +1432,66 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
-  /// Right to left: Plan, Add, trash, notes, calculator, plates, 1RM, watch.
+  /// Left to right: add, plan, clear, notes, calculator, plates, 1RM, watch.
   Widget _pinnedLiftTools({required bool hasExercises}) {
-    return SizedBox(
-      height: 36,
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          reverse: true,
-          child: Row(
-            textDirection: TextDirection.rtl,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _headerToolButton(
-                tooltip: 'Assign a Plan',
-                onPressed: () {
-                  if (!_assigning) _assignPlan();
-                },
-                icon: const Icon(Icons.assignment_outlined, size: 22),
-              ),
-              _headerToolButton(
-                tooltip: 'Add lift',
-                onPressed: _focusAddLift,
-                icon: const Icon(Icons.add, size: 22),
-              ),
-              if (hasExercises)
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: SizedBox(
+        height: 36,
+        width: double.infinity,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: false,
+            primary: false,
+            child: Row(
+              textDirection: TextDirection.ltr,
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 _headerToolButton(
-                  tooltip: 'Clear Day',
-                  onPressed: _clearDay,
-                  icon: const Icon(Icons.delete_outline, size: 22),
+                  tooltip: 'Add lift',
+                  onPressed: _openAddExercise,
+                  icon: const Icon(Icons.add, size: 22),
                 ),
-              _notesButton(),
-              _headerToolButton(
-                tooltip: 'Calculator',
-                onPressed: () => _onMenu('calculator'),
-                icon: const Icon(Icons.calculate_outlined, size: 22),
-              ),
-              _headerToolButton(
-                tooltip: 'Plate Calculator',
-                onPressed: () => _onMenu('plates'),
-                icon: const Plate45Icon(size: 22),
-              ),
-              _headerToolButton(
-                tooltip: '1RM Calculator',
-                onPressed: () => _onMenu('orm'),
-                icon: const Icon(Icons.fitness_center, size: 22),
-              ),
-              if (hasExercises)
                 _headerToolButton(
-                  tooltip: 'Start Workout',
-                  onPressed: _startOnWatch,
-                  icon: const Icon(Icons.watch, size: 22),
+                  tooltip: 'Assign a Plan',
+                  onPressed: () {
+                    if (!_assigning) _assignPlan();
+                  },
+                  icon: const Icon(Icons.assignment_outlined, size: 22),
                 ),
-            ],
+                if (hasExercises)
+                  _headerToolButton(
+                    tooltip: 'Clear Day',
+                    onPressed: _clearDay,
+                    icon: const Icon(Icons.delete_outline, size: 22),
+                  ),
+                _notesButton(),
+                _headerToolButton(
+                  tooltip: 'Calculator',
+                  onPressed: () => _onMenu('calculator'),
+                  icon: const Icon(Icons.calculate_outlined, size: 22),
+                ),
+                _headerToolButton(
+                  tooltip: 'Plate Calculator',
+                  onPressed: () => _onMenu('plates'),
+                  icon: const Plate45Icon(size: 22),
+                ),
+                _headerToolButton(
+                  tooltip: '1RM Calculator',
+                  onPressed: () => _onMenu('orm'),
+                  icon: const Icon(Icons.fitness_center, size: 22),
+                ),
+                if (hasExercises)
+                  _headerToolButton(
+                    tooltip: 'Start Workout',
+                    onPressed: _startOnWatch,
+                    icon: const Icon(Icons.watch, size: 22),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1557,6 +1556,63 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  Widget _emptyDayActions(bool restDay) {
+    final restStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 44),
+      foregroundColor: restDay
+          ? context.liftBig.success
+          : context.liftBig.foreground,
+      backgroundColor: restDay
+          ? context.liftBig.success.withValues(alpha: 0.12)
+          : context.liftBig.cardInner,
+      side: BorderSide(
+        color: restDay ? context.liftBig.success : context.liftBig.border,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+    final planStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 44),
+      foregroundColor: context.liftBig.foreground,
+      backgroundColor: context.liftBig.cardInner,
+      side: BorderSide(color: context.liftBig.border),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => _toggleRest(!restDay),
+              style: restStyle,
+              child: restDay
+                  ? const Text('Clear Rest')
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('zzz'),
+                        SizedBox(width: 6),
+                        Text('Rest Day'),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () {
+                if (!_assigning) _assignPlan();
+              },
+              style: planStyle,
+              child: const Text('Add plan'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final day = _day;
@@ -1575,6 +1631,8 @@ class _DayPageState extends State<DayPage> {
     Widget logBody = !_loaded
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
+            controller: _logScroll,
+            primary: false,
             physics: const ClampingScrollPhysics(),
             padding: EdgeInsets.fromLTRB(16, 12, 16, 32 + keyboardLift),
             child: Column(
@@ -1596,37 +1654,7 @@ class _DayPageState extends State<DayPage> {
                   style:  TextStyle(color: context.liftBig.foreground),
                 ),
               ],
-              if (exercises.isEmpty) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => _toggleRest(!restDay),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    foregroundColor: restDay
-                        ? context.liftBig.success
-                        : context.liftBig.foreground,
-                    backgroundColor: restDay
-                        ? context.liftBig.success.withValues(alpha: 0.12)
-                        : context.liftBig.cardInner,
-                    side: BorderSide(
-                      color: restDay
-                          ? context.liftBig.success
-                          : context.liftBig.border,
-                    ),
-                  ),
-                  child: Text(restDay ? 'Clear Rest' : 'Rest Day'),
-                ),
-                if (!restDay)
-                   Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: 12),
-                    child: Text(
-                      'Nothing logged.',
-                      style: TextStyle(color: context.liftBig.muted),
-                    ),
-                  )
-                else
-                  const SizedBox(height: 12),
-              ],
+              if (exercises.isEmpty) _emptyDayActions(restDay),
               for (var index = 0; index < blocks.length; index++)
                 _ExerciseBlock(
                   exercises: blocks[index],
@@ -1667,8 +1695,7 @@ class _DayPageState extends State<DayPage> {
                   onSwapSupersetOrder: _swapSupersetOrder,
                   exerciseKey: _exerciseKey,
                 ),
-              _AddExerciseCard(
-                key: _addExerciseKey,
+              AddExerciseCard(
                 name: _customName,
                 nameFocus: _addNameFocus,
                 error: _nameError,
@@ -1716,9 +1743,13 @@ class _DayPageState extends State<DayPage> {
         backgroundColor: context.liftBig.background,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
+        centerTitle: false,
         titleSpacing: embedded ? 16 : 12,
-        toolbarHeight:
-            (anchored ? 112 : (embedded ? 48 : kToolbarHeight)) + 36,
+        toolbarHeight: anchored ? 112 : (embedded ? 48 : kToolbarHeight),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(36),
+          child: _pinnedLiftTools(hasExercises: hasExercises),
+        ),
         actions: [
           PopupMenuButton<String>(
             tooltip: 'Menu',
@@ -1850,7 +1881,6 @@ class _DayPageState extends State<DayPage> {
                 ),
               ],
             ),
-            _pinnedLiftTools(hasExercises: hasExercises),
           ],
         ),
       ),
@@ -2202,7 +2232,7 @@ class _ExerciseCard extends StatelessWidget {
       onDelete: () => onDeleteSet(set.id),
       onEditWeight: () => onEditWeight(exercise, set, index),
       onEditReps: () => onEditReps(exercise, set, index),
-      repsHint: _repsGhost(context, set),
+      repsHint: _repsGhost(set),
       machineKind: kind,
       machineStarting: starting,
       weightUnit: weightUnit,
@@ -2213,12 +2243,8 @@ class _ExerciseCard extends StatelessWidget {
     );
   }
 
-  String _repsGhost(BuildContext context, JournalSet set) {
-    final logged = (reps[set.id]?.text ?? loggedRepsField(set.reps)).trim();
-    if (logged.isEmpty) {
-      final predicted = PredictedRepsScope.of(context)[exercise.id] ?? '';
-      if (predicted.isNotEmpty) return predicted;
-    }
+  /// Empty reps stay empty. The hint is the target range, not the prediction.
+  String _repsGhost(JournalSet set) {
     final goal = goalRepsForSet(
       targetReps: exercise.targetReps,
       storedReps: set.reps,
@@ -3041,16 +3067,32 @@ Widget _goalRichText(
     if (time.isNotEmpty) {
       spans.add(TextSpan(text: ' · $time sec', style: muted));
     }
+    final predicted = (PredictedRepsScope.of(context)[exercise.id] ?? '').trim();
+    if (predicted.isNotEmpty) {
+      spans.add(TextSpan(text: ' · able to do ', style: muted));
+      spans.add(TextSpan(text: predicted, style: number));
+    }
   }
   return Text.rich(TextSpan(children: spans));
 }
 
-String _suggestionDetail(LibraryLift lift) {
-  final groups = [
-    for (final group in lift.muscleGroups) muscleGroupLabels[group] ?? group,
+/// Names only the watches that actually started. A Garmin choice is its own sentence.
+String watchStartNotice(WatchStartOutcome outcome) {
+  final started = <String>[
+    if (outcome.appleStarted) 'Apple Watch',
+    if (outcome.garminStarted) 'Garmin',
   ];
-  if (groups.isEmpty) return lift.equipment;
-  return groups.join(', ');
+  final parts = <String>[];
+  if (started.isNotEmpty) {
+    parts.add('Sent to your ${started.join(' and ')}.');
+  }
+  if (outcome.garminNeedsChoice) {
+    parts.add('Pick the watch in Garmin Connect.');
+  }
+  if (started.isNotEmpty || parts.isEmpty) {
+    parts.add('This workout stays on your iPhone.');
+  }
+  return parts.join(' ');
 }
 
 String? _goalLine(JournalExercise exercise) {
@@ -3125,172 +3167,6 @@ InputDecoration _setInputDecoration(BuildContext context, String hint) {
     focusedBorder: focused,
     focusedErrorBorder: focused,
   );
-}
-
-class _AddExerciseCard extends StatefulWidget {
-  const _AddExerciseCard({
-    super.key,
-    required this.name,
-    required this.nameFocus,
-    required this.error,
-    required this.onAddNamed,
-    required this.onAddCustom,
-  });
-
-  final TextEditingController name;
-  final FocusNode nameFocus;
-  final String? error;
-  final void Function(
-    String name, {
-    String? libraryId,
-    bool isCardio,
-    bool isCore,
-  })
-  onAddNamed;
-  final VoidCallback onAddCustom;
-
-  @override
-  State<_AddExerciseCard> createState() => _AddExerciseCardState();
-}
-
-class _AddExerciseCardState extends State<_AddExerciseCard> {
-  List<LibraryLift> _catalog = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    widget.name.addListener(_onName);
-    _loadCatalog();
-  }
-
-  @override
-  void didUpdateWidget(covariant _AddExerciseCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.name != widget.name) {
-      oldWidget.name.removeListener(_onName);
-      widget.name.addListener(_onName);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.name.removeListener(_onName);
-    super.dispose();
-  }
-
-  void _onName() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _loadCatalog() async {
-    try {
-      final catalog = await LiftBigCatalog.load();
-      if (!mounted) return;
-      setState(() => _catalog = catalog.lifts);
-    } catch (_) {}
-  }
-
-  List<LibraryLift> get _suggestions =>
-      rankExerciseSuggestions(_catalog, widget.name.text).take(40).toList();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Add Exercise',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 4),
-             Text(
-              'Pick a common lift or type a name.',
-              style: TextStyle(color: context.liftBig.muted),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final lift in commonLifts)
-                  ActionChip(
-                    label: Text(lift),
-                    backgroundColor: context.liftBig.cardInner,
-                    side:  BorderSide(color: context.liftBig.border),
-                    labelStyle:  TextStyle(
-                      color: context.liftBig.foreground,
-                    ),
-                    onPressed: () => widget.onAddNamed(lift),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: widget.name,
-                    focusNode: widget.nameFocus,
-                    textCapitalization: TextCapitalization.words,
-                    textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      labelText: 'Exercise Name',
-                    ),
-                    onSubmitted: (_) => widget.onAddCustom(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: FilledButton(
-                    onPressed: widget.onAddCustom,
-                    child: const Text('Add'),
-                  ),
-                ),
-              ],
-            ),
-            if (widget.error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                widget.error!,
-                style:  TextStyle(color: context.liftBig.primary),
-              ),
-            ],
-            if (_suggestions.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 220,
-                child: ListView(
-                  children: [
-                    for (final lift in _suggestions)
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(lift.name),
-                        subtitle: Text(
-                          _suggestionDetail(lift),
-                          style:  TextStyle(color: context.liftBig.muted),
-                        ),
-                        onTap: () => widget.onAddNamed(
-                          lift.name,
-                          libraryId: lift.id,
-                          isCardio: lift.isCardio,
-                          isCore: lift.isCore,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _ExerciseNotesPanel extends StatefulWidget {

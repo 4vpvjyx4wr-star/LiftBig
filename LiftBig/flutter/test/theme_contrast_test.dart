@@ -72,36 +72,47 @@ void main() {
       [
         'default',
         'retrowave',
-        'forest',
-        'violet',
-        'sunset',
-        'loud',
         'cyberpunk',
-        'iron',
-        'aurora',
-        'bubblegum',
+        'loud',
         'midnight',
-        'sandstorm',
-        'cherrylime',
+        'forest',
+        'sunset',
+        'iron',
         'terminal',
-        'disco',
         'ocean',
-        'voltage',
-        'dragonfruit',
-        'glacier',
-        'lavaflow',
-        'nebula',
-        'toxic',
-        'sapphire',
-        'mango',
-        'prism',
-        'mintchip',
-        'tidal',
-        'cottoncandy',
         'bloodmoon',
         'titanium',
       ],
     );
+    expect(liftBigPaletteById('midnight').label, 'Midnight');
+    for (final removed in [
+      'violet',
+      'aurora',
+      'bubblegum',
+      'sandstorm',
+      'cherrylime',
+      'disco',
+      'voltage',
+      'dragonfruit',
+      'glacier',
+      'lavaflow',
+      'nebula',
+      'toxic',
+      'sapphire',
+      'mango',
+      'prism',
+      'mintchip',
+      'tidal',
+      'cottoncandy',
+      'bar-path',
+      'rack-glow',
+    ]) {
+      expect(
+        liftBigPaletteById(removed).id,
+        defaultLiftBigThemeId,
+        reason: removed,
+      );
+    }
   });
 
   test('pro themes fall back unless Pro is active', () {
@@ -111,9 +122,10 @@ void main() {
       'hazard-stripe',
       'signal-sweep',
       'ember-drift',
-      'bar-path',
-      'rack-glow',
       'knurl',
+      'cosmic-moon',
+      'deep-ocean',
+      'sakura-blossom',
     ];
     expect(
       liftBigThemePresets.where((palette) => palette.proOnly).map((p) => p.id),
@@ -132,8 +144,41 @@ void main() {
         LiftBigBackdrop.animates(open.backdrop),
         id == 'signal-sweep' ||
             id == 'ember-drift' ||
-            id == 'bar-path' ||
-            id == 'rack-glow',
+            id == 'cosmic-moon' ||
+            id == 'deep-ocean' ||
+            id == 'sakura-blossom',
+        reason: id,
+      );
+    }
+
+    final midnight = liftBigPaletteById('midnight');
+    final moon = liftBigPaletteById('cosmic-moon');
+    expect(moon.label, 'Cosmic Moon');
+    expect(moon.canvas, midnight.canvas);
+    expect(moon.card, midnight.card);
+    expect(moon.cardInner, midnight.cardInner);
+    expect(moon.border, midnight.border);
+    expect(moon.primary, midnight.primary);
+    expect(moon.blue, midnight.blue);
+    expect(moon.foreground, midnight.foreground);
+    expect(moon.muted, midnight.muted);
+    expect(moon.success, midnight.success);
+
+    for (final id in ['deep-ocean', 'sakura-blossom', 'cosmic-moon']) {
+      final palette = liftBigPaletteById(id);
+      expect(
+        _contrast(palette.foreground, palette.card),
+        greaterThanOrEqualTo(4.5),
+        reason: id,
+      );
+      expect(
+        _contrast(palette.muted, palette.card),
+        greaterThanOrEqualTo(4.5),
+        reason: id,
+      );
+      expect(
+        palette.card.computeLuminance(),
+        greaterThan(palette.canvas.computeLuminance()),
         reason: id,
       );
     }
@@ -195,9 +240,10 @@ void main() {
       'hazard-stripe',
       'signal-sweep',
       'ember-drift',
-      'bar-path',
-      'rack-glow',
       'knurl',
+      'cosmic-moon',
+      'deep-ocean',
+      'sakura-blossom',
     ]) {
       final palette = liftBigPaletteById(id);
       await tester.pumpWidget(

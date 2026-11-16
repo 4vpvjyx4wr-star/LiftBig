@@ -55,6 +55,10 @@ class MainActivity : FlutterFragmentActivity() {
             "bell" -> R.raw.bell
             "chime" -> R.raw.chime
             "horn" -> R.raw.horn
+            "whistle" -> R.raw.whistle
+            "pulse" -> R.raw.pulse
+            "gong" -> R.raw.gong
+            "digital" -> R.raw.digital
             else -> R.raw.rest_alarm
         }
     }

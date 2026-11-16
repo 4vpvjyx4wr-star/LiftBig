@@ -20,7 +20,7 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
     private var channel: FlutterMethodChannel?
     private var remoteStopAdded = false
     private var remoteStopVisible = false
-    private static let toneIds = ["rest_alarm", "bell", "chime", "horn"]
+    private static let toneIds = ["rest_alarm", "bell", "chime", "horn", "whistle", "pulse", "gong", "digital"]
 
     static func register(messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "liftbig/rest_alarm", binaryMessenger: messenger)

@@ -77,7 +77,16 @@ class RestTimerAlertSettings {
   final String soundId;
 
   static const defaultSoundId = 'rest_alarm';
-  static const soundIds = <String>['rest_alarm', 'bell', 'chime', 'horn'];
+  static const soundIds = <String>[
+    'rest_alarm',
+    'bell',
+    'chime',
+    'horn',
+    'whistle',
+    'pulse',
+    'gong',
+    'digital',
+  ];
 
   static const defaults = RestTimerAlertSettings(
     soundEnabled: true,

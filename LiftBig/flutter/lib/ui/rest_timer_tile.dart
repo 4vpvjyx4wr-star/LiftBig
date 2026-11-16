@@ -39,13 +39,28 @@ class RestTimerOverlay extends StatelessWidget {
     await showRestTimerMenu(context, controller);
   }
 
+  Future<void> _editDuration() async {
+    final context = navigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
+    final picked = await showRestDurationDialog(
+      context,
+      initialSeconds: controller.snapshot.fullSeconds,
+    );
+    if (picked == null) return;
+    await controller.reset(fullSeconds: picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
         if (controller.alarmRinging) {
-          return RestAlarmStopButton(onStop: controller.stopAlarm);
+          return RestAlarmStopButton(
+            onStop: controller.stopAlarm,
+            onReplay: controller.reset,
+            onEdit: _editDuration,
+          );
         }
         if (!controller.showsFloatingCard) return const SizedBox.shrink();
         return RestTimerTileOverlay(
@@ -193,23 +208,94 @@ class RestTimerMenu extends StatelessWidget {
 }
 
 /// Large Stop shown on every screen while the rest tone is looping.
+/// Replay and edit sit on the lower edge as their own buttons.
 class RestAlarmStopButton extends StatelessWidget {
-  const RestAlarmStopButton({super.key, required this.onStop});
+  const RestAlarmStopButton({
+    super.key,
+    required this.onStop,
+    required this.onReplay,
+    required this.onEdit,
+  });
 
   final VoidCallback onStop;
+  final VoidCallback onReplay;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     return Center(
-      child: FilledButton(
-        onPressed: onStop,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(220, 220),
-          shape: const CircleBorder(),
-          textStyle: const TextStyle(fontSize: 40, fontWeight: FontWeight.w800),
+      child: SizedBox(
+        width: 220,
+        height: 220,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            FilledButton(
+              onPressed: onStop,
+              style: FilledButton.styleFrom(
+                fixedSize: const Size(220, 220),
+                minimumSize: const Size(220, 220),
+                maximumSize: const Size(220, 220),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                padding: EdgeInsets.zero,
+                shape: CircleBorder(
+                  side: BorderSide(color: onPrimary, width: 3),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: const Text('Stop'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _edgeButton(
+                    tooltip: 'Reset',
+                    icon: Icons.replay,
+                    color: onPrimary,
+                    onPressed: onReplay,
+                  ),
+                  const SizedBox(width: 8),
+                  _edgeButton(
+                    tooltip: 'Edit',
+                    icon: Icons.edit_outlined,
+                    color: onPrimary,
+                    onPressed: onEdit,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        child: const Text('Stop'),
       ),
+    );
+  }
+
+  Widget _edgeButton({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      color: color,
+      style: IconButton.styleFrom(
+        foregroundColor: color,
+        backgroundColor: color.withValues(alpha: 0.16),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(44, 44),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        shape: const CircleBorder(),
+      ),
+      icon: Icon(icon, size: 26),
     );
   }
 }

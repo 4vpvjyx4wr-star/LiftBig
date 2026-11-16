@@ -6,8 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/backup/backup_parser.dart';
 import 'package:liftbig/data/app_database.dart';
 import 'package:liftbig/date_key.dart';
+import 'package:liftbig/journal/app_settings.dart';
 import 'package:liftbig/journal/journal_repository.dart';
 import 'package:liftbig/journal/logged_day.dart';
+import 'package:liftbig/reminder/daily_lift_reminder.dart';
+import 'package:liftbig/theme.dart';
 import 'package:liftbig/model/journal_day.dart';
 import 'package:liftbig/rest/rest_timer_state.dart';
 import 'package:liftbig/sync/day_remote.dart';
@@ -1263,6 +1266,15 @@ void main() {
     final roundTrip = parseLiftBigBackup(exported);
     expect(roundTrip.preferences?['pro_tester_unlock'], 'true');
     expect(roundTrip.preferences?['rest_timer_ring_until_stopped'], 'true');
+    expect(roundTrip.preferences?['color_theme_id'], 'forest');
+    expect(roundTrip.preferences?['weight_unit'], 'kg');
+    expect(roundTrip.preferences?['distance_unit'], 'km');
+    expect(roundTrip.preferences?['height_inches'], '70.5');
+    expect(roundTrip.preferences?['body_weight_lbs'], '190');
+    expect(roundTrip.preferences?['show_plate_graphic'], 'false');
+    expect(roundTrip.preferences?['plate_bar_lb'], '35');
+    expect(roundTrip.preferences?['rest_timer_sound'], 'false');
+    expect(roundTrip.preferences?['rest_timer_sound_id'], 'rest_alarm');
     expect(roundTrip.preferences?.containsKey('rest_timer_state'), isFalse);
 
     final older = JournalRepository(AppDatabase(NativeDatabase.memory()));
@@ -1280,6 +1292,68 @@ void main() {
     );
     expect(await older.loadColorThemeId(), 'loud');
     expect(await older.proTesterUnlockEnabled(), isTrue);
+  });
+
+  test('a fresh backup writes the settings the app is already using', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(journal.db.close);
+    final exported = await journal.exportBackupJson();
+    expect(exported, isNot(contains('rest_timer_state')));
+    expect(exported, isNot(contains('password')));
+    final prefs = parseLiftBigBackup(exported).preferences!;
+    expect(prefs['color_theme_id'], defaultLiftBigThemeId);
+    expect(prefs['weight_unit'], 'lb');
+    expect(prefs['distance_unit'], 'mi');
+    expect(prefs['height_inches'], '');
+    expect(prefs['body_weight_lbs'], '');
+    expect(prefs['auto_fill_sets'], 'true');
+    expect(prefs['auto_advance_weight_to_reps'], 'true');
+    expect(prefs['start_timer_on_done'], 'false');
+    expect(prefs['save_reps_marks_done'], 'false');
+    expect(prefs['prescribe_warmup_sets'], 'false');
+    expect(prefs['log_set_difficulty'], 'false');
+    expect(prefs['show_plate_graphic'], 'true');
+    expect(prefs['plate_bar_lb'], '45');
+    expect(prefs['rest_timer_sound'], 'true');
+    expect(prefs['rest_timer_sound_id'], RestTimerAlertSettings.defaultSoundId);
+    expect(prefs['rest_timer_vibration'], 'true');
+    expect(prefs['rest_timer_notification'], 'true');
+    expect(prefs['rest_timer_ring_until_stopped'], 'false');
+    expect(prefs['average_rest_seconds'], '$defaultAverageRestSeconds');
+    expect(prefs['average_lift_seconds'], '$defaultAverageLiftSeconds');
+    expect(prefs['watch_apple_enabled'], 'true');
+    expect(prefs['watch_garmin_enabled'], 'true');
+    expect(prefs['watch_samsung_enabled'], 'false');
+    expect(prefs['daily_lift_reminder_enabled'], 'false');
+    expect(prefs['daily_lift_reminder_time'], dailyLiftReminderDefaultTime);
+    expect(
+      prefs['daily_lift_reminder_days'],
+      encodeReminderWeekdays(DailyLiftReminderSettings.allWeekdays),
+    );
+    expect(prefs['daily_lift_reminder_message'], '');
+    expect(prefs['apple_health_enabled'], 'false');
+    expect(prefs['pro_tester_unlock'], 'false');
+    expect(prefs['favorite_plan_ids'], '[]');
+    expect(prefs.containsKey('rest_timer_state'), isFalse);
+    expect(prefs.containsKey('templates_json'), isFalse);
+    expect(prefs.containsKey('machine_start_lb_smith'), isFalse);
+    expect(jsonDecode(exported)['liftbig_settings']['weightUnit'], 'lb');
+
+    final other = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(other.db.close);
+    await other.setColorThemeId('loud');
+    await other.setWeightUnit(WeightUnit.kg);
+    await other.setDistanceUnit(DistanceUnit.km);
+    await other.setHeightInches(70);
+    await other.setBodyWeightLbs(200);
+    await other.importBackup(parseLiftBigBackup(exported));
+    expect(await other.loadColorThemeId(), defaultLiftBigThemeId);
+    expect(await other.storedWeightUnit(), WeightUnit.lb);
+    expect(await other.storedDistanceUnit(), DistanceUnit.mi);
+    expect(await other.storedHeightInches(), isNull);
+    expect(await other.storedBodyWeightLbs(), isNull);
+    expect(await other.showPlateGraphicEnabled(), isTrue);
+    expect(await other.storedPlateBarLb(), 45);
   });
 
   test('warmup setting adds one set and keeps a warmup the plan already has', () async {
