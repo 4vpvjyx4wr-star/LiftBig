@@ -23,58 +23,62 @@
   <body>
     <main>
       <h1>LIFTBIG</h1>
-      <p>Privacy policy · Effective October 9, 2026</p>
+      <p>Privacy policy · Effective November 16, 2026</p>
       <p>
         LiftBig is a workout journal. This page explains what the iPhone app and the website do with your
-        information. LiftBig is not medical advice and does not diagnose, treat, or prevent any condition.
+        information. LiftBig is a workout log, not medical advice, and does not diagnose, treat, or prevent any condition.
       </p>
 
       <h2>Data stored on your device</h2>
       <p>
-        Workouts, plans, settings, themes, and favorites are saved on the device where you use LiftBig. The
-        website uses that browser’s local storage. The iPhone app saves the same information in the app’s
-        private storage. Deleting the app, or clearing the website’s site data, removes that copy.
+        Your journal stays on the device where you use LiftBig. The iPhone app saves workouts, plans, and
+        journal settings in the app’s private storage. The website keeps its copy in that browser’s local
+        storage. Deleting the app removes the on-device journal. Clearing the website’s site data removes
+        the browser copy.
       </p>
       <p>
         You can export a backup file and import it later, including from the website into the iPhone app.
-        LiftBig does not operate an account system and does not run its own database of your journal.
+        No account is required to log workouts.
       </p>
 
-      <h2>iCloud</h2>
+      <h2>Optional account and sync</h2>
       <p>
-        The iPhone app can optionally sync that journal through your private iCloud account. The toggle is
-        off until you turn it on. Apple stores that data with your Apple ID. LiftBig cannot see it. Turning
-        the toggle off leaves the copy already on that iPhone and stops further syncing.
+        You can sign in with an email and password, Google, or Sign in with Apple through Firebase
+        Authentication. Sync is off by default. When you turn sync on, LiftBig copies your workouts, plans,
+        and journal settings to Cloud Firestore so that journal can open on another phone where you sign in
+        and turn sync on. The email address from that sign-in is stored so you can sign in again.
+      </p>
+      <p>
+        Deleting the account deletes the cloud copy of that journal. The journal already saved on the
+        phone remains until you delete the app.
       </p>
 
       <h2>Apple Health</h2>
       <p>
-        If you allow it, LiftBig reads your body weight and height from Apple Health and writes workout
-        sessions you log (activity type, duration, distance when you entered one, and an energy estimate).
-        LiftBig does not read sleep, heart rate, or clinical records. You can turn this off in Settings.
-        Turning it off does not delete workouts already saved in Apple Health.
+        Apple Health is optional and stays off until you turn it on. If you allow it, LiftBig uses body
+        weight, height, and the workouts you log. You can turn this off in Settings. Turning it off does
+        not delete workouts already saved in Apple Health.
       </p>
 
       <h2>Notifications</h2>
       <p>
-        If you turn on the daily reminder, iOS shows a notification at the time you chose. The rest timer
-        can also notify you when rest ends, including on the Lock Screen. LiftBig does not control Apple’s
-        Clock app.
+        Notifications are optional. If you turn on the daily reminder, iOS shows a notification at the time
+        you chose. The rest timer can also notify you when rest ends, including on the Lock Screen.
+        LiftBig does not control Apple’s Clock app.
       </p>
 
       <h2>Purchases</h2>
       <p>
-        The app is a one-time purchase through the App Store. Apple processes the payment. Later, an
-        optional LiftBig Pro subscription may unlock companion features such as Apple Watch logging and
-        adaptive workout suggestions. The training journal and its free updates stay available to everyone
-        who bought the app. LiftBig does not use the purchase to build an advertising profile.
+        The iPhone app is a one-time purchase through the App Store. Apple processes the payment. This
+        release does not include a subscription. LiftBig does not use the purchase to build an advertising
+        profile.
       </p>
 
       <h2>What we do not do</h2>
       <ul>
         <li>We do not sell your data.</li>
-        <li>We do not show ads or use third-party tracking.</li>
-        <li>We do not require a LiftBig account.</li>
+        <li>We do not show ads.</li>
+        <li>We do not track you.</li>
       </ul>
 
       <h2>Children</h2>

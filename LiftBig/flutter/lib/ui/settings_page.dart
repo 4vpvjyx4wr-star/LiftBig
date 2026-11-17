@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../companion/companion_bridge.dart';
 import '../journal/app_settings.dart';
@@ -13,6 +14,7 @@ import '../pro/pro_status.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../rest/rest_alarm.dart';
+import '../sync/account_reauth.dart';
 import '../sync/sync_controller.dart';
 import '../theme.dart';
 import '../utils/barbell_compound.dart';
@@ -49,6 +51,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   String? _authError;
+  var _authBusy = false;
   var _autoFill = true;
   var _autoAdvanceWeightToReps = true;
   var _timerOnDone = false;
@@ -184,53 +187,6 @@ class _SettingsPageState extends State<SettingsPage> {
     if (!mounted) return;
     widget.themes.setProActive(active);
     setState(() => _proActive = active);
-  }
-
-  Future<void> _restorePro() async {
-    final code = await _askRestoreCode();
-    if (code == null || !mounted) return;
-    final result = await _proStatus.restorePurchases(code);
-    if (!mounted) return;
-    widget.themes.setProActive(result.isPro);
-    setState(() => _proActive = result.isPro);
-    final message = result.codeMatched
-        ? 'Pro is unlocked on this device.'
-        : result.storeActive
-        ? 'Purchases restored.'
-        : 'No active subscription found.';
-    showLiftBigNotice(context, message);
-  }
-
-  Future<String?> _askRestoreCode() {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          scrollable: true,
-          title: const Text('Restore Purchases'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            autocorrect: false,
-            enableSuggestions: false,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(labelText: 'Code'),
-            onSubmitted: (value) => Navigator.pop(context, value),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('Restore Purchases'),
-            ),
-          ],
-        );
-      },
-    ).whenComplete(controller.dispose);
   }
 
   Future<void> _loadReminder() async {
@@ -599,14 +555,148 @@ class _SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  Future<void> _auth(bool createAccount) async {
-    final error = await widget.sync.signIn(
-      emailAddress: _email.text,
-      password: _password.text,
-      createAccount: createAccount,
-    );
+  bool get _authLocked => _authBusy || widget.sync.busy;
+
+  Future<void> _runAuth(Future<String?> Function() action) async {
+    setState(() {
+      _authBusy = true;
+      _authError = null;
+    });
+    final error = await action();
     if (!mounted) return;
-    setState(() => _authError = error);
+    setState(() {
+      _authBusy = false;
+      _authError = error;
+    });
+  }
+
+  Future<void> _auth(bool createAccount) {
+    return _runAuth(
+      () => widget.sync.signIn(
+        emailAddress: _email.text,
+        password: _password.text,
+        createAccount: createAccount,
+      ),
+    );
+  }
+
+  Future<void> _signInWithApple() {
+    return _runAuth(widget.sync.signInWithApple);
+  }
+
+  Future<void> _signInWithGoogle() {
+    return _runAuth(widget.sync.signInWithGoogle);
+  }
+
+  Future<void> _sendPasswordReset() {
+    final address = widget.sync.signedIn
+        ? (widget.sync.email ?? _email.text)
+        : _email.text;
+    return _runAuth(() => widget.sync.sendPasswordReset(address));
+  }
+
+  Future<void> _deleteAccount() async {
+    final method = widget.sync.reauthMethod;
+    var password = '';
+    if (method == AccountReauthMethod.password) {
+      final entered = await _askDeletePassword();
+      if (entered == null || !mounted) return;
+      password = entered;
+    } else if (method == AccountReauthMethod.google ||
+        method == AccountReauthMethod.apple) {
+      final confirmed = await _confirmProviderDelete(method);
+      if (confirmed != true || !mounted) return;
+    } else {
+      setState(() {
+        _authError =
+            'Sign in again with email, Google, or Apple before deleting the account.';
+      });
+      return;
+    }
+    await _runAuth(() => widget.sync.deleteAccount(password));
+  }
+
+  String _signedInLine(SyncController sync) {
+    final who = sync.email;
+    switch (sync.reauthMethod) {
+      case AccountReauthMethod.password:
+        return 'Signed in with email as $who.';
+      case AccountReauthMethod.google:
+        return 'Signed in with Google as $who.';
+      case AccountReauthMethod.apple:
+        return 'Signed in with Apple as $who.';
+      case AccountReauthMethod.unsupported:
+        return 'Signed in as $who.';
+    }
+  }
+
+  Future<String?> _askDeletePassword() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          scrollable: true,
+          title: const Text('Delete Account'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'This removes the cloud copy and your sign-in. The journal on this phone stays.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(labelText: 'Password'),
+                onSubmitted: (value) => Navigator.pop(context, value),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('Delete Account'),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(controller.dispose);
+  }
+
+  Future<bool?> _confirmProviderDelete(AccountReauthMethod method) {
+    final provider = method == AccountReauthMethod.apple ? 'Apple' : 'Google';
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          scrollable: true,
+          title: const Text('Delete Account'),
+          content: Text(
+            'This removes the cloud copy and your sign-in. The journal on this phone stays. $provider will ask you to confirm.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete Account'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _setWatch(WatchCompanionSettings next) async {
@@ -675,25 +765,6 @@ class _SettingsPageState extends State<SettingsPage> {
     ];
   }
 
-  List<Widget> _proSection() {
-    return [
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(_proActive ? 'Pro · Active' : 'Pro'),
-        subtitle: _proActive
-            ? Text(
-                'Watch sync is active.',
-                style: TextStyle(color: context.liftBig.muted),
-              )
-            : null,
-        trailing: TextButton(
-          onPressed: _restorePro,
-          child: const Text('Restore Purchases'),
-        ),
-      ),
-    ];
-  }
-
   List<Widget> _watchSection() {
     if (!_proActive) return const [];
     return [
@@ -752,6 +823,26 @@ class _SettingsPageState extends State<SettingsPage> {
       const SizedBox(height: 24),
       if (!sync.firebaseReady) const _FirebaseSetupCard(),
       if (sync.firebaseReady && !sync.signedIn) ...[
+        SignInWithAppleButton(
+          onPressed: _authLocked ? null : _signInWithApple,
+          style: Theme.of(context).brightness == Brightness.dark
+              ? SignInWithAppleButtonStyle.white
+              : SignInWithAppleButtonStyle.black,
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(44),
+          ),
+          onPressed: _authLocked ? null : _signInWithGoogle,
+          child: const Text('Continue with Google'),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Or use email and password.',
+          style: TextStyle(color: context.liftBig.muted),
+        ),
+        const SizedBox(height: 8),
         TextField(
           controller: _email,
           keyboardType: TextInputType.emailAddress,
@@ -770,25 +861,46 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
         const SizedBox(height: 12),
         FilledButton(
-          onPressed: sync.busy ? null : () => _auth(false),
+          onPressed: _authLocked ? null : () => _auth(false),
           child: const Text('Sign In'),
         ),
         const SizedBox(height: 8),
         OutlinedButton(
-          onPressed: sync.busy ? null : () => _auth(true),
+          onPressed: _authLocked ? null : () => _auth(true),
           child: const Text('Create Account'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _authLocked ? null : _sendPasswordReset,
+          child: const Text('Email Password Reset'),
         ),
       ],
       if (sync.signedIn) ...[
-        Text('Signed in as ${sync.email}.'),
+        Text(_signedInLine(sync)),
+        if (_authError != null) ...[
+          const SizedBox(height: 8),
+          Text(_authError!, style: TextStyle(color: context.liftBig.primary)),
+        ],
         const SizedBox(height: 12),
         FilledButton(
           onPressed: sync.busy || !sync.syncEnabled ? null : sync.syncNow,
           child: Text(sync.busy ? 'Syncing…' : 'Sync Now'),
         ),
+        if (sync.passwordAccount) ...[
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: _authLocked ? null : _sendPasswordReset,
+            child: const Text('Email Password Reset'),
+          ),
+        ],
         const SizedBox(height: 8),
         OutlinedButton(
-          onPressed: sync.busy ? null : sync.signOut,
+          onPressed: _authLocked ? null : _deleteAccount,
+          child: const Text('Delete Account'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: _authLocked ? null : sync.signOut,
           child: const Text('Sign Out'),
         ),
       ],
@@ -820,8 +932,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   ..._sectionHeading('Tools', first: true),
                   ..._toolSection(sync),
-                  ..._sectionHeading('Pro'),
-                  ..._proSection(),
                   if (_proActive) ...[
                     ..._sectionHeading('Smart Watch'),
                     ..._watchSection(),
@@ -1288,7 +1398,7 @@ class _FirebaseSetupCard extends StatelessWidget {
         'Then run flutterfire configure, which overwrites lib/firebase_options.dart, '
         'and set kFirebaseEnabled = true in lib/sync/firebase_enabled.dart.\n\n'
         'Deploy firestore.rules so a user can only read and write their own documents. '
-        'Enable Email/Password in the Firebase Auth console.',
+        'Enable Email/Password, Google, and Sign in with Apple in the Firebase Auth console.',
         style: TextStyle(height: 1.4),
       ),
     );

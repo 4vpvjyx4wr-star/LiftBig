@@ -1,6 +1,5 @@
-/// Flip this to true only after `flutterfire configure` replaces
-/// `lib/firebase_options.dart` and the native config files are in place.
+/// iOS config is installed, so the iPhone app initializes Firebase.
 ///
-/// While this is false, the app never calls Firebase. The journal stays in
-/// SQLite and nothing is uploaded.
-const bool kFirebaseEnabled = false;
+/// Android, web, and desktop options are still missing. [currentPlatform]
+/// returns the iOS options only on iOS.
+const bool kFirebaseEnabled = true;

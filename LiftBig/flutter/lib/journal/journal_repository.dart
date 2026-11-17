@@ -74,6 +74,46 @@ abstract final class SettingKeys {
   static const colorThemeId = 'color_theme_id';
 }
 
+/// Preferences copied to `users/{uid}/settings/app`.
+///
+/// Left on the phone: the sync switch, the in-progress rest timer, Health
+/// write ids, and the Pro tester flag.
+const Set<String> cloudSyncedPreferenceKeys = {
+  SettingKeys.weightUnit,
+  SettingKeys.distanceUnit,
+  SettingKeys.bodyWeightLbs,
+  SettingKeys.heightInches,
+  SettingKeys.colorThemeId,
+  SettingKeys.templatesJson,
+  SettingKeys.favoritePlanIds,
+  SettingKeys.autoFillSets,
+  SettingKeys.autoAdvanceWeightToReps,
+  SettingKeys.startTimerOnDone,
+  SettingKeys.saveRepsMarksDone,
+  SettingKeys.prescribeWarmup,
+  SettingKeys.logSetDifficulty,
+  SettingKeys.showPlateGraphic,
+  SettingKeys.plateBarLb,
+  SettingKeys.machineStartSmithLb,
+  SettingKeys.machineStartLegPressLb,
+  SettingKeys.machineStartHackSquatLb,
+  SettingKeys.restTimerSound,
+  SettingKeys.restTimerVibration,
+  SettingKeys.restTimerNotification,
+  SettingKeys.restTimerRingUntilStopped,
+  SettingKeys.restTimerSoundId,
+  SettingKeys.averageRestSeconds,
+  SettingKeys.averageLiftSeconds,
+  SettingKeys.watchApple,
+  SettingKeys.watchGarmin,
+  SettingKeys.watchSamsung,
+  SettingKeys.dailyLiftReminderEnabled,
+  SettingKeys.dailyLiftReminderTime,
+  SettingKeys.dailyLiftReminderDays,
+  SettingKeys.dailyLiftReminderMessage,
+  SettingKeys.appleHealthEnabled,
+};
+
 /// Backup string for one settings key. Null means leave the key out.
 ///
 /// Switches, units, theme, rest alerts, and the other values the app fills in
@@ -194,9 +234,36 @@ class JournalRepository {
   JournalRepository(this.db);
 
   final AppDatabase db;
+  final List<void Function()> _localWriteListeners = [];
+  int _suppressLocalWrites = 0;
 
   String nowStamp([DateTime? now]) =>
       (now ?? DateTime.now()).toUtc().toIso8601String();
+
+  void addLocalWriteListener(void Function() listener) {
+    _localWriteListeners.add(listener);
+  }
+
+  void removeLocalWriteListener(void Function() listener) {
+    _localWriteListeners.remove(listener);
+  }
+
+  /// Remote applies use this so a download does not schedule another upload.
+  Future<T> runWithoutLocalWriteNotice<T>(Future<T> Function() action) async {
+    _suppressLocalWrites++;
+    try {
+      return await action();
+    } finally {
+      _suppressLocalWrites--;
+    }
+  }
+
+  void _noteLocalWrite() {
+    if (_suppressLocalWrites > 0) return;
+    for (final listener in List<void Function()>.of(_localWriteListeners)) {
+      listener();
+    }
+  }
 
   Future<List<DaySummary>> summariesForMonth(DateTime month) async {
     final start = toDateKey(DateTime(month.year, month.month, 1));
@@ -243,6 +310,17 @@ class JournalRepository {
       days.add(await _hydrate(row));
     }
     return days;
+  }
+
+  Future<Map<String, DayTombstone>> allTombstones() async {
+    final rows = await db.select(db.deletedDays).get();
+    return {
+      for (final row in rows)
+        row.dateKey: DayTombstone(
+          dateKey: row.dateKey,
+          deletedAt: row.deletedAt,
+        ),
+    };
   }
 
   /// Distinct plan (folder) names stored on logged days.
@@ -403,6 +481,8 @@ class JournalRepository {
             );
       }
     });
+    await _clearTombstoneRow(dateKey);
+    _noteLocalWrite();
     await mergeExactLibraryMatchesFromCatalog();
   }
 
@@ -788,14 +868,17 @@ class JournalRepository {
     });
   }
 
-  /// Removes the day row, its exercises, and their sets.
+  /// Removes the day row, its exercises, and their sets, and records a tombstone.
   Future<void> deleteDay(String dateKey) async {
     if (!isValidDateKey(dateKey)) {
       throw ArgumentError('Date must look like YYYY-MM-DD.');
     }
+    final stamp = nowStamp();
     await db.transaction(() async {
       await _deleteDayRows(dateKey);
+      await _writeTombstone(dateKey, stamp);
     });
+    _noteLocalWrite();
   }
 
   /// Swaps this exercise for another library lift.
@@ -939,6 +1022,8 @@ class JournalRepository {
         ),
       );
     });
+    await _clearTombstoneRow(dateKey);
+    _noteLocalWrite();
   }
 
   Future<void> updateLoggedCalories(String exerciseId, String calories) async {
@@ -1144,7 +1229,10 @@ class JournalRepository {
           exercises: source.exercises,
         ),
       );
-      if (!swap) return 'moved';
+      if (!swap) {
+        await _writeTombstone(fromKey, stamp);
+        return 'moved';
+      }
       await _insertDay(
         JournalDay(
           dateKey: fromKey,
@@ -1178,6 +1266,7 @@ class JournalRepository {
   }
 
   Future<void> _insertDay(JournalDay day) async {
+    await _clearTombstoneRow(day.dateKey);
     await db.into(db.days).insert(
       DaysCompanion.insert(
         dateKey: day.dateKey,
@@ -1241,11 +1330,36 @@ class JournalRepository {
         );
       }
     }
+    _noteLocalWrite();
   }
 
-  Future<void> _touchDay(String dateKey) {
-    return (db.update(db.days)..where((day) => day.dateKey.equals(dateKey)))
+  Future<void> _touchDay(String dateKey) async {
+    await (db.update(db.days)..where((day) => day.dateKey.equals(dateKey)))
         .write(DaysCompanion(updatedAt: Value(nowStamp())));
+    _noteLocalWrite();
+  }
+
+  Future<void> _writeTombstone(String dateKey, String deletedAt) {
+    return db.into(db.deletedDays).insertOnConflictUpdate(
+      DeletedDaysCompanion.insert(dateKey: dateKey, deletedAt: deletedAt),
+    );
+  }
+
+  Future<void> _clearTombstoneRow(String dateKey) {
+    return (db.delete(db.deletedDays)
+          ..where((row) => row.dateKey.equals(dateKey)))
+        .go();
+  }
+
+  /// Drops a tombstone after a newer edit wins. Does not schedule a sync.
+  Future<void> clearTombstone(String dateKey) => _clearTombstoneRow(dateKey);
+
+  /// Stores a remote delete without scheduling another upload.
+  Future<void> applyRemoteDeletion(String dateKey, String deletedAt) {
+    return db.transaction(() async {
+      await _deleteDayRows(dateKey);
+      await _writeTombstone(dateKey, deletedAt);
+    });
   }
 
   /// Returns false when the day already has exercises, so they are not wiped.
@@ -1270,10 +1384,14 @@ class JournalRepository {
               updatedAt: stamp,
             ),
           );
+      await _clearTombstoneRow(dateKey);
+      _noteLocalWrite();
       return true;
     }
     await (db.update(db.days)..where((day) => day.dateKey.equals(dateKey)))
         .write(DaysCompanion(isRestDay: Value(rest), updatedAt: Value(stamp)));
+    await _clearTombstoneRow(dateKey);
+    _noteLocalWrite();
     return true;
   }
 
@@ -1281,8 +1399,8 @@ class JournalRepository {
   ///
   /// One transaction so a multi-year journal commits together instead of
   /// once per day.
-  Future<int> importBackup(ParsedBackup backup) {
-    return db.transaction(() async {
+  Future<int> importBackup(ParsedBackup backup) async {
+    final count = await db.transaction(() async {
       for (final day in backup.days) {
         await replaceDay(day);
       }
@@ -1310,6 +1428,8 @@ class JournalRepository {
       }
       return backup.days.length;
     });
+    _noteLocalWrite();
+    return count;
   }
 
   Future<bool> isSyncEnabled() async {
@@ -1326,7 +1446,7 @@ class JournalRepository {
   }
 
   Future<void> setAutoFillSetsEnabled(bool enabled) {
-    return _put(SettingKeys.autoFillSets, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.autoFillSets, enabled ? 'true' : 'false');
   }
 
   /// On unless the stored value is the word `false`.
@@ -1337,7 +1457,7 @@ class JournalRepository {
   }
 
   Future<void> setAutoAdvanceWeightToRepsEnabled(bool enabled) {
-    return _put(
+    return _putSynced(
       SettingKeys.autoAdvanceWeightToReps,
       enabled ? 'true' : 'false',
     );
@@ -1349,7 +1469,7 @@ class JournalRepository {
   }
 
   Future<void> setStartTimerOnDone(bool enabled) {
-    return _put(SettingKeys.startTimerOnDone, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.startTimerOnDone, enabled ? 'true' : 'false');
   }
 
   /// Off unless the stored value is the word `true`.
@@ -1358,7 +1478,7 @@ class JournalRepository {
   }
 
   Future<void> setSaveRepsMarksSetDone(bool enabled) {
-    return _put(SettingKeys.saveRepsMarksDone, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.saveRepsMarksDone, enabled ? 'true' : 'false');
   }
 
   /// Off until the lifter turns on per-set difficulty in Settings.
@@ -1367,7 +1487,7 @@ class JournalRepository {
   }
 
   Future<void> setLogSetDifficultyEnabled(bool enabled) {
-    return _put(SettingKeys.logSetDifficulty, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.logSetDifficulty, enabled ? 'true' : 'false');
   }
 
   /// Off until the lifter turns on warmup sets for new barbell compounds.
@@ -1376,7 +1496,7 @@ class JournalRepository {
   }
 
   Future<void> setPrescribeWarmupEnabled(bool enabled) {
-    return _put(SettingKeys.prescribeWarmup, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.prescribeWarmup, enabled ? 'true' : 'false');
   }
 
   /// On unless the stored value is the word `false`.
@@ -1385,7 +1505,7 @@ class JournalRepository {
   }
 
   Future<void> setShowPlateGraphicEnabled(bool enabled) {
-    return _put(SettingKeys.showPlateGraphic, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.showPlateGraphic, enabled ? 'true' : 'false');
   }
 
   /// 45 lb bar, or 35 when that plate-calculator preset is stored.
@@ -1395,7 +1515,7 @@ class JournalRepository {
 
   Future<void> setPlateBarLb(double lbs) {
     final stored = standardBarLbFromStored(lbs.toString());
-    return _put(SettingKeys.plateBarLb, stored.toString());
+    return _putSynced(SettingKeys.plateBarLb, stored.toString());
   }
 
   /// Plans starred from the Plans tab. Local only, so they survive a restart.
@@ -1409,7 +1529,7 @@ class JournalRepository {
         if (id.trim().isNotEmpty) id.trim(),
     };
     final sorted = unique.toList()..sort();
-    return _put(SettingKeys.favoritePlanIds, jsonEncode(sorted));
+    return _putSynced(SettingKeys.favoritePlanIds, jsonEncode(sorted));
   }
 
   /// Temporary tester unlock. Only the exact stored word `true` counts.
@@ -1429,11 +1549,11 @@ class JournalRepository {
   Future<void> setHeightInches(double inches) {
     final sanitized = sanitizeHeightInches(inches);
     if (sanitized == null) return clearHeightInches();
-    return _put(SettingKeys.heightInches, sanitized.toString());
+    return _putSynced(SettingKeys.heightInches, sanitized.toString());
   }
 
   Future<void> clearHeightInches() {
-    return _put(SettingKeys.heightInches, '');
+    return _putSynced(SettingKeys.heightInches, '');
   }
 
   Future<void> setChosenRestSeconds(String dateKey, int seconds) async {
@@ -1464,6 +1584,8 @@ class JournalRepository {
         ),
       );
     });
+    await _clearTombstoneRow(dateKey);
+    _noteLocalWrite();
   }
 
   Future<Map<String, StoredHealthWrite>> loadHealthWorkoutWrites() async {
@@ -1537,6 +1659,8 @@ class JournalRepository {
     if (existing == null) return;
     await (db.update(db.days)..where((day) => day.dateKey.equals(dateKey)))
         .write(DaysCompanion(healthEnergyKcal: Value(kcal)));
+    await _clearTombstoneRow(dateKey);
+    _noteLocalWrite();
   }
 
   /// Renames every logged spelling in [key] to [canonicalName].
@@ -1763,10 +1887,12 @@ class JournalRepository {
     );
   }
 
-  Future<void> saveWatchCompanionSettings(WatchCompanionSettings settings) async {
-    await _put(SettingKeys.watchApple, settings.apple ? 'true' : 'false');
-    await _put(SettingKeys.watchGarmin, settings.garmin ? 'true' : 'false');
-    await _put(SettingKeys.watchSamsung, settings.samsung ? 'true' : 'false');
+  Future<void> saveWatchCompanionSettings(WatchCompanionSettings settings) {
+    return _putManySynced({
+      SettingKeys.watchApple: settings.apple ? 'true' : 'false',
+      SettingKeys.watchGarmin: settings.garmin ? 'true' : 'false',
+      SettingKeys.watchSamsung: settings.samsung ? 'true' : 'false',
+    });
   }
 
   Future<WeightUnit> storedWeightUnit() async {
@@ -1774,7 +1900,7 @@ class JournalRepository {
   }
 
   Future<void> setWeightUnit(WeightUnit unit) {
-    return _put(SettingKeys.weightUnit, unit == WeightUnit.kg ? 'kg' : 'lb');
+    return _putSynced(SettingKeys.weightUnit, unit == WeightUnit.kg ? 'kg' : 'lb');
   }
 
   Future<String?> loadColorThemeId() {
@@ -1782,7 +1908,7 @@ class JournalRepository {
   }
 
   Future<void> setColorThemeId(String id) {
-    return _put(SettingKeys.colorThemeId, id.trim());
+    return _putSynced(SettingKeys.colorThemeId, id.trim());
   }
 
   Future<DistanceUnit> storedDistanceUnit() async {
@@ -1790,7 +1916,7 @@ class JournalRepository {
   }
 
   Future<void> setDistanceUnit(DistanceUnit unit) {
-    return _put(SettingKeys.distanceUnit, unit == DistanceUnit.km ? 'km' : 'mi');
+    return _putSynced(SettingKeys.distanceUnit, unit == DistanceUnit.km ? 'km' : 'mi');
   }
 
   Future<int> storedAverageRestSeconds() async {
@@ -1802,7 +1928,7 @@ class JournalRepository {
   }
 
   Future<void> setAverageRestSeconds(int seconds) {
-    return _put(
+    return _putSynced(
       SettingKeys.averageRestSeconds,
       '${clampAverageRestSeconds(seconds)}',
     );
@@ -1817,7 +1943,7 @@ class JournalRepository {
   }
 
   Future<void> setAverageLiftSeconds(int seconds) {
-    return _put(
+    return _putSynced(
       SettingKeys.averageLiftSeconds,
       '${clampAverageRestSeconds(seconds)}',
     );
@@ -1838,27 +1964,20 @@ class JournalRepository {
     );
   }
 
-  Future<void> saveRestTimerAlertSettings(RestTimerAlertSettings settings) async {
-    await _put(
-      SettingKeys.restTimerSound,
-      settings.soundEnabled ? 'true' : 'false',
-    );
-    await _put(
-      SettingKeys.restTimerVibration,
-      settings.vibrationEnabled ? 'true' : 'false',
-    );
-    await _put(
-      SettingKeys.restTimerNotification,
-      settings.notificationEnabled ? 'true' : 'false',
-    );
-    await _put(
-      SettingKeys.restTimerRingUntilStopped,
-      settings.ringUntilStopped ? 'true' : 'false',
-    );
-    await _put(
-      SettingKeys.restTimerSoundId,
-      RestTimerAlertSettings.canonicalSoundId(settings.soundId),
-    );
+  Future<void> saveRestTimerAlertSettings(RestTimerAlertSettings settings) {
+    return _putManySynced({
+      SettingKeys.restTimerSound: settings.soundEnabled ? 'true' : 'false',
+      SettingKeys.restTimerVibration: settings.vibrationEnabled ? 'true' : 'false',
+      SettingKeys.restTimerNotification: settings.notificationEnabled
+          ? 'true'
+          : 'false',
+      SettingKeys.restTimerRingUntilStopped: settings.ringUntilStopped
+          ? 'true'
+          : 'false',
+      SettingKeys.restTimerSoundId: RestTimerAlertSettings.canonicalSoundId(
+        settings.soundId,
+      ),
+    });
   }
 
   Future<bool> appleHealthSyncEnabled() async {
@@ -1866,17 +1985,17 @@ class JournalRepository {
   }
 
   Future<void> setAppleHealthSyncEnabled(bool enabled) {
-    return _put(SettingKeys.appleHealthEnabled, enabled ? 'true' : 'false');
+    return _putSynced(SettingKeys.appleHealthEnabled, enabled ? 'true' : 'false');
   }
 
   Future<void> setBodyWeightLbs(double lbs) {
     final sanitized = sanitizeBodyWeightLbs(lbs);
     if (sanitized == null) return clearBodyWeightLbs();
-    return _put(SettingKeys.bodyWeightLbs, sanitized.toString());
+    return _putSynced(SettingKeys.bodyWeightLbs, sanitized.toString());
   }
 
   Future<void> clearBodyWeightLbs() {
-    return _put(SettingKeys.bodyWeightLbs, '');
+    return _putSynced(SettingKeys.bodyWeightLbs, '');
   }
 
   Future<double?> storedMachineStartingWeightLbs(VariableMachineKind kind) async {
@@ -1891,11 +2010,11 @@ class JournalRepository {
     VariableMachineKind kind,
     double lbs,
   ) {
-    return _put(_machineStartingWeightKey(kind), lbs.toString());
+    return _putSynced(_machineStartingWeightKey(kind), lbs.toString());
   }
 
   Future<void> clearMachineStartingWeightLbs(VariableMachineKind kind) {
-    return _put(_machineStartingWeightKey(kind), '');
+    return _putSynced(_machineStartingWeightKey(kind), '');
   }
 
   Future<DailyLiftReminderSettings> loadDailyLiftReminderSettings() async {
@@ -1919,23 +2038,17 @@ class JournalRepository {
 
   Future<void> saveDailyLiftReminderSettings(
     DailyLiftReminderSettings settings,
-  ) async {
-    await _put(
-      SettingKeys.dailyLiftReminderEnabled,
-      settings.enabled ? 'true' : 'false',
-    );
-    await _put(
-      SettingKeys.dailyLiftReminderTime,
-      sanitizeReminderTimeHHmm(settings.timeHHmm),
-    );
-    await _put(
-      SettingKeys.dailyLiftReminderDays,
-      encodeReminderWeekdays(settings.weekdays),
-    );
-    await _put(
-      SettingKeys.dailyLiftReminderMessage,
-      settings.customMessage?.trim() ?? '',
-    );
+  ) {
+    return _putManySynced({
+      SettingKeys.dailyLiftReminderEnabled: settings.enabled ? 'true' : 'false',
+      SettingKeys.dailyLiftReminderTime: sanitizeReminderTimeHHmm(
+        settings.timeHHmm,
+      ),
+      SettingKeys.dailyLiftReminderDays: encodeReminderWeekdays(
+        settings.weekdays,
+      ),
+      SettingKeys.dailyLiftReminderMessage: settings.customMessage?.trim() ?? '',
+    });
   }
 
   Future<LoggedSetFill?> _fillForNewSet({
@@ -2061,36 +2174,57 @@ class JournalRepository {
   Future<String?> templatesJson() => _get(SettingKeys.templatesJson);
 
   /// Writes `templates_json` and stamps settings so Custom Plans can read it.
-  Future<void> saveTemplatesJson(String raw) async {
-    await _put(SettingKeys.templatesJson, raw);
-    await _put(
-      SettingKeys.settingsUpdatedAt,
-      DateTime.now().toUtc().toIso8601String(),
-    );
+  Future<void> saveTemplatesJson(String raw) {
+    return _putSynced(SettingKeys.templatesJson, raw);
   }
 
   Future<CloudSettings?> localCloudSettings() async {
     final updatedAt = await _get(SettingKeys.settingsUpdatedAt);
     if (updatedAt == null || updatedAt.isEmpty) return null;
-    final body = await _get(SettingKeys.bodyWeightLbs);
+    final settingsJson = await _get(SettingKeys.settingsJson);
+    final preferences = <String, String>{};
+    for (final key in cloudSyncedPreferenceKeys) {
+      final value = _effectivePreferenceBackupValue(
+        key,
+        await _get(key),
+        settingsJson: settingsJson,
+      );
+      if (value == null) continue;
+      preferences[key] = value;
+    }
+    final bodyRaw = preferences[SettingKeys.bodyWeightLbs];
     return CloudSettings(
       updatedAt: updatedAt,
-      weightUnit: await _get(SettingKeys.weightUnit),
-      bodyWeightLbs: body == null ? null : double.tryParse(body),
+      weightUnit: preferences[SettingKeys.weightUnit],
+      bodyWeightLbs: bodyRaw == null || bodyRaw.isEmpty
+          ? null
+          : double.tryParse(bodyRaw),
       templatesJson: await _get(SettingKeys.templatesJson),
-      settingsJson: await _get(SettingKeys.settingsJson),
+      settingsJson: settingsJson,
+      preferences: preferences,
     );
   }
 
   Future<void> applyCloudSettings(CloudSettings settings) async {
     await _put(SettingKeys.settingsUpdatedAt, settings.updatedAt);
-    if (settings.weightUnit != null) {
+    final keys = settings.preferences.keys.toList()..sort();
+    for (final key in keys) {
+      if (!cloudSyncedPreferenceKeys.contains(key)) continue;
+      await _put(key, settings.preferences[key]!);
+    }
+    if (settings.weightUnit != null &&
+        !settings.preferences.containsKey(SettingKeys.weightUnit)) {
       await _put(SettingKeys.weightUnit, settings.weightUnit!);
     }
-    if (settings.bodyWeightLbs != null) {
-      await _put(SettingKeys.bodyWeightLbs, settings.bodyWeightLbs.toString());
+    if (settings.bodyWeightLbs != null &&
+        !settings.preferences.containsKey(SettingKeys.bodyWeightLbs)) {
+      await _put(
+        SettingKeys.bodyWeightLbs,
+        settings.bodyWeightLbs.toString(),
+      );
     }
-    if (settings.templatesJson != null) {
+    if (settings.templatesJson != null &&
+        !settings.preferences.containsKey(SettingKeys.templatesJson)) {
       await _put(SettingKeys.templatesJson, settings.templatesJson!);
     }
     if (settings.settingsJson != null) {
@@ -2215,6 +2349,23 @@ class JournalRepository {
         .insertOnConflictUpdate(
           LocalSettingsCompanion.insert(key: key, value: value),
         );
+  }
+
+  Future<void> _putSynced(String key, String value) async {
+    await _put(key, value);
+    await _stampSyncedSettings();
+  }
+
+  Future<void> _putManySynced(Map<String, String> values) async {
+    for (final entry in values.entries) {
+      await _put(entry.key, entry.value);
+    }
+    await _stampSyncedSettings();
+  }
+
+  Future<void> _stampSyncedSettings() async {
+    await _put(SettingKeys.settingsUpdatedAt, nowStamp());
+    _noteLocalWrite();
   }
 
   /// Adds one warmup to a heavy compound that does not already have one.

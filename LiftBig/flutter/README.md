@@ -43,10 +43,10 @@ Health, Watch, and the Plans screen are not in this slice. That screen will list
 
 ## Firebase (optional)
 
-Sync is a no-op until the files below exist and `kFirebaseEnabled` is set to `true`. Do not invent API keys. The stub at `lib/firebase_options.dart` has none.
+Sync is a no-op until the files below exist and `kFirebaseEnabled` is set to `true`. Do not invent API keys. The stub at `lib/firebase_options.dart` has none, and `kFirebaseEnabled` stays `false` until you replace that stub.
 
 1. Create a Firebase project and enable **Authentication → Email/Password**.
-2. Add an iOS app and an Android app with bundle / application id `com.liftbig.app.dev`. Add a web app if you want `flutter run -d chrome` to sync.
+2. Register the iOS app with bundle id `com.liftbig.app`. Register the Android app with application id `com.liftbig.app.dev` (that is the Play application id; do not change it). Add a web app if you want `flutter run -d chrome` to sync.
 3. Download and place:
    - `LiftBig/flutter/android/app/google-services.json`
    - `LiftBig/flutter/ios/Runner/GoogleService-Info.plist`  
@@ -59,11 +59,17 @@ Sync is a no-op until the files below exist and `kFirebaseEnabled` is set to `tr
    ```
 
    That command overwrites `lib/firebase_options.dart`.
-5. Set `kFirebaseEnabled` to `true` in `lib/sync/firebase_enabled.dart`.
-6. Deploy `firestore.rules` (Firebase console or `firebase deploy --only firestore:rules`).
+5. Set `kFirebaseEnabled` to `true` in `lib/sync/firebase_enabled.dart` only after step 4 and the plist exist.
+6. Deploy `firestore.rules`. `firebase.json` in this directory points at that file:
+
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
 
 Rules allow a signed-in user to read and write only `users/{uid}/days/{dateKey}` and `users/{uid}/settings/{docId}`.
 
-Each day document has `updatedAt`. The newer stamp wins. If the stamps are equal, the phone keeps its copy. The settings switch itself stays on the phone and is not uploaded, so the cloud cannot turn sync on.
+Each day document has `updatedAt`. A delete is the same document with `deleted: true`. The newer stamp wins between the day and that tombstone. If the stamps are equal, the phone keeps its copy. Settings changes stamp `settings_updated_at` and upload units, body weight, height, theme, custom plans, favorites, the reminder, and the logging switches. The sync switch, the in-progress rest timer, Health write ids, and the Pro tester flag stay on the phone.
+
+With sync on and a signed-in user, the journal syncs on launch, when the app resumes, about two seconds after a local write, and from **Sync Now**. Account deletion removes that user's cloud documents and the sign-in. The journal on the phone stays.
 
 Until step 5, the app never calls Firebase.

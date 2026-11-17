@@ -1,18 +1,19 @@
 {
   "name": "LiftBig",
   "priceUsd": "4.99",
-  "priceNote": "One-time paid download. Choose the $4.99 tier in App Store Connect. Updates to the journal are free.",
+  "priceNote": "One-time paid download. Choose the $4.99 tier in App Store Connect. Updates to the journal are free. This release has no subscription.",
   "subtitle": "Training journal",
-  "description": "LiftBig is a strength training journal for logging sets, reps, weight, plans, and progress on your iPhone. Your workouts stay on your device. You can import a backup exported from the LiftBig website, optionally sync across your devices with iCloud, and optionally write workouts to Apple Health.",
+  "description": "LiftBig is a strength training journal for logging sets, reps, weight, plans, and progress on your iPhone. Your workouts stay on your phone. No account is required to log. If you sign in with email, Google, or Apple and turn sync on, LiftBig copies that journal to Firebase so you can open it on another phone. Sync and Apple Health both start off. You can optionally save logged workouts to Apple Health. This version does not sync through iCloud, and it does not include a Pro subscription.",
   "disclaimer": "LiftBig is a workout log, not medical advice.",
   "privacyPolicyPath": "/privacy.html",
+  "privacy": "Workouts stay on the phone. An optional account signed in with email, Google, or Apple copies workouts, plans, and journal settings to Firebase only when the user turns sync on. Sync is off by default, and no account is required to log. Email and the user id are linked to the account only if the user signs in. Workout content is linked to that account only if they sync. Apple Health is optional and off until the user turns it on, and covers body weight, height, and logged workouts. No ads, no sale of data, and no tracking. iCloud is not how this version syncs.",
   "supportEmail": "liftbig.support@gmail.com",
-  "supportEmailNote": "Create this dedicated Gmail, or replace the address in public/privacy.html and App Store Connect, before submission.",
+  "supportEmailNote": "Confirm liftbig.support@gmail.com receives mail before submission.",
   "appleDeveloperProgram": "Required. $99 per year. No other paid service is required to list the app.",
   "smallBusinessProgram": "Enroll at no charge so Apple's commission is 15% of the $4.99.",
   "pro": {
-    "shipsIn": "The release that adds the Apple Watch companion",
-    "productIds": ["liftbig.pro.yearly", "liftbig.pro.monthly"]
+    "shipsIn": "Not in this release",
+    "productIds": []
   },
-  "reviewNotes": "LiftBig stores the training journal on device. iCloud sync and Apple Health are off until the user turns them on. The app does not require an account."
+  "reviewNotes": "Workouts stay on the phone. No account is required to log. Sync and Apple Health start off. An optional account using email, Google, or Apple copies the journal to Firebase only when the user turns sync on. This version does not sync through iCloud and does not include a Pro subscription. Use the demo account supplied in App Store Connect."
 }

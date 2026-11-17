@@ -88,6 +88,18 @@ class WorkoutSets extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// A deleted or moved-away date. [deletedAt] is compared with the day's
+/// `updatedAt`. The newer stamp wins. Schema version 5.
+class DeletedDays extends Table {
+  TextColumn get dateKey => text()();
+
+  /// ISO-8601. Matches the Firestore tombstone `updatedAt`.
+  TextColumn get deletedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {dateKey};
+}
+
 /// Small local key/value store for the sync switch, templates, and settings.
 class LocalSettings extends Table {
   TextColumn get key => text()();

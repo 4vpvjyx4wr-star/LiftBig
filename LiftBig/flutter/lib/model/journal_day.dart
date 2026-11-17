@@ -365,6 +365,14 @@ class DaySummary {
 }
 
 /// Optional cloud copy of non-day settings. The sync switch itself stays local.
+/// A date removed locally or in the cloud. [deletedAt] is the stamp.
+class DayTombstone {
+  const DayTombstone({required this.dateKey, required this.deletedAt});
+
+  final String dateKey;
+  final String deletedAt;
+}
+
 class CloudSettings {
   const CloudSettings({
     required this.updatedAt,
@@ -372,6 +380,7 @@ class CloudSettings {
     this.bodyWeightLbs,
     this.templatesJson,
     this.settingsJson,
+    this.preferences = const <String, String>{},
   });
 
   final String updatedAt;
@@ -380,13 +389,22 @@ class CloudSettings {
   final String? templatesJson;
   final String? settingsJson;
 
+  /// Synced journal preferences keyed by the local settings key.
+  /// The sync switch, live rest timer, Health write ids, and Pro tester
+  /// flag are never entries here.
+  final Map<String, String> preferences;
+
   Map<String, Object?> toMap() {
+    final prefs = Map<String, String>.fromEntries(
+      preferences.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+    );
     return {
       'updatedAt': updatedAt,
       'weightUnit': weightUnit,
       'bodyWeightLbs': bodyWeightLbs,
       'templatesJson': templatesJson,
       'settingsJson': settingsJson,
+      'preferences': prefs,
     };
   }
 
@@ -399,6 +417,7 @@ class CloudSettings {
       bodyWeightLbs: _double(json['bodyWeightLbs']),
       templatesJson: _string(json['templatesJson']),
       settingsJson: _string(json['settingsJson']),
+      preferences: _stringMap(json['preferences']),
     );
   }
 }
@@ -446,6 +465,17 @@ double? _double(Object? value) {
   if (value is num) return value.toDouble();
   if (value is String) return double.tryParse(value);
   return null;
+}
+
+Map<String, String> _stringMap(Object? value) {
+  if (value is! Map) return const {};
+  final out = <String, String>{};
+  for (final entry in value.entries) {
+    final item = entry.value;
+    if (item == null) continue;
+    out['${entry.key}'] = item is String ? item : '$item';
+  }
+  return out;
 }
 
 List<String> _stringList(Object? value) {

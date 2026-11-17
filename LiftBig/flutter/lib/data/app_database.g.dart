@@ -2744,6 +2744,225 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSetting> {
   }
 }
 
+class $DeletedDaysTable extends DeletedDays
+    with TableInfo<$DeletedDaysTable, DeletedDay> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeletedDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dateKeyMeta = const VerificationMeta(
+    'dateKey',
+  );
+  @override
+  late final GeneratedColumn<String> dateKey = GeneratedColumn<String>(
+    'date_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<String> deletedAt = GeneratedColumn<String>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [dateKey, deletedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'deleted_days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeletedDay> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('date_key')) {
+      context.handle(
+        _dateKeyMeta,
+        dateKey.isAcceptableOrUnknown(data['date_key']!, _dateKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateKeyMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {dateKey};
+  @override
+  DeletedDay map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeletedDay(
+      dateKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date_key'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DeletedDaysTable createAlias(String alias) {
+    return $DeletedDaysTable(attachedDatabase, alias);
+  }
+}
+
+class DeletedDay extends DataClass implements Insertable<DeletedDay> {
+  final String dateKey;
+
+  /// ISO-8601. Matches the Firestore tombstone `updatedAt`.
+  final String deletedAt;
+  const DeletedDay({required this.dateKey, required this.deletedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['date_key'] = Variable<String>(dateKey);
+    map['deleted_at'] = Variable<String>(deletedAt);
+    return map;
+  }
+
+  DeletedDaysCompanion toCompanion(bool nullToAbsent) {
+    return DeletedDaysCompanion(
+      dateKey: Value(dateKey),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory DeletedDay.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeletedDay(
+      dateKey: serializer.fromJson<String>(json['dateKey']),
+      deletedAt: serializer.fromJson<String>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'dateKey': serializer.toJson<String>(dateKey),
+      'deletedAt': serializer.toJson<String>(deletedAt),
+    };
+  }
+
+  DeletedDay copyWith({String? dateKey, String? deletedAt}) => DeletedDay(
+    dateKey: dateKey ?? this.dateKey,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+  DeletedDay copyWithCompanion(DeletedDaysCompanion data) {
+    return DeletedDay(
+      dateKey: data.dateKey.present ? data.dateKey.value : this.dateKey,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeletedDay(')
+          ..write('dateKey: $dateKey, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(dateKey, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeletedDay &&
+          other.dateKey == this.dateKey &&
+          other.deletedAt == this.deletedAt);
+}
+
+class DeletedDaysCompanion extends UpdateCompanion<DeletedDay> {
+  final Value<String> dateKey;
+  final Value<String> deletedAt;
+  final Value<int> rowid;
+  const DeletedDaysCompanion({
+    this.dateKey = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeletedDaysCompanion.insert({
+    required String dateKey,
+    required String deletedAt,
+    this.rowid = const Value.absent(),
+  }) : dateKey = Value(dateKey),
+       deletedAt = Value(deletedAt);
+  static Insertable<DeletedDay> custom({
+    Expression<String>? dateKey,
+    Expression<String>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (dateKey != null) 'date_key': dateKey,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeletedDaysCompanion copyWith({
+    Value<String>? dateKey,
+    Value<String>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return DeletedDaysCompanion(
+      dateKey: dateKey ?? this.dateKey,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (dateKey.present) {
+      map['date_key'] = Variable<String>(dateKey.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<String>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeletedDaysCompanion(')
+          ..write('dateKey: $dateKey, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2751,6 +2970,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExercisesTable exercises = $ExercisesTable(this);
   late final $WorkoutSetsTable workoutSets = $WorkoutSetsTable(this);
   late final $LocalSettingsTable localSettings = $LocalSettingsTable(this);
+  late final $DeletedDaysTable deletedDays = $DeletedDaysTable(this);
   late final Index idxDaysUpdatedAt = Index(
     'idx_days_updated_at',
     'CREATE INDEX idx_days_updated_at ON days (updated_at)',
@@ -2772,6 +2992,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     exercises,
     workoutSets,
     localSettings,
+    deletedDays,
     idxDaysUpdatedAt,
     idxExercisesDateKey,
     idxSetsExerciseId,
@@ -4482,6 +4703,158 @@ typedef $$LocalSettingsTableProcessedTableManager =
       LocalSetting,
       PrefetchHooks Function()
     >;
+typedef $$DeletedDaysTableCreateCompanionBuilder =
+    DeletedDaysCompanion Function({
+      required String dateKey,
+      required String deletedAt,
+      Value<int> rowid,
+    });
+typedef $$DeletedDaysTableUpdateCompanionBuilder =
+    DeletedDaysCompanion Function({
+      Value<String> dateKey,
+      Value<String> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$DeletedDaysTableFilterComposer
+    extends Composer<_$AppDatabase, $DeletedDaysTable> {
+  $$DeletedDaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get dateKey => $composableBuilder(
+    column: $table.dateKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DeletedDaysTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeletedDaysTable> {
+  $$DeletedDaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get dateKey => $composableBuilder(
+    column: $table.dateKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DeletedDaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeletedDaysTable> {
+  $$DeletedDaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get dateKey =>
+      $composableBuilder(column: $table.dateKey, builder: (column) => column);
+
+  GeneratedColumn<String> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$DeletedDaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DeletedDaysTable,
+          DeletedDay,
+          $$DeletedDaysTableFilterComposer,
+          $$DeletedDaysTableOrderingComposer,
+          $$DeletedDaysTableAnnotationComposer,
+          $$DeletedDaysTableCreateCompanionBuilder,
+          $$DeletedDaysTableUpdateCompanionBuilder,
+          (
+            DeletedDay,
+            BaseReferences<_$AppDatabase, $DeletedDaysTable, DeletedDay>,
+          ),
+          DeletedDay,
+          PrefetchHooks Function()
+        > {
+  $$DeletedDaysTableTableManager(_$AppDatabase db, $DeletedDaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeletedDaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeletedDaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeletedDaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> dateKey = const Value.absent(),
+                Value<String> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeletedDaysCompanion(
+                dateKey: dateKey,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String dateKey,
+                required String deletedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DeletedDaysCompanion.insert(
+                dateKey: dateKey,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DeletedDaysTable, DeletedDay>(table),
+                  BaseReferences<_$AppDatabase, $DeletedDaysTable, DeletedDay>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DeletedDaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DeletedDaysTable,
+      DeletedDay,
+      $$DeletedDaysTableFilterComposer,
+      $$DeletedDaysTableOrderingComposer,
+      $$DeletedDaysTableAnnotationComposer,
+      $$DeletedDaysTableCreateCompanionBuilder,
+      $$DeletedDaysTableUpdateCompanionBuilder,
+      (
+        DeletedDay,
+        BaseReferences<_$AppDatabase, $DeletedDaysTable, DeletedDay>,
+      ),
+      DeletedDay,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4493,4 +4866,6 @@ class $AppDatabaseManager {
       $$WorkoutSetsTableTableManager(_db, _db.workoutSets);
   $$LocalSettingsTableTableManager get localSettings =>
       $$LocalSettingsTableTableManager(_db, _db.localSettings);
+  $$DeletedDaysTableTableManager get deletedDays =>
+      $$DeletedDaysTableTableManager(_db, _db.deletedDays);
 }

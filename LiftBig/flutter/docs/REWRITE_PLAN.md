@@ -33,7 +33,10 @@ Field mapping on a logged day:
 
 - Local persistence is Drift (SQLite). Weight is stored as pounds. A day is one row keyed by local `YYYY-MM-DD`. Exercises and sets are rows, matching `LiftBig/src/types/workout.ts`.
 - No account is required. With sync off, nothing is uploaded.
-- Optional sync is Firebase Auth plus Firestore `users/{uid}/days/{dateKey}` and a settings document. The newer `updatedAt` wins. Equal stamps keep the local copy. Security rules allow a user to read and write only their own documents. The sync switch itself stays on the device.
+- Optional sync is Firebase Auth with email and password, Google, and Sign in with Apple. Apple is required because Google is offered. Firestore stores `users/{uid}/days/{dateKey}` and `users/{uid}/settings/app`. The newer `updatedAt` wins. Equal stamps keep the phone’s copy. Security rules allow a user to read and write only their own documents. There are no Cloud Functions. The sync switch itself stays on the device and is not uploaded.
+- **Day tombstones.** Deleting a day, or moving a day off a date, writes a Drift row in `day_tombstones` (`dateKey`, `deletedAt`) and the Firestore day document `{deleted: true, updatedAt}`. `JournalSync` compares content and tombstone by stamp. A newer delete stays deleted on both sides and clears the day. A newer edit restores the day and clears the tombstone. An equal stamp keeps the local copy.
+- **Settings stamp.** `settings_updated_at` is written whenever a synced preference changes. The settings document carries units, body weight, height, theme, custom plans (`templates_json`), favorites, the reminder, and the logging switches, plus the other journal preferences that are not in the exclusion list. Left on the phone only: the sync switch, the in-progress rest timer, Health write ids, and the Pro tester flag.
+- **Automatic sync.** When the switch is on and the user is signed in, sync runs on launch, when the app returns to the foreground, and about two seconds after a local day or settings write. Applying a remote download does not schedule another upload of that same data. Sync Now stays. A failed sync leaves the on-phone journal as it is and shows “Sync failed”. Password reset email stays for email accounts, and in-app account deletion lives in Settings. Delete account confirms with the provider actually used (password, Google, or Apple), deletes that user’s day documents and settings document from the client, then deletes the Firebase Auth user. The journal on that phone stays.
 - Cloud SQL and Cloud Functions are not part of this rewrite.
 - Development bundle id is `com.liftbig.app.dev`. `com.liftbig.app` is reserved for a future 2.0 store upload. A dev install must not overwrite TestFlight **1.0 (2)**.
 - iCloud in the Capacitor app is not ported. Optional Firestore replaces it for this version.
@@ -168,7 +171,7 @@ State stays in `JournalRepository` plus the screen that is editing that day. A s
 
 The tab shell keeps Home, Progress, today's log, Plans, and the Lift Library in one scaffold. Selecting a calendar day does not push. Open log, a lift's detail, and Settings still use `Navigator` pushes. A named router package is not required for this shell.
 
-Local persistence stays Drift (`drift` and `drift_flutter`). It is actively maintained, generates the query layer, and supports migrations. `sqflite` would mean writing the SQL by hand. A document store would fight the reason for this rewrite, which is queryable sets. Schema version is `AppDatabase.schemaVersion`, currently 2. Bump it and add an `onUpgrade` step for every column or table change, and describe the change in this file in the same phase.
+Local persistence stays Drift (`drift` and `drift_flutter`). It is actively maintained, generates the query layer, and supports migrations. `sqflite` would mean writing the SQL by hand. A document store would fight the reason for this rewrite, which is queryable sets. Schema version is `AppDatabase.schemaVersion`, currently 5. Bump it and add an `onUpgrade` step for every column or table change, and describe the change in this file in the same phase.
 
 ## Backend
 
@@ -189,7 +192,8 @@ Entities already in `LiftBig/flutter/lib/data/tables.dart`:
 - **Day.** `dateKey` primary key. `notes`, `isRestDay`, `workoutName`, `planName`, `workoutNotes`, `updatedAt` (ISO-8601). `workoutName` is the session that was used. `planName` is the Plan that session belonged to. `workoutNotes` are the coaching notes from that Workout.
 - **Exercise.** `id` primary key. `dateKey` references Day and cascades on delete. `sortOrder`, `name`, `libraryId`, `notes`, `isCircuit`, `isCardio`, `isCore`, targets (`targetDuration`, `targetTimeSeconds`, `targetDistance`, `loggedCalories`, `targetReps`, `targetWeight`), superset fields, `preferredSwapLibraryIds` (JSON array), `targetRestSeconds`.
 - **Set.** Table name `sets`. `id` primary key. `exerciseId` references Exercise and cascades. `sortOrder`, `reps`, `weight` (pounds, text, matching the Vue strings), `durationSeconds`, `checked`, `isWarmup`.
-- **Local setting.** `key` primary key, `value` text. Known keys: `sync_enabled`, `settings_updated_at`, `weight_unit`, `body_weight_lbs`, `templates_json`, `settings_json`, `auto_fill_sets`, `start_timer_on_done`, `rest_timer_state`. The logging switches and rest timer JSON are not new columns, so the schema version stays 2.
+- **Local setting.** `key` primary key, `value` text. Known keys include `sync_enabled`, `settings_updated_at`, `weight_unit`, `distance_unit`, `body_weight_lbs`, `height_inches`, `color_theme_id`, `templates_json`, `settings_json`, `favorite_plan_ids`, the reminder keys, the logging switches, `auto_fill_sets`, `start_timer_on_done`, and `rest_timer_state`. Those preferences are not new columns.
+- **Day tombstone.** Table `day_tombstones`. `dateKey` primary key, `deletedAt` ISO-8601. Written by delete and by moving a day off that date. Schema version 5 creates the table. A newer tombstone wins over older day content. A newer day clears the tombstone.
 
 Relationships: a day has many exercises ordered by `sortOrder`. An exercise has many sets ordered by `sortOrder`.
 
@@ -216,7 +220,7 @@ Relationships: a day has many exercises ordered by `sortOrder`. An exercise has 
 
 ### Schema versioning
 
-`AppDatabase.schemaVersion` is the version. Phase 0 shipped version 1 (`plan_name`, `plan_folder_name`, `plan_notes` on `days`). Version 2 renames those columns to `workout_name`, `plan_name`, and `workout_notes`. `onUpgrade` copies the old values into the new columns. Backup import keeps reading the old JSON keys (`planName`, `planFolderName`, `planNotes`) after the migration. A later phase that adds a column bumps the version, implements `onUpgrade`, and notes the change under that phase in this file.
+`AppDatabase.schemaVersion` is the version. Phase 0 shipped version 1 (`plan_name`, `plan_folder_name`, `plan_notes` on `days`). Version 2 renames those columns to `workout_name`, `plan_name`, and `workout_notes`. `onUpgrade` copies the old values into the new columns. Backup import keeps reading the old JSON keys (`planName`, `planFolderName`, `planNotes`) after the migration. Version 3 adds `sets.difficulty`. Version 4 adds exercise prescription snapshots plus `days.chosen_rest_seconds` and `days.health_energy_kcal`. Version 5 adds `day_tombstones` so a deleted or moved-away date is not restored from an older cloud copy. A later phase that adds a column bumps the version, implements `onUpgrade`, and notes the change under that phase in this file.
 
 ## Feature parity checklist
 
@@ -347,18 +351,18 @@ Tests: settings clamps and unit conversion at the boundary. Notification schedul
 
 ### Phase 6 — Turn on optional sync
 
-Goal: the existing sync path works after the owner supplies Firebase config. This phase does not redesign it.
+Goal: tombstones, settings stamps, and automatic sync are in the app. The owner still supplies Firebase config before the flag is turned on. Do not invent API keys. Leave `kFirebaseEnabled` false until `flutterfire configure` has replaced `lib/firebase_options.dart` and `GoogleService-Info.plist` exists.
 
-- [ ] Owner adds `google-services.json`, `GoogleService-Info.plist`, and runs `flutterfire configure`.
-- [ ] Set `kFirebaseEnabled` to true.
-- [ ] Deploy `firestore.rules`.
-- [ ] Sign in, turn the switch on, and confirm a newer remote day replaces the local day and an older one does not.
+- [ ] Owner creates the Firebase project, enables Email/Password, registers iOS as `com.liftbig.app` and Android as `com.liftbig.app.dev`, and runs `flutterfire configure`.
+- [ ] Deploy `firestore.rules` (`firebase.json` points at that file).
+- [ ] Set `kFirebaseEnabled` to true only after the generated options and plist exist.
+- [ ] On a device: sign in, turn the switch on, confirm a newer remote day replaces the local day, a deleted day stays deleted, a body-weight change reaches the settings document, and delete account removes that user’s cloud documents.
 
-Files: `lib/sync/`, `lib/firebase_options.dart`. Do not invent API keys in the repo.
+Files: `lib/sync/`, `lib/journal/`, `lib/data/`, `lib/ui/settings_page.dart`, `firebase.json`, `README.md`. Do not invent API keys in the repo.
 
-Acceptance: with the switch off, no Firebase call is made. With it on, only that user's documents are read or written.
+Acceptance: with the switch off, no Firebase call is made. With it on, only that user's documents are read or written. A failed sync does not wipe the on-phone journal.
 
-Tests: `chooseNewerDay` already covers the merge. Add a test if sign-in state changes the switch.
+Tests: a newer tombstone deletes both copies; a newer edit beats an older tombstone; equal stamps keep the local copy; changing weight unit or body weight stamps `settings_updated_at` and that stamp is what `localCloudSettings` returns; applying a remote day does not mark that day dirty for another upload.
 
 ### Later, not one of the phases above
 

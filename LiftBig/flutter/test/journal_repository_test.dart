@@ -52,10 +52,15 @@ JournalDay sampleDay({
 
 class MemoryRemote implements DayRemote {
   final Map<String, JournalDay> days = {};
+  final Map<String, DayTombstone> tombstones = {};
   CloudSettings? settings;
 
   @override
   Future<Map<String, JournalDay>> fetchDays() async => Map.of(days);
+
+  @override
+  Future<Map<String, DayTombstone>> fetchTombstones() async =>
+      Map.of(tombstones);
 
   @override
   Future<CloudSettings?> fetchSettings() async => settings;
@@ -63,11 +68,25 @@ class MemoryRemote implements DayRemote {
   @override
   Future<void> putDay(JournalDay day) async {
     days[day.dateKey] = day;
+    tombstones.remove(day.dateKey);
+  }
+
+  @override
+  Future<void> putTombstone(DayTombstone tombstone) async {
+    tombstones[tombstone.dateKey] = tombstone;
+    days.remove(tombstone.dateKey);
   }
 
   @override
   Future<void> putSettings(CloudSettings value) async {
     settings = value;
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    days.clear();
+    tombstones.clear();
+    settings = null;
   }
 }
 

@@ -5,7 +5,9 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Days, Exercises, WorkoutSets, LocalSettings])
+@DriftDatabase(
+  tables: [Days, Exercises, WorkoutSets, LocalSettings, DeletedDays],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -22,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,6 +44,9 @@ class AppDatabase extends _$AppDatabase {
         await migrator.addColumn(exercises, exercises.prescribedSetCount);
         await migrator.addColumn(days, days.chosenRestSeconds);
         await migrator.addColumn(days, days.healthEnergyKcal);
+      }
+      if (from < 5) {
+        await migrator.createTable(deletedDays);
       }
     },
     beforeOpen: (details) async {
