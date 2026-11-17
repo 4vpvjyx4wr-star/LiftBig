@@ -7,7 +7,6 @@ import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-import '../firebase_options.dart';
 import '../journal/journal_repository.dart';
 import 'account_reauth.dart';
 import 'apple_nonce.dart';
@@ -35,8 +34,6 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
       'Continue with Google works on iPhone. On this device, use email and password.';
   static const _applePhoneOnly =
       'Sign in with Apple works on iPhone. On this device, use email and password.';
-  static const _googleClientMissing =
-      'Google sign-in needs a client id in GoogleService-Info.plist. Re-download that file from the Firebase console after enabling Google.';
 
   bool syncEnabled = false;
   bool busy = false;
@@ -321,11 +318,7 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_providerSignInOnThisPhone) {
       throw const _ProviderSignInException(_googlePhoneOnly);
     }
-    final clientId = DefaultFirebaseOptions.ios.iosClientId;
-    if (clientId == null || clientId.isEmpty) {
-      throw const _ProviderSignInException(_googleClientMissing);
-    }
-    await _ensureGoogleInitialized(clientId);
+    await _ensureGoogleInitialized();
     if (!GoogleSignIn.instance.supportsAuthenticate()) {
       throw const _ProviderSignInException(_googlePhoneOnly);
     }
@@ -339,10 +332,10 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     return GoogleAuthProvider.credential(idToken: idToken);
   }
 
-  Future<void> _ensureGoogleInitialized(String clientId) async {
+  Future<void> _ensureGoogleInitialized() async {
     if (_googleInitialized) return;
     try {
-      _googleInit ??= GoogleSignIn.instance.initialize(clientId: clientId);
+      _googleInit ??= GoogleSignIn.instance.initialize();
       await _googleInit;
       _googleInitialized = true;
     } catch (_) {
