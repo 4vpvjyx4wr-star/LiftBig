@@ -4,8 +4,10 @@ import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/data/app_database.dart';
+import 'package:liftbig/health/health_workout.dart';
 import 'package:liftbig/journal/journal_repository.dart';
 import 'package:liftbig/model/journal_day.dart';
+import 'package:liftbig/rest/rest_timer_state.dart';
 import 'package:liftbig/sync/day_merge.dart';
 import 'package:liftbig/sync/day_remote.dart';
 import 'package:liftbig/sync/firestore_limits.dart';
@@ -230,7 +232,9 @@ void main() {
       expect(afterUnit.weightUnit, 'kg');
       expect(afterUnit.preferences['weight_unit'], 'kg');
       expect(afterUnit.preferences.containsKey('sync_enabled'), isFalse);
-      expect(afterUnit.preferences.containsKey('pro_tester_unlock'), isFalse);
+      expect(afterUnit.preferences['pro_tester_unlock'], 'false');
+      expect(afterUnit.preferences['rest_timer_chrome'], 'floating');
+      expect(afterUnit.preferences['color_theme_id'], isNotEmpty);
       expect(
         afterUnit.preferences.containsKey('health_workout_writes'),
         isFalse,
@@ -251,6 +255,76 @@ void main() {
       );
     },
   );
+
+  test('cloud sync restores theme, preferences, and the tester Pro flag', () async {
+    final phone = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(phone.db.close);
+    await phone.setSyncEnabled(true);
+    await phone.setColorThemeId('forest');
+    await phone.setWeightUnit(WeightUnit.kg);
+    await phone.setShowPlateGraphicEnabled(false);
+    await phone.saveRestTimerAnchored(true);
+    await phone.setProTesterUnlock();
+    await phone.saveRestTimerState(
+      const RestTimerSnapshot(
+        active: true,
+        exerciseId: 'live',
+        exerciseName: 'LIVE',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: 1,
+      ),
+    );
+    await phone.saveHealthWorkoutWrites({
+      '2026-10-01': const StoredHealthWrite(
+        uuid: 'health-uuid',
+        minutes: 40,
+        meters: 0,
+        kcal: 200,
+      ),
+    });
+
+    final remote = MemoryRemote();
+    final uploaded = await JournalSync(journal: phone, remote: remote).sync();
+    expect(uploaded.uploaded, greaterThan(0));
+    final cloud = remote.settings!;
+    expect(cloud.preferences['color_theme_id'], 'forest');
+    expect(cloud.preferences['weight_unit'], 'kg');
+    expect(cloud.preferences['show_plate_graphic'], 'false');
+    expect(cloud.preferences['rest_timer_chrome'], 'anchored');
+    expect(cloud.preferences['pro_tester_unlock'], 'true');
+    expect(cloud.preferences.containsKey('sync_enabled'), isFalse);
+    expect(cloud.preferences.containsKey('rest_timer_state'), isFalse);
+    expect(cloud.preferences.containsKey('health_workout_writes'), isFalse);
+    expect(cloud.preferences.containsKey('rest_timer_tile_offset'), isFalse);
+
+    final fresh = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(fresh.db.close);
+    final restored = await JournalSync(journal: fresh, remote: remote).sync();
+    expect(restored.downloaded, greaterThan(0));
+    expect(await fresh.loadColorThemeId(), 'forest');
+    expect(await fresh.storedWeightUnit(), WeightUnit.kg);
+    expect(await fresh.showPlateGraphicEnabled(), isFalse);
+    expect(await fresh.loadRestTimerAnchored(), isTrue);
+    expect(await fresh.proTesterUnlockEnabled(), isTrue);
+    expect(await fresh.isSyncEnabled(), isFalse);
+    expect(await fresh.loadRestTimerState(), isNull);
+    expect(await fresh.loadHealthWorkoutWrites(), isEmpty);
+
+    final notPro = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(notPro.db.close);
+    final denied = MemoryRemote()
+      ..settings = CloudSettings(
+        updatedAt: '2026-11-02T00:00:00.000Z',
+        preferences: const {
+          'color_theme_id': 'forest',
+          'pro_tester_unlock': 'false',
+        },
+      );
+    await JournalSync(journal: notPro, remote: denied).sync();
+    expect(await notPro.loadColorThemeId(), 'forest');
+    expect(await notPro.proTesterUnlockEnabled(), isFalse);
+  });
 
   test('applying a remote day does not mark that day dirty', () async {
     final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));

@@ -78,8 +78,10 @@ abstract final class SettingKeys {
 
 /// Preferences copied to `users/{uid}/settings/app`.
 ///
-/// Left on the phone: the sync switch, the in-progress rest timer, Health
-/// write ids, and the Pro tester flag.
+/// Left on the phone: the sync switch, the in-progress rest countdown, the
+/// floating-card position, and Health write ids. StoreKit still decides a
+/// paid Pro subscription on each device. [SettingKeys.proTesterUnlock] is
+/// the stored tester flag and rides along so a reinstall can restore it.
 const Set<String> cloudSyncedPreferenceKeys = {
   SettingKeys.weightUnit,
   SettingKeys.distanceUnit,
@@ -114,6 +116,8 @@ const Set<String> cloudSyncedPreferenceKeys = {
   SettingKeys.dailyLiftReminderDays,
   SettingKeys.dailyLiftReminderMessage,
   SettingKeys.appleHealthEnabled,
+  SettingKeys.proTesterUnlock,
+  SettingKeys.restTimerChrome,
 };
 
 /// Backup string for one settings key. Null means leave the key out.
@@ -189,6 +193,8 @@ String? _effectivePreferenceBackupValue(
     case SettingKeys.appleHealthEnabled:
     case SettingKeys.proTesterUnlock:
       return raw == 'true' ? 'true' : 'false';
+    case SettingKeys.restTimerChrome:
+      return raw == 'anchored' ? 'anchored' : 'floating';
     case SettingKeys.dailyLiftReminderTime:
       return sanitizeReminderTimeHHmm(raw ?? dailyLiftReminderDefaultTime);
     case SettingKeys.dailyLiftReminderDays:
@@ -1554,7 +1560,7 @@ class JournalRepository {
   }
 
   Future<void> setProTesterUnlock() {
-    return _put(SettingKeys.proTesterUnlock, 'true');
+    return _putSynced(SettingKeys.proTesterUnlock, 'true');
   }
 
   Future<double?> storedHeightInches() async {
@@ -1883,7 +1889,10 @@ class JournalRepository {
   }
 
   Future<void> saveRestTimerAnchored(bool anchored) {
-    return _put(SettingKeys.restTimerChrome, anchored ? 'anchored' : 'floating');
+    return _putSynced(
+      SettingKeys.restTimerChrome,
+      anchored ? 'anchored' : 'floating',
+    );
   }
 
   Future<WatchCompanionSettings> loadWatchCompanionSettings() async {
