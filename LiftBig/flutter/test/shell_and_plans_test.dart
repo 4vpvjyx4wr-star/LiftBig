@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/catalog/liftbig_catalog.dart';
+import 'package:liftbig/plans/custom_plans.dart';
 import 'package:liftbig/plans/plan_quiz.dart';
 import 'package:liftbig/plans/workout_shuffle.dart';
 import 'package:liftbig/ui/shell_tabs.dart';
@@ -29,6 +30,44 @@ LibraryLift sampleLift({
 }
 
 void main() {
+  test('favorites use the saved ids and the same plan objects', () {
+    const workout = CatalogWorkout(
+      id: 'push',
+      name: 'Push',
+      folderId: 'plan',
+      notes: '',
+      lifts: [],
+    );
+    const premade = PremadePlan(
+      id: 'plan',
+      name: 'Push Pull',
+      purpose: '',
+      workouts: [workout],
+    );
+    const custom = PremadePlan(
+      id: 'mine',
+      name: 'Mine',
+      purpose: '',
+      workouts: [workout],
+    );
+    final picked = favoritePlans(
+      premade: const [premade],
+      custom: const [custom],
+      favoriteIds: {'plan'},
+    );
+    expect(picked, [premade]);
+    expect(identical(picked.single, premade), isTrue);
+    expect(identical(picked.single.workouts, premade.workouts), isTrue);
+    expect(
+      favoritePlans(
+        premade: const [premade],
+        custom: const [custom],
+        favoriteIds: const {},
+      ),
+      isEmpty,
+    );
+  });
+
   test('bottom bar order matches the Vue shell', () {
     expect(ShellTab.values.map((tab) => tab.label), [
       'Home',
@@ -209,7 +248,25 @@ void main() {
     expect(catalog.liftById('hip-abductor-machine')!.tutorialUrl, 'https://www.youtube.com/watch?v=2b97cvyH9sE');
     expect(catalog.liftById('sit-up')!.tutorialUrl, 'https://www.youtube.com/watch?v=jDwoBqPH0jk');
     expect(catalog.liftById('sit-up')!.tips, isNotEmpty);
-    expect(catalog.lifts.length, 200);
+    expect(catalog.lifts.length, 199);
+    expect(catalog.liftById('deadbug'), isNull);
+    expect(catalog.liftById('dead-bug')!.name, 'Dead Bug');
+    final deadBugPlans = [
+      for (final plan in catalog.plans)
+        for (final workout in plan.workouts)
+          for (final lift in workout.lifts)
+            if (lift.name.toLowerCase().contains('dead bug') ||
+                lift.libraryId == 'dead-bug' ||
+                lift.libraryId == 'deadbug')
+              lift,
+    ];
+    expect(deadBugPlans, isNotEmpty);
+    expect(
+      deadBugPlans.every(
+        (lift) => lift.libraryId == 'dead-bug' && lift.name == 'Dead Bug',
+      ),
+      isTrue,
+    );
     expect(catalog.plans.length, 64);
     final joeyC4 = catalog.plans.singleWhere((plan) => plan.name == 'Joey C4');
     final monday = joeyC4.workouts.singleWhere((workout) => workout.id == 'plan-joey-c4-mon');

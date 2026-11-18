@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme.dart';
+import 'keyboard_dismiss.dart';
 
 /// Gap between the status bar or Dynamic Island and the sheet's rounded top.
 const double liftBigSheetTopGap = 12;
@@ -16,7 +17,11 @@ double liftBigPreferredHeight(BuildContext context, double fraction) {
 
 double liftBigSheetMaxHeight(BuildContext context) {
   final media = MediaQuery.of(context);
-  final available = media.size.height - media.viewPadding.top - liftBigSheetTopGap;
+  final available =
+      media.size.height -
+      media.viewPadding.top -
+      liftBigSheetTopGap -
+      keyboardBottomInset(context);
   if (available < 120) return media.size.height;
   return available;
 }
@@ -31,11 +36,13 @@ void liftBigConfirmHaptic() {
   HapticFeedback.mediumImpact();
 }
 
-/// Bottom sheet that stays below the status bar.
+/// Bottom sheet that stays below the status bar and above the keyboard.
 ///
 /// The dimmed band above the sheet is the modal barrier, so a tap there
 /// dismisses. Dragging the grabber dismisses, and pulling a list down from
-/// the top dismisses too.
+/// the top dismisses too. The keyboard inset is applied once here. Children
+/// see a cleared bottom inset so a sheet that also pads [MediaQuery.viewInsets]
+/// does not lift twice.
 Future<T?> showLiftBigSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -53,45 +60,57 @@ Future<T?> showLiftBigSheet<T>(
     useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) {
-      return Padding(
-        padding: const EdgeInsets.only(top: liftBigSheetTopGap),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: _PullDownToDismiss(
-                enabled: isDismissible && enableDrag,
-                child: Material(
-                  color: backgroundColor ?? colors.card,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    side: BorderSide(color: colors.border),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 10),
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: sheetContext.liftBig.border,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
+      final inset = keyboardBottomInset(sheetContext);
+      final media = MediaQuery.of(sheetContext);
+      return MediaQuery(
+        data: media.copyWith(viewInsets: media.viewInsets.copyWith(bottom: 0)),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: inset),
+          child: Padding(
+            padding: const EdgeInsets.only(top: liftBigSheetTopGap),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _PullDownToDismiss(
+                    enabled: isDismissible && enableDrag,
+                    child: Material(
+                      color: backgroundColor ?? colors.card,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
                         ),
-                        Flexible(child: builder(sheetContext)),
-                      ],
+                        side: BorderSide(color: colors.border),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: constraints.maxHeight,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 10),
+                            Center(
+                              child: Container(
+                                width: 40,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: sheetContext.liftBig.border,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            Flexible(child: builder(context)),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       );
     },
@@ -123,7 +142,8 @@ class _PullDownToDismissState extends State<_PullDownToDismiss> {
   Widget build(BuildContext context) {
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
-        if (!widget.enabled || notification.metrics.axis != Axis.vertical) return false;
+        if (!widget.enabled || notification.metrics.axis != Axis.vertical)
+          return false;
         if (notification is OverscrollNotification &&
             notification.overscroll < 0 &&
             notification.metrics.pixels <= 0) {

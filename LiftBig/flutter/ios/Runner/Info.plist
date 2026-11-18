@@ -58,7 +58,7 @@
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>LiftBig uses Bluetooth to send the open workout to a paired Garmin watch.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>LiftBig can read your body weight, height, workouts, and active energy from Apple Health when you allow it.</string>
+	<string>LiftBig can read your body weight, height, workouts, active energy, and step count from Apple Health when you allow it.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>LiftBig can save your body weight, height, and workouts to Apple Health when you allow it.</string>
 	<key>NSUserNotificationsUsageDescription</key>

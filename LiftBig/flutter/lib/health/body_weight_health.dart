@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 
+import '../date_key.dart';
 import '../journal/app_settings.dart';
 import '../utils/weight_units.dart';
 import 'health_workout.dart';
@@ -24,6 +25,8 @@ class BodyWeightHealthSync {
     HealthDataAccess.READ_WRITE,
     HealthDataAccess.READ_WRITE,
   ];
+  static const _stepTypes = [HealthDataType.STEPS];
+  static const _stepPermissions = [HealthDataAccess.READ];
 
   Future<void> _ensureConfigured() async {
     if (_configured || kIsWeb) return;
@@ -50,6 +53,78 @@ class BodyWeightHealthSync {
       return has ?? false;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Asks for step read access. Weight and workouts keep their own request.
+  Future<bool> requestStepReadAccess() async {
+    if (kIsWeb) return false;
+    await _ensureConfigured();
+    try {
+      return await _health.requestAuthorization(
+        _stepTypes,
+        permissions: _stepPermissions,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Body-weight samples from Health, one reading per day, in pounds.
+  Future<List<HealthWeightSample>> readBodyWeightHistory() async {
+    if (kIsWeb) return const [];
+    await _ensureConfigured();
+    try {
+      final now = DateTime.now();
+      final samples = await _health.getHealthDataFromTypes(
+        types: const [HealthDataType.WEIGHT],
+        startTime: now.subtract(const Duration(days: 365 * 5)),
+        endTime: now,
+      );
+      final parsed = <({String dateKey, double lbs, DateTime at})>[];
+      for (final sample in samples) {
+        if (sample.type != HealthDataType.WEIGHT) continue;
+        final kg = _numeric(sample.value);
+        final lbs = sanitizeBodyWeightLbs(kg == null ? null : kgToLbs(kg));
+        if (lbs == null) continue;
+        parsed.add((
+          dateKey: toDateKey(sample.dateTo),
+          lbs: lbs,
+          at: sample.dateTo,
+        ));
+      }
+      return latestWeightPerDay(parsed);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Step totals for the last [days] local days, including zeros.
+  Future<List<StepDay>> readRecentSteps({int days = 14}) async {
+    if (kIsWeb) return const [];
+    await _ensureConfigured();
+    final today = DateTime.now();
+    final start = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: days - 1));
+    try {
+      final samples = await _health.getHealthDataFromTypes(
+        types: _stepTypes,
+        startTime: start,
+        endTime: today,
+      );
+      final parsed = <({String dateKey, double steps})>[];
+      for (final sample in samples) {
+        if (sample.type != HealthDataType.STEPS) continue;
+        final steps = _numeric(sample.value);
+        if (steps == null || steps < 0) continue;
+        parsed.add((dateKey: toDateKey(sample.dateFrom), steps: steps));
+      }
+      return stepSeries(sumStepsPerDay(parsed), today: today, days: days);
+    } catch (_) {
+      return stepSeries(const [], today: today, days: days);
     }
   }
 
@@ -259,6 +334,83 @@ class BodyWeightHealthSync {
       return false;
     }
   }
+}
+
+double? _numeric(HealthValue value) {
+  if (value is NumericHealthValue) return value.numericValue.toDouble();
+  return double.tryParse('$value');
+}
+
+/// One Health weight reading kept for the chart.
+class HealthWeightSample {
+  const HealthWeightSample({required this.dateKey, required this.lbs});
+
+  final String dateKey;
+  final double lbs;
+}
+
+/// Step count for one local day.
+class StepDay {
+  const StepDay({required this.dateKey, required this.steps});
+
+  final String dateKey;
+  final int steps;
+}
+
+/// Latest sample wins when several land on the same day.
+List<HealthWeightSample> latestWeightPerDay(
+  Iterable<({String dateKey, double lbs, DateTime at})> samples,
+) {
+  final best = <String, ({double lbs, DateTime at})>{};
+  for (final sample in samples) {
+    if (!isValidDateKey(sample.dateKey)) continue;
+    final current = best[sample.dateKey];
+    if (current == null || sample.at.isAfter(current.at)) {
+      best[sample.dateKey] = (lbs: sample.lbs, at: sample.at);
+    }
+  }
+  final out = [
+    for (final entry in best.entries)
+      HealthWeightSample(dateKey: entry.key, lbs: entry.value.lbs),
+  ]..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  return out;
+}
+
+List<StepDay> sumStepsPerDay(
+  Iterable<({String dateKey, double steps})> samples,
+) {
+  final totals = <String, double>{};
+  for (final sample in samples) {
+    if (!isValidDateKey(sample.dateKey)) continue;
+    totals[sample.dateKey] = (totals[sample.dateKey] ?? 0) + sample.steps;
+  }
+  final out = [
+    for (final entry in totals.entries)
+      StepDay(dateKey: entry.key, steps: entry.value.round()),
+  ]..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  return out;
+}
+
+/// [days] local dates ending on [today], with 0 where Health had no samples.
+List<StepDay> stepSeries(
+  List<StepDay> counted, {
+  required DateTime today,
+  int days = 14,
+}) {
+  final byDate = {for (final day in counted) day.dateKey: day.steps};
+  final start = DateTime(
+    today.year,
+    today.month,
+    today.day,
+  ).subtract(Duration(days: days <= 0 ? 0 : days - 1));
+  final count = days <= 0 ? 0 : days;
+  return [
+    for (var i = 0; i < count; i++)
+      StepDay(
+        dateKey: toDateKey(start.add(Duration(days: i))),
+        steps: byDate[toDateKey(start.add(Duration(days: i)))] ?? 0,
+      ),
+  ];
 }
 
 class EnergyRead {

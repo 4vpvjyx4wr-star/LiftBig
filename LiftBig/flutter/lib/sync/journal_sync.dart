@@ -9,11 +9,15 @@ class SyncResult {
     this.uploaded = 0,
     this.downloaded = 0,
     this.skippedReason,
+    this.settingsDownloaded = false,
   });
 
   final int uploaded;
   final int downloaded;
   final String? skippedReason;
+
+  /// True when a newer account snapshot was written onto this phone.
+  final bool settingsDownloaded;
 
   bool get skipped => skippedReason != null;
 }
@@ -126,12 +130,14 @@ class JournalSync {
     );
     final chosenSettings = chooseNewerSettings(localSettings, remoteSettings);
     var skippedSettings = false;
+    var settingsDownloaded = false;
     if (chosenSettings != null) {
       if (chosenSettings.side == MergeSide.remote) {
         await journal.runWithoutLocalWriteNotice(
           () => journal.applyCloudSettings(chosenSettings.settings),
         );
         downloaded += 1;
+        settingsDownloaded = true;
       } else {
         final localComparable = cloudComparableSettings(
           chosenSettings.settings,
@@ -161,6 +167,7 @@ class JournalSync {
     return SyncResult(
       uploaded: uploaded,
       downloaded: downloaded,
+      settingsDownloaded: settingsDownloaded,
       skippedReason: _skippedReason(
         skippedDays: skippedDays,
         skippedExercises: skippedExercises,

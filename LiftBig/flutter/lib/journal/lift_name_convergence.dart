@@ -14,6 +14,23 @@ String exerciseFoldKey(String name) {
   return key;
 }
 
+/// The one library id for Dead Bug. `deadbug` is the retired duplicate.
+const String deadBugLibraryId = 'dead-bug';
+
+/// True for Dead Bug, Dead Bugs, Deadbug, and the same spelling with spaces.
+bool foldsToDeadBug(String name) => exerciseFoldKey(name) == 'deadbug';
+
+/// Library id a logged exercise should use. Dead Bug names and the old
+/// `deadbug` id all point at [deadBugLibraryId]. Other ids stay as stored.
+String? libraryIdPointedAtDeadBug(String? libraryId, String name) {
+  final id = libraryId?.trim() ?? '';
+  if (id == 'deadbug' || id == deadBugLibraryId || foldsToDeadBug(name)) {
+    return deadBugLibraryId;
+  }
+  if (id.isEmpty) return null;
+  return id;
+}
+
 /// Library names indexed so a spacing, hyphen, or plural variant hits one lift.
 class LibraryNameIndex {
   LibraryNameIndex(Iterable<LibraryLift> lifts) {

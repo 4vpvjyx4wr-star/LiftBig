@@ -68,6 +68,11 @@ bool matchesLoggedLift(
   required String name,
   String? libraryId,
 }) {
+  final wanted = libraryIdPointedAtDeadBug(libraryId, name);
+  final other = libraryIdPointedAtDeadBug(exercise.libraryId, exercise.name);
+  if (wanted == deadBugLibraryId || other == deadBugLibraryId) {
+    return wanted == deadBugLibraryId && other == deadBugLibraryId;
+  }
   final id = libraryId?.trim();
   final otherId = exercise.libraryId?.trim() ?? '';
   if (id != null && id.isNotEmpty && otherId.isNotEmpty) {
@@ -137,6 +142,11 @@ List<LiftSeries> strengthSeries(
 }
 
 String _seriesKey(JournalExercise exercise, LibraryNameIndex index) {
+  final canonical = libraryIdPointedAtDeadBug(
+    exercise.libraryId,
+    exercise.name,
+  );
+  if (canonical == deadBugLibraryId) return 'id:$deadBugLibraryId';
   final id = exercise.libraryId?.trim();
   if (id != null && id.isNotEmpty) return 'id:$id';
   final match = index.matchName(exercise.name);
@@ -479,6 +489,31 @@ const achievements = <Achievement>[
     title: 'Deadlift four plates',
     description: 'Log a working set of 405+ lbs on barbell deadlift.',
   ),
+  Achievement(
+    id: 'week-4',
+    title: 'Four-day week',
+    description: 'Train on 4 days in one calendar week.',
+  ),
+  Achievement(
+    id: 'week-volume-20k',
+    title: 'Heavy week',
+    description: 'Move 20,000 lb in one calendar week.',
+  ),
+  Achievement(
+    id: 'five-lifts',
+    title: 'Full session',
+    description: 'Log 5 different lifts in one day.',
+  ),
+  Achievement(
+    id: 'comeback',
+    title: 'Back at it',
+    description: 'Train again after 7 or more days away.',
+  ),
+  Achievement(
+    id: 'personal-record',
+    title: 'New best',
+    description: 'Beat an earlier working-set load on the same lift.',
+  ),
 ];
 
 /// Names the journal already uses for the plate lifts, plus the library name.
@@ -572,6 +607,12 @@ Set<String> unlockedAchievements(List<JournalDay> days) {
   final hip = _maxPlateLbs(days, 'hip-thrust');
   if (hip >= 225) unlocked.add('hip-thrust-2-plates');
   if (hip >= 315) unlocked.add('hip-thrust-3-plates');
+
+  if (_maxDaysInMondayWeek(sessions) >= 4) unlocked.add('week-4');
+  if (_maxWeekTonnage(days) >= 20000) unlocked.add('week-volume-20k');
+  if (_maxLiftsInDay(days) >= 5) unlocked.add('five-lifts');
+  if (_hasComeback(sessions)) unlocked.add('comeback');
+  if (_hasPersonalRecord(days)) unlocked.add('personal-record');
 
   return unlocked;
 }
@@ -1073,6 +1114,12 @@ GoalProgress? _nextGoal(List<JournalDay> days, Set<String> earned, int currentSt
   add('row-2-plates', _maxPlateLbs(days, 'barbell-row'), 225);
   add('hip-thrust-2-plates', _maxPlateLbs(days, 'hip-thrust'), 225);
   add('hip-thrust-3-plates', _maxPlateLbs(days, 'hip-thrust'), 315);
+  final trained = _trainedDateKeys(days);
+  add('week-4', _maxDaysInMondayWeek(trained).toDouble(), 4);
+  add('week-volume-20k', _maxWeekTonnage(days), 20000);
+  add('five-lifts', _maxLiftsInDay(days).toDouble(), 5);
+  add('comeback', _hasComeback(trained) ? 1 : 0, 1);
+  add('personal-record', _hasPersonalRecord(days) ? 1 : 0, 1);
   if (candidates.isEmpty) return null;
   candidates.sort((a, b) {
     final ratio = b.ratio.compareTo(a.ratio);
@@ -1080,6 +1127,125 @@ GoalProgress? _nextGoal(List<JournalDay> days, Set<String> earned, int currentSt
     return (a.target - a.current).compareTo(b.target - b.current);
   });
   return candidates.first;
+}
+
+int _maxDaysInMondayWeek(List<String> dates) {
+  final byWeek = <String, int>{};
+  for (final date in dates) {
+    final day = parseDateKey(date);
+    final monday = DateTime(
+      day.year,
+      day.month,
+      day.day,
+    ).subtract(Duration(days: day.weekday - DateTime.monday));
+    final key = toDateKey(monday);
+    byWeek[key] = (byWeek[key] ?? 0) + 1;
+  }
+  var best = 0;
+  for (final count in byWeek.values) {
+    if (count > best) best = count;
+  }
+  return best;
+}
+
+double _maxWeekTonnage(List<JournalDay> days) {
+  final byWeek = <String, List<JournalDay>>{};
+  for (final day in days) {
+    final date = parseDateKey(day.dateKey);
+    final monday = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - DateTime.monday));
+    byWeek.putIfAbsent(toDateKey(monday), () => []).add(day);
+  }
+  var best = 0.0;
+  for (final week in byWeek.values) {
+    final total = _totalTonnage(week);
+    if (total > best) best = total;
+  }
+  return best;
+}
+
+int _maxLiftsInDay(List<JournalDay> days) {
+  var best = 0;
+  for (final day in days) {
+    final names = <String>{};
+    for (final exercise in day.exercises) {
+      if (exercise.isCardio && !exercise.isCircuit) continue;
+      if (sessionPoint(day.dateKey, exercise) == null) continue;
+      final name = exercise.name.trim().toLowerCase();
+      if (name.isNotEmpty) names.add(name);
+    }
+    if (names.length > best) best = names.length;
+  }
+  return best;
+}
+
+bool _hasComeback(List<String> dates) {
+  if (dates.length < 2) return false;
+  final sorted = [...dates]..sort();
+  for (var i = 1; i < sorted.length; i++) {
+    final gap = parseDateKey(sorted[i])
+        .difference(parseDateKey(sorted[i - 1]))
+        .inDays;
+    if (gap >= 7) return true;
+  }
+  return false;
+}
+
+bool _hasPersonalRecord(List<JournalDay> days) {
+  final bestByName = <String, double>{};
+  final ordered = [...days]..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  for (final day in ordered) {
+    for (final exercise in day.exercises) {
+      final point = sessionPoint(day.dateKey, exercise);
+      if (point == null) continue;
+      final key = exercise.name.trim().toLowerCase();
+      final previous = bestByName[key];
+      if (previous != null && point.maxWeightLbs > previous) return true;
+      if (previous == null || point.maxWeightLbs > previous) {
+        bestByName[key] = point.maxWeightLbs;
+      }
+    }
+  }
+  return false;
+}
+
+/// Locked goals closest to being earned, highest progress first.
+List<GoalProgress> upcomingTrainingGoals(
+  List<JournalDay> days, {
+  DateTime? today,
+  int limit = 4,
+}) {
+  final trained = _trainedDateKeys(days);
+  final earned = unlockedAchievements(days);
+  final current = currentTrainingStreak(trained, today: today);
+  final next = _nextGoal(days, earned, current);
+  if (next == null || limit <= 0) return const [];
+  final goals = <GoalProgress>[next];
+  if (limit == 1) return goals;
+  final byId = {for (final item in achievements) item.id: item};
+  final extras = <GoalProgress>[];
+  void add(String id, double currentValue, double target) {
+    if (earned.contains(id) || id == next.achievement.id || target <= 0) return;
+    final item = byId[id];
+    if (item == null) return;
+    extras.add(
+      GoalProgress(achievement: item, current: currentValue, target: target),
+    );
+  }
+
+  add('week-4', _maxDaysInMondayWeek(trained).toDouble(), 4);
+  add('week-volume-20k', _maxWeekTonnage(days), 20000);
+  add('five-lifts', _maxLiftsInDay(days).toDouble(), 5);
+  add('streak-3', current.toDouble(), 3);
+  add('streak-7', current.toDouble(), 7);
+  add('tonnage-10k', _totalTonnage(days), 10000);
+  add('first-workout', trained.length.toDouble(), 1);
+  extras.sort((a, b) => b.ratio.compareTo(a.ratio));
+  goals.addAll(extras.take(limit - 1));
+  return goals;
 }
 
 /// Sunday that starts the calendar week containing [dateKey].

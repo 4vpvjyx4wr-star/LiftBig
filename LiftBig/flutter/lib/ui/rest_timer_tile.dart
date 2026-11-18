@@ -345,10 +345,15 @@ class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
 
   Future<Offset?> _readOffset() async {
     try {
-      final row = await (widget.journal.db.select(widget.journal.db.localSettings)
-            ..where((setting) => setting.key.equals(restTimerTileOffsetKey)))
-          .getSingleOrNull();
-      return _parseOffset(row?.value);
+      final row =
+          await (widget.journal.db.select(
+                widget.journal.db.localSettings,
+              )..where((setting) => setting.key.equals(restTimerTileOffsetKey)))
+              .getSingleOrNull();
+      final offset = _parseOffset(row?.value);
+      if (offset == null || restTimerOffsetIsLegacyTopDefault(offset))
+        return null;
+      return offset;
     } catch (_) {
       return null;
     }
@@ -413,10 +418,34 @@ class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
   }
 }
 
-Offset _defaultOffset(BoxConstraints constraints) {
-  final width = constraints.maxWidth.isFinite ? constraints.maxWidth : restTimerTileWidth;
-  return Offset(math.max(0, (width - restTimerTileWidth) / 2), 8);
+/// Height of the shell tab bar. A new card is centered in the space above it.
+const double restTimerTabBarClearance = 64;
+
+/// The first floating card was saved at the top (`dy` around 8). That value
+/// is treated as unset so existing installs start centered. A dragged card
+/// keeps the offset the lifter left.
+bool restTimerOffsetIsLegacyTopDefault(Offset offset) {
+  return (offset.dy - 8).abs() <= 2;
 }
+
+Offset defaultRestTimerOffset(BoxConstraints constraints) {
+  final width = constraints.maxWidth.isFinite
+      ? constraints.maxWidth
+      : restTimerTileWidth;
+  final height = constraints.maxHeight.isFinite
+      ? constraints.maxHeight
+      : restTimerTileHeight;
+  final dx = math.max(0.0, (width - restTimerTileWidth) / 2);
+  final usable = math.max(
+    restTimerTileHeight,
+    height - restTimerTabBarClearance,
+  );
+  final dy = math.max(0.0, (usable - restTimerTileHeight) / 2);
+  return Offset(dx, dy);
+}
+
+Offset _defaultOffset(BoxConstraints constraints) =>
+    defaultRestTimerOffset(constraints);
 
 Offset _clamp(Offset offset, BoxConstraints constraints) {
   final width = constraints.maxWidth.isFinite ? constraints.maxWidth : restTimerTileWidth;

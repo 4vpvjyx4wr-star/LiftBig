@@ -89,6 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _proThemeScroll = ScrollController();
   var _loadingReminder = true;
   late final BodyWeightSettingsService _bodyWeightService;
+  late int _preferenceToken;
 
   static const _weekdayLabels = {
     DateTime.monday: 'Mon',
@@ -109,10 +110,39 @@ class _SettingsPageState extends State<SettingsPage> {
     _proStatus = ProStatus(
       unlockStore: JournalTesterUnlockStore(widget.sync.journal),
     );
+    _preferenceToken = widget.sync.preferenceReloadToken;
+    widget.sync.addListener(_onSync);
     _loadLogging();
     _loadPrefs();
     _loadReminder();
     _loadPro();
+  }
+
+  void _onSync() {
+    final token = widget.sync.preferenceReloadToken;
+    if (token == _preferenceToken) return;
+    _preferenceToken = token;
+    _reloadFromLocalRows();
+  }
+
+  /// Reloads switches and the stored theme id. A Pro palette that is painted
+  /// as the free fallback stays stored as that Pro id.
+  Future<void> _reloadFromLocalRows() async {
+    final themeId = await widget.sync.journal.loadColorThemeId();
+    final pro = await _proStatus.refresh();
+    if (!mounted) return;
+    widget.themes.applyStored(themeId, proActive: pro);
+    setState(() => _proActive = pro);
+    await _loadLogging();
+    await _loadPrefs();
+    await _loadReminder();
+    if (!mounted) return;
+    final scope = context.getInheritedWidgetOfExactType<RestTimerScope>();
+    if (scope != null) {
+      try {
+        await scope.controller.reloadAlertSettings();
+      } catch (_) {}
+    }
   }
 
   Future<void> _loadPrefs() async {
@@ -421,7 +451,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
     widget.themes.select(id);
     liftBigSelectionHaptic();
-    await widget.sync.journal.setColorThemeId(widget.themes.palette.id);
+    await widget.sync.journal.setColorThemeId(widget.themes.id);
   }
 
   Future<void> _saveAverageRest() async {
@@ -600,6 +630,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    widget.sync.removeListener(_onSync);
     _email.dispose();
     _password.dispose();
     _unlockCode.dispose();

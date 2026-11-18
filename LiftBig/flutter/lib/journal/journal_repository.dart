@@ -38,6 +38,7 @@ abstract final class SettingKeys {
   static const weightUnit = 'weight_unit';
   static const distanceUnit = 'distance_unit';
   static const bodyWeightLbs = 'body_weight_lbs';
+  static const bodyWeightHistory = 'body_weight_history';
   static const heightInches = 'height_inches';
   static const prescribeWarmup = 'prescribe_warmup_sets';
   static const averageRestSeconds = 'average_rest_seconds';
@@ -555,7 +556,11 @@ class JournalRepository {
     await db.transaction(() async {
       final exercises = await db.select(db.exercises).get();
       for (final row in exercises) {
-        final match = index.matchName(row.name);
+        var match = index.matchName(row.name);
+        if (libraryIdPointedAtDeadBug(row.libraryId, row.name) ==
+            deadBugLibraryId) {
+          match = index.byId[deadBugLibraryId] ?? match;
+        }
         if (match == null) continue;
         if (row.name == match.name && row.libraryId == match.id) continue;
         await (db.update(db.exercises)..where((e) => e.id.equals(row.id))).write(
@@ -2013,10 +2018,14 @@ class JournalRepository {
     return _putSynced(SettingKeys.appleHealthEnabled, enabled ? 'true' : 'false');
   }
 
-  Future<void> setBodyWeightLbs(double lbs) {
+  Future<void> setBodyWeightLbs(double lbs) async {
     final sanitized = sanitizeBodyWeightLbs(lbs);
-    if (sanitized == null) return clearBodyWeightLbs();
-    return _putSynced(SettingKeys.bodyWeightLbs, sanitized.toString());
+    if (sanitized == null) {
+      await clearBodyWeightLbs();
+      return;
+    }
+    await _putSynced(SettingKeys.bodyWeightLbs, sanitized.toString());
+    await rememberBodyWeightLbs(sanitized);
   }
 
   Future<void> clearBodyWeightLbs() {
@@ -2095,6 +2104,50 @@ class JournalRepository {
       excludeDateKey: dateKey,
       displayUnit: (await storedWeightUnit()) == WeightUnit.kg ? 'kg' : 'lb',
     );
+  }
+
+  /// One saved body-weight reading. Dates are `YYYY-MM-DD`.
+  Future<List<BodyWeightPoint>> bodyWeightHistory() async {
+    return decodeBodyWeightHistory(await _get(SettingKeys.bodyWeightHistory));
+  }
+
+  /// Records [lbs] for [on] (today when omitted). Same-day saves replace that day.
+  /// The history row stays on this phone and is not a cloud preference.
+  Future<void> rememberBodyWeightLbs(double lbs, {DateTime? on}) async {
+    final sanitized = sanitizeBodyWeightLbs(lbs);
+    if (sanitized == null) return;
+    final key = toDateKey(on ?? DateTime.now());
+    if (!isValidDateKey(key)) return;
+    final history = await bodyWeightHistory();
+    final next = [
+      for (final point in history)
+        if (point.dateKey != key) point,
+      BodyWeightPoint(dateKey: key, lbs: sanitized),
+    ]..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+    await _put(SettingKeys.bodyWeightHistory, encodeBodyWeightHistory(next));
+  }
+
+  /// Writes today's stored weight into history when history is still empty.
+  Future<void> seedBodyWeightHistoryIfEmpty() async {
+    if ((await bodyWeightHistory()).isNotEmpty) return;
+    final current = await storedBodyWeightLbs();
+    if (current == null) return;
+    await rememberBodyWeightLbs(current);
+  }
+
+  /// Fills dates the phone does not already have. A local reading wins that day.
+  Future<List<BodyWeightPoint>> mergeImportedBodyWeights(
+    List<BodyWeightPoint> incoming,
+  ) async {
+    final local = await bodyWeightHistory();
+    final merged = mergeBodyWeightPoints(local: local, incoming: incoming);
+    if (!_sameWeightHistory(local, merged)) {
+      await _put(
+        SettingKeys.bodyWeightHistory,
+        encodeBodyWeightHistory(merged),
+      );
+    }
+    return merged;
   }
 
   /// Body weight from Settings. Null when unset.
@@ -2209,9 +2262,13 @@ class JournalRepository {
     final settingsJson = await _get(SettingKeys.settingsJson);
     final preferences = <String, String>{};
     for (final key in cloudSyncedPreferenceKeys) {
+      final raw = await _get(key);
+      // A missing row is omitted. Filling the app default here would upload
+      // that default and a newer account snapshot would reset another device.
+      if (raw == null) continue;
       final value = _effectivePreferenceBackupValue(
         key,
-        await _get(key),
+        raw,
         settingsJson: settingsJson,
       );
       if (value == null) continue;
@@ -2232,10 +2289,14 @@ class JournalRepository {
 
   Future<void> applyCloudSettings(CloudSettings settings) async {
     await _put(SettingKeys.settingsUpdatedAt, settings.updatedAt);
+    // Only keys the account document actually contains. An omitted key keeps
+    // the value already on this phone, including theme and Ring Until Stopped.
     final keys = settings.preferences.keys.toList()..sort();
     for (final key in keys) {
       if (!cloudSyncedPreferenceKeys.contains(key)) continue;
-      await _put(key, settings.preferences[key]!);
+      final value = settings.preferences[key];
+      if (value == null) continue;
+      await _put(key, value);
     }
     if (settings.weightUnit != null &&
         !settings.preferences.containsKey(SettingKeys.weightUnit)) {
@@ -2290,7 +2351,10 @@ class JournalRepository {
             id: exercise.id,
             sortOrder: exercise.sortOrder,
             name: exercise.name,
-            libraryId: exercise.libraryId,
+            libraryId: libraryIdPointedAtDeadBug(
+              exercise.libraryId,
+              exercise.name,
+            ),
             notes: exercise.notes,
             isCircuit: exercise.isCircuit,
             isCardio: exercise.isCardio,
@@ -2497,4 +2561,76 @@ bool _replaceEmptyRepField(String stored, String nextReps) {
   final next = nextReps.trim();
   if (next.isEmpty || RegExp(r'^\d+$').hasMatch(next)) return false;
   return !RegExp(r'^\d+$').hasMatch(stored.trim());
+}
+
+/// One body-weight reading kept on this phone.
+class BodyWeightPoint {
+  const BodyWeightPoint({required this.dateKey, required this.lbs});
+
+  final String dateKey;
+  final double lbs;
+}
+
+List<BodyWeightPoint> decodeBodyWeightHistory(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return const [];
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) return const [];
+    final points = <BodyWeightPoint>[];
+    for (final item in decoded) {
+      if (item is! Map) continue;
+      final date = item['date'];
+      final lbs = item['lbs'];
+      if (date is! String || !isValidDateKey(date)) continue;
+      final parsed = lbs is num ? lbs.toDouble() : double.tryParse('$lbs');
+      final sanitized = sanitizeBodyWeightLbs(parsed);
+      if (sanitized == null) continue;
+      points.add(BodyWeightPoint(dateKey: date, lbs: sanitized));
+    }
+    points.sort((a, b) => a.dateKey.compareTo(b.dateKey));
+    return points;
+  } catch (_) {
+    return const [];
+  }
+}
+
+String encodeBodyWeightHistory(List<BodyWeightPoint> points) {
+  final sorted = [...points]..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  return jsonEncode([
+    for (final point in sorted) {'date': point.dateKey, 'lbs': point.lbs},
+  ]);
+}
+
+/// Health samples fill dates this phone has not saved. A local point wins its day.
+List<BodyWeightPoint> mergeBodyWeightPoints({
+  required List<BodyWeightPoint> local,
+  required List<BodyWeightPoint> incoming,
+}) {
+  final byDate = <String, BodyWeightPoint>{};
+  for (final point in incoming) {
+    final lbs = sanitizeBodyWeightLbs(point.lbs);
+    if (lbs == null || !isValidDateKey(point.dateKey)) continue;
+    byDate[point.dateKey] = BodyWeightPoint(dateKey: point.dateKey, lbs: lbs);
+  }
+  for (final point in local) {
+    final lbs = sanitizeBodyWeightLbs(point.lbs);
+    if (lbs == null || !isValidDateKey(point.dateKey)) continue;
+    byDate[point.dateKey] = BodyWeightPoint(dateKey: point.dateKey, lbs: lbs);
+  }
+  final out = byDate.values.toList()
+    ..sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  return out;
+}
+
+bool _sameWeightHistory(
+  List<BodyWeightPoint> left,
+  List<BodyWeightPoint> right,
+) {
+  if (left.length != right.length) return false;
+  for (var i = 0; i < left.length; i++) {
+    if (left[i].dateKey != right[i].dateKey || left[i].lbs != right[i].lbs) {
+      return false;
+    }
+  }
+  return true;
 }

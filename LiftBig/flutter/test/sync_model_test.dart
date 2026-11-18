@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/data/app_database.dart';
 import 'package:liftbig/health/health_workout.dart';
+import 'package:liftbig/journal/app_settings.dart';
 import 'package:liftbig/journal/journal_repository.dart';
 import 'package:liftbig/model/journal_day.dart';
 import 'package:liftbig/rest/rest_timer_state.dart';
@@ -232,26 +233,44 @@ void main() {
       expect(afterUnit.weightUnit, 'kg');
       expect(afterUnit.preferences['weight_unit'], 'kg');
       expect(afterUnit.preferences.containsKey('sync_enabled'), isFalse);
-      expect(afterUnit.preferences['pro_tester_unlock'], 'false');
-      expect(afterUnit.preferences['rest_timer_chrome'], 'floating');
-      expect(afterUnit.preferences['color_theme_id'], isNotEmpty);
+      expect(afterUnit.preferences.containsKey('pro_tester_unlock'), isFalse);
+      expect(afterUnit.preferences.containsKey('rest_timer_chrome'), isFalse);
+      expect(afterUnit.preferences.containsKey('color_theme_id'), isFalse);
+      expect(
+        afterUnit.preferences.containsKey('rest_timer_ring_until_stopped'),
+        isFalse,
+      );
       expect(
         afterUnit.preferences.containsKey('health_workout_writes'),
         isFalse,
       );
       expect(afterUnit.preferences.containsKey('rest_timer_state'), isFalse);
 
+      await journal.setColorThemeId('forest');
+      await journal.saveRestTimerAlertSettings(
+        const RestTimerAlertSettings(
+          soundEnabled: true,
+          vibrationEnabled: true,
+          notificationEnabled: true,
+          ringUntilStopped: true,
+        ),
+      );
+      final afterTheme = await journal.localCloudSettings();
+      expect(afterTheme!.preferences['color_theme_id'], 'forest');
+      expect(afterTheme.preferences['rest_timer_ring_until_stopped'], 'true');
+
       await journal.setBodyWeightLbs(180);
       final afterBody = await journal.localCloudSettings();
       expect(afterBody!.bodyWeightLbs, 180);
       expect(afterBody.preferences['body_weight_lbs'], isNotEmpty);
+      expect(afterBody.preferences['color_theme_id'], 'forest');
+      expect(afterBody.preferences['rest_timer_ring_until_stopped'], 'true');
       expect(afterBody.updatedAt.compareTo(afterUnit.updatedAt) >= 0, isTrue);
-      expect(afterBody.preferences.containsKey('height_inches'), isTrue);
-      expect(afterBody.preferences.containsKey('color_theme_id'), isTrue);
-      expect(afterBody.preferences.containsKey('auto_fill_sets'), isTrue);
+      expect(afterBody.preferences.containsKey('height_inches'), isFalse);
+      expect(afterBody.preferences.containsKey('auto_fill_sets'), isFalse);
       expect(
         afterBody.preferences.containsKey('daily_lift_reminder_enabled'),
-        isTrue,
+        isFalse,
       );
     },
   );
@@ -325,6 +344,63 @@ void main() {
     expect(await notPro.loadColorThemeId(), 'forest');
     expect(await notPro.proTesterUnlockEnabled(), isFalse);
   });
+
+  test(
+    'theme and ring round-trip and sign-out leaves them on the phone',
+    () async {
+      final phone = JournalRepository(AppDatabase(NativeDatabase.memory()));
+      addTearDown(phone.db.close);
+      await phone.setColorThemeId('forest');
+      await phone.saveRestTimerAlertSettings(
+        const RestTimerAlertSettings(
+          soundEnabled: true,
+          vibrationEnabled: true,
+          notificationEnabled: true,
+          ringUntilStopped: true,
+        ),
+      );
+
+      final remote = MemoryRemote();
+      await JournalSync(journal: phone, remote: remote).sync();
+      expect(remote.settings!.preferences['color_theme_id'], 'forest');
+      expect(
+        remote.settings!.preferences['rest_timer_ring_until_stopped'],
+        'true',
+      );
+
+      final fresh = JournalRepository(AppDatabase(NativeDatabase.memory()));
+      addTearDown(fresh.db.close);
+      await JournalSync(journal: fresh, remote: remote).sync();
+      expect(await fresh.loadColorThemeId(), 'forest');
+      expect(
+        (await fresh.loadRestTimerAlertSettings()).ringUntilStopped,
+        isTrue,
+      );
+
+      await phone.setColorThemeId('loud');
+      final partial = MemoryRemote()
+        ..settings = const CloudSettings(
+          updatedAt: '2099-01-01T00:00:00.000Z',
+          preferences: {'weight_unit': 'kg'},
+        );
+      await JournalSync(journal: phone, remote: partial).sync();
+      expect(await phone.loadColorThemeId(), 'loud');
+      expect(
+        (await phone.loadRestTimerAlertSettings()).ringUntilStopped,
+        isTrue,
+      );
+      expect(await phone.storedWeightUnit(), WeightUnit.kg);
+
+      final sync = SyncController(journal: phone, firebaseReady: false);
+      await sync.signOut();
+      expect(await phone.loadColorThemeId(), 'loud');
+      expect(
+        (await phone.loadRestTimerAlertSettings()).ringUntilStopped,
+        isTrue,
+      );
+      expect(sync.preferenceReloadToken, 1);
+    },
+  );
 
   test('applying a remote day does not mark that day dirty', () async {
     final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));

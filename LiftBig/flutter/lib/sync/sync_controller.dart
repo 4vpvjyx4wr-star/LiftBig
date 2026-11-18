@@ -45,6 +45,10 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
   bool busy = false;
   String? email;
   String? status;
+
+  /// Bumps after a settings download or sign-out so the theme and the
+  /// settings screen reload from the rows still on this phone.
+  int preferenceReloadToken = 0;
   AccountReauthMethod reauthMethod = AccountReauthMethod.unsupported;
   StreamSubscription<User?>? _authSub;
   Timer? _autoSyncTimer;
@@ -286,12 +290,15 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> signOut() async {
-    if (!firebaseReady) return;
-    await FirebaseAuth.instance.signOut();
-    await _signOutGoogle();
+    if (firebaseReady) {
+      await FirebaseAuth.instance.signOut();
+      await _signOutGoogle();
+    }
     email = null;
     reauthMethod = AccountReauthMethod.unsupported;
     status = 'Signed out. The journal is still on this phone.';
+    // Sign-out leaves every preference row where it is.
+    preferenceReloadToken += 1;
     notifyListeners();
   }
 
@@ -322,6 +329,7 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
     try {
       var passes = 0;
+      var settingsDownloaded = false;
       do {
         _rerunWhenIdle = false;
         passes += 1;
@@ -331,12 +339,14 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
           remote: remote,
           premadeTemplateIds: await _premadeTemplateIds(),
         ).sync();
+        if (result.settingsDownloaded) settingsDownloaded = true;
         final summary =
             'Synced. ${result.uploaded} uploaded, ${result.downloaded} downloaded.';
         status = result.skippedReason == null
             ? summary
             : '$summary ${result.skippedReason}';
       } while (_rerunWhenIdle && passes < 3);
+      if (settingsDownloaded) preferenceReloadToken += 1;
     } catch (error) {
       status = 'Sync failed: $error';
     } finally {
