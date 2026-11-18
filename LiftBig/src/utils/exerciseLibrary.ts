@@ -2543,25 +2543,6 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
     ],
   }),
   reg({
-    id: 'deadbug',
-    name: 'Deadbug',
-    muscleGroups: ['core'],
-    tags: ['anti-extension', 'coordination', 'lower abs'],
-    equipment: 'Bodyweight',
-    summary: 'Supine alternating arm and leg extensions while keeping the low back pressed down.',
-    instructions: [
-      'Lie on back, arms up, hips and knees at 90°.',
-      'Brace; slowly extend opposite arm and leg toward the floor.',
-      'Return and alternate sides.',
-    ],
-    tips: ['Focus on lifting the pelvis with lower abs on paired days—ribs stay down throughout.'],
-    cues: [
-      'Low back stays glued to the floor.',
-      'Exhale as limbs extend; inhale to return.',
-      'Move only as far as you can without arching.',
-    ],
-  }),
-  reg({
     id: 'jump-squat',
     name: 'Jump Squat',
     muscleGroups: ['quads', 'glutes', 'calves'],

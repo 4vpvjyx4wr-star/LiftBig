@@ -35,6 +35,9 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
       'Firebase is not configured. Add the files listed on this screen, then set kFirebaseEnabled to true.';
   static const _googlePhoneOnly =
       'Continue with Google works on iPhone. On this device, use email and password.';
+  static const _googleNotConfigured =
+      'Google sign-in failed. Check that Google is enabled for this Firebase project.';
+  static const _googleChannel = MethodChannel('liftbig/google_sign_in');
   static const _applePhoneOnly =
       'Sign in with Apple works on iPhone. On this device, use email and password.';
 
@@ -372,7 +375,11 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_providerSignInOnThisPhone) {
       throw const _ProviderSignInException(_googlePhoneOnly);
     }
-    await _ensureGoogleInitialized();
+    final config = await _googleConfiguration();
+    if (!googleSignInSchemeReady(config)) {
+      throw const _ProviderSignInException(_googleNotConfigured);
+    }
+    await _ensureGoogleInitialized(googleServerClientId(config));
     if (!GoogleSignIn.instance.supportsAuthenticate()) {
       throw const _ProviderSignInException(_googlePhoneOnly);
     }
@@ -386,10 +393,24 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     return GoogleAuthProvider.credential(idToken: idToken);
   }
 
-  Future<void> _ensureGoogleInitialized() async {
+  Future<Map<Object?, Object?>?> _googleConfiguration() async {
+    try {
+      final result = await _googleChannel.invokeMethod<Object?>('configuration');
+      if (result is Map) return Map<Object?, Object?>.from(result);
+      return null;
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
+
+  Future<void> _ensureGoogleInitialized(String? serverClientId) async {
     if (_googleInitialized) return;
     try {
-      _googleInit ??= GoogleSignIn.instance.initialize();
+      _googleInit ??= GoogleSignIn.instance.initialize(
+        serverClientId: serverClientId,
+      );
       await _googleInit;
       _googleInitialized = true;
     } catch (_) {
@@ -474,6 +495,20 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_authSub?.cancel());
     super.dispose();
   }
+}
+
+/// The iOS URL scheme is present, so `GIDSignIn` will not abort the process.
+bool googleSignInSchemeReady(Map<Object?, Object?>? config) {
+  return config?['ready'] == true;
+}
+
+/// Web client id from the local build, when one was compiled in.
+String? googleServerClientId(Map<Object?, Object?>? config) {
+  final server = config?['serverClientId'];
+  if (server is! String || !server.contains('.apps.googleusercontent.com')) {
+    return null;
+  }
+  return server;
 }
 
 class _ProviderSignInException implements Exception {

@@ -73,6 +73,7 @@ abstract final class SettingKeys {
   static const machineStartHackSquatLb = 'machine_start_lb_hack_squat';
   static const favoritePlanIds = 'favorite_plan_ids';
   static const colorThemeId = 'color_theme_id';
+  static const welcomeDismissed = 'welcome_dismissed';
 }
 
 /// Preferences copied to `users/{uid}/settings/app`.
@@ -535,19 +536,14 @@ class JournalRepository {
 
   /// Links logged exercises to the library when names match exactly after normalization.
   Future<int> mergeExactLibraryMatches(Iterable<LibraryLift> catalogLifts) async {
-    final byNormalized = <String, LibraryLift>{};
-    for (final lift in catalogLifts) {
-      final key = normalizeForExerciseMatch(lift.name);
-      if (key.isEmpty) continue;
-      byNormalized.putIfAbsent(key, () => lift);
-    }
-    if (byNormalized.isEmpty) return 0;
+    final index = LibraryNameIndex(catalogLifts);
+    if (index.byId.isEmpty) return 0;
 
     var updated = 0;
     await db.transaction(() async {
       final exercises = await db.select(db.exercises).get();
       for (final row in exercises) {
-        final match = byNormalized[normalizeForExerciseMatch(row.name)];
+        final match = index.matchName(row.name);
         if (match == null) continue;
         if (row.name == match.name && row.libraryId == match.id) continue;
         await (db.update(db.exercises)..where((e) => e.id.equals(row.id))).write(
@@ -1506,6 +1502,14 @@ class JournalRepository {
   }
 
   /// On unless the stored value is the word `false`.
+  Future<bool> isWelcomeDismissed() async {
+    return (await _get(SettingKeys.welcomeDismissed)) == 'true';
+  }
+
+  Future<void> setWelcomeDismissed() {
+    return _put(SettingKeys.welcomeDismissed, 'true');
+  }
+
   Future<bool> showPlateGraphicEnabled() async {
     return showPlateGraphicFromStored(await _get(SettingKeys.showPlateGraphic));
   }

@@ -17,17 +17,23 @@ import 'plan_workout_row.dart';
 import 'build_plan_sheet.dart';
 import 'workout_shuffle_sheet.dart';
 
+enum PlansIntent { none, quiz, shuffle, paste }
+
 class PlansPage extends StatefulWidget {
   const PlansPage({
     super.key,
     required this.journal,
     this.onPlanScheduled,
     this.refreshToken = 0,
+    this.initialIntent = PlansIntent.none,
+    this.onIntentHandled,
   });
 
   final JournalRepository journal;
   final ValueChanged<String>? onPlanScheduled;
   final int refreshToken;
+  final PlansIntent initialIntent;
+  final VoidCallback? onIntentHandled;
 
   @override
   State<PlansPage> createState() => _PlansPageState();
@@ -44,6 +50,7 @@ class _PlansPageState extends State<PlansPage> {
   var _step = 0;
   var _answers = const QuizAnswers();
   var _showQuiz = false;
+  var _appliedIntent = false;
 
   final _equipment = <String>{};
   final _focus = <String>{};
@@ -69,6 +76,10 @@ class _PlansPageState extends State<PlansPage> {
   void didUpdateWidget(PlansPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.refreshToken != widget.refreshToken) _loadCalendarPlan();
+    if (widget.initialIntent != PlansIntent.none &&
+        widget.initialIntent != oldWidget.initialIntent) {
+      _appliedIntent = false;
+    }
   }
 
   Future<void> _loadFavorites() async {
@@ -268,6 +279,45 @@ class _PlansPageState extends State<PlansPage> {
     showLiftBigNotice(context, 'Plan saved under Custom Plans.');
   }
 
+  void _applyIntent(LiftBigCatalog catalog) {
+    if (_appliedIntent || widget.initialIntent == PlansIntent.none) return;
+    _appliedIntent = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (widget.initialIntent) {
+        case PlansIntent.quiz:
+          setState(() {
+            _showQuiz = true;
+            _step = 0;
+            _answers = const QuizAnswers();
+          });
+        case PlansIntent.shuffle:
+          _openShuffleSheet(catalog);
+        case PlansIntent.paste:
+          _openPastePlanSheet(catalog);
+        case PlansIntent.none:
+          break;
+      }
+      widget.onIntentHandled?.call();
+    });
+  }
+
+  Future<void> _openPastePlanSheet(LiftBigCatalog catalog) async {
+    final saved = await showPastePlanSheet(
+      context,
+      catalog: catalog,
+      journal: widget.journal,
+    );
+    if (!mounted || saved != true) return;
+    setState(() {
+      _customPlansFuture = loadCustomPlans(
+        journal: widget.journal,
+        catalog: catalog,
+      );
+    });
+    showLiftBigNotice(context, 'Plan saved under Custom Plans.');
+  }
+
   void _openShuffleSheet(LiftBigCatalog catalog) {
     showWorkoutShuffleSheet(
       context,
@@ -306,6 +356,7 @@ class _PlansPageState extends State<PlansPage> {
     return KeyboardDismiss(
       child: CatalogLoadScope(
       builder: (context, catalog) {
+        _applyIntent(catalog);
         _customPlansFuture ??= loadCustomPlans(
           journal: widget.journal,
           catalog: catalog,
@@ -350,6 +401,7 @@ class _PlansPageState extends State<PlansPage> {
               onSchedulePlan: _schedulePlan,
               onOpenShuffle: () => _openShuffleSheet(catalog),
               onBuildPlan: () => _openBuildPlanSheet(catalog),
+              onPastePlan: () => _openPastePlanSheet(catalog),
               favoritePlanIds: _favoritePlanIds,
               onFavoriteChanged: _setFavorite,
               calendarPlanName: _calendarPlanName,
@@ -377,6 +429,7 @@ class _PlansBody extends StatelessWidget {
     required this.onSchedulePlan,
     required this.onOpenShuffle,
     required this.onBuildPlan,
+    required this.onPastePlan,
     required this.favoritePlanIds,
     required this.onFavoriteChanged,
     required this.calendarPlanName,
@@ -396,6 +449,7 @@ class _PlansBody extends StatelessWidget {
       onSchedulePlan;
   final VoidCallback onOpenShuffle;
   final VoidCallback onBuildPlan;
+  final VoidCallback onPastePlan;
   final Set<String> favoritePlanIds;
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
   final String? calendarPlanName;
@@ -542,6 +596,19 @@ class _PlansBody extends StatelessWidget {
           ),
           icon: const Icon(Icons.edit),
           label: const Text('Build Your Own Plan'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: onPastePlan,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(56),
+            foregroundColor: context.liftBig.primary,
+            side: BorderSide(color: context.liftBig.border),
+            backgroundColor: context.liftBig.card,
+            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          icon: const Icon(Icons.content_paste),
+          label: const Text('Paste a plan'),
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(

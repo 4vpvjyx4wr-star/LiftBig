@@ -8,6 +8,49 @@ import 'package:liftbig/utils/variable_machine.dart';
 import 'package:liftbig/utils/weight_units.dart';
 
 void main() {
+  test('quick reference 2 plates on a 45 bar is 225 and two 45s', () {
+    final target = quickPlateTargetLb(
+      count: 2,
+      barLb: 45,
+      unit: WeightUnit.lb,
+    );
+    expect(target, 225);
+    final result = calculatePlates(target, 45, plateSizesForUnit(WeightUnit.lb));
+    expect(result.plates, [45, 45]);
+    expect(result.remainder, 0);
+  });
+
+  test('quick reference counts plates on the selected bar', () {
+    expect(
+      quickPlateTargetLb(count: 1, barLb: 45, unit: WeightUnit.lb),
+      135,
+    );
+    expect(
+      quickPlateTargetLb(count: 2, barLb: 35, unit: WeightUnit.lb),
+      215,
+    );
+    expect(
+      quickPlateTargetLb(count: 5, barLb: 45, unit: WeightUnit.lb),
+      495,
+    );
+    final kgTarget = quickPlateTargetLb(
+      count: 2,
+      barLb: kgToLbs(20),
+      unit: WeightUnit.kg,
+    );
+    expect(lbsToKg(kgTarget), closeTo(100, 0.001));
+    final loaded = calculatePlates(
+      kgTarget,
+      kgToLbs(20),
+      plateSizesForUnit(WeightUnit.kg),
+    );
+    expect(loaded.remainder, closeTo(0, 0.001));
+    expect(
+      lbsToKg(totalWeightLb(kgToLbs(20), loaded.plates)),
+      closeTo(100, 0.001),
+    );
+  });
+
   test('calculatePlates matches Vue example for 225 on a 45 bar', () {
     const target = 225.0;
     const bar = 45.0;

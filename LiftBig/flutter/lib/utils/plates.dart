@@ -1,6 +1,10 @@
-// Bar and plate math matches the Vue `utils/plates.ts` (always pound denominations).
+import 'weight_units.dart';
+
+// Bar and plate math. Targets are pounds. Kilogram plates are stored as pounds.
 
 const List<double> plateSizesLb = [45, 35, 25, 10, 5, 2.5];
+
+const List<double> plateSizesKg = [25, 20, 15, 10, 5, 2.5, 1.25];
 
 final Map<double, String> plateColorsLb = {
   45: '#E63946',
@@ -10,6 +14,32 @@ final Map<double, String> plateColorsLb = {
   5: '#E9C46A',
   2.5: '#A8DADC',
 };
+
+final Map<double, String> plateColorsKg = {
+  25: '#E63946',
+  20: '#457B9D',
+  15: '#F4A261',
+  10: '#2A9D8F',
+  5: '#E9C46A',
+  2.5: '#A8DADC',
+  1.25: '#9CA3AF',
+};
+
+/// Plate denominations for [unit], in pounds, heaviest first.
+List<double> plateSizesForUnit(WeightUnit unit) {
+  if (unit == WeightUnit.lb) return plateSizesLb;
+  return [for (final kg in plateSizesKg) kgToLbs(kg)];
+}
+
+String? plateColorHex(double weightLb) {
+  final direct = plateColorsLb[weightLb];
+  if (direct != null) return direct;
+  final kg = lbsToKg(weightLb);
+  for (final entry in plateColorsKg.entries) {
+    if ((kg - entry.key).abs() < 0.05) return entry.value;
+  }
+  return null;
+}
 
 const double defaultBarLb = 45;
 
@@ -22,13 +52,33 @@ class PlateQuickRow {
   final double weightLb;
 }
 
-const List<PlateQuickRow> plateQuickPresetsLb = [
-  PlateQuickRow(label: '1 plate', weightLb: 135),
-  PlateQuickRow(label: '2 plates', weightLb: 185),
-  PlateQuickRow(label: '3 plates', weightLb: 225),
-  PlateQuickRow(label: '4 plates', weightLb: 315),
-  PlateQuickRow(label: '5 plates', weightLb: 405),
-];
+const int quickPlateCount = 5;
+
+/// [count] plates per side on [barLb]. Pounds use a 45; kilograms use a 20.
+double quickPlateTargetLb({
+  required int count,
+  required double barLb,
+  required WeightUnit unit,
+}) {
+  if (unit == WeightUnit.kg) {
+    final targetKg = lbsToKg(barLb) + count * 20 * 2;
+    return kgToLbs(targetKg);
+  }
+  return barLb + count * 45 * 2;
+}
+
+List<PlateQuickRow> quickPlateRows({
+  required double barLb,
+  required WeightUnit unit,
+}) {
+  return [
+    for (var count = 1; count <= quickPlateCount; count++)
+      PlateQuickRow(
+        label: count == 1 ? '1 plate' : '$count plates',
+        weightLb: quickPlateTargetLb(count: count, barLb: barLb, unit: unit),
+      ),
+  ];
+}
 
 class PlateCalculationResult {
   const PlateCalculationResult({required this.plates, required this.remainder});

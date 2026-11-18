@@ -1585,17 +1585,7 @@ class _DayPageState extends State<DayPage> {
             child: OutlinedButton(
               onPressed: () => _toggleRest(!restDay),
               style: restStyle,
-              child: restDay
-                  ? const Text('Clear Rest')
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('zzz'),
-                        SizedBox(width: 6),
-                        Text('Rest Day'),
-                      ],
-                    ),
+              child: Text(restDay ? 'Clear Rest' : 'Rest Day'),
             ),
           ),
           const SizedBox(width: 8),

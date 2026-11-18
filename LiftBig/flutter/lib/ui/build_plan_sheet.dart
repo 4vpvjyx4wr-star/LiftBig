@@ -5,6 +5,7 @@ import '../catalog/liftbig_catalog.dart';
 import '../ids.dart';
 import '../journal/journal_repository.dart';
 import '../plans/custom_plans.dart';
+import '../plans/pasted_plan.dart';
 import '../theme.dart';
 import 'keyboard_dismiss.dart';
 import 'liftbig_sheet.dart';
@@ -14,37 +15,85 @@ Future<bool> showBuildPlanSheet(
   BuildContext context, {
   required LiftBigCatalog catalog,
   required JournalRepository journal,
+  ParsedPlan? initial,
 }) async {
   final saved = await showLiftBigSheet<bool>(
     context,
     builder: (context) => SizedBox(
       height: liftBigPreferredHeight(context, 0.92),
-      child: _BuildPlanSheet(catalog: catalog, journal: journal),
+      child: _BuildPlanSheet(
+        catalog: catalog,
+        journal: journal,
+        initial: initial,
+      ),
     ),
   );
   return saved == true;
 }
 
-class _DraftExercise {
-  _DraftExercise(this.lift)
-    : sets = TextEditingController(text: '$defaultBuiltSetCount'),
-      reps = TextEditingController(text: defaultBuiltReps);
+Future<bool> showPastePlanSheet(
+  BuildContext context, {
+  required LiftBigCatalog catalog,
+  required JournalRepository journal,
+}) async {
+  final text = await showLiftBigSheet<String>(
+    context,
+    builder: (context) => const SizedBox(
+      height: 420,
+      child: _PastePlanSheet(),
+    ),
+  );
+  if (text == null || !context.mounted) return false;
+  final parsed = parsePastedPlan(text, catalog.lifts);
+  if (parsed == null) {
+    showLiftBigNotice(context, 'No exercises were found in that text.');
+    return false;
+  }
+  return showBuildPlanSheet(
+    context,
+    catalog: catalog,
+    journal: journal,
+    initial: parsed,
+  );
+}
 
-  final LibraryLift lift;
+class _DraftExercise {
+  _DraftExercise({
+    this.lift,
+    this.customName = '',
+    String? sets,
+    String? reps,
+    String? weight,
+  }) : sets = TextEditingController(text: sets ?? '$defaultBuiltSetCount'),
+       reps = TextEditingController(text: reps ?? defaultBuiltReps),
+       weight = TextEditingController(text: weight ?? '');
+
+  LibraryLift? lift;
+  String customName;
   final TextEditingController sets;
   final TextEditingController reps;
+  final TextEditingController weight;
+
+  String get label {
+    if (lift != null) return lift!.name;
+    final written = customName.trim();
+    return written.isEmpty ? 'Lift' : written;
+  }
 
   void dispose() {
     sets.dispose();
     reps.dispose();
+    weight.dispose();
   }
 }
 
 class _DraftWorkout {
-  _DraftWorkout() : name = TextEditingController(text: 'Workout');
+  _DraftWorkout({String name = 'Workout', List<_DraftExercise>? exercises})
+    : name = TextEditingController(text: name),
+      exercises = exercises ?? <_DraftExercise>[];
 
   final TextEditingController name;
-  final exercises = <_DraftExercise>[];
+  final List<_DraftExercise> exercises;
 
   void dispose() {
     name.dispose();
@@ -55,19 +104,51 @@ class _DraftWorkout {
 }
 
 class _BuildPlanSheet extends StatefulWidget {
-  const _BuildPlanSheet({required this.catalog, required this.journal});
+  const _BuildPlanSheet({
+    required this.catalog,
+    required this.journal,
+    this.initial,
+  });
 
   final LiftBigCatalog catalog;
   final JournalRepository journal;
+  final ParsedPlan? initial;
 
   @override
   State<_BuildPlanSheet> createState() => _BuildPlanSheetState();
 }
 
 class _BuildPlanSheetState extends State<_BuildPlanSheet> {
-  final _planName = TextEditingController();
-  final _workouts = <_DraftWorkout>[_DraftWorkout()];
+  late final TextEditingController _planName;
+  late final List<_DraftWorkout> _workouts;
   var _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    _planName = TextEditingController(text: initial?.name ?? '');
+    if (initial == null || initial.workouts.isEmpty) {
+      _workouts = [_DraftWorkout()];
+    } else {
+      _workouts = [
+        for (final workout in initial.workouts)
+          _DraftWorkout(
+            name: workout.name,
+            exercises: [
+              for (final exercise in workout.exercises)
+                _DraftExercise(
+                  lift: exercise.lift,
+                  customName: exercise.customName ?? '',
+                  sets: '${exercise.setCount}',
+                  reps: exercise.targetReps,
+                  weight: exercise.targetWeight,
+                ),
+            ],
+          ),
+      ];
+    }
+  }
 
   @override
   void dispose() {
@@ -87,7 +168,22 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
       ),
     );
     if (lift == null || !mounted) return;
-    setState(() => workout.exercises.add(_DraftExercise(lift)));
+    setState(() => workout.exercises.add(_DraftExercise(lift: lift)));
+  }
+
+  Future<void> _matchExercise(_DraftExercise exercise) async {
+    final lift = await showLiftBigSheet<LibraryLift>(
+      context,
+      builder: (context) => SizedBox(
+        height: liftBigPreferredHeight(context, 0.8),
+        child: _LiftPicker(lifts: widget.catalog.lifts),
+      ),
+    );
+    if (lift == null || !mounted) return;
+    setState(() {
+      exercise.lift = lift;
+      exercise.customName = '';
+    });
   }
 
   Future<void> _save() async {
@@ -102,11 +198,17 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
           showLiftBigNotice(context, 'Enter a set count from 1 to 30.');
           return;
         }
+        if (exercise.lift == null && exercise.customName.trim().isEmpty) {
+          showLiftBigNotice(context, 'Name each exercise before saving.');
+          return;
+        }
         exercises.add(
           BuiltPlanExercise(
             lift: exercise.lift,
+            customName: exercise.lift == null ? exercise.customName : null,
             setCount: count,
             targetReps: exercise.reps.text,
+            targetWeight: exercise.weight.text,
           ),
         );
       }
@@ -177,6 +279,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                     canRemove: _workouts.length > 1,
                     onChanged: () => setState(() {}),
                     onAddExercise: () => _addExercise(_workouts[i]),
+                    onMatch: _matchExercise,
                     onRemove: () {
                       final removed = _workouts.removeAt(i);
                       removed.dispose();
@@ -212,6 +315,7 @@ class _WorkoutEditor extends StatelessWidget {
     required this.canRemove,
     required this.onChanged,
     required this.onAddExercise,
+    required this.onMatch,
     required this.onRemove,
   });
 
@@ -220,6 +324,7 @@ class _WorkoutEditor extends StatelessWidget {
   final bool canRemove;
   final VoidCallback onChanged;
   final VoidCallback onAddExercise;
+  final ValueChanged<_DraftExercise> onMatch;
   final VoidCallback onRemove;
 
   @override
@@ -250,6 +355,7 @@ class _WorkoutEditor extends StatelessWidget {
               for (var i = 0; i < workout.exercises.length; i++)
                 _ExerciseFields(
                   exercise: workout.exercises[i],
+                  onMatch: () => onMatch(workout.exercises[i]),
                   onRemove: () {
                     final removed = workout.exercises.removeAt(i);
                     removed.dispose();
@@ -280,9 +386,14 @@ class _WorkoutEditor extends StatelessWidget {
 }
 
 class _ExerciseFields extends StatelessWidget {
-  const _ExerciseFields({required this.exercise, required this.onRemove});
+  const _ExerciseFields({
+    required this.exercise,
+    required this.onMatch,
+    required this.onRemove,
+  });
 
   final _DraftExercise exercise;
+  final VoidCallback onMatch;
   final VoidCallback onRemove;
 
   @override
@@ -296,10 +407,12 @@ class _ExerciseFields extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  exercise.lift.name,
+                  exercise.label,
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
+              if (exercise.lift == null)
+                TextButton(onPressed: onMatch, child: const Text('Choose lift')),
               IconButton(
                 tooltip: 'Remove exercise',
                 visualDensity: VisualDensity.compact,
@@ -330,9 +443,22 @@ class _ExerciseFields extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: exercise.reps,
-                  textInputAction: TextInputAction.done,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Target reps',
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 88,
+                child: TextField(
+                  controller: exercise.weight,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Weight',
                     isDense: true,
                   ),
                   onSubmitted: (_) =>
@@ -342,6 +468,69 @@ class _ExerciseFields extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PastePlanSheet extends StatefulWidget {
+  const _PastePlanSheet();
+
+  @override
+  State<_PastePlanSheet> createState() => _PastePlanSheetState();
+}
+
+class _PastePlanSheetState extends State<_PastePlanSheet> {
+  final _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyboardDismiss(
+      fill: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Paste a plan',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Paste the days and exercises. A line like Bench Press 3x5 @ 185 is enough.',
+              style: TextStyle(color: context.liftBig.muted, height: 1.35),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _text,
+              autofocus: true,
+              minLines: 6,
+              maxLines: 8,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                hintText: 'Push\nBench Press 3x5 @ 185\n\nPull\nBarbell Row 4x6 @ 135',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () {
+                final text = _text.text.trim();
+                if (text.isEmpty) return;
+                Navigator.pop(context, text);
+              },
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              child: const Text('Read plan'),
+            ),
+          ],
+        ),
       ),
     );
   }

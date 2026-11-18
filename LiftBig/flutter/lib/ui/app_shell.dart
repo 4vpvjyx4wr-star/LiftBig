@@ -4,6 +4,7 @@ import '../companion/companion_bridge.dart';
 import '../companion/watch_session.dart';
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
+import '../progress/lift_progress.dart';
 import '../reminder/daily_lift_notifications.dart';
 import '../sync/sync_controller.dart';
 import '../theme.dart';
@@ -12,6 +13,7 @@ import 'home_page.dart';
 import 'library_page.dart';
 import 'plans_page.dart';
 import 'progress_page.dart';
+import 'welcome_page.dart';
 import 'settings_page.dart';
 import 'liftbig_sheet.dart';
 import 'shell_tabs.dart';
@@ -38,6 +40,8 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   var _index = 0;
   var _refresh = 0;
+  var _showWelcome = false;
+  var _plansIntent = PlansIntent.none;
   final _opened = <int>{0};
   String? _homeFocusDateKey;
   final _companion = CompanionBridge.shared;
@@ -47,6 +51,30 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _companion.addListener(_onWatchMessage);
+    _loadWelcome();
+  }
+
+  Future<void> _loadWelcome() async {
+    final dismissed = await widget.journal.isWelcomeDismissed();
+    if (dismissed) return;
+    final days = await widget.journal.allDays();
+    if (!mounted) return;
+    if (days.any(dayHasLoggedWork)) return;
+    setState(() => _showWelcome = true);
+  }
+
+  Future<void> _leaveWelcome(PlansIntent intent) async {
+    await widget.journal.setWelcomeDismissed();
+    if (!mounted) return;
+    setState(() {
+      _showWelcome = false;
+      _plansIntent = intent;
+      if (intent != PlansIntent.none) {
+        _index = ShellTab.plans.index;
+        _opened.add(ShellTab.plans.index);
+        _refresh++;
+      }
+    });
   }
 
   @override
@@ -125,7 +153,25 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final today = todayKey();
     return LiftBigRouteUnderlay(
-      child: Scaffold(
+      child: Stack(
+        children: [
+          _shell(today),
+          if (_showWelcome)
+            Positioned.fill(
+              child: WelcomePage(
+                onQuiz: () => _leaveWelcome(PlansIntent.quiz),
+                onShuffle: () => _leaveWelcome(PlansIntent.shuffle),
+                onPaste: () => _leaveWelcome(PlansIntent.paste),
+                onContinue: () => _leaveWelcome(PlansIntent.none),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shell(String today) {
+    return Scaffold(
         backgroundColor: context.liftBig.background,
         body: Column(
           children: [
@@ -148,7 +194,6 @@ class _AppShellState extends State<AppShell> {
             _ShellBar(index: _index, onSelect: _select),
           ],
         ),
-      ),
     );
   }
 
@@ -184,6 +229,11 @@ class _AppShellState extends State<AppShell> {
         journal: widget.journal,
         refreshToken: _refresh,
         onPlanScheduled: _openHomeOnDate,
+        initialIntent: _plansIntent,
+        onIntentHandled: () {
+          if (_plansIntent == PlansIntent.none) return;
+          setState(() => _plansIntent = PlansIntent.none);
+        },
       ),
       ShellTab.library => const LibraryPage(),
     };

@@ -32,6 +32,39 @@ void main() {
     expect(await reloaded.refresh(), isTrue);
     expect(reloaded.isPro, isTrue);
   });
+
+  test('purchase and product prices come back from the store channel', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    const channel = MethodChannel('liftbig/pro/test');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+      if (call.method == 'purchase') {
+        return {'active': true};
+      }
+      if (call.method == 'loadProducts') {
+        return {
+          'products': [
+            {'id': proYearlyProductId, 'displayPrice': r'$29.99'},
+          ],
+        };
+      }
+      return {'active': false};
+    });
+    final status = ProStatus(
+      channel: channel,
+      unlockStore: _MemoryUnlockStore(),
+    );
+
+    final products = await status.loadProducts();
+    expect(products, hasLength(1));
+    expect(products.single.id, proYearlyProductId);
+    expect(products.single.displayPrice, r'$29.99');
+
+    final bought = await status.purchase(proYearlyProductId);
+    expect(bought.active, isTrue);
+    expect(bought.message, isNull);
+    expect(status.isPro, isTrue);
+  });
 }
 
 class _MemoryUnlockStore implements TesterUnlockStore {

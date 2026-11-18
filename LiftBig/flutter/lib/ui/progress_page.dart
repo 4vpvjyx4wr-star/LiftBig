@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../catalog/liftbig_catalog.dart';
 import '../date_key.dart';
 import '../journal/journal_repository.dart';
 import '../progress/lift_progress.dart';
@@ -23,8 +24,10 @@ class ProgressPage extends StatefulWidget {
 class _ProgressPageState extends State<ProgressPage> {
   List<LiftSeries> _series = const [];
   Set<String> _earned = const {};
+  TrainingSnapshot? _snapshot;
   String? _selected;
   var _loaded = false;
+  var _showLocked = false;
 
   @override
   void initState() {
@@ -41,10 +44,16 @@ class _ProgressPageState extends State<ProgressPage> {
   Future<void> _load() async {
     final days = await widget.journal.allDays();
     if (!mounted) return;
-    final series = strengthSeries(days);
+    List<LibraryLift> lifts = const [];
+    try {
+      lifts = (await LiftBigCatalog.load()).lifts;
+    } catch (_) {}
+    if (!mounted) return;
+    final series = strengthSeries(days, lifts: lifts);
     setState(() {
       _series = series;
       _earned = unlockedAchievements(days);
+      _snapshot = trainingSnapshot(days);
       _selected = series.any((item) => item.name == _selected)
           ? _selected
           : (series.isEmpty ? null : series.first.name);
@@ -102,9 +111,29 @@ class _ProgressPageState extends State<ProgressPage> {
         if (!_earned.contains(item.id)) item,
     ];
 
+    final snapshot = _snapshot;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       children: [
+        if (snapshot != null) ...[
+          _StreakCard(snapshot: snapshot),
+          const SizedBox(height: 12),
+          _WeekCard(snapshot: snapshot),
+          const SizedBox(height: 12),
+          _RecordsCard(snapshot: snapshot),
+          if (snapshot.nextGoal != null) ...[
+            const SizedBox(height: 12),
+            _GoalCard(goal: snapshot.nextGoal!),
+          ],
+          if (snapshot.trainedDays == 0) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Your numbers start with a working set. A plan on the Plans tab sets up the next one.',
+              style: TextStyle(color: context.liftBig.muted, height: 1.35),
+            ),
+          ],
+          const SizedBox(height: 24),
+        ],
         const Text(
           'Lifts Over Time',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
@@ -177,7 +206,8 @@ class _ProgressPageState extends State<ProgressPage> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
                   '${formatDisplayDate(point.dateKey)} · ${point.maxWeightLbs.toStringAsFixed(0)} lb'
-                  ' · ${point.setCount} sets · ${point.volumeLbs.toStringAsFixed(0)} lb volume',
+                  ' · ${point.setCount} sets · ${point.maxReps} reps'
+                  ' · ${point.volumeLbs.toStringAsFixed(0)} lb volume',
                 ),
               ),
           ],
@@ -197,8 +227,242 @@ class _ProgressPageState extends State<ProgressPage> {
             ),
           ),
         for (final item in earned) _AchievementTile(item: item, earned: true),
-        for (final item in locked) _AchievementTile(item: item, earned: false),
+        if (locked.isNotEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => setState(() => _showLocked = !_showLocked),
+              child: Text(_showLocked ? 'Hide locked' : 'See all'),
+            ),
+          ),
+        if (_showLocked)
+          for (final item in locked) _AchievementTile(item: item, earned: false),
       ],
+    );
+  }
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.liftBig.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.liftBig.border),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _StreakCard extends StatelessWidget {
+  const _StreakCard({required this.snapshot});
+
+  final TrainingSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = snapshot.currentStreak;
+    final next = snapshot.nextStreakGoal;
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            current == 0 ? 'Train today to start a streak.' : '$current',
+            style: TextStyle(
+              fontSize: current == 0 ? 20 : 40,
+              fontWeight: FontWeight.w800,
+              color: context.liftBig.primary,
+              height: 1.1,
+            ),
+          ),
+          if (current > 0)
+            Text(
+              current == 1 ? 'day streak' : 'days streak',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          const SizedBox(height: 6),
+          Text(
+            'Longest streak: ${snapshot.longestStreak}',
+            style: TextStyle(color: context.liftBig.muted),
+          ),
+          if (next != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              '$current of $next days',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(
+              value: next == 0 ? 0 : (current / next).clamp(0, 1),
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(8),
+              color: context.liftBig.primary,
+              backgroundColor: context.liftBig.border,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekCard extends StatelessWidget {
+  const _WeekCard({required this.snapshot});
+
+  final TrainingSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final previous = snapshot.previousWeekVolumeLb;
+    final delta = previous == null ? null : snapshot.weekVolumeLb - previous;
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This week',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              for (var i = 0; i < 7; i++)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: snapshot.weekTrained[i]
+                              ? context.liftBig.primary
+                              : context.liftBig.background,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: context.liftBig.border),
+                        ),
+                        child: Text(
+                          labels[i],
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: snapshot.weekTrained[i]
+                                ? context.liftBig.background
+                                : context.liftBig.muted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${snapshot.weekSessions} sessions · ${snapshot.weekSets} sets · ${snapshot.weekVolumeLb.toStringAsFixed(0)} lb',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          if (delta != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              delta >= 0
+                  ? '${delta.toStringAsFixed(0)} lb more than last week'
+                  : '${delta.abs().toStringAsFixed(0)} lb less than last week',
+              style: TextStyle(color: context.liftBig.muted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordsCard extends StatelessWidget {
+  const _RecordsCard({required this.snapshot});
+
+  final TrainingSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <String>[
+      if (snapshot.heaviest != null)
+        'Heaviest set: ${snapshot.heaviest!.name} ${snapshot.heaviest!.weightLb.toStringAsFixed(0)} lb',
+      if (snapshot.benchLb > 0) 'Bench ${snapshot.benchLb.toStringAsFixed(0)} lb',
+      if (snapshot.squatLb > 0) 'Squat ${snapshot.squatLb.toStringAsFixed(0)} lb',
+      if (snapshot.deadliftLb > 0)
+        'Deadlift ${snapshot.deadliftLb.toStringAsFixed(0)} lb',
+      '${snapshot.trainedDays} trained days · ${snapshot.totalVolumeLb.toStringAsFixed(0)} lb moved',
+    ];
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Records',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(line),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalCard extends StatelessWidget {
+  const _GoalCard({required this.goal});
+
+  final GoalProgress goal;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = goal.current >= 100
+        ? goal.current.toStringAsFixed(0)
+        : goal.current.toStringAsFixed(goal.current == goal.current.roundToDouble() ? 0 : 1);
+    final target = goal.target.toStringAsFixed(0);
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Up next',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            goal.achievement.title,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            goal.achievement.description,
+            style: TextStyle(color: context.liftBig.muted),
+          ),
+          const SizedBox(height: 8),
+          Text('$current of $target', style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          LinearProgressIndicator(
+            value: goal.ratio.toDouble(),
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(8),
+            color: context.liftBig.primary,
+            backgroundColor: context.liftBig.border,
+          ),
+        ],
+      ),
     );
   }
 }

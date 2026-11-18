@@ -114,7 +114,7 @@ function buildBunsWeekPlans(week: 1 | 2 | 3): WorkoutTemplate[] {
           te(id, 'clam', 'Seated or Banded Clamshells', 3, '20', '0', false, 'banded-clamshell'),
           te(id, 'sumo', 'Sumo Squats (Plie Squats)', 3, '12', '50', false, 'sumo-squat'),
           te(id, 'rev-crunch', 'Reverse Crunches', 3, '12–15', '0', false, 'reverse-crunch'),
-          te(id, 'deadbug', 'Deadbugs', 3, '10/side', '0', false, 'deadbug'),
+          te(id, 'dead-bug', 'Dead Bug', 3, '10/side', '0', false, 'dead-bug'),
         ],
       },
       {
@@ -197,7 +197,7 @@ function buildBunsWeekPlans(week: 1 | 2 | 3): WorkoutTemplate[] {
           te(id, 'clam', 'Seated or Banded Clamshells', 3, '25', '0', false, 'banded-clamshell'),
           te(id, 'sumo', 'Sumo Squats (Plie Squats)', 3, '15', '55', false, 'sumo-squat'),
           te(id, 'rev-crunch', 'Reverse Crunches', 3, '15', '0', false, 'reverse-crunch'),
-          te(id, 'deadbug', 'Deadbugs', 3, '12/side', '0', false, 'deadbug'),
+          te(id, 'dead-bug', 'Dead Bug', 3, '12/side', '0', false, 'dead-bug'),
         ],
       },
       {
@@ -282,7 +282,7 @@ function buildBunsWeekPlans(week: 1 | 2 | 3): WorkoutTemplate[] {
           te(id, 'clam', 'Seated or Banded Clamshells', 3, '30', '0', false, 'banded-clamshell'),
           te(id, 'sumo', 'Sumo Squats (Plie Squats)', 3, '15', '60', false, 'sumo-squat'),
           te(id, 'rev-crunch', 'Reverse Crunches', 3, '15', '0', false, 'reverse-crunch'),
-          te(id, 'deadbug', 'Deadbugs', 3, '15/side', '0', false, 'deadbug'),
+          te(id, 'dead-bug', 'Dead Bug', 3, '15/side', '0', false, 'dead-bug'),
         ],
       },
       {
