@@ -209,8 +209,8 @@ void main() {
     expect(catalog.liftById('hip-abductor-machine')!.tutorialUrl, 'https://www.youtube.com/watch?v=2b97cvyH9sE');
     expect(catalog.liftById('sit-up')!.tutorialUrl, 'https://www.youtube.com/watch?v=jDwoBqPH0jk');
     expect(catalog.liftById('sit-up')!.tips, isNotEmpty);
-    expect(catalog.lifts.length, 179);
-    expect(catalog.plans.length, 62);
+    expect(catalog.lifts.length, 200);
+    expect(catalog.plans.length, 64);
     final joeyC4 = catalog.plans.singleWhere((plan) => plan.name == 'Joey C4');
     final monday = joeyC4.workouts.singleWhere((workout) => workout.id == 'plan-joey-c4-mon');
     expect(monday.lifts.first.name, 'Incline DB Press');
@@ -219,9 +219,22 @@ void main() {
     expect(monday.lifts.first.supersetOrder, 1);
     expect(monday.lifts.first.sets.first.reps, '6–10');
     expect(monday.lifts.first.sets.first.weight, '70');
+    final joeyC5 = catalog.plans.singleWhere((plan) => plan.name == 'Joey C5');
+    final upperA = joeyC5.workouts.singleWhere((workout) => workout.id == 'plan-joey-c5-upper-a');
+    expect(upperA.lifts.first.name, 'Incline DB Press');
+    expect(upperA.lifts.first.libraryId, 'incline-dumbbell-press');
+    expect(upperA.lifts.first.supersetGroupId, 'plan-joey-c5-upper-a__ss-a');
+    expect(upperA.lifts.first.targetRestSeconds, 120);
+    expect(upperA.lifts.first.preferredSwapLibraryIds, ['smith-machine-incline-bench']);
+    final hanging = joeyC5.workouts
+        .singleWhere((workout) => workout.id == 'plan-joey-c5-lower-a')
+        .lifts
+        .singleWhere((lift) => lift.name == 'Hanging Leg Raise');
+    expect(hanging.libraryId, 'leg-raise');
     expect(
       catalog.plans.map((plan) => plan.name),
       containsAll([
+        'Joey C5',
         'Joey Fall Bulk',
         'Joey Fall Bulk v3',
         'Joey Summer Plan 2',

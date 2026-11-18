@@ -712,6 +712,7 @@ class _DayPageState extends State<DayPage> {
           supersetLabel: lift.supersetLabel,
           supersetOrder: lift.supersetOrder,
           targetRestSeconds: lift.targetRestSeconds,
+          preferredSwapLibraryIds: lift.preferredSwapLibraryIds,
           sets: [
             for (var i = 0; i < prescribed.sets.length; i++)
               JournalSet(

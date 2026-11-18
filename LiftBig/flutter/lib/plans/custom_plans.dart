@@ -180,6 +180,8 @@ CatalogLift _templateLift(Map<String, Object?> json) {
     supersetGroupId: _optionalPlanText(json['supersetGroupId']),
     supersetLabel: _optionalPlanText(json['supersetLabel']),
     supersetOrder: _optionalPlanInt(json['supersetOrder']),
+    targetRestSeconds: _optionalPlanInt(json['targetRestSeconds']),
+    preferredSwapLibraryIds: _stringList(json['preferredSwapLibraryIds']),
     sets: [
       for (final item in setsRaw)
         _templateSet(Map<String, Object?>.from(item as Map)),
@@ -191,6 +193,14 @@ String? _optionalPlanText(Object? raw) {
   if (raw is! String) return null;
   final trimmed = raw.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+List<String> _stringList(Object? raw) {
+  if (raw is! List) return const [];
+  return [
+    for (final item in raw)
+      if (item is String && item.trim().isNotEmpty) item,
+  ];
 }
 
 int? _optionalPlanInt(Object? raw) {

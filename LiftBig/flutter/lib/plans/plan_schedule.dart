@@ -108,6 +108,7 @@ List<JournalExercise> journalExercisesFromCatalogWorkout(CatalogWorkout workout)
         supersetLabel: lift.supersetLabel,
         supersetOrder: lift.supersetOrder,
         targetRestSeconds: lift.targetRestSeconds,
+        preferredSwapLibraryIds: lift.preferredSwapLibraryIds,
         sets: [
           for (var setIndex = 0; setIndex < sets.length; setIndex++)
             JournalSet(

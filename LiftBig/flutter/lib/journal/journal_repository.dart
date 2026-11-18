@@ -391,6 +391,7 @@ class JournalRepository {
     String? supersetLabel,
     int? supersetOrder,
     int? targetRestSeconds,
+    List<String> preferredSwapLibraryIds = const [],
   }) async {
     final trimmed = name.trim();
     if (!isValidDateKey(dateKey)) {
@@ -449,6 +450,11 @@ class JournalRepository {
               supersetGroupId: Value(_blankToNull(supersetGroupId)),
               supersetLabel: Value(_blankToNull(supersetLabel)),
               supersetOrder: Value(supersetOrder),
+              preferredSwapLibraryIds: Value(
+                preferredSwapLibraryIds.isEmpty
+                    ? null
+                    : encodeStringList(preferredSwapLibraryIds),
+              ),
               targetRestSeconds: Value(
                 targetRestSeconds != null && targetRestSeconds > 0 ? targetRestSeconds : null,
               ),

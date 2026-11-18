@@ -64,6 +64,7 @@ class CatalogLift {
     this.supersetLabel,
     this.supersetOrder,
     this.targetRestSeconds,
+    this.preferredSwapLibraryIds = const [],
   });
 
   final String name;
@@ -77,6 +78,7 @@ class CatalogLift {
   final String? supersetLabel;
   final int? supersetOrder;
   final int? targetRestSeconds;
+  final List<String> preferredSwapLibraryIds;
 }
 
 class CatalogSet {
@@ -299,6 +301,7 @@ CatalogLift _catalogLift(Map<String, Object?> json) {
     supersetLabel: _optionalText(json['supersetLabel']),
     supersetOrder: _optionalInt(json['supersetOrder']),
     targetRestSeconds: _optionalInt(json['targetRestSeconds']),
+    preferredSwapLibraryIds: _strings(json['preferredSwapLibraryIds']),
     sets: [
       for (final item in (json['sets'] as List? ?? const []))
         _catalogSet(Map<String, Object?>.from(item as Map)),

@@ -1,0 +1,1358 @@
+{
+  "templates": [
+    {
+      "id": "plan-joey-c5-upper-a",
+      "name": "1: Upper A — Heavy Press / Pull (~50 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "ROLLING SCHEDULE: do the next session in the cycle (Upper A → Lower A → Upper B → Lower B), whatever day it is. Missed a day? Just do the next one—never double up. Thursday stays a full rest day.\nSupersets: alternate the two moves back-to-back, then take the listed rest after the SECOND move (timers are set to that).\nEffort: 1–2 reps in reserve on compounds, 0–1 on the last set of isolations. Stop a set when form breaks.\nProgression: when every set hits the TOP of the range at ≤2 RIR, add 2.5–5 lb (one pin on cables) next time.\nTime cap: if the session runs past ~55 min, cut the last pair to 2 rounds instead of skipping it.\n\nSS A (2 min): incline press + pull-up—antagonists. Your logs show the 3rd press set fading (75×10, 8, 6) when laterals came between sets, so laterals moved off the press.\nSS B (90 sec): chest-supported row + Kelso shrug (straps). Your logs show this pairing works.\nSS C (75 sec): lateral raise + DB curl.\nSS D (60 sec): face pull + overhead cable triceps extension—face pulls are back in the main plan.\nPull-ups: add weight when you reach 3×10+ at bodyweight. ~21 sets.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-upper-a__inc",
+          "name": "Incline DB Press",
+          "libraryId": "incline-dumbbell-press",
+          "preferredSwapLibraryIds": [
+            "smith-machine-incline-bench"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-a__pu",
+          "name": "Pull-Up (bodyweight)",
+          "libraryId": "pull-up",
+          "preferredSwapLibraryIds": [
+            "lat-pulldown"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "6–10",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "150"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-a__row",
+          "name": "Chest-Supported Machine Row",
+          "libraryId": "chest-supported-row",
+          "preferredSwapLibraryIds": [
+            "chest-supported-lat-row"
+          ],
+          "targetRestSeconds": 90,
+          "sets": [
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-a__kelso",
+          "name": "Kelso Shrug",
+          "libraryId": "kelso-shrug",
+          "preferredSwapLibraryIds": [
+            "dumbbell-shrug"
+          ],
+          "targetRestSeconds": 90,
+          "sets": [
+            {
+              "targetReps": "12–15",
+              "targetWeight": "130"
+            },
+            {
+              "targetReps": "12–15",
+              "targetWeight": "130"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-a__lat",
+          "name": "DB Lateral Raise",
+          "libraryId": "lateral-raise",
+          "preferredSwapLibraryIds": [
+            "cable-lateral-raise"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "22.5"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "22.5"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "22.5"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-a__curl",
+          "name": "DB Curl",
+          "libraryId": "dumbbell-curl",
+          "preferredSwapLibraryIds": [
+            "incline-dumbbell-curl"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–12",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "10–12",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "10–12",
+              "targetWeight": "30"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-a__fp",
+          "name": "Cable Face Pull",
+          "libraryId": "face-pull",
+          "preferredSwapLibraryIds": [
+            "rear-delt-cable-fly"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "120"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "120"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-a__oh",
+          "name": "Overhead Cable Triceps Extension",
+          "libraryId": "overhead-cable-tricep-extension",
+          "preferredSwapLibraryIds": [
+            "overhead-dumbbell-tricep-extension"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-a__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-lower-a",
+      "name": "2: Lower A — Quads / Calves (~40 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "ROLLING SCHEDULE: do the next session in the cycle (Upper A → Lower A → Upper B → Lower B), whatever day it is. Missed a day? Just do the next one—never double up. Thursday stays a full rest day.\nSupersets: alternate the two moves back-to-back, then take the listed rest after the SECOND move (timers are set to that).\nEffort: 1–2 reps in reserve on compounds, 0–1 on the last set of isolations. Stop a set when form breaks.\nProgression: when every set hits the TOP of the range at ≤2 RIR, add 2.5–5 lb (one pin on cables) next time.\nTime cap: if the session runs past ~55 min, cut the last pair to 2 rounds instead of skipping it.\n\nSS A (2 min): leg press + calf raise (you've swapped hack squat for leg press every time, so it's now the default; hack squat is a swap if you want variety).\nSS B (75 sec): leg extension + seated leg curl.\nSS C (60 sec): cable crunch + hanging leg raise.\nFinish: 5–10 min easy incline walk (optional).\n~16 sets.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-lower-a__lp",
+          "name": "Leg Press",
+          "libraryId": "leg-press",
+          "preferredSwapLibraryIds": [
+            "hack-squat"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "8–12",
+              "targetWeight": "495"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "495"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "495"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-a__calf",
+          "name": "Leg Press Calf Raise",
+          "libraryId": "standing-calf-raise",
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "495"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "495"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "495"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-a__ext",
+          "name": "Leg Extension",
+          "libraryId": "leg-extension",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "145"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "145"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "145"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-a__curl",
+          "name": "Seated Leg Curl",
+          "libraryId": "seated-leg-curl",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-a__cc",
+          "name": "Cable Crunch",
+          "libraryId": "cable-crunch",
+          "isCore": true,
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "130"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "130"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-a__hlr",
+          "name": "Hanging Leg Raise",
+          "libraryId": "leg-raise",
+          "isCore": true,
+          "preferredSwapLibraryIds": [
+            "captains-chair-leg-raise"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-a__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-a__cardio",
+          "name": "Incline Walk",
+          "libraryId": "incline-treadmill-walk",
+          "isCardio": true,
+          "targetDuration": "5",
+          "preferredSwapLibraryIds": [
+            "stairmaster"
+          ],
+          "sets": [
+            {
+              "targetReps": "5–10 min",
+              "targetWeight": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-upper-b",
+      "name": "3: Upper B — Volume / Stretch Work (~50 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "ROLLING SCHEDULE: do the next session in the cycle (Upper A → Lower A → Upper B → Lower B), whatever day it is. Missed a day? Just do the next one—never double up. Thursday stays a full rest day.\nSupersets: alternate the two moves back-to-back, then take the listed rest after the SECOND move (timers are set to that).\nEffort: 1–2 reps in reserve on compounds, 0–1 on the last set of isolations. Stop a set when form breaks.\nProgression: when every set hits the TOP of the range at ≤2 RIR, add 2.5–5 lb (one pin on cables) next time.\nTime cap: if the session runs past ~55 min, cut the last pair to 2 rounds instead of skipping it.\n\nSS A (90 sec): flat DB press + seated rear delt fly.\nSS B (75 sec): neutral-grip pulldown (different grip from Upper A pull-ups) + cable lateral raise.\nSS C (75 sec): incline DB fly + single-arm DB row.\nSS D (60 sec, 2 rounds): rope pushdown + DB hammer curl. Chest dips are a fine swap for pushdowns.\n~22 sets.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-upper-b__flat",
+          "name": "Flat DB Press",
+          "libraryId": "flat-dumbbell-press",
+          "preferredSwapLibraryIds": [
+            "machine-chest-press"
+          ],
+          "targetRestSeconds": 90,
+          "sets": [
+            {
+              "targetReps": "8–12",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "70"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-b__rear",
+          "name": "Seated DB Rear Delt Fly",
+          "libraryId": "rear-delt-fly",
+          "preferredSwapLibraryIds": [
+            "reverse-fly-machine"
+          ],
+          "targetRestSeconds": 90,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "30"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-b__pull",
+          "name": "Neutral-Grip Pulldown",
+          "libraryId": "neutral-grip-lat-pulldown",
+          "preferredSwapLibraryIds": [
+            "pull-up"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            },
+            {
+              "targetReps": "8–12",
+              "targetWeight": "150"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-b__lat",
+          "name": "Cable Lateral Raise",
+          "libraryId": "cable-lateral-raise",
+          "preferredSwapLibraryIds": [
+            "lateral-raise"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-b__fly",
+          "name": "Incline DB Fly",
+          "libraryId": "incline-dumbbell-fly",
+          "preferredSwapLibraryIds": [
+            "low-to-high-cable-fly"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "30"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-b__row",
+          "name": "Single-Arm DB Row",
+          "libraryId": "dumbbell-row",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "8–12/side",
+              "targetWeight": "65"
+            },
+            {
+              "targetReps": "8–12/side",
+              "targetWeight": "65"
+            },
+            {
+              "targetReps": "8–12/side",
+              "targetWeight": "65"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-upper-b__pd",
+          "name": "Rope Pushdown",
+          "libraryId": "tricep-pushdown",
+          "preferredSwapLibraryIds": [
+            "chest-dip"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-upper-b__ham",
+          "name": "DB Hammer Curl",
+          "libraryId": "hammer-curl",
+          "preferredSwapLibraryIds": [
+            "cable-hammer-curl"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–12",
+              "targetWeight": "30"
+            },
+            {
+              "targetReps": "10–12",
+              "targetWeight": "30"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-upper-b__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-lower-b",
+      "name": "4: Lower B — Hinge + Leg Press (~45 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "ROLLING SCHEDULE: do the next session in the cycle (Upper A → Lower A → Upper B → Lower B), whatever day it is. Missed a day? Just do the next one—never double up. Thursday stays a full rest day.\nSupersets: alternate the two moves back-to-back, then take the listed rest after the SECOND move (timers are set to that).\nEffort: 1–2 reps in reserve on compounds, 0–1 on the last set of isolations. Stop a set when form breaks.\nProgression: when every set hits the TOP of the range at ≤2 RIR, add 2.5–5 lb (one pin on cables) next time.\nTime cap: if the session runs past ~55 min, cut the last pair to 2 rounds instead of skipping it.\n\nSS A (2 min): RDL + DB shrug (straps on both). Your RDL has sat at 70 lb for 3 sessions: when all sets hit 10, go to 75–80 lb or move to a barbell RDL.\nSS B (2 min): leg press (higher-rep, lighter day) + calf raise.\nSS C (75 sec): leg extension + seated leg curl.\nSS D (60 sec): cable crunch + hanging leg raise.\n~20 sets.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-lower-b__rdl",
+          "name": "DB Romanian Deadlift",
+          "libraryId": "dumbbell-romanian-deadlift",
+          "preferredSwapLibraryIds": [
+            "romanian-deadlift"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            },
+            {
+              "targetReps": "6–10",
+              "targetWeight": "75"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-b__shrug",
+          "name": "DB Shrug",
+          "libraryId": "dumbbell-shrug",
+          "preferredSwapLibraryIds": [
+            "barbell-shrug"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "75"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "75"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-b__lp",
+          "name": "Leg Press",
+          "libraryId": "leg-press",
+          "preferredSwapLibraryIds": [
+            "hack-squat"
+          ],
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "455"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "455"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "455"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-b__calf",
+          "name": "Leg Press Calf Raise",
+          "libraryId": "standing-calf-raise",
+          "targetRestSeconds": 120,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "455"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "455"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "455"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-b__ext",
+          "name": "Leg Extension",
+          "libraryId": "leg-extension",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "12–15",
+              "targetWeight": "145"
+            },
+            {
+              "targetReps": "12–15",
+              "targetWeight": "145"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-b__curl",
+          "name": "Seated Leg Curl",
+          "libraryId": "seated-leg-curl",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-b__cc",
+          "name": "Weighted Cable Crunch",
+          "libraryId": "cable-crunch",
+          "isCore": true,
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "110"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "110"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-lower-b__hlr",
+          "name": "Hanging Leg Raise",
+          "libraryId": "leg-raise",
+          "isCore": true,
+          "preferredSwapLibraryIds": [
+            "captains-chair-leg-raise"
+          ],
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-lower-b__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-lower-b__cardio",
+          "name": "StairMaster",
+          "libraryId": "stairmaster",
+          "isCardio": true,
+          "targetDuration": "5",
+          "preferredSwapLibraryIds": [
+            "incline-treadmill-walk"
+          ],
+          "sets": [
+            {
+              "targetReps": "5–10 min",
+              "targetWeight": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-bonus",
+      "name": "Bonus (optional): Delts, Arms & Weak Points (~30 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "ROLLING SCHEDULE: do the next session in the cycle (Upper A → Lower A → Upper B → Lower B), whatever day it is. Missed a day? Just do the next one—never double up. Thursday stays a full rest day.\nSupersets: alternate the two moves back-to-back, then take the listed rest after the SECOND move (timers are set to that).\nEffort: 1–2 reps in reserve on compounds, 0–1 on the last set of isolations. Stop a set when form breaks.\nProgression: when every set hits the TOP of the range at ≤2 RIR, add 2.5–5 lb (one pin on cables) next time.\nTime cap: if the session runs past ~55 min, cut the last pair to 2 rounds instead of skipping it.\n\nOPTIONAL. Only do this when you've already completed the 4 main sessions that week, or you have a free 30 min and feel fresh. Skipping it never costs you progress.\nSS A: lean-away lateral + overhead cable extension. SS B: face pull + preacher curl. SS C: low-to-high fly + straight-arm pulldown (2 rounds). SS D: seated leg curl + calf raise (2 rounds).",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-bonus__lat",
+          "name": "Lean-Away Cable Lateral Raise",
+          "libraryId": "lean-away-cable-lateral-raise",
+          "preferredSwapLibraryIds": [
+            "cable-lateral-raise"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "25"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "25"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "25"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-bonus__oh",
+          "name": "Overhead Cable Triceps Extension",
+          "libraryId": "overhead-cable-tricep-extension",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "70"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-bonus__fp",
+          "name": "Cable Face Pull",
+          "libraryId": "face-pull",
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "120"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "120"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "120"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-bonus__pre",
+          "name": "Preacher Curl",
+          "libraryId": "preacher-curl",
+          "preferredSwapLibraryIds": [
+            "cable-curl"
+          ],
+          "targetRestSeconds": 75,
+          "sets": [
+            {
+              "targetReps": "10–12",
+              "targetWeight": "50"
+            },
+            {
+              "targetReps": "10–12",
+              "targetWeight": "50"
+            },
+            {
+              "targetReps": "10–12",
+              "targetWeight": "50"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-bonus__l2h",
+          "name": "Low-to-High Cable Fly",
+          "libraryId": "low-to-high-cable-fly",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "40"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "40"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-bonus__sap",
+          "name": "Straight-Arm Cable Pulldown",
+          "libraryId": "lat-prayer-stretch-cable",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "12–15",
+              "targetWeight": "90"
+            },
+            {
+              "targetReps": "12–15",
+              "targetWeight": "90"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-c",
+          "supersetLabel": "C",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-bonus__curl",
+          "name": "Seated Leg Curl",
+          "libraryId": "seated-leg-curl",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "155"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-bonus__calf",
+          "name": "Standing Calf Raise",
+          "libraryId": "standing-calf-raise",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "315"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "315"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-bonus__ss-d",
+          "supersetLabel": "D",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-rest",
+      "name": "Rest Day (Thursday is fixed)",
+      "folderId": "folder-joey-c5",
+      "notes": "No lifting. Sleep 7–9 h, hit protein, easy walk if you like. If fatigue stays high for 2–3 weeks, treat it as a recovery problem (sleep, intake, stress) before changing the training.",
+      "exercises": []
+    },
+    {
+      "id": "plan-joey-c5-school-a",
+      "name": "School A: Delts & Arms Burner (~8 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "OPTIONAL — not part of the required week. Do it in a hallway, desk area, or study break. Equipment: 5, 8 and 20 lb dumbbells.\nLight loads still build muscle when sets go close to failure: use a slow 3-sec lowering, 1-sec pause in the stretch, and stop with 1–2 reps in reserve.\nCount these sets toward your weekly total—if you do School Delts/Arms, trim lateral/curl sets in the gym that day. Rest 30–45 sec between moves, ~60 sec between rounds.\n\nSS A: 8 lb lateral raise + 5 lb bent-over rear delt fly, 3 rounds.\nSS B: 20 lb curl + 20 lb overhead triceps extension, 3 rounds.\nOptional: 20 lb hammer curl, 1 set to failure.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-school-a__lat",
+          "name": "Lateral Raise (8 lb)",
+          "libraryId": "lateral-raise",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "25–40",
+              "targetWeight": "8"
+            },
+            {
+              "targetReps": "25–40",
+              "targetWeight": "8"
+            },
+            {
+              "targetReps": "25–40",
+              "targetWeight": "8"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-a__rear",
+          "name": "Bent-Over Rear Delt Fly (5 lb)",
+          "libraryId": "rear-delt-fly",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "30–40",
+              "targetWeight": "5"
+            },
+            {
+              "targetReps": "30–40",
+              "targetWeight": "5"
+            },
+            {
+              "targetReps": "30–40",
+              "targetWeight": "5"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-a__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-school-a__curl",
+          "name": "DB Curl (20 lb)",
+          "libraryId": "dumbbell-curl",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-a__ext",
+          "name": "Overhead DB Triceps Extension (20 lb)",
+          "libraryId": "overhead-dumbbell-tricep-extension",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-a__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-school-b",
+      "name": "School B: Legs & Calves Burner (~10 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "OPTIONAL — not part of the required week. Do it in a hallway, desk area, or study break. Equipment: 5, 8 and 20 lb dumbbells.\nLight loads still build muscle when sets go close to failure: use a slow 3-sec lowering, 1-sec pause in the stretch, and stop with 1–2 reps in reserve.\nCount these sets toward your weekly total—if you do School Delts/Arms, trim lateral/curl sets in the gym that day. Rest 30–45 sec between moves, ~60 sec between rounds.\n\nSS A: Bulgarian split squat (20s) with 2-sec pause at bottom + single-leg calf raise on a step.\nSS B: single-leg DB RDL (20 lb) + glute bridge march or bodyweight squat to failure.\nThese keep legs frequent between Lower A and Lower B; they do not replace them.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-school-b__bss",
+          "name": "Bulgarian Split Squat (2 x 20 lb)",
+          "libraryId": "bulgarian-split-squat",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-b__calf",
+          "name": "Single-Leg Calf Raise (20 lb)",
+          "libraryId": "calf-raise",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "15–30/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–30/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–30/leg",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-b__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-school-b__rdl",
+          "name": "Single-Leg DB RDL (20 lb)",
+          "libraryId": "dumbbell-romanian-deadlift",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "12–20/leg",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-b__sq",
+          "name": "Bodyweight Squat to Failure",
+          "libraryId": "bodyweight-squat",
+          "targetRestSeconds": 60,
+          "sets": [
+            {
+              "targetReps": "25–40",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "25–40",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-b__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-school-c",
+      "name": "School C: Push-Pull Burner (~8 min)",
+      "folderId": "folder-joey-c5",
+      "notes": "OPTIONAL — not part of the required week. Do it in a hallway, desk area, or study break. Equipment: 5, 8 and 20 lb dumbbells.\nLight loads still build muscle when sets go close to failure: use a slow 3-sec lowering, 1-sec pause in the stretch, and stop with 1–2 reps in reserve.\nCount these sets toward your weekly total—if you do School Delts/Arms, trim lateral/curl sets in the gym that day. Rest 30–45 sec between moves, ~60 sec between rounds.\n\nSS A: feet-elevated push-up to 1–2 reps short of failure + 20 lb one-arm DB row (hand on a desk/chair).\nSS B: 20 lb DB floor press (pause on floor) + IYT raises (5 lb).",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-school-c__pu",
+          "name": "Feet-Elevated Push-Up",
+          "libraryId": "push-up",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "15–30",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "15–30",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "15–30",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-c__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-c__row",
+          "name": "One-Arm DB Row (20 lb)",
+          "libraryId": "dumbbell-row",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "15–25/side",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25/side",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25/side",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-c__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-school-c__fp",
+          "name": "DB Floor Press (2 x 20 lb)",
+          "libraryId": "flat-dumbbell-press",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–25",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-c__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-c__iyt",
+          "name": "IYT Raises (5 lb)",
+          "libraryId": "iyt-raises",
+          "targetRestSeconds": 45,
+          "sets": [
+            {
+              "targetReps": "10–15",
+              "targetWeight": "5"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "5"
+            },
+            {
+              "targetReps": "10–15",
+              "targetWeight": "5"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-c__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        }
+      ]
+    },
+    {
+      "id": "plan-joey-c5-school-d",
+      "name": "School D: 5-Minute Desk Reset",
+      "folderId": "folder-joey-c5",
+      "notes": "OPTIONAL — not part of the required week. Do it in a hallway, desk area, or study break. Equipment: 5, 8 and 20 lb dumbbells.\nLight loads still build muscle when sets go close to failure: use a slow 3-sec lowering, 1-sec pause in the stretch, and stop with 1–2 reps in reserve.\nCount these sets toward your weekly total—if you do School Delts/Arms, trim lateral/curl sets in the gym that day. Rest 30–45 sec between moves, ~60 sec between rounds.\n\nTime-crunch version: 2 quick rounds, no equipment changes. Round = 8 lb lateral raise x 25, push-up x 15–20, 20 lb goblet squat x 15–20, dead bug x 10/side.",
+      "exercises": [
+        {
+          "id": "plan-joey-c5-school-d__lat",
+          "name": "Lateral Raise (8 lb)",
+          "libraryId": "lateral-raise",
+          "targetRestSeconds": 30,
+          "sets": [
+            {
+              "targetReps": "25–30",
+              "targetWeight": "8"
+            },
+            {
+              "targetReps": "25–30",
+              "targetWeight": "8"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-d__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-d__pu",
+          "name": "Push-Up",
+          "libraryId": "push-up",
+          "targetRestSeconds": 30,
+          "sets": [
+            {
+              "targetReps": "15–20",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "15–20",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-d__ss-a",
+          "supersetLabel": "A",
+          "supersetOrder": 2
+        },
+        {
+          "id": "plan-joey-c5-school-d__gob",
+          "name": "Goblet Squat (20 lb)",
+          "libraryId": "goblet-squat",
+          "targetRestSeconds": 30,
+          "sets": [
+            {
+              "targetReps": "15–20",
+              "targetWeight": "20"
+            },
+            {
+              "targetReps": "15–20",
+              "targetWeight": "20"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-d__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 1
+        },
+        {
+          "id": "plan-joey-c5-school-d__db",
+          "name": "Dead Bug",
+          "libraryId": "dead-bug",
+          "isCore": true,
+          "targetRestSeconds": 30,
+          "sets": [
+            {
+              "targetReps": "8–10/side",
+              "targetWeight": "0"
+            },
+            {
+              "targetReps": "8–10/side",
+              "targetWeight": "0"
+            }
+          ],
+          "supersetGroupId": "plan-joey-c5-school-d__ss-b",
+          "supersetLabel": "B",
+          "supersetOrder": 2
+        }
+      ]
+    }
+  ],
+  "folders": [
+    {
+      "id": "folder-joey-c5",
+      "name": "Joey C5",
+      "purpose": "Joey C5: 4-session rolling upper/lower cycle (Upper A, Lower A, Upper B, Lower B) built around ~3–4 real sessions per week, with face pulls inside Upper A, an optional 30-min bonus day, and optional school-dumbbell routines. Pull-ups replace pulldowns where you already swap, leg press is the main quad lift, sets trimmed to ~20 per session to limit late-session fade. Progression: double progression at 1–2 RIR."
+    }
+  ]
+}
