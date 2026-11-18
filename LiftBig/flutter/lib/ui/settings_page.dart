@@ -60,6 +60,9 @@ class _SettingsPageState extends State<SettingsPage> {
   var _prescribeWarmup = false;
   var _showPlateGraphic = true;
   var _proActive = false;
+  var _proBusy = false;
+  List<ProProduct> _proProducts = const [];
+  final _unlockCode = TextEditingController();
   late final ProStatus _proStatus;
   final _heightFeet = TextEditingController();
   final _heightInches = TextEditingController();
@@ -184,9 +187,66 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadPro() async {
     final active = await _proStatus.refresh();
+    final products = await _proStatus.loadProducts();
     if (!mounted) return;
     widget.themes.setProActive(active);
-    setState(() => _proActive = active);
+    setState(() {
+      _proActive = active;
+      _proProducts = products;
+    });
+  }
+
+  Future<void> _purchasePro(String productId) async {
+    if (_proBusy) return;
+    setState(() => _proBusy = true);
+    final result = await _proStatus.purchase(productId);
+    if (!mounted) return;
+    setState(() => _proBusy = false);
+    if (result.active && result.message == null) {
+      showLiftBigNotice(context, 'LiftBig Pro is unlocked.');
+    } else if (result.message != null) {
+      showLiftBigNotice(context, result.message!);
+    }
+    await _loadPro();
+  }
+
+  Future<void> _restorePro() async {
+    if (_proBusy) return;
+    setState(() => _proBusy = true);
+    final result = await _proStatus.restorePurchases('');
+    if (!mounted) return;
+    setState(() => _proBusy = false);
+    showLiftBigNotice(
+      context,
+      result.isPro
+          ? 'LiftBig Pro is unlocked.'
+          : 'No Pro purchase was found.',
+    );
+    await _loadPro();
+  }
+
+  Future<void> _submitUnlockCode() async {
+    if (_proBusy) return;
+    setState(() => _proBusy = true);
+    final result = await _proStatus.restorePurchases(_unlockCode.text.trim());
+    if (!mounted) return;
+    setState(() => _proBusy = false);
+    if (result.codeMatched || result.isPro) {
+      _unlockCode.clear();
+      showLiftBigNotice(context, 'LiftBig Pro is unlocked.');
+    } else {
+      showLiftBigNotice(context, 'That code did not unlock Pro.');
+    }
+    await _loadPro();
+  }
+
+  String _proButtonLabel(String title, String productId) {
+    final price = _proProducts
+        .where((product) => product.id == productId)
+        .map((product) => product.displayPrice)
+        .firstWhere((price) => price.isNotEmpty, orElse: () => '');
+    if (price.isEmpty) return title;
+    return '$title · $price';
   }
 
   Future<void> _loadReminder() async {
@@ -542,6 +602,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _unlockCode.dispose();
     _reminderMessage.dispose();
     _bodyWeight.dispose();
     _heightFeet.dispose();
@@ -746,6 +807,63 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           );
         },
+      ),
+    ];
+  }
+
+  List<Widget> _proActivation() {
+    if (_proActive) {
+      return const [
+        Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Pro is active on this account.',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ];
+    }
+    return [
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _proBusy ? null : () => _purchasePro(proYearlyProductId),
+          child: Text(_proButtonLabel('Yearly', proYearlyProductId)),
+        ),
+      ),
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _proBusy ? null : () => _purchasePro(proMonthlyProductId),
+          child: Text(_proButtonLabel('Monthly', proMonthlyProductId)),
+        ),
+      ),
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _proBusy ? null : _restorePro,
+          child: const Text('Restore'),
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _unlockCode,
+        textInputAction: TextInputAction.done,
+        enabled: !_proBusy,
+        decoration: const InputDecoration(
+          labelText: 'Unlock code',
+          isDense: true,
+        ),
+        onSubmitted: (_) => _submitUnlockCode(),
+      ),
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          onPressed: _proBusy ? null : _submitUnlockCode,
+          child: const Text('Unlock'),
+        ),
       ),
     ];
   }
@@ -1036,6 +1154,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             controller: _freeThemeScroll,
                           ),
                           ..._sectionHeading('LiftBig Pro'),
+                          ..._proActivation(),
                           if (!_proActive)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 8),

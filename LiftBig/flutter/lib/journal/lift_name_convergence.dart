@@ -1,8 +1,47 @@
 import '../catalog/liftbig_catalog.dart';
 
-/// Lowercase alphanumeric only — "Push-Up" and "push ups" both become "pushups".
+/// Lowercase alphanumeric only — "Push-Up" and "push up" both become "pushup".
 String normalizeForExerciseMatch(String s) {
   return s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+}
+
+/// [normalizeForExerciseMatch], then one trailing plural `s` when the stem is long enough.
+String exerciseFoldKey(String name) {
+  final key = normalizeForExerciseMatch(name);
+  if (key.length > 3 && key.endsWith('s')) {
+    return key.substring(0, key.length - 1);
+  }
+  return key;
+}
+
+/// Library names indexed so a spacing, hyphen, or plural variant hits one lift.
+class LibraryNameIndex {
+  LibraryNameIndex(Iterable<LibraryLift> lifts) {
+    for (final lift in lifts) {
+      byId[lift.id] = lift;
+      final exact = normalizeForExerciseMatch(lift.name);
+      if (exact.isEmpty) continue;
+      (_exact[exact] ??= []).add(lift);
+      final folded = exerciseFoldKey(lift.name);
+      (_folded[folded] ??= []).add(lift);
+    }
+  }
+
+  final byId = <String, LibraryLift>{};
+  final _exact = <String, List<LibraryLift>>{};
+  final _folded = <String, List<LibraryLift>>{};
+
+  /// One library exercise for [name], or null when none or several match.
+  LibraryLift? matchName(String name) {
+    final exactKey = normalizeForExerciseMatch(name);
+    if (exactKey.isEmpty) return null;
+    final exact = _exact[exactKey];
+    if (exact != null && exact.length == 1) return exact.single;
+    if (exact != null && exact.length > 1) return null;
+    final folded = _folded[exerciseFoldKey(name)];
+    if (folded != null && folded.length == 1) return folded.single;
+    return null;
+  }
 }
 
 /// Same movement spelling after normalization — not token/suffix near-match.

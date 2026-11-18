@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/sync/account_reauth.dart';
 import 'package:liftbig/sync/apple_nonce.dart';
+import 'package:liftbig/sync/sync_controller.dart';
 
 void main() {
   test('sha256 nonce is the hex digest of the raw nonce', () {
@@ -22,6 +23,20 @@ void main() {
     for (final char in nonce.split('')) {
       expect(appleNonceCharset.contains(char), isTrue);
     }
+  });
+
+  test('Google sign-in waits for a reversed client URL scheme', () {
+    expect(googleSignInSchemeReady(null), isFalse);
+    expect(googleSignInSchemeReady({'ready': false}), isFalse);
+    expect(googleSignInSchemeReady({'ready': true}), isTrue);
+    expect(
+      googleServerClientId({
+        'ready': true,
+        'serverClientId': 'web.apps.googleusercontent.com',
+      }),
+      'web.apps.googleusercontent.com',
+    );
+    expect(googleServerClientId({'serverClientId': r'$(GOOGLE_SERVER_CLIENT_ID)'}), isNull);
   });
 
   test('reauth follows the provider that signed the session in', () {

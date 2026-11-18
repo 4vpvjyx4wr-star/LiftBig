@@ -44,17 +44,50 @@ class KeyboardDismissScaffold extends StatelessWidget {
 /// [fill] is for a page body that should keep the parent's height. Sheets and
 /// dialogs use [fill] false so they stay as tall as their content, with the
 /// keyboard inset taken out of the space the child can use.
-class KeyboardDismiss extends StatelessWidget {
+class KeyboardDismiss extends StatefulWidget {
   const KeyboardDismiss({super.key, required this.child, this.fill = true});
 
   final Widget child;
   final bool fill;
 
   @override
+  State<KeyboardDismiss> createState() => _KeyboardDismissState();
+}
+
+class _KeyboardDismissState extends State<KeyboardDismiss> {
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addListener(_onFocus);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_onFocus);
+    super.dispose();
+  }
+
+  void _onFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    final open = textInputHasPrimaryFocus();
+    if (open != _open) setState(() => _open = open);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return _buildDismiss(context);
+  }
+
+  Widget _buildDismiss(BuildContext context) {
     final media = MediaQuery.viewInsetsOf(context).bottom;
-    final full = keyboardBottomInset(context);
-    final open = full > 0;
+    final open = _open;
     final lift = media > 0 ? media : 0.0;
     final bar = open ? KeyboardDismissScaffold.toolbarHeight : 0.0;
     return Listener(
@@ -64,7 +97,7 @@ class KeyboardDismiss extends StatelessWidget {
         builder: (context, constraints) {
           final bounded =
               constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
-          if (!fill || !bounded) {
+          if (!widget.fill || !bounded) {
             final limit = bounded
                 ? (constraints.maxHeight - lift - bar).clamp(0.0, constraints.maxHeight)
                 : double.infinity;
@@ -73,7 +106,7 @@ class KeyboardDismiss extends StatelessWidget {
               children: [
                 ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: limit),
-                  child: child,
+                  child: widget.child,
                 ),
                 if (open) const KeyboardDoneBar(),
                 if (lift > 0) SizedBox(height: lift),
@@ -85,7 +118,7 @@ class KeyboardDismiss extends StatelessWidget {
             children: [
               Padding(
                 padding: EdgeInsets.only(bottom: lift + bar),
-                child: child,
+                child: widget.child,
               ),
               if (open)
                 Positioned(
@@ -124,6 +157,26 @@ class KeyboardDoneBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// True when the focused control is a text field. A stale keyboard inset
+/// does not count: the Done bar stays up only while the field is focused.
+bool textInputHasPrimaryFocus() {
+  final focus = FocusManager.instance.primaryFocus;
+  if (focus == null || !focus.hasFocus) return false;
+  if (focus.debugLabel == 'EditableText') return true;
+  final element = focus.context;
+  if (element == null) return false;
+  if (element.widget is EditableText) return true;
+  var found = false;
+  element.visitAncestorElements((ancestor) {
+    if (ancestor.widget is EditableText) {
+      found = true;
+      return false;
+    }
+    return true;
+  });
+  return found;
 }
 
 /// Unfocuses the primary field when [global] is outside that field.

@@ -216,7 +216,7 @@ class LiftBigCatalog {
     ];
     final workouts = [
       for (final item in json['workouts'] as List)
-        _workout(Map<String, Object?>.from(item as Map)),
+        _workout(Map<String, Object?>.from(item as Map), lifts),
     ];
     final byFolder = <String, List<CatalogWorkout>>{};
     final starters = <CatalogWorkout>[];
@@ -274,7 +274,7 @@ LibraryLift _lift(Map<String, Object?> json) {
   );
 }
 
-CatalogWorkout _workout(Map<String, Object?> json) {
+CatalogWorkout _workout(Map<String, Object?> json, List<LibraryLift> lifts) {
   final folder = json['folderId'];
   return CatalogWorkout(
     id: json['id'] as String,
@@ -283,16 +283,64 @@ CatalogWorkout _workout(Map<String, Object?> json) {
     notes: json['notes'] as String? ?? '',
     lifts: [
       for (final item in (json['exercises'] as List? ?? const []))
-        _catalogLift(Map<String, Object?>.from(item as Map)),
+        _catalogLift(Map<String, Object?>.from(item as Map), lifts),
     ],
   );
 }
 
-CatalogLift _catalogLift(Map<String, Object?> json) {
-  final libraryId = json['libraryId'];
+String _catalogFoldKey(String name) {
+  final key = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  if (key.length > 3 && key.endsWith('s')) return key.substring(0, key.length - 1);
+  return key;
+}
+
+LibraryLift? _singleFoldMatch(String name, List<LibraryLift> lifts) {
+  final exactKey = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  if (exactKey.isEmpty) return null;
+  final exact = [
+    for (final lift in lifts)
+      if (lift.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '') == exactKey)
+        lift,
+  ];
+  if (exact.length == 1) return exact.single;
+  if (exact.length > 1) return null;
+  final foldedKey = _catalogFoldKey(name);
+  final folded = [
+    for (final lift in lifts)
+      if (_catalogFoldKey(lift.name) == foldedKey) lift,
+  ];
+  if (folded.length == 1) return folded.single;
+  return null;
+}
+
+CatalogLift _catalogLift(Map<String, Object?> json, List<LibraryLift> lifts) {
+  final rawId = json['libraryId'] == 'deadbug' ? 'dead-bug' : json['libraryId'];
+  final written = json['name'] as String? ?? 'Lift';
+  LibraryLift? linked;
+  if (rawId is String && rawId.isNotEmpty) {
+    for (final lift in lifts) {
+      if (lift.id == rawId) {
+        linked = lift;
+        break;
+      }
+    }
+  }
+  final folded = _singleFoldMatch(written, lifts);
+  final String name;
+  final String? libraryId;
+  if (linked != null && _catalogFoldKey(written) == _catalogFoldKey(linked.name)) {
+    name = linked.name;
+    libraryId = linked.id;
+  } else if (linked == null && folded != null && (rawId is! String || rawId.isEmpty)) {
+    name = folded.name;
+    libraryId = folded.id;
+  } else {
+    name = written;
+    libraryId = linked?.id ?? (rawId is String && rawId.isNotEmpty ? rawId : null);
+  }
   return CatalogLift(
-    name: json['name'] as String? ?? 'Lift',
-    libraryId: libraryId is String && libraryId.isNotEmpty ? libraryId : null,
+    name: name,
+    libraryId: libraryId,
     isCardio: json['isCardio'] == true,
     isCore: json['isCore'] == true,
     isCircuit: json['isCircuit'] == true,
@@ -389,9 +437,12 @@ List<LibraryLift> searchLifts(List<LibraryLift> lifts, String query) {
     return token.isNotEmpty;
   }).toList();
   if (tokens.isEmpty) return lifts;
+  final queryKey = _catalogFoldKey(tokens.join());
   return [
     for (final lift in lifts)
-      if (tokens.every((token) => _liftHaystack(lift).contains(token))) lift,
+      if (tokens.every((token) => _liftHaystack(lift).contains(token)) ||
+          (queryKey.isNotEmpty && queryKey == _catalogFoldKey(lift.name)))
+        lift,
   ];
 }
 
