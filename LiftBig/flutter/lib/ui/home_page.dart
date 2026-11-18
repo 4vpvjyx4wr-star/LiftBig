@@ -6,6 +6,7 @@ import '../journal/logged_day.dart';
 import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import '../utils/weight_units.dart';
 import 'assign_plan_sheet.dart';
 import 'clear_day.dart';
 import 'day_page.dart';
@@ -41,6 +42,7 @@ class _HomePageState extends State<HomePage> {
   late String _selectedKey;
   Map<String, DaySummary> _summaries = {};
   JournalDay? _day;
+  var _weightUnit = WeightUnit.lb;
 
   @override
   void initState() {
@@ -69,10 +71,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _reload() async {
     final summaries = await widget.journal.summariesForMonth(_month);
     final day = await widget.journal.getDay(_selectedKey);
+    final unit = await widget.journal.storedWeightUnit();
     if (!mounted) return;
     setState(() {
       _summaries = {for (final summary in summaries) summary.dateKey: summary};
       _day = day;
+      _weightUnit = unit;
     });
   }
 
@@ -101,7 +105,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (!mounted) return;
     if (finished == true) {
-      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow.');
+      showLiftBigNotice(context, 'Congrats on lifting big. See you tomorrow.');
     }
     await _reload();
   }
@@ -356,6 +360,7 @@ class _HomePageState extends State<HomePage> {
             onEditExercise: _editExercise,
             onDeleteExercise: _deleteExercise,
             onExerciseInfo: _openExerciseInfo,
+            weightUnit: _weightUnit,
           ),
         ],
       ),
@@ -441,6 +446,7 @@ class _DayPanel extends StatelessWidget {
     required this.onEditExercise,
     required this.onDeleteExercise,
     required this.onExerciseInfo,
+    required this.weightUnit,
   });
 
   final String dateKey;
@@ -455,6 +461,7 @@ class _DayPanel extends StatelessWidget {
   final ValueChanged<JournalExercise> onEditExercise;
   final ValueChanged<JournalExercise> onDeleteExercise;
   final ValueChanged<JournalExercise> onExerciseInfo;
+  final WeightUnit weightUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -635,6 +642,7 @@ class _DayPanel extends StatelessWidget {
                 if (i > 0) const SizedBox(height: 8),
                 _ExerciseCard(
                   exercise: exercises[i],
+                  weightUnit: weightUnit,
                   onOpen: () => onLog(exercises[i].id),
                   onEdit: () => onEditExercise(exercises[i]),
                   onDelete: () => onDeleteExercise(exercises[i]),
@@ -731,6 +739,7 @@ class _SecondaryAction extends StatelessWidget {
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
     required this.exercise,
+    required this.weightUnit,
     required this.onOpen,
     required this.onEdit,
     required this.onDelete,
@@ -738,6 +747,7 @@ class _ExerciseCard extends StatelessWidget {
   });
 
   final JournalExercise exercise;
+  final WeightUnit weightUnit;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -847,7 +857,7 @@ class _ExerciseCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2, right: 8),
                   child: Text(
-                    _setLine(exercise, set),
+                    _setLine(exercise, set, weightUnit),
                     style: const TextStyle(fontSize: 13),
                   ),
                 ),
@@ -859,7 +869,7 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
-String _setLine(JournalExercise exercise, JournalSet set) {
+String _setLine(JournalExercise exercise, JournalSet set, WeightUnit unit) {
   if (exercise.isCardio && !exercise.isCircuit) {
     final minutes = set.reps.trim().isEmpty ? '—' : '${set.reps.trim()} min';
     final distance = set.weight.trim();
@@ -875,7 +885,9 @@ String _setLine(JournalExercise exercise, JournalSet set) {
   final warmup = set.isWarmup ? 'Warmup · ' : '';
   final loggedReps = loggedRepsField(set.reps);
   final reps = loggedReps.isEmpty ? '—' : loggedReps;
-  final weight = set.weight.isEmpty ? '—' : '${set.weight} lb';
+  final weight = set.weight.trim().isEmpty
+      ? '—'
+      : formatStoredWeightWithUnit(set.weight, unit);
   final time = set.durationSeconds?.trim();
   final timeLabel = exercise.isCore && time != null && time.isNotEmpty
       ? ' · $time sec'

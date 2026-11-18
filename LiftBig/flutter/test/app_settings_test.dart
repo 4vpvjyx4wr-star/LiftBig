@@ -17,6 +17,8 @@ void main() {
         storedLbsToDisplay('225', WeightUnit.kg),
         isNot('225'),
       );
+      expect(formatStoredWeightWithUnit('225', WeightUnit.lb), '225 lb');
+      expect(formatStoredWeightWithUnit('225', WeightUnit.kg), '102.1 kg');
     });
   });
 
