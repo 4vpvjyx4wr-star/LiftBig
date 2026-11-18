@@ -5,6 +5,7 @@ import '../date_key.dart';
 import '../journal/journal_repository.dart';
 import '../progress/lift_progress.dart';
 import '../theme.dart';
+import '../utils/weight_units.dart';
 import 'liftbig_sheet.dart';
 
 class ProgressPage extends StatefulWidget {
@@ -26,6 +27,7 @@ class _ProgressPageState extends State<ProgressPage> {
   Set<String> _earned = const {};
   TrainingSnapshot? _snapshot;
   String? _selected;
+  var _unit = WeightUnit.lb;
   var _loaded = false;
   var _showLocked = false;
 
@@ -43,6 +45,7 @@ class _ProgressPageState extends State<ProgressPage> {
 
   Future<void> _load() async {
     final days = await widget.journal.allDays();
+    final unit = await widget.journal.storedWeightUnit();
     if (!mounted) return;
     List<LibraryLift> lifts = const [];
     try {
@@ -57,6 +60,7 @@ class _ProgressPageState extends State<ProgressPage> {
       _selected = series.any((item) => item.name == _selected)
           ? _selected
           : (series.isEmpty ? null : series.first.name);
+      _unit = unit;
       _loaded = true;
     });
   }
@@ -118,9 +122,9 @@ class _ProgressPageState extends State<ProgressPage> {
         if (snapshot != null) ...[
           _StreakCard(snapshot: snapshot),
           const SizedBox(height: 12),
-          _WeekCard(snapshot: snapshot),
+          _WeekCard(snapshot: snapshot, unit: _unit),
           const SizedBox(height: 12),
-          _RecordsCard(snapshot: snapshot),
+          _RecordsCard(snapshot: snapshot, unit: _unit),
           if (snapshot.nextGoal != null) ...[
             const SizedBox(height: 12),
             _GoalCard(goal: snapshot.nextGoal!),
@@ -193,11 +197,11 @@ class _ProgressPageState extends State<ProgressPage> {
           ),
           if (selected != null) ...[
             const SizedBox(height: 12),
-            _WeightChart(sessions: selected.sessions),
+            _WeightChart(sessions: selected.sessions, unit: _unit),
             const SizedBox(height: 8),
             Text(
-              'Best ${selected.sessions.map((point) => point.maxWeightLbs).reduce((a, b) => a > b ? a : b).toStringAsFixed(0)} lb'
-              ' · ${selected.sessions.length} sessions',
+              'Best ${_mass(selected.sessions.map((point) => point.maxWeightLbs).reduce((a, b) => a > b ? a : b), _unit)}'
+              ' · ${_counted(selected.sessions.length, 'session', 'sessions')}',
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
@@ -205,9 +209,9 @@ class _ProgressPageState extends State<ProgressPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  '${formatDisplayDate(point.dateKey)} · ${point.maxWeightLbs.toStringAsFixed(0)} lb'
-                  ' · ${point.setCount} sets · ${point.maxReps} reps'
-                  ' · ${point.volumeLbs.toStringAsFixed(0)} lb volume',
+                  '${formatDisplayDate(point.dateKey)} · ${_mass(point.maxWeightLbs, _unit)}'
+                  ' · ${_counted(point.setCount, 'set', 'sets')} · ${_counted(point.maxReps, 'rep', 'reps')}'
+                  ' · ${_mass(point.volumeLbs, _unit)} volume',
                 ),
               ),
           ],
@@ -284,9 +288,9 @@ class _StreakCard extends StatelessWidget {
             ),
           ),
           if (current > 0)
-            Text(
-              current == 1 ? 'day streak' : 'days streak',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            const Text(
+              'day streak',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
           const SizedBox(height: 6),
           Text(
@@ -315,9 +319,10 @@ class _StreakCard extends StatelessWidget {
 }
 
 class _WeekCard extends StatelessWidget {
-  const _WeekCard({required this.snapshot});
+  const _WeekCard({required this.snapshot, required this.unit});
 
   final TrainingSnapshot snapshot;
+  final WeightUnit unit;
 
   @override
   Widget build(BuildContext context) {
@@ -368,15 +373,15 @@ class _WeekCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '${snapshot.weekSessions} sessions · ${snapshot.weekSets} sets · ${snapshot.weekVolumeLb.toStringAsFixed(0)} lb',
+            '${_counted(snapshot.weekSessions, 'session', 'sessions')} · ${_counted(snapshot.weekSets, 'set', 'sets')} · ${_mass(snapshot.weekVolumeLb, unit)}',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           if (delta != null) ...[
             const SizedBox(height: 4),
             Text(
               delta >= 0
-                  ? '${delta.toStringAsFixed(0)} lb more than last week'
-                  : '${delta.abs().toStringAsFixed(0)} lb less than last week',
+                  ? '${_mass(delta, unit)} more than last week'
+                  : '${_mass(delta.abs(), unit)} less than last week',
               style: TextStyle(color: context.liftBig.muted),
             ),
           ],
@@ -387,20 +392,21 @@ class _WeekCard extends StatelessWidget {
 }
 
 class _RecordsCard extends StatelessWidget {
-  const _RecordsCard({required this.snapshot});
+  const _RecordsCard({required this.snapshot, required this.unit});
 
   final TrainingSnapshot snapshot;
+  final WeightUnit unit;
 
   @override
   Widget build(BuildContext context) {
     final lines = <String>[
       if (snapshot.heaviest != null)
-        'Heaviest set: ${snapshot.heaviest!.name} ${snapshot.heaviest!.weightLb.toStringAsFixed(0)} lb',
-      if (snapshot.benchLb > 0) 'Bench ${snapshot.benchLb.toStringAsFixed(0)} lb',
-      if (snapshot.squatLb > 0) 'Squat ${snapshot.squatLb.toStringAsFixed(0)} lb',
+        'Heaviest set: ${snapshot.heaviest!.name} ${_mass(snapshot.heaviest!.weightLb, unit)}',
+      if (snapshot.benchLb > 0) 'Bench ${_mass(snapshot.benchLb, unit)}',
+      if (snapshot.squatLb > 0) 'Squat ${_mass(snapshot.squatLb, unit)}',
       if (snapshot.deadliftLb > 0)
-        'Deadlift ${snapshot.deadliftLb.toStringAsFixed(0)} lb',
-      '${snapshot.trainedDays} trained days · ${snapshot.totalVolumeLb.toStringAsFixed(0)} lb moved',
+        'Deadlift ${_mass(snapshot.deadliftLb, unit)}',
+      '${_counted(snapshot.trainedDays, 'trained day', 'trained days')} · ${_mass(snapshot.totalVolumeLb, unit)} moved',
     ];
     return _Card(
       child: Column(
@@ -468,9 +474,10 @@ class _GoalCard extends StatelessWidget {
 }
 
 class _WeightChart extends StatelessWidget {
-  const _WeightChart({required this.sessions});
+  const _WeightChart({required this.sessions, required this.unit});
 
   final List<LiftSessionPoint> sessions;
+  final WeightUnit unit;
 
   @override
   Widget build(BuildContext context) {
@@ -488,7 +495,7 @@ class _WeightChart extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Tooltip(
                   message:
-                      '${point.dateKey} · ${point.maxWeightLbs.toStringAsFixed(0)} lb',
+                      '${point.dateKey} · ${_mass(point.maxWeightLbs, unit)}',
                   child: Align(
                     alignment: Alignment.bottomCenter,
                     child: FractionallySizedBox(
@@ -569,3 +576,9 @@ class _AchievementTile extends StatelessWidget {
     );
   }
 }
+
+String _mass(double lbs, WeightUnit unit) =>
+    formatWeightWithUnit(lbs, unit, maxDecimals: 0);
+
+String _counted(int count, String singular, String plural) =>
+    '$count ${count == 1 ? singular : plural}';

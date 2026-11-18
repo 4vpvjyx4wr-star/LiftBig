@@ -91,7 +91,7 @@ void main() {
 
     expect(find.text('Start Workout'), findsNothing);
     expect(find.byTooltip('Assign a Plan'), findsOneWidget);
-    expect(find.byTooltip('Add lift'), findsOneWidget);
+    expect(find.byTooltip('Add Lift'), findsOneWidget);
     expect(find.byTooltip('Calculator'), findsOneWidget);
     expect(find.byTooltip('Plate Calculator'), findsOneWidget);
     expect(find.byTooltip('1RM Calculator'), findsOneWidget);
@@ -100,7 +100,7 @@ void main() {
     expect(find.byTooltip('Start Workout'), findsNothing);
 
     final date = tester.getTopLeft(find.text('November 10, 2026'));
-    final add = tester.getTopLeft(find.byTooltip('Add lift'));
+    final add = tester.getTopLeft(find.byTooltip('Add Lift'));
     final plan = tester.getTopLeft(find.byTooltip('Assign a Plan'));
     final notes = tester.getTopLeft(find.byTooltip('Notes'));
     final calculator = tester.getTopLeft(find.byTooltip('Calculator'));
@@ -119,7 +119,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Add lift'), findsOneWidget);
+    expect(find.text('Add Lift'), findsOneWidget);
     expect(find.text('Plan'), findsOneWidget);
     expect(find.text('Clear Day'), findsOneWidget);
     expect(find.text('Notes'), findsWidgets);
@@ -163,7 +163,7 @@ void main() {
     );
     expect(pageName.focusNode?.hasFocus, isFalse);
 
-    await tester.tap(find.byTooltip('Add lift'));
+    await tester.tap(find.byTooltip('Add Lift'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

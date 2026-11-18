@@ -1427,7 +1427,7 @@ class _DayPageState extends State<DayPage> {
 
   Widget _notesButton() {
     return _headerToolButton(
-      tooltip: _notesOpen ? 'Hide notes' : 'Notes',
+      tooltip: _notesOpen ? 'Hide Notes' : 'Notes',
       onPressed: _toggleNotes,
       icon: const Icon(Icons.note_outlined, size: 22),
     );
@@ -1452,7 +1452,7 @@ class _DayPageState extends State<DayPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _headerToolButton(
-                  tooltip: 'Add lift',
+                  tooltip: 'Add Lift',
                   onPressed: _openAddExercise,
                   icon: const Icon(Icons.add, size: 22),
                 ),
@@ -1596,7 +1596,7 @@ class _DayPageState extends State<DayPage> {
                 if (!_assigning) _assignPlan();
               },
               style: planStyle,
-              child: const Text('Add plan'),
+              child: const Text('Add Plan'),
             ),
           ),
         ],
@@ -1795,7 +1795,7 @@ class _DayPageState extends State<DayPage> {
                 value: 'notes',
                 child: ToolMenuLabel(
                   icon: const ForegroundIcon(Icons.note_outlined),
-                  label: _notesOpen ? 'Hide notes' : 'Notes',
+                  label: _notesOpen ? 'Hide Notes' : 'Notes',
                 ),
               ),
               PopupMenuItem(
@@ -1817,7 +1817,7 @@ class _DayPageState extends State<DayPage> {
                 value: 'add',
                 child: ToolMenuLabel(
                   icon: ForegroundIcon(Icons.add),
-                  label: 'Add lift',
+                  label: 'Add Lift',
                 ),
               ),
             ],
@@ -2247,7 +2247,7 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = supersetBadge(exercise);
-    final goal = _goalLine(exercise);
+    final goal = _goalLine(exercise, weightUnit);
     final caloriesController = calories[exercise.id];
     final allDone = exerciseAllSetsChecked(exercise);
     return Container(
@@ -2382,6 +2382,7 @@ class _ExerciseCard extends StatelessWidget {
                 exercise: exercise,
                 index: index,
                 set: exercise.sets[index],
+                weightUnit: weightUnit,
                 onChecked: (value) =>
                     onChecked(exercise, exercise.sets[index], value),
                 showDifficulty: showDifficulty,
@@ -2555,6 +2556,7 @@ class _CircuitRow extends StatelessWidget {
     required this.exercise,
     required this.index,
     required this.set,
+    required this.weightUnit,
     required this.onChecked,
     required this.showDifficulty,
     required this.onDifficulty,
@@ -2564,6 +2566,7 @@ class _CircuitRow extends StatelessWidget {
   final JournalExercise exercise;
   final int index;
   final JournalSet set;
+  final WeightUnit weightUnit;
   final ValueChanged<bool> onChecked;
   final bool showDifficulty;
   final ValueChanged<String?> onDifficulty;
@@ -2594,7 +2597,7 @@ class _CircuitRow extends StatelessWidget {
             ),
           Expanded(
             child: Text(
-              'Set ${index + 1}  ${_circuitLine(exercise, set)}',
+              'Set ${index + 1}  ${_circuitLine(exercise, set, weightUnit)}',
               style:  TextStyle(color: context.liftBig.foreground),
             ),
           ),
@@ -3086,7 +3089,7 @@ String watchStartNotice(WatchStartOutcome outcome) {
   return parts.join(' ');
 }
 
-String? _goalLine(JournalExercise exercise) {
+String? _goalLine(JournalExercise exercise, WeightUnit unit) {
   if (exercise.isCardio && !exercise.isCircuit) {
     final parts = <String>[];
     final duration = exercise.targetDuration?.trim() ?? '';
@@ -3105,12 +3108,14 @@ String? _goalLine(JournalExercise exercise) {
   }
   final count = exercise.sets.length;
   final mid = reps.isNotEmpty ? '$count × $reps' : '$count sets';
-  final tail = weight.isNotEmpty ? ' @ $weight lb' : '';
+  final tail = weight.isNotEmpty
+      ? ' @ ${formatStoredWeightWithUnit(weight, unit)}'
+      : '';
   final timeTail = time.isNotEmpty ? ' · $time sec' : '';
   return 'Goal: $mid$tail$timeTail';
 }
 
-String _circuitLine(JournalExercise exercise, JournalSet set) {
+String _circuitLine(JournalExercise exercise, JournalSet set, WeightUnit unit) {
   final reps = set.reps.trim().isNotEmpty
       ? set.reps.trim()
       : (exercise.targetReps ?? '').trim();
@@ -3131,7 +3136,7 @@ String _circuitLine(JournalExercise exercise, JournalSet set) {
     effort = '$reps reps';
   }
   if (weight.isEmpty) return effort;
-  return '$effort @ $weight lb';
+  return '$effort @ ${formatStoredWeightWithUnit(weight, unit)}';
 }
 
 InputDecoration _setInputDecoration(BuildContext context, String hint) {

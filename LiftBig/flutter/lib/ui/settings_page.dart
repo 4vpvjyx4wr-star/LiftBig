@@ -817,7 +817,7 @@ class _SettingsPageState extends State<SettingsPage> {
         Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'Pro is active on this account.',
+            'LiftBig Pro is active.',
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
@@ -1101,7 +1101,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    title: const Text('Include Warmups on Heavy Compounds'),
                     subtitle: Text(
                       'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
                       style: TextStyle(color: context.liftBig.muted),
@@ -1125,7 +1125,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Rate Set Difficulty'),
                     subtitle: Text(
-                      'Set difficulty can be tracked with easy, moderate, or difficult, which factors into your strength predictions. Unrated sets carry default weight.',
+                      'Each set can be marked Easy, Moderate, or Difficult. That rating factors into strength predictions. An unrated set uses the default.',
                       style: TextStyle(color: context.liftBig.muted),
                     ),
                     value: _logDifficulty,
@@ -1328,7 +1328,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Play tone',
+                            tooltip: 'Play Tone',
                             onPressed: _previewAlarmTone,
                             icon: Icon(
                               Icons.play_arrow,
