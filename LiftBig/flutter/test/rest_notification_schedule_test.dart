@@ -1,7 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/journal/app_settings.dart';
+import 'package:liftbig/reminder/daily_lift_reminder.dart';
 import 'package:liftbig/rest/rest_notifications.dart';
+import 'package:liftbig/rest/rest_timer_state.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -34,6 +36,13 @@ void main() {
     expect(loud.android?.actions?.single.id, restAlarmStopActionId);
     expect(loud.android?.actions?.single.title, 'Stop');
     expect(loud.iOS?.categoryIdentifier, restAlarmDarwinCategoryId);
+    final stop = restAlarmDarwinCategory().actions.single;
+    expect(stop.identifier, restAlarmStopActionId);
+    expect(stop.title, 'Stop');
+    expect(
+      stop.options,
+      contains(DarwinNotificationActionOption.foreground),
+    );
 
     final bell = restFinishedNotificationDetails(
       const RestFinishedNotificationOptions(
@@ -86,6 +95,59 @@ void main() {
     expect(
       restAlarmAndroidScheduleMode(canScheduleExact: false),
       AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  });
+
+  test('a rest notification tap or Stop action stops the alarm', () {
+    expect(
+      restNotificationResponseStopsAlarm(
+        const NotificationResponse(
+          notificationResponseType: NotificationResponseType.selectedNotification,
+          id: restFinishedNotificationId,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      restNotificationResponseStopsAlarm(
+        const NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotificationAction,
+          id: restFinishedNotificationId,
+          actionId: restAlarmStopActionId,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      restNotificationResponseStopsAlarm(
+        const NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotificationAction,
+          actionId: restAlarmStopActionId,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      restNotificationResponseStopsAlarm(
+        NotificationResponse(
+          notificationResponseType: NotificationResponseType.selectedNotification,
+          id: dailyLiftReminderNotificationIdForWeekday(DateTime.monday),
+        ),
+      ),
+      isFalse,
+    );
+    expect(
+      restNotificationResponseStopsAlarm(
+        const NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotificationAction,
+          id: restFinishedNotificationId,
+          actionId: 'snooze',
+        ),
+      ),
+      isFalse,
     );
   });
 }

@@ -15,11 +15,16 @@ class _RecordingRestNotifications implements RestNotificationScheduler {
   final List<DateTime> scheduled = [];
   final List<RestFinishedNotificationOptions> options = [];
   var cancels = 0;
+  var delivered = false;
 
   @override
   Future<void> cancelRestFinished() async {
     cancels += 1;
+    delivered = false;
   }
+
+  @override
+  Future<bool> restFinishedIsDelivered() async => delivered;
 
   @override
   Future<void> initialize() async {}
@@ -195,7 +200,198 @@ void main() {
     expect(controller.menuOpen, isTrue);
   });
 
-  test('ring until stopped loops the in-app tone until stop or cancel', () async {
+  test('expired stored rest loads inactive and a running rest keeps its time', () async {
+    final calls = <MethodCall>[];
+    const channel = MethodChannel(RestAlarm.channelName);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return true;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    final notifications = _RecordingRestNotifications();
+    final controller = RestTimerController(
+      journal: journal,
+      notifications: notifications,
+      companion: CompanionBridge(
+        channel: const MethodChannel('liftbig/rest_timer_expired_load'),
+      ),
+    );
+    addTearDown(() async {
+      controller.dispose();
+      await journal.db.close();
+    });
+    await journal.saveRestTimerAlertSettings(
+      const RestTimerAlertSettings(
+        soundEnabled: true,
+        vibrationEnabled: false,
+        notificationEnabled: true,
+        ringUntilStopped: true,
+      ),
+    );
+    await journal.saveRestTimerState(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'row',
+        exerciseName: 'Barbell Row',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: DateTime.now().millisecondsSinceEpoch - 5000,
+      ),
+    );
+
+    await controller.load();
+    await pumpEventQueue();
+
+    expect(controller.isActive, isFalse);
+    expect(controller.alarmRinging, isFalse);
+    expect(controller.showsFloatingCard, isFalse);
+    expect(controller.showsAnchored, isFalse);
+    expect(await journal.loadRestTimerState(), isNull);
+    expect(calls.where((call) => call.method == 'play'), isEmpty);
+    expect(notifications.scheduled, isEmpty);
+
+    final endMs = DateTime.now()
+        .add(const Duration(seconds: 75))
+        .millisecondsSinceEpoch;
+    await journal.saveRestTimerState(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'squat',
+        exerciseName: 'Back Squat',
+        fullSeconds: 90,
+        paused: false,
+        endAtEpochMs: endMs,
+      ),
+    );
+    final again = RestTimerController(
+      journal: journal,
+      notifications: notifications,
+      companion: CompanionBridge(
+        channel: const MethodChannel('liftbig/rest_timer_running_load'),
+      ),
+    );
+    addTearDown(again.dispose);
+    await again.load();
+
+    expect(again.isActive, isTrue);
+    expect(again.alarmRinging, isFalse);
+    expect(again.isRunning, isTrue);
+    expect(again.snapshot.endAtEpochMs, endMs);
+    expect(again.snapshot.exerciseName, 'Back Squat');
+    expect(again.remaining, inInclusiveRange(70, 75));
+    expect(calls.where((call) => call.method == 'play'), isEmpty);
+  });
+
+  test('load of an expired or zero rest stays inactive and silent', () async {
+    final calls = <MethodCall>[];
+    const channel = MethodChannel(RestAlarm.channelName);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return true;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    Future<void> expectCleared(
+      RestTimerSnapshot stored, {
+      bool delivered = false,
+    }) async {
+      final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+      final notifications = _RecordingRestNotifications()..delivered = delivered;
+      final now = DateTime.utc(2026, 11, 18, 12);
+      final controller = RestTimerController(
+        journal: journal,
+        notifications: notifications,
+        companion: CompanionBridge(
+          channel: MethodChannel(
+            'liftbig/rest_timer_zero_${stored.paused}_${stored.endAtEpochMs}',
+          ),
+        ),
+        now: () => now,
+      );
+      await journal.saveRestTimerAlertSettings(
+        const RestTimerAlertSettings(
+          soundEnabled: true,
+          vibrationEnabled: false,
+          notificationEnabled: true,
+          ringUntilStopped: true,
+        ),
+      );
+      await journal.saveRestTimerState(stored);
+      calls.clear();
+
+      await controller.load();
+      await pumpEventQueue();
+
+      expect(controller.alarmRinging, isFalse);
+      expect(controller.isActive, isFalse);
+      expect(controller.showsFloatingCard, isFalse);
+      expect(controller.showsAnchored, isFalse);
+      expect(await journal.loadRestTimerState(), isNull);
+      expect(notifications.scheduled, isEmpty);
+      expect(notifications.cancels, greaterThan(0));
+      expect(calls.where((call) => call.method == 'play'), isEmpty);
+      controller.dispose();
+      await journal.db.close();
+    }
+
+    final now = DateTime.utc(2026, 11, 18, 12);
+    await expectCleared(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'row',
+        exerciseName: 'Barbell Row',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: now.millisecondsSinceEpoch - 5000,
+      ),
+    );
+    await expectCleared(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'row',
+        exerciseName: 'Barbell Row',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: now.millisecondsSinceEpoch,
+      ),
+    );
+    // Still before endAt, so isExpired is false, but the clock already shows 0.
+    await expectCleared(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'row',
+        exerciseName: 'Barbell Row',
+        fullSeconds: 30,
+        paused: false,
+        endAtEpochMs: now.millisecondsSinceEpoch + 400,
+      ),
+      delivered: true,
+    );
+    await expectCleared(
+      RestTimerSnapshot(
+        active: true,
+        exerciseId: 'row',
+        exerciseName: 'Barbell Row',
+        fullSeconds: 30,
+        paused: true,
+        pausedRemainingSeconds: 0,
+      ),
+    );
+  });
+
+  testWidgets('ring until stopped loops the in-app tone until stop or cancel', (
+    tester,
+  ) async {
     final calls = <MethodCall>[];
     const channel = MethodChannel(RestAlarm.channelName);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -232,6 +428,7 @@ void main() {
     expect(once, isFalse);
     expect(calls.single.arguments, {'loop': false, 'soundId': 'rest_alarm'});
 
+    var now = DateTime.utc(2026, 11, 17, 12);
     final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
     final controller = RestTimerController(
       journal: journal,
@@ -239,6 +436,7 @@ void main() {
       companion: CompanionBridge(
         channel: const MethodChannel('liftbig/rest_timer_loop_test'),
       ),
+      now: () => now,
     );
     addTearDown(() async {
       controller.dispose();
@@ -252,19 +450,16 @@ void main() {
         ringUntilStopped: true,
       ),
     );
-    await journal.saveRestTimerState(
-      RestTimerSnapshot(
-        active: true,
-        exerciseId: 'row',
-        exerciseName: 'Barbell Row',
-        fullSeconds: 30,
-        paused: false,
-        endAtEpochMs: DateTime.now().millisecondsSinceEpoch - 1000,
-      ),
+    await controller.load();
+    await controller.start(
+      exerciseId: 'row',
+      exerciseName: 'Barbell Row',
+      fullSeconds: 30,
     );
     calls.clear();
-    await controller.load();
-    await pumpEventQueue();
+    now = now.add(const Duration(seconds: 31));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
     expect(controller.alarmRinging, isTrue);
     expect(
       calls.where((call) => call.method == 'play').single.arguments,

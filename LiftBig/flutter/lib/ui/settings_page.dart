@@ -1189,7 +1189,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Ring Until Stopped'),
                     subtitle: Text(
-                      'The in-app tone repeats until you stop it from the timer. The lock-screen notification still plays once.',
+                      'Repeats until you stop it from the timer, the lock-screen notification, or the watch. The notification sound plays once.',
                       style: TextStyle(color: context.liftBig.muted),
                     ),
                     value: _restAlerts.ringUntilStopped,

@@ -1789,5 +1789,265 @@
       "Calves"
     ],
     "secondaryMuscles": []
+  },
+  "Open Books": {
+    "id": "open-book",
+    "edbQueries": [
+      "open books",
+      "open book"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Chin Tucks": {
+    "id": "chin-tuck",
+    "edbQueries": [
+      "chin tucks",
+      "chin tuck"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": []
+  },
+  "Wall Slides": {
+    "id": "wall-slide",
+    "edbQueries": [
+      "wall slides",
+      "wall slide"
+    ],
+    "primaryMuscles": [
+      "Shoulders"
+    ],
+    "secondaryMuscles": [
+      "Back"
+    ]
+  },
+  "Doorway Pec Stretch": {
+    "id": "doorway-pec-stretch",
+    "edbQueries": [
+      "doorway pec stretch"
+    ],
+    "primaryMuscles": [
+      "Chest"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Child's Pose Side Reach": {
+    "id": "childs-pose-side-reach",
+    "edbQueries": [
+      "child's pose side reach",
+      "childs pose side reach"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Shoulders"
+    ]
+  },
+  "Dead Hang": {
+    "id": "dead-hang",
+    "edbQueries": [
+      "dead hang"
+    ],
+    "primaryMuscles": [
+      "Back"
+    ],
+    "secondaryMuscles": [
+      "Forearms"
+    ]
+  },
+  "Knee-to-Wall": {
+    "id": "knee-to-wall",
+    "edbQueries": [
+      "knee-to-wall",
+      "knee to wall"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  },
+  "Skater Bounds": {
+    "id": "skater-bound",
+    "edbQueries": [
+      "skater bounds",
+      "skater bound"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Box Jump": {
+    "id": "box-jump",
+    "edbQueries": [
+      "box jump"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Lateral Step-Down": {
+    "id": "lateral-step-down",
+    "edbQueries": [
+      "lateral step-down",
+      "lateral step down"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Tibialis Raise": {
+    "id": "tibialis-raise",
+    "edbQueries": [
+      "tibialis raise"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  },
+  "Calf Stretch on a Step": {
+    "id": "calf-stretch",
+    "edbQueries": [
+      "calf stretch on a step",
+      "calf stretch"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  },
+  "Suitcase Carry": {
+    "id": "suitcase-carry",
+    "edbQueries": [
+      "suitcase carry"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Forearms",
+      "Glutes"
+    ]
+  },
+  "Lateral Line Hop": {
+    "id": "lateral-line-hop",
+    "edbQueries": [
+      "lateral line hop"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Single-Leg Hop": {
+    "id": "single-leg-hop",
+    "edbQueries": [
+      "single-leg hop",
+      "single leg hop"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Step-Up": {
+    "id": "step-up",
+    "edbQueries": [
+      "step-up",
+      "step up"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Single-Leg Leg Press": {
+    "id": "single-leg-leg-press",
+    "edbQueries": [
+      "single-leg leg press",
+      "single leg leg press"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Single-Leg Calf Raise": {
+    "id": "single-leg-calf-raise",
+    "edbQueries": [
+      "single-leg calf raise",
+      "single leg calf raise"
+    ],
+    "primaryMuscles": [
+      "Calves"
+    ],
+    "secondaryMuscles": []
+  },
+  "Balance Disc": {
+    "id": "balance-disc",
+    "edbQueries": [
+      "balance disc"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes",
+      "Calves"
+    ]
+  },
+  "Copenhagen Plank": {
+    "id": "copenhagen-plank",
+    "edbQueries": [
+      "copenhagen plank"
+    ],
+    "primaryMuscles": [
+      "Core"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
+  },
+  "Wall Sit": {
+    "id": "wall-sit",
+    "edbQueries": [
+      "wall sit"
+    ],
+    "primaryMuscles": [
+      "Quads"
+    ],
+    "secondaryMuscles": [
+      "Glutes"
+    ]
   }
 }

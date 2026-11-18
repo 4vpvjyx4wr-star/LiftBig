@@ -82,6 +82,7 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
             phoneLink = "Watch link unavailable"
         }
         UNUserNotificationCenter.current().delegate = self
+        RestAlertPlan.registerCategory()
         restoreRest()
         requestRestNotificationPermission()
     }
@@ -202,8 +203,18 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
 
     func stopAlarm() {
         guard RestAlertPlan.showsStop(alarmRinging: alarmRinging) else { return }
+        sendStopAlarm()
+    }
+
+    /// Notification Stop and a tap on the rest alert. The on-screen button uses [stopAlarm].
+    func stopAlarmFromNotification() {
+        sendStopAlarm()
+    }
+
+    private func sendStopAlarm() {
         alarmRinging = false
         WKInterfaceDevice.current().play(.stop)
+        cancelRestAlert()
         send(kind: RestAlertPlan.stopMessageKind)
     }
 
@@ -499,6 +510,16 @@ final class WatchModel: NSObject, ObservableObject, WCSessionDelegate, UNUserNot
             return RestAlertPlan.presentationOptions(soundEnabled: soundEnabled)
         }
         return [.banner, .sound]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        guard RestAlertPlan.responseStopsAlarm(response) else { return }
+        await MainActor.run {
+            self.stopAlarmFromNotification()
+        }
     }
 
     private func playRestDoneCue() {

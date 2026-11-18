@@ -3069,7 +3069,7 @@ Widget _goalRichText(
     }
     final predicted = (PredictedRepsScope.of(context)[exercise.id] ?? '').trim();
     if (predicted.isNotEmpty) {
-      spans.add(TextSpan(text: ' · able to do ', style: muted));
+      spans.add(TextSpan(text: ' · Predicted: ', style: muted));
       spans.add(TextSpan(text: predicted, style: number));
     }
   }

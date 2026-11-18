@@ -72,67 +72,64 @@ class RestTimerBanner extends StatelessWidget {
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: onOpen,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
-                  child: Text(
-                    formatRestClock(remaining),
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
-                      color: done
-                          ? context.liftBig.success
-                          : context.liftBig.foreground,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        formatRestClock(remaining),
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
+                          color: done
+                              ? context.liftBig.success
+                              : context.liftBig.foreground,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _iconButton(
-                    tooltip: done ? 'Stop' : (running ? 'Pause' : 'Resume'),
-                    icon: done
-                        ? Icons.stop
-                        : (running ? Icons.pause : Icons.play_arrow),
-                    onPressed: onPause,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      restTimerIconButton(
+                        tooltip: done ? 'Stop' : (running ? 'Pause' : 'Resume'),
+                        icon: done
+                            ? Icons.stop
+                            : (running ? Icons.pause : Icons.play_arrow),
+                        onPressed: onPause,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Reset',
+                        icon: Icons.replay,
+                        onPressed: onReset,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Dismiss',
+                        icon: Icons.vertical_align_top,
+                        onPressed: onDismiss,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Cancel',
+                        icon: Icons.close,
+                        onPressed: onCancel,
+                      ),
+                    ],
                   ),
-                  _iconButton(
-                    tooltip: 'Reset',
-                    icon: Icons.replay,
-                    onPressed: onReset,
-                  ),
-                  _iconButton(
-                    tooltip: 'Dismiss',
-                    icon: Icons.vertical_align_top,
-                    onPressed: onDismiss,
-                  ),
-                  _iconButton(
-                    tooltip: 'Cancel',
-                    icon: Icons.close,
-                    onPressed: onCancel,
-                  ),
-                ],
+                ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _iconButton({
-    required String tooltip,
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      icon: Icon(icon, size: 20),
     );
   }
 }
@@ -163,56 +160,93 @@ class AnchoredRestTimer extends StatelessWidget {
       color: done ? const Color(0xFF163020) : context.liftBig.card,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
-            Text(
-              formatRestClock(remaining),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: done ? context.liftBig.success : context.liftBig.foreground,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  formatRestClock(remaining),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: done
+                        ? context.liftBig.success
+                        : context.liftBig.foreground,
+                  ),
+                ),
               ),
             ),
-            const Spacer(),
-            _icon(
-              tooltip: done ? 'Stop' : (running ? 'Pause' : 'Resume'),
-              icon: done ? Icons.stop : (running ? Icons.pause : Icons.play_arrow),
-              onPressed: onPause,
-            ),
-            _icon(tooltip: 'Reset', icon: Icons.replay, onPressed: onReset),
-            _icon(
-              tooltip: 'Move Timer',
-              icon: Icons.open_with,
-              onPressed: onFloat,
-            ),
-            _icon(
-              tooltip: 'Cancel',
-              icon: Icons.close,
-              onPressed: () {
-                confirmCancelRestTimer(context).then((yes) {
-                  if (yes) onCancel();
-                });
-              },
+            const SizedBox(width: 4),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      restTimerIconButton(
+                        tooltip: done ? 'Stop' : (running ? 'Pause' : 'Resume'),
+                        icon: done
+                            ? Icons.stop
+                            : (running ? Icons.pause : Icons.play_arrow),
+                        onPressed: onPause,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Reset',
+                        icon: Icons.replay,
+                        onPressed: onReset,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Move Timer',
+                        icon: Icons.open_with,
+                        onPressed: onFloat,
+                      ),
+                      restTimerIconButton(
+                        tooltip: 'Cancel',
+                        icon: Icons.close,
+                        onPressed: () {
+                          confirmCancelRestTimer(context).then((yes) {
+                            if (yes) onCancel();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _icon({
-    required String tooltip,
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
+/// 36px so four controls fit the 176px card and a phone app-bar title.
+Widget restTimerIconButton({
+  required String tooltip,
+  required IconData icon,
+  required VoidCallback? onPressed,
+}) {
+  return IconButton(
+    tooltip: tooltip,
+    onPressed: onPressed,
+    iconSize: 20,
+    padding: EdgeInsets.zero,
+    visualDensity: VisualDensity.compact,
+    constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+    style: IconButton.styleFrom(
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      icon: Icon(icon, size: 20),
-    );
-  }
+      fixedSize: const Size(36, 36),
+      iconSize: 20,
+    ),
+    icon: Icon(icon),
+  );
 }

@@ -130,4 +130,37 @@ void main() {
     expect(saved.workouts.single.lifts.single.sets.first.reps, '8-12');
     expect(plans.any((plan) => plan.name == 'Old Workout'), isTrue);
   });
+
+  test('a built plan keeps a custom set count and target reps', () {
+    const catalog = LiftBigCatalog(
+      lifts: [],
+      plans: [],
+      starterWorkouts: [],
+      quiz: [],
+    );
+    var next = 0;
+    final raw = appendBuiltPlanToTemplatesJson(
+      existing: null,
+      planName: 'Rep Week',
+      workouts: [
+        BuiltPlanWorkout(
+          name: 'Day A',
+          exercises: [
+            BuiltPlanExercise(
+              lift: _lift('bench-press', 'Bench Press'),
+              setCount: 5,
+              targetReps: '5-8',
+            ),
+          ],
+        ),
+      ],
+      createId: () => 'id-${next++}',
+    );
+    expect(raw, isNotNull);
+    final plans = parseCustomPlansFromTemplatesJson(raw, catalog);
+    final lift = plans.single.workouts.single.lifts.single;
+    expect(lift.name, 'Bench Press');
+    expect(lift.sets, hasLength(5));
+    expect(lift.sets.map((set) => set.reps), everyElement('5-8'));
+  });
 }

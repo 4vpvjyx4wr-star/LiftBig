@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -260,9 +261,14 @@ class JournalRepository {
 
   void _noteLocalWrite() {
     if (_suppressLocalWrites > 0) return;
-    for (final listener in List<void Function()>.of(_localWriteListeners)) {
-      listener();
-    }
+    final listeners = List<void Function()>.of(_localWriteListeners);
+    // Listeners start the sync timer. Notify outside Drift's transaction zone
+    // so that timer does not query a transaction that has already closed.
+    Zone.root.scheduleMicrotask(() {
+      for (final listener in listeners) {
+        listener();
+      }
+    });
   }
 
   Future<List<DaySummary>> summariesForMonth(DateTime month) async {

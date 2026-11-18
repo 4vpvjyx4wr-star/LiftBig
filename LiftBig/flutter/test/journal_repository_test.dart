@@ -50,7 +50,7 @@ JournalDay sampleDay({
   );
 }
 
-class MemoryRemote implements DayRemote {
+class MemoryRemote extends DayRemote {
   final Map<String, JournalDay> days = {};
   final Map<String, DayTombstone> tombstones = {};
   CloudSettings? settings;

@@ -27,6 +27,11 @@ export const CARDIO_LIBRARY: LibraryExercise[] = [
       'Track time rather than distance unless you prefer miles or km.',
     ],
     tips: ['A conversational pace is ideal for recovery and fat-burning sessions.'],
+    cues: [
+      'Stand tall; eyes forward.',
+      'Relaxed arms and a natural stride.',
+      'Easy enough to talk in short sentences.',
+    ],
   }),
   cardio({
     id: 'treadmill-walking',

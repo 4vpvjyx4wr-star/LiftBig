@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import 'account_reauth.dart';
 import 'apple_nonce.dart';
@@ -21,13 +22,15 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     required this.journal,
     required this.firebaseReady,
     this.remoteForUid,
+    this.autoSyncDelay = defaultAutoSyncDelay,
   });
 
   final JournalRepository journal;
   final bool firebaseReady;
   final DayRemote Function(String uid)? remoteForUid;
 
-  static const autoSyncDelay = Duration(seconds: 2);
+  static const defaultAutoSyncDelay = Duration(seconds: 2);
+  final Duration autoSyncDelay;
   static const _firebaseMissing =
       'Firebase is not configured. Add the files listed on this screen, then set kFirebaseEnabled to true.';
   static const _googlePhoneOnly =
@@ -43,10 +46,19 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<User?>? _authSub;
   Timer? _autoSyncTimer;
   var _listening = false;
+  var _rerunWhenIdle = false;
+  String? _testUid;
   var _googleInitialized = false;
   Future<void>? _googleInit;
 
   bool get signedIn => email != null;
+
+  /// Signs a test session in without Firebase Auth.
+  @visibleForTesting
+  void debugSignIn(String uid) {
+    _testUid = uid;
+    email = uid;
+  }
 
   bool get passwordAccount => reauthMethod == AccountReauthMethod.password;
 
@@ -60,6 +72,10 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
     if (!firebaseReady) {
       status =
           'Sync is off. The journal stays on this phone until Firebase config is added.';
+      notifyListeners();
+      return;
+    }
+    if (_testUid != null) {
       notifyListeners();
       return;
     }
@@ -286,8 +302,8 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
       }
       return;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final uid = _currentUid();
+    if (uid == null) {
       if (!automatic) {
         status =
             'Sign in before syncing. Until then the journal stays on this phone.';
@@ -295,19 +311,57 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
       }
       return;
     }
-    if (busy) return;
+    if (busy) {
+      _rerunWhenIdle = true;
+      return;
+    }
     busy = true;
     notifyListeners();
     try {
-      final remote = remoteForUid?.call(user.uid) ?? FirestoreDayRemote(user.uid);
-      final result = await JournalSync(journal: journal, remote: remote).sync();
-      status =
-          'Synced. ${result.uploaded} uploaded, ${result.downloaded} downloaded.';
+      var passes = 0;
+      do {
+        _rerunWhenIdle = false;
+        passes += 1;
+        final remote = remoteForUid?.call(uid) ?? FirestoreDayRemote(uid);
+        final result = await JournalSync(
+          journal: journal,
+          remote: remote,
+          premadeTemplateIds: await _premadeTemplateIds(),
+        ).sync();
+        final summary =
+            'Synced. ${result.uploaded} uploaded, ${result.downloaded} downloaded.';
+        status = result.skippedReason == null
+            ? summary
+            : '$summary ${result.skippedReason}';
+      } while (_rerunWhenIdle && passes < 3);
     } catch (error) {
       status = 'Sync failed: $error';
     } finally {
       busy = false;
       notifyListeners();
+      if (_rerunWhenIdle) {
+        _rerunWhenIdle = false;
+        _scheduleAutoSync();
+      }
+    }
+  }
+
+  String? _currentUid() {
+    if (_testUid != null) return _testUid;
+    return FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  Future<Set<String>> _premadeTemplateIds() async {
+    try {
+      final catalog = await LiftBigCatalog.load();
+      return {
+        for (final plan in catalog.plans) plan.id,
+        for (final workout in catalog.starterWorkouts) workout.id,
+        for (final plan in catalog.plans)
+          for (final workout in plan.workouts) workout.id,
+      };
+    } catch (_) {
+      return const {};
     }
   }
 

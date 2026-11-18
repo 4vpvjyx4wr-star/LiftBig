@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../catalog/liftbig_catalog.dart';
 import '../ids.dart';
@@ -24,13 +25,33 @@ Future<bool> showBuildPlanSheet(
   return saved == true;
 }
 
+class _DraftExercise {
+  _DraftExercise(this.lift)
+    : sets = TextEditingController(text: '$defaultBuiltSetCount'),
+      reps = TextEditingController(text: defaultBuiltReps);
+
+  final LibraryLift lift;
+  final TextEditingController sets;
+  final TextEditingController reps;
+
+  void dispose() {
+    sets.dispose();
+    reps.dispose();
+  }
+}
+
 class _DraftWorkout {
   _DraftWorkout() : name = TextEditingController(text: 'Workout');
 
   final TextEditingController name;
-  final lifts = <LibraryLift>[];
+  final exercises = <_DraftExercise>[];
 
-  void dispose() => name.dispose();
+  void dispose() {
+    name.dispose();
+    for (final exercise in exercises) {
+      exercise.dispose();
+    }
+  }
 }
 
 class _BuildPlanSheet extends StatefulWidget {
@@ -66,18 +87,35 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
       ),
     );
     if (lift == null || !mounted) return;
-    setState(() => workout.lifts.add(lift));
+    setState(() => workout.exercises.add(_DraftExercise(lift)));
   }
 
   Future<void> _save() async {
     if (_saving) return;
+    final built = <BuiltPlanWorkout>[];
+    for (final workout in _workouts) {
+      final exercises = <BuiltPlanExercise>[];
+      for (final exercise in workout.exercises) {
+        final rawCount = exercise.sets.text.trim();
+        final count = int.tryParse(rawCount);
+        if (count == null || count < 1 || count > 30) {
+          showLiftBigNotice(context, 'Enter a set count from 1 to 30.');
+          return;
+        }
+        exercises.add(
+          BuiltPlanExercise(
+            lift: exercise.lift,
+            setCount: count,
+            targetReps: exercise.reps.text,
+          ),
+        );
+      }
+      built.add(BuiltPlanWorkout(name: workout.name.text, exercises: exercises));
+    }
     final payload = appendBuiltPlanToTemplatesJson(
       existing: await widget.journal.templatesJson(),
       planName: _planName.text,
-      workouts: [
-        for (final workout in _workouts)
-          BuiltPlanWorkout(name: workout.name.text, lifts: workout.lifts),
-      ],
+      workouts: built,
       createId: newId,
     );
     if (!mounted) return;
@@ -122,7 +160,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
                 Text(
-                  'Name the plan, name each workout, and pick exercises. Each exercise starts at 3 sets of 8–12.',
+                  'Name the plan, name each workout, and pick exercises. Each one starts at 3 sets of 8-12. Change the sets and target reps before you save.',
                   style: TextStyle(color: context.liftBig.muted, height: 1.35),
                 ),
                 const SizedBox(height: 12),
@@ -203,28 +241,20 @@ class _WorkoutEditor extends StatelessWidget {
               decoration: InputDecoration(labelText: 'Workout ${index + 1}'),
             ),
             const SizedBox(height: 8),
-            if (workout.lifts.isEmpty)
+            if (workout.exercises.isEmpty)
               Text(
                 'No exercises yet.',
                 style: TextStyle(color: context.liftBig.muted),
               )
             else
-              for (var i = 0; i < workout.lifts.length; i++)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(workout.lifts[i].name),
-                  subtitle: Text(
-                    '3 sets · 8–12',
-                    style: TextStyle(color: context.liftBig.muted),
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'Remove exercise',
-                    onPressed: () {
-                      workout.lifts.removeAt(i);
-                      onChanged();
-                    },
-                    icon: const Icon(Icons.close),
-                  ),
+              for (var i = 0; i < workout.exercises.length; i++)
+                _ExerciseFields(
+                  exercise: workout.exercises[i],
+                  onRemove: () {
+                    final removed = workout.exercises.removeAt(i);
+                    removed.dispose();
+                    onChanged();
+                  },
                 ),
             Align(
               alignment: Alignment.centerLeft,
@@ -244,6 +274,74 @@ class _WorkoutEditor extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ExerciseFields extends StatelessWidget {
+  const _ExerciseFields({required this.exercise, required this.onRemove});
+
+  final _DraftExercise exercise;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  exercise.lift.name,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Remove exercise',
+                visualDensity: VisualDensity.compact,
+                onPressed: onRemove,
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 88,
+                child: TextField(
+                  controller: exercise.sets,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Sets',
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: exercise.reps,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Target reps',
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) =>
+                      FocusManager.instance.primaryFocus?.unfocus(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

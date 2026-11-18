@@ -3320,6 +3320,468 @@ export const EXERCISE_LIBRARY: LibraryExercise[] = [
       'Slow lower every rep.',
     ],
   }),
+  reg({
+    id: 'open-book',
+    name: 'Open Books',
+    muscleGroups: ['back', 'shoulders'],
+    tags: ['mobility', 'warm-up', 'thoracic'],
+    equipment: 'Bodyweight',
+    summary: 'Side-lying thoracic rotation that opens the chest and upper back before pressing and pulling.',
+    instructions: [
+      'Lie on your side with knees stacked and bent about 90°, arms reaching forward.',
+      'Keep the knees together and open the top arm in an arc toward the floor behind you.',
+      'Follow the hand with your eyes; return and repeat, then switch sides.',
+    ],
+    tips: [
+      'Pin the knees so the rotation comes from the rib cage, not the hips.',
+      'Use a pillow under the head if the neck feels strained.',
+    ],
+    cues: [
+      'Knees glued together.',
+      'Reach the top arm open like a book.',
+      'Exhale as the chest turns toward the ceiling.',
+    ],
+  }),
+  reg({
+    id: 'chin-tuck',
+    name: 'Chin Tucks',
+    muscleGroups: ['back'],
+    tags: ['mobility', 'warm-up', 'neck'],
+    equipment: 'Bodyweight',
+    summary: 'Gentle chin retraction to set a long neck before overhead and pulling work.',
+    instructions: [
+      'Sit or stand tall and look straight ahead.',
+      'Draw the chin straight back, making a soft double chin, and hold briefly.',
+      'Release to neutral and repeat without nodding the chin down.',
+    ],
+    tips: [
+      'Think “head back,” not “chin down.”',
+      'Hold each rep about 3 seconds when the plan calls for a timed tuck.',
+    ],
+    cues: [
+      'Crown stays tall.',
+      'Chin slides back, not toward the chest.',
+      'Jaw stays relaxed.',
+    ],
+  }),
+  reg({
+    id: 'wall-slide',
+    name: 'Wall Slides',
+    muscleGroups: ['shoulders', 'back'],
+    tags: ['mobility', 'warm-up', 'scapular'],
+    equipment: 'Bodyweight',
+    summary: 'Forearms slide up a wall to train scapular upward rotation and an overhead shoulder position.',
+    instructions: [
+      'Stand with your back, head, and forearms against a wall, elbows bent about 90°.',
+      'Slide the arms up the wall as far as you can without the ribs flaring or the low back arching.',
+      'Slide back down to the start and repeat.',
+    ],
+    tips: [
+      'If the wrists or elbows peel off, shorten the range instead of forcing overhead.',
+      'Keep the ribs down so the shoulders, not the low back, do the work.',
+    ],
+    cues: [
+      'Forearms stay on the wall.',
+      'Ribs down; glutes lightly on.',
+      'Slide only as high as the contact holds.',
+    ],
+  }),
+  reg({
+    id: 'doorway-pec-stretch',
+    name: 'Doorway Pec Stretch',
+    muscleGroups: ['chest', 'shoulders'],
+    tags: ['stretch', 'mobility', 'pecs'],
+    equipment: 'Bodyweight',
+    summary: 'Forearm-on-doorframe stretch for the chest and front shoulder, held per side.',
+    instructions: [
+      'Place a forearm on a doorframe with the elbow around shoulder height.',
+      'Step the same-side foot through and gently turn the chest away until you feel the pec.',
+      'Hold and breathe; switch sides.',
+    ],
+    tips: [
+      'Keep the stretch mild—a strong pull in the front of the shoulder means ease off.',
+      'A slightly lower elbow biases the lower pec; higher biases the upper chest.',
+    ],
+    cues: [
+      'Elbow stays near shoulder height.',
+      'Ribs down; don’t crank the low back.',
+      'Long exhales; no bouncing.',
+    ],
+  }),
+  reg({
+    id: 'childs-pose-side-reach',
+    name: "Child's Pose Side Reach",
+    muscleGroups: ['back', 'shoulders'],
+    tags: ['stretch', 'mobility', 'lats'],
+    equipment: 'Bodyweight',
+    summary: 'Child’s pose with both arms walked to one side to lengthen the lat and side body.',
+    instructions: [
+      'Sit the hips back toward the heels with the arms reaching forward.',
+      'Walk both hands to one side until you feel the opposite lat and side ribs.',
+      'Hold and breathe, then switch sides.',
+    ],
+    tips: [
+      'Widen the knees if the hips don’t settle toward the heels.',
+      'Reach through the fingertips rather than dumping into the shoulder.',
+    ],
+    cues: [
+      'Hips heavy toward the heels.',
+      'Both arms long; one side of the ribs opens.',
+      'Breathe into the stretched side.',
+    ],
+  }),
+  reg({
+    id: 'dead-hang',
+    name: 'Dead Hang',
+    muscleGroups: ['back', 'forearms'],
+    tags: ['grip', 'decompression', 'isometric'],
+    equipment: 'Bodyweight',
+    summary: 'Hang from a bar to train grip and give the shoulders a gentle decompression.',
+    instructions: [
+      'Grip a pull-up bar about shoulder-width with a full grip.',
+      'Let the body hang and keep a soft brace so you don’t swing.',
+      'Hold for the prescribed time, then step down.',
+    ],
+    tips: [
+      'Use a box to get on and off the bar if jumping to the grip bothers the shoulders.',
+      'A slight active hang (shoulders down) is easier on irritable shoulders than a fully passive hang.',
+    ],
+    cues: [
+      'Full grip; thumbs around the bar.',
+      'Ribs stacked over the pelvis—no excessive arch.',
+      'Quiet body; breathe through the hold.',
+    ],
+  }),
+  reg({
+    id: 'knee-to-wall',
+    name: 'Knee-to-Wall',
+    muscleGroups: ['calves'],
+    tags: ['mobility', 'warm-up', 'ankle'],
+    equipment: 'Bodyweight',
+    summary: 'Ankle dorsiflexion drill: drive the knee toward the wall while the heel stays down.',
+    instructions: [
+      'Face a wall in a short lunge with the front toes a few inches from the wall.',
+      'Bend the front knee toward the wall, keeping the heel glued down.',
+      'Return and repeat, then switch sides. Move the foot back only if the heel still stays down.',
+    ],
+    tips: [
+      'The heel lifting means you are too far from the wall—shorten the stance.',
+      'Track the knee over the middle of the foot, not inside it.',
+    ],
+    cues: [
+      'Heel stays down the whole rep.',
+      'Knee tracks over the second toe.',
+      'Smooth drive forward; no bouncing off the wall.',
+    ],
+  }),
+  reg({
+    id: 'skater-bound',
+    name: 'Skater Bounds',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['plyometric', 'unilateral', 'warm-up'],
+    equipment: 'Bodyweight',
+    summary: 'Lateral bound from one foot to the other, sticking the landing for balance and side-to-side power.',
+    instructions: [
+      'Stand on one leg and bound sideways onto the other foot.',
+      'Land softly on the whole foot and stick the landing for the prescribed pause.',
+      'Bound back the other way and continue for the listed reps.',
+    ],
+    tips: [
+      'Stick the landing before the next bound—distance is secondary to a quiet, balanced stick.',
+      'Shorten the bound if the knee caves or the foot slaps.',
+    ],
+    cues: [
+      'Soft landing through the mid-foot.',
+      'Hip, knee, and foot stacked when you stick.',
+      'Pause, then push off the outside foot.',
+    ],
+  }),
+  reg({
+    id: 'box-jump',
+    name: 'Box Jump',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['plyometric', 'power'],
+    equipment: 'Box',
+    summary: 'Jump onto a box and stand tall, then step down—power on the way up, quiet on the way down.',
+    instructions: [
+      'Stand a short step back from a stable box.',
+      'Dip and jump up, landing softly with both feet fully on the box.',
+      'Stand tall, then step down one foot at a time. Reset and repeat.',
+    ],
+    tips: [
+      'Step down instead of jumping down so the knees don’t absorb a second landing.',
+      'Use a lower box the moment landings get loud or a heel misses the box.',
+    ],
+    cues: [
+      'Arms swing; jump up, not out.',
+      'Both feet land on the box; stand all the way up.',
+      'Step down—don’t rebound off the box.',
+    ],
+  }),
+  reg({
+    id: 'lateral-step-down',
+    name: 'Lateral Step-Down',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['unilateral', 'control', 'knee'],
+    equipment: 'Kettlebell',
+    summary: 'Slow step down off a low box to the side, training single-leg control of the knee.',
+    instructions: [
+      'Stand on a low box or step, holding a light kettlebell if the plan calls for one.',
+      'Reach the free foot out to the side and lower until the heel taps the floor.',
+      'Drive through the standing foot to stand tall. Finish the side, then switch.',
+    ],
+    tips: [
+      'Start with the side that needs more control when the plan names one.',
+      'A shorter step beats a deep tap that lets the knee collapse.',
+    ],
+    cues: [
+      'Standing knee tracks over the toes.',
+      'Hips stay level—no dropping the free hip.',
+      'Tap the floor; don’t rest the weight there.',
+    ],
+  }),
+  reg({
+    id: 'tibialis-raise',
+    name: 'Tibialis Raise',
+    muscleGroups: ['calves'],
+    tags: ['isolation', 'shin', 'bodyweight'],
+    equipment: 'Bodyweight',
+    summary: 'Back against a wall, heels down, lift the toes to train the tibialis anterior.',
+    instructions: [
+      'Stand with your back on a wall and the feet a few inches out, heels down.',
+      'Lift the toes and forefoot toward the shins while the heels stay planted.',
+      'Lower under control and repeat.',
+    ],
+    tips: [
+      'Move the feet farther from the wall to make it harder; closer to make it easier.',
+      'Expect a burn in the front of the shin—stop if you feel a sharp pain.',
+    ],
+    cues: [
+      'Heels glued to the floor.',
+      'Lift the toes, not the whole body off the wall.',
+      'Slow lower every rep.',
+    ],
+  }),
+  reg({
+    id: 'calf-stretch',
+    name: 'Calf Stretch on a Step',
+    muscleGroups: ['calves'],
+    tags: ['stretch', 'mobility', 'ankle'],
+    equipment: 'Bodyweight',
+    summary: 'Heel drop off a step to stretch the calf, held per side.',
+    instructions: [
+      'Place the ball of one foot on the edge of a step and hold a rail for balance.',
+      'Let the heel sink below the step until you feel a calf stretch.',
+      'Use a soft knee to bias the soleus, or a straighter knee for the gastroc. Hold, then switch.',
+    ],
+    tips: [
+      'Hold the rail—this is a stretch, not a balance test.',
+      'A straight knee and a bent knee are both useful; don’t bounce into either.',
+    ],
+    cues: [
+      'Ball of the foot stays on the step.',
+      'Heel drops slowly.',
+      'Pain-free tension; long exhales.',
+    ],
+  }),
+  reg({
+    id: 'suitcase-carry',
+    name: 'Suitcase Carry',
+    muscleGroups: ['core', 'forearms', 'glutes'],
+    tags: ['carry', 'unilateral', 'anti-lateral-flexion'],
+    equipment: 'Kettlebell',
+    summary: 'Walk with a heavy kettlebell in one hand, resisting the lean toward that side.',
+    instructions: [
+      'Pick up one kettlebell with a neutral spine and stand tall.',
+      'Walk the prescribed distance without leaning toward or away from the bell.',
+      'Set it down, switch hands, and repeat.',
+    ],
+    tips: [
+      'Pick a load you can carry without the shoulder hiking or the trunk side-bending.',
+      'Shorter, quicker steps are steadier than long strides.',
+    ],
+    cues: [
+      'Shoulders level—don’t lean into the bell.',
+      'Ribs stacked; arm long.',
+      'Quiet steps; switch sides evenly.',
+    ],
+  }),
+  reg({
+    id: 'lateral-line-hop',
+    name: 'Lateral Line Hop',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['plyometric', 'warm-up', 'lateral'],
+    equipment: 'Bodyweight',
+    summary: 'Small side-to-side hops along a line to wake up the feet and hips before single-leg work.',
+    instructions: [
+      'Stand on a line or the edge of a mat, feet together.',
+      'Hop sideways just across the line and back, staying light on the feet.',
+      'Keep the hops quick and even for the listed reps.',
+    ],
+    tips: [
+      'Stay low and quiet—this is a warm-up, not a max-distance bound.',
+      'Speed up only while the landings stay soft.',
+    ],
+    cues: [
+      'Soft feet; knees track over the toes.',
+      'Hips face forward—don’t twist each hop.',
+      'Quiet contacts; same height left and right.',
+    ],
+  }),
+  reg({
+    id: 'single-leg-hop',
+    name: 'Single-Leg Hop',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['plyometric', 'unilateral', 'balance'],
+    equipment: 'Bodyweight',
+    summary: 'Hop on one leg and stick the landing to practice single-leg control.',
+    instructions: [
+      'Stand on one leg with a soft knee.',
+      'Hop forward or in place and land on the same foot.',
+      'Stick the landing until you are balanced, then set up the next rep. Finish the side, then switch.',
+    ],
+    tips: [
+      'Hold the stick for about 2 seconds when the plan asks for it.',
+      'Shorten the hop if the knee caves or the foot slaps.',
+    ],
+    cues: [
+      'Land on the mid-foot, knee tracking over the toes.',
+      'Hips level when you stick.',
+      'Reset the balance before the next hop.',
+    ],
+  }),
+  reg({
+    id: 'step-up',
+    name: 'Step-Up',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['unilateral', 'squat pattern'],
+    equipment: 'Dumbbell',
+    summary: 'Step onto a box or chair and stand tall on one leg, then control the way down.',
+    instructions: [
+      'Face a sturdy box or chair. Place the whole working foot on it.',
+      'Drive through that foot to stand tall without pushing off the back leg.',
+      'Lower under control until the back foot taps the floor. Finish the side, then switch.',
+    ],
+    tips: [
+      'Use a 3-second lower when the plan calls for it—don’t drop off the box.',
+      'A chair step-up with no load is the same pattern; hold dumbbells when the plan lists them.',
+    ],
+    cues: [
+      'Whole foot on the box; heel stays down.',
+      'Stand all the way up; hips and knee lock out together.',
+      'Working knee tracks over the toes on the way down.',
+    ],
+  }),
+  reg({
+    id: 'single-leg-leg-press',
+    name: 'Single-Leg Leg Press',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['machine', 'unilateral', 'squat pattern'],
+    equipment: 'Machine',
+    summary: 'Leg press with one foot on the sled so each leg works on its own.',
+    instructions: [
+      'Sit in the leg press and place one foot in the middle of the sled; the other foot stays off.',
+      'Unlock the sled and lower until the knee bends under control, without the hip lifting off the pad.',
+      'Press back up without locking the knee hard. Finish the side, then switch.',
+    ],
+    tips: [
+      'Find a load that leaves about 2 reps in the tank in the middle of the rep range.',
+      'If the pelvis twists, lighten the weight or shorten the range.',
+    ],
+    cues: [
+      'Foot centered; heel stays on the sled.',
+      'Knee tracks over the toes—no caving in.',
+      'Hips stay square on the pad.',
+    ],
+  }),
+  reg({
+    id: 'single-leg-calf-raise',
+    name: 'Single-Leg Calf Raise',
+    muscleGroups: ['calves'],
+    tags: ['unilateral', 'isolation', 'leg press'],
+    equipment: 'Machine',
+    summary: 'Calf raise on one leg, usually with the ball of the foot on a leg-press sled.',
+    instructions: [
+      'Place the ball of one foot on the lower edge of the leg-press sled; the other leg stays off.',
+      'Lower the heel for a stretch, then press through the toes to rise.',
+      'Pause at the top and lower slowly. Finish the side, then switch.',
+    ],
+    tips: [
+      'A lighter sled than your two-leg calf raise is normal—find a load you can control.',
+      'Hold the handles and keep the hips quiet so the calf does the work.',
+    ],
+    cues: [
+      'Ball of the foot on the sled; heel drops under control.',
+      'Press up through the big toe without rolling the ankle out.',
+      'Pause at the top; slow lower.',
+    ],
+  }),
+  reg({
+    id: 'balance-disc',
+    name: 'Balance Disc',
+    muscleGroups: ['quads', 'glutes', 'calves'],
+    tags: ['balance', 'unilateral', 'stability'],
+    equipment: 'Balance disc',
+    summary: 'Stand on one leg on a balance disc to train foot and hip control.',
+    instructions: [
+      'Set a balance disc on a flat floor and stand next to a wall or rack you can touch if needed.',
+      'Step one foot onto the center of the disc and lift the other foot.',
+      'Stand tall and hold for the prescribed time, then switch sides.',
+    ],
+    tips: [
+      'Start with eyes open and a finger on the rack. Eyes closed is the progression, not the first session.',
+      'A wobble is the point—step off if the knee collapses.',
+    ],
+    cues: [
+      'Foot centered on the disc.',
+      'Knee soft, tracking over the toes.',
+      'Ribs stacked; eyes on a fixed point until you progress.',
+    ],
+  }),
+  reg({
+    id: 'copenhagen-plank',
+    name: 'Copenhagen Plank',
+    muscleGroups: ['core', 'glutes'],
+    tags: ['adductors', 'isometric', 'unilateral'],
+    equipment: 'Bodyweight',
+    summary: 'Side plank with the top leg supported, training the adductors. The knee version is the starting hold.',
+    instructions: [
+      'Lie on your side and rest the top knee (knee version) or the top foot on a bench.',
+      'Press the bottom forearm into the floor and lift the hips into a straight line.',
+      'Hold for time without letting the bottom leg swing. Switch sides.',
+    ],
+    tips: [
+      'Use the knee-on-bench version until the hold is solid, then a longer hold or the straight-leg version.',
+      'Keep the bottom knee bent and off the floor in the knee version so the top inner thigh carries you.',
+    ],
+    cues: [
+      'Hips forward—no sag and no pike.',
+      'Top leg heavy on the bench; inner thigh works.',
+      'Neck long; breathe through the hold.',
+    ],
+  }),
+  reg({
+    id: 'wall-sit',
+    name: 'Wall Sit',
+    muscleGroups: ['quads', 'glutes'],
+    tags: ['isometric', 'quads'],
+    equipment: 'Bodyweight',
+    summary: 'Sit against a wall with the thighs near parallel and hold.',
+    instructions: [
+      'Stand with your back on a wall and walk the feet out.',
+      'Slide down until the hips are about knee height and the knees are over the ankles.',
+      'Hold for the prescribed time, then stand up and rest before the next set.',
+    ],
+    tips: [
+      'Shins stay close to vertical—don’t let the knees drift far past the toes.',
+      'Skip it on days the knees are already angry from skiing.',
+    ],
+    cues: [
+      'Back flat on the wall.',
+      'Knees over ankles; thighs work, not the toes.',
+      'Breathe; don’t hold your breath for the whole sit.',
+    ],
+  }),
 ]
 
 import { CARDIO_LIBRARY } from '@/utils/cardioLibrary'
@@ -3619,6 +4081,40 @@ registerExerciseAliases('cable-hammer-curl', [
   'rope cable hammer curl',
 ])
 registerExerciseAliases('sit-up', ['sit up', 'sit ups', 'situp', 'situps'])
+registerExerciseAliases('open-book', ['open books', 'open book', 'book openers', 'thoracic open book'])
+registerExerciseAliases('chin-tuck', ['chin tucks', 'chin tuck', 'cervical retraction'])
+registerExerciseAliases('wall-slide', ['wall slides', 'wall slide', 'wall angels'])
+registerExerciseAliases('doorway-pec-stretch', [
+  'doorway pec stretch',
+  'doorway chest stretch',
+  'pec stretch',
+])
+registerExerciseAliases('childs-pose-side-reach', [
+  'childs pose side reach',
+  'child pose side reach',
+  'childs pose lat stretch',
+])
+registerExerciseAliases('dead-hang', ['dead hang', 'dead hangs', 'bar hang'])
+registerExerciseAliases('knee-to-wall', ['knee to wall', 'ankle rocks', 'ankle dorsiflexion'])
+registerExerciseAliases('skater-bound', ['skater bounds', 'skater bound', 'skater hops'])
+registerExerciseAliases('box-jump', ['box jumps', 'box jump', 'box jump step down'])
+registerExerciseAliases('lateral-step-down', ['lateral step down', 'lateral step-down', 'side step down'])
+registerExerciseAliases('tibialis-raise', ['tibialis raise', 'tib raises', 'tibialis raises'])
+registerExerciseAliases('calf-stretch', ['calf stretch', 'calf stretch on a step', 'heel drop stretch'])
+registerExerciseAliases('suitcase-carry', ['suitcase carry', 'suitcase carries', 'one arm farmer carry'])
+registerExerciseAliases('hip-flexor-stretch', ['couch stretch', 'couch stretches'])
+registerExerciseAliases('lateral-line-hop', ['lateral line hops', 'lateral line hop', 'line hops'])
+registerExerciseAliases('single-leg-hop', ['single leg hop', 'single-leg hop', 'single leg hops'])
+registerExerciseAliases('step-up', ['step up', 'step ups', 'step-up', 'db step up', 'chair step up', 'chair step-ups'])
+registerExerciseAliases('single-leg-leg-press', ['single leg leg press', 'single-leg leg press', 'one leg leg press'])
+registerExerciseAliases('single-leg-calf-raise', [
+  'single leg calf raise',
+  'single-leg calf raise',
+  'single leg calf raise on leg press',
+])
+registerExerciseAliases('balance-disc', ['balance disc', 'balance disk', 'one leg balance disc'])
+registerExerciseAliases('copenhagen-plank', ['copenhagen plank', 'copenhagen planks', 'knee copenhagen'])
+registerExerciseAliases('wall-sit', ['wall sit', 'wall sits'])
 
 /** Body-region terms only — not movement keywords like "push" or "curl". */
 const BODY_REGION_ALIASES: Record<string, MuscleGroup[]> = {

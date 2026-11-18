@@ -209,15 +209,56 @@ CatalogSet _templateSet(Map<String, Object?> json) {
   );
 }
 
-class BuiltPlanWorkout {
-  const BuiltPlanWorkout({required this.name, required this.lifts});
-
-  final String name;
-  final List<LibraryLift> lifts;
-}
-
 const defaultBuiltSetCount = 3;
 const defaultBuiltReps = '8-12';
+
+/// One exercise in a user-built plan, with the sets and target reps to write.
+class BuiltPlanExercise {
+  const BuiltPlanExercise({
+    required this.lift,
+    this.setCount = defaultBuiltSetCount,
+    this.targetReps = defaultBuiltReps,
+  });
+
+  final LibraryLift lift;
+  final int setCount;
+  final String targetReps;
+}
+
+class BuiltPlanWorkout {
+  const BuiltPlanWorkout({
+    required this.name,
+    this.lifts = const [],
+    this.exercises = const [],
+  });
+
+  final String name;
+
+  /// Lifts that use the default set count and target reps.
+  /// Ignored when [exercises] is not empty.
+  final List<LibraryLift> lifts;
+
+  /// Exercises with their own set count and target reps.
+  final List<BuiltPlanExercise> exercises;
+}
+
+List<BuiltPlanExercise> _prescribedExercises(BuiltPlanWorkout workout) {
+  if (workout.exercises.isNotEmpty) return workout.exercises;
+  return [
+    for (final lift in workout.lifts) BuiltPlanExercise(lift: lift),
+  ];
+}
+
+int _builtSetCount(int count) {
+  if (count < 1) return defaultBuiltSetCount;
+  if (count > 30) return 30;
+  return count;
+}
+
+String _builtTargetReps(String reps) {
+  final trimmed = reps.trim();
+  return trimmed.isEmpty ? defaultBuiltReps : trimmed;
+}
 
 /// Appends a user-built plan to the `templates_json` payload Custom Plans reads.
 /// Returns null when [existing] is not empty and is not a JSON list or object.
@@ -229,11 +270,16 @@ String? appendBuiltPlanToTemplatesJson({
 }) {
   final name = planName.trim();
   if (name.isEmpty) return null;
-  final sessions = [
-    for (final workout in workouts)
-      if (workout.lifts.isNotEmpty)
-        (name: workout.name.trim().isEmpty ? 'Workout' : workout.name.trim(), lifts: workout.lifts),
-  ];
+  final sessions = <({String name, List<BuiltPlanExercise> exercises})>[];
+  for (final workout in workouts) {
+    final exercises = _prescribedExercises(workout);
+    if (exercises.isEmpty) continue;
+    final workoutName = workout.name.trim();
+    sessions.add((
+      name: workoutName.isEmpty ? 'Workout' : workoutName,
+      exercises: exercises,
+    ));
+  }
   if (sessions.isEmpty) return null;
 
   final decoded = _decodeTemplatesPayload(existing);
@@ -254,16 +300,19 @@ String? appendBuiltPlanToTemplatesJson({
       'folderId': planId,
       'notes': '',
       'exercises': [
-        for (final lift in session.lifts)
+        for (final exercise in session.exercises)
           {
-            'name': lift.name,
-            'libraryId': lift.id,
-            'isCardio': lift.isCardio,
-            'isCore': lift.isCore,
+            'name': exercise.lift.name,
+            'libraryId': exercise.lift.id,
+            'isCardio': exercise.lift.isCardio,
+            'isCore': exercise.lift.isCore,
             'isCircuit': false,
             'sets': [
-              for (var set = 0; set < defaultBuiltSetCount; set++)
-                {'targetReps': defaultBuiltReps, 'targetWeight': ''},
+              for (var set = 0; set < _builtSetCount(exercise.setCount); set++)
+                {
+                  'targetReps': _builtTargetReps(exercise.targetReps),
+                  'targetWeight': '',
+                },
             ],
           },
       ],

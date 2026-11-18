@@ -30,6 +30,7 @@ try {
   const summer = await server.ssrLoadModule('/src/utils/joeySummerPlan2.ts')
   const cut = await server.ssrLoadModule('/src/utils/joeySummerCutSplitPlans.ts')
   const c4 = await server.ssrLoadModule('/src/utils/joeyC4.ts')
+  const codysSplit = await server.ssrLoadModule('/src/utils/codysSplit.ts')
 
   const lifts = library.EXERCISE_LIBRARY.map((ex) => ({
     id: ex.id,
@@ -54,6 +55,7 @@ try {
     ...summer.JOEY_SUMMER_PLAN2_PLANS,
     ...cut.JOEY_CUT_SPLIT_PLANS,
     ...c4.JOEY_C4_PLANS,
+    ...codysSplit.CODYS_SPLIT_PLANS,
   ].map((workout) => ({
     id: workout.id,
     name: workout.name,
@@ -83,6 +85,7 @@ try {
     summer.JOEY_SUMMER_PLAN2_FOLDER,
     cut.JOEY_CUT_SPLIT_FOLDER,
     c4.JOEY_C4_FOLDER,
+    codysSplit.CODYS_SPLIT_FOLDER,
   ].map((folder) => ({
     id: folder.id,
     name: folder.name,

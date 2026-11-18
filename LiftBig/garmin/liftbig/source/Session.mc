@@ -13,8 +13,8 @@ import Toybox.WatchUi;
 // Temporal background events cannot be scheduled sooner than 5 minutes.
 const BACKGROUND_REST_FLOOR = 300;
 
-// In-memory workout. Slots are one set each, in workout order.
-// The arrows and the back button jump to the previous or next exercise.
+// In-memory workout. Slots are one set each, exercise by exercise.
+// The title arrows and the back button step through training order.
 // A launch with nothing stored waits for the iPhone. The last phone
 // lineup is restored so the baked-in sample is never drawn.
 class Session {
@@ -240,47 +240,96 @@ class Session {
         return true;
     }
 
-    // First slot of each exercise, in the order those exercises appear.
-    // Back from Bench Press set 2 lands on the previous exercise, not set 1.
-    function exerciseStarts() as Array<Number> {
-        var starts = [] as Array<Number>;
-        var seen = [] as Array<String>;
-        for (var i = 0; i < slots.size(); i++) {
-            var id = slots[i]["exerciseId"] as String;
-            if (memberIndex(seen, id) >= 0) {
+    // Arrows step through training order and do not mark a set done.
+    // Straight sets follow the stored slots: set 1, set 2, set 3, then the
+    // next exercise. A superset is stored exercise-major, so this reorders
+    // that group into rounds by supersetOrder (set 1 of each lift, then set
+    // 2). The next block starts after the round. Back walks the same list
+    // in reverse. Checked on Bench x3 + Row x3 in one group, then Squat x3:
+    // B1, R1, B2, R2, B3, R3, S1, S2, S3.
+    function trainingOrder() as Array<Number> {
+        var order = [] as Array<Number>;
+        var i = 0;
+        while (i < slots.size()) {
+            var group = supersetGroup(slots[i]);
+            if (group.equals("")) {
+                order.add(i);
+                i = i + 1;
+            } else {
+                var end = i;
+                while (end + 1 < slots.size() && supersetGroup(slots[end + 1]).equals(group)) {
+                    end = end + 1;
+                }
+                appendSupersetRounds(order, i, end);
+                i = end + 1;
+            }
+        }
+        return order;
+    }
+
+    function appendSupersetRounds(order as Array<Number>, start as Number, end as Number) as Void {
+        var ids = [] as Array<String>;
+        var orders = [] as Array<Number>;
+        var firsts = [] as Array<Number>;
+        for (var n = start; n <= end; n++) {
+            var item = slots[n];
+            var itemId = item["exerciseId"] as String;
+            if (memberIndex(ids, itemId) >= 0) {
                 continue;
             }
-            seen.add(id);
-            starts.add(i);
+            var memberOrder = 1000000 + ids.size();
+            if (item["supersetOrder"] != null) {
+                memberOrder = asInt(item["supersetOrder"]);
+            }
+            ids.add(itemId);
+            orders.add(memberOrder);
+            firsts.add(n);
         }
-        return starts;
+        sortMembers(ids, orders, firsts);
+        var minSet = slots[start]["setIndex"] as Number;
+        var maxSet = minSet;
+        for (var s = start; s <= end; s++) {
+            var seenSet = slots[s]["setIndex"] as Number;
+            if (seenSet < minSet) {
+                minSet = seenSet;
+            }
+            if (seenSet > maxSet) {
+                maxSet = seenSet;
+            }
+        }
+        for (var setIndex = minSet; setIndex <= maxSet; setIndex++) {
+            for (var m = 0; m < ids.size(); m++) {
+                var slotIndex = findSet(ids[m], setIndex, start, end);
+                if (slotIndex >= 0) {
+                    order.add(slotIndex);
+                }
+            }
+        }
     }
 
     function exerciseTarget(delta as Number) as Number {
         if (slots.size() == 0 || delta == 0) {
             return -1;
         }
-        var starts = exerciseStarts();
-        if (starts.size() == 0) {
+        if (index < 0 || index >= slots.size()) {
             return -1;
         }
-        var currentId = "";
-        if (index >= 0 && index < slots.size()) {
-            currentId = slots[index]["exerciseId"] as String;
-        }
-        var position = 0;
-        for (var s = 0; s < starts.size(); s++) {
-            var startId = slots[starts[s]]["exerciseId"] as String;
-            if (startId.equals(currentId)) {
-                position = s;
+        var order = trainingOrder();
+        var position = -1;
+        for (var i = 0; i < order.size(); i++) {
+            if (order[i] == index) {
+                position = i;
                 break;
             }
         }
-        var nextPos = position + delta;
-        if (nextPos < 0 || nextPos >= starts.size()) {
+        if (position < 0) {
             return -1;
         }
-        return starts[nextPos];
+        var nextPos = position + delta;
+        if (nextPos < 0 || nextPos >= order.size()) {
+            return -1;
+        }
+        return order[nextPos];
     }
 
     function canMoveExercise(delta as Number) as Boolean {

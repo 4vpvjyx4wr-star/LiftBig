@@ -36,9 +36,28 @@ DarwinNotificationCategory restAlarmDarwinCategory() {
   return DarwinNotificationCategory(
     restAlarmDarwinCategoryId,
     actions: [
-      DarwinNotificationAction.plain(restAlarmStopActionId, 'Stop'),
+      DarwinNotificationAction.plain(
+        restAlarmStopActionId,
+        'Stop',
+        // Foreground so the tap reaches the running app and stops the loop.
+        options: {DarwinNotificationActionOption.foreground},
+      ),
     ],
   );
+}
+
+/// Stop on the rest notification, or a tap on that notification's body.
+/// A daily reminder and any other notification id are left alone.
+bool restNotificationResponseStopsAlarm(NotificationResponse response) {
+  final isRest = response.id == restFinishedNotificationId;
+  if (response.actionId == restAlarmStopActionId) {
+    return response.id == null || isRest;
+  }
+  if (response.notificationResponseType !=
+      NotificationResponseType.selectedNotification) {
+    return false;
+  }
+  return isRest;
 }
 
 /// Bundled tone shared by the in-app alarm and the killed-app notification.
@@ -148,11 +167,18 @@ abstract class RestNotificationScheduler {
     RestFinishedNotificationOptions options = RestFinishedNotificationOptions.defaults,
   });
   Future<void> cancelRestFinished();
+
+  /// True when the rest-finished alert is already on screen.
+  /// A cold start must cancel that alert instead of looping the in-app tone.
+  Future<bool> restFinishedIsDelivered();
 }
 
 class NoOpRestNotificationScheduler implements RestNotificationScheduler {
   @override
   Future<void> cancelRestFinished() async {}
+
+  @override
+  Future<bool> restFinishedIsDelivered() async => false;
 
   @override
   Future<void> initialize() async {}
@@ -260,6 +286,18 @@ class FlutterRestNotificationScheduler implements RestNotificationScheduler {
     await _plugin.cancel(restFinishedNotificationId);
   }
 
+  @override
+  Future<bool> restFinishedIsDelivered() async {
+    if (kIsWeb) return false;
+    try {
+      await initialize();
+      final shown = await _plugin.getActiveNotifications();
+      return shown.any((note) => note.id == restFinishedNotificationId);
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Stop on the finished notification calls [handler], including a tap that
   /// launched the app from a killed process.
   void bindStopHandler(Future<void> Function() handler) {
@@ -269,21 +307,23 @@ class FlutterRestNotificationScheduler implements RestNotificationScheduler {
     unawaited(handler());
   }
 
-  /// True once, when this process was opened from the notification Stop action.
+  /// True once, when this process was opened by Stop or a tap on the rest alert.
   Future<bool> consumeLaunchStop() async {
     if (_consumedLaunchStop || kIsWeb) return false;
     _consumedLaunchStop = true;
     try {
       final launch = await _plugin.getNotificationAppLaunchDetails();
+      final response = launch?.notificationResponse;
       return launch?.didNotificationLaunchApp == true &&
-          launch?.notificationResponse?.actionId == restAlarmStopActionId;
+          response != null &&
+          restNotificationResponseStopsAlarm(response);
     } catch (_) {
       return false;
     }
   }
 
   void _onNotificationResponse(NotificationResponse response) {
-    if (response.actionId != restAlarmStopActionId) return;
+    if (!restNotificationResponseStopsAlarm(response)) return;
     final stop = _onStop;
     if (stop == null) {
       _pendingStop = true;

@@ -10,8 +10,38 @@ enum RestAlertPlan {
     /// Phone message that stops the looping rest tone. Garmin has no Stop control.
     static let stopMessageKind = "stopAlarm"
 
+    /// Shown on the rest notification. The on-watch Stop button uses the same message.
+    static let stopActionIdentifier = "stop"
+    static let categoryIdentifier = "liftbig.rest.stop"
+
     static func showsStop(alarmRinging: Bool) -> Bool {
         alarmRinging
+    }
+
+    static func registerCategory(center: UNUserNotificationCenter = .current()) {
+        let stop = UNNotificationAction(
+            identifier: stopActionIdentifier,
+            title: "Stop",
+            options: [.foreground]
+        )
+        let category = UNNotificationCategory(
+            identifier: categoryIdentifier,
+            actions: [stop],
+            intentIdentifiers: [],
+            options: []
+        )
+        center.setNotificationCategories([category])
+    }
+
+    /// Stop on the rest alert, or a tap that opens that alert.
+    static func responseStopsAlarm(_ response: UNNotificationResponse) -> Bool {
+        guard response.notification.request.identifier == identifier else { return false }
+        switch response.actionIdentifier {
+        case UNNotificationDefaultActionIdentifier, stopActionIdentifier:
+            return true
+        default:
+            return false
+        }
     }
 
     static func makeRequest(endsAt: Date, now: Date, soundEnabled: Bool) -> UNNotificationRequest? {
@@ -23,6 +53,7 @@ enum RestAlertPlan {
         content.interruptionLevel = .timeSensitive
         // watchOS cannot play a named file. The default tone is the sound it can own.
         content.sound = soundEnabled ? .default : nil
+        content.categoryIdentifier = categoryIdentifier
         content.userInfo = ["endsAt": endsAt.timeIntervalSince1970]
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
         return UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
