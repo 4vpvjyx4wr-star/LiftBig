@@ -139,7 +139,7 @@ String plateFaceLabel(double weightLb, WeightUnit unit) {
 }
 
 Color plateColorForWeight(BuildContext context, double weightLb) {
-  final hex = plateColorsLb[weightLb];
+  final hex = plateColorHex(weightLb);
   if (hex == null || hex.length < 7) return context.liftBig.primary;
   final value = int.tryParse(hex.replaceFirst('#', ''), radix: 16);
   if (value == null) return context.liftBig.primary;

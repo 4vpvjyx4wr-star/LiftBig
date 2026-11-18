@@ -1348,16 +1348,6 @@
       "Glutes"
     ]
   },
-  "Deadbug": {
-    "id": "deadbug",
-    "edbQueries": [
-      "deadbug"
-    ],
-    "primaryMuscles": [
-      "Core"
-    ],
-    "secondaryMuscles": []
-  },
   "Jump Squat": {
     "id": "jump-squat",
     "edbQueries": [

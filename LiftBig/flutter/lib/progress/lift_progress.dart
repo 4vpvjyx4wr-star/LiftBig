@@ -1,3 +1,4 @@
+import '../catalog/liftbig_catalog.dart';
 import '../date_key.dart';
 import '../journal/lift_name_convergence.dart';
 import '../model/journal_day.dart';
@@ -68,10 +69,11 @@ bool matchesLoggedLift(
   String? libraryId,
 }) {
   final id = libraryId?.trim();
-  if (id != null && id.isNotEmpty) {
-    return (exercise.libraryId?.trim() ?? '') == id;
+  final otherId = exercise.libraryId?.trim() ?? '';
+  if (id != null && id.isNotEmpty && otherId.isNotEmpty) {
+    return otherId == id;
   }
-  return isExactNormalizedExerciseNameMatch(exercise.name, name);
+  return exerciseFoldKey(exercise.name) == exerciseFoldKey(name);
 }
 
 /// [collectLiftHistory] for one logged exercise, matched by library id or name.
@@ -99,35 +101,95 @@ List<LiftSessionPoint> collectSameLiftHistory(
 }
 
 /// One point per lift that has at least one working set with a load.
-List<LiftSeries> strengthSeries(List<JournalDay> days) {
-  final display = <String, String>{};
+///
+/// Exercises that share a library id, or a name that folds to one library
+/// lift, are a single series.
+List<LiftSeries> strengthSeries(
+  List<JournalDay> days, {
+  List<LibraryLift> lifts = const [],
+}) {
+  final index = LibraryNameIndex(lifts);
+  final names = <String, List<String>>{};
+  final exercises = <String, List<JournalExercise>>{};
   for (final day in days) {
     for (final exercise in day.exercises) {
       final name = exercise.name.trim();
       if (name.isEmpty) continue;
       if (exercise.isCardio && !exercise.isCircuit) continue;
       if (sessionPoint(day.dateKey, exercise) == null) continue;
-      display.putIfAbsent(name.toLowerCase(), () => name);
+      final key = _seriesKey(exercise, index);
+      (names[key] ??= []).add(name);
+      (exercises[key] ??= []).add(exercise);
     }
   }
-  final names = display.values.toList()..sort();
+  final keys = names.keys.toList()
+    ..sort((a, b) => _seriesDisplay(a, names[a]!, index).compareTo(
+      _seriesDisplay(b, names[b]!, index),
+    ));
   return [
-    for (final name in names)
+    for (final key in keys)
       LiftSeries(
-        name: name,
-        sessions: collectLiftHistory(days, name),
-        latestCompleted: _latestLiftCompleted(days, name),
+        name: _seriesDisplay(key, names[key]!, index),
+        sessions: _sessionsForKey(days, key, index),
+        latestCompleted: _latestKeyCompleted(days, key, index),
       ),
   ];
 }
 
-bool _latestLiftCompleted(List<JournalDay> days, String name) {
-  final target = name.trim().toLowerCase();
+String _seriesKey(JournalExercise exercise, LibraryNameIndex index) {
+  final id = exercise.libraryId?.trim();
+  if (id != null && id.isNotEmpty) return 'id:$id';
+  final match = index.matchName(exercise.name);
+  if (match != null) return 'id:${match.id}';
+  return 'name:${normalizeForExerciseMatch(exercise.name)}';
+}
+
+String _seriesDisplay(String key, List<String> logged, LibraryNameIndex index) {
+  if (key.startsWith('id:')) {
+    final lift = index.byId[key.substring(3)];
+    if (lift != null) return lift.name;
+  }
+  final unique = logged.toSet().toList()
+    ..sort((a, b) => a.length.compareTo(b.length));
+  return unique.first;
+}
+
+bool _exerciseInSeries(
+  JournalExercise exercise,
+  String key,
+  LibraryNameIndex index,
+) {
+  return _seriesKey(exercise, index) == key;
+}
+
+List<LiftSessionPoint> _sessionsForKey(
+  List<JournalDay> days,
+  String key,
+  LibraryNameIndex index,
+) {
+  final points = <LiftSessionPoint>[];
+  for (final day in days) {
+    for (final exercise in day.exercises) {
+      if (exercise.isCardio && !exercise.isCircuit) continue;
+      if (!_exerciseInSeries(exercise, key, index)) continue;
+      final point = sessionPoint(day.dateKey, exercise);
+      if (point != null) points.add(point);
+    }
+  }
+  points.sort((a, b) => a.dateKey.compareTo(b.dateKey));
+  return points;
+}
+
+bool _latestKeyCompleted(
+  List<JournalDay> days,
+  String key,
+  LibraryNameIndex index,
+) {
   JournalExercise? latest;
   var latestKey = '';
   for (final day in days) {
     for (final exercise in day.exercises) {
-      if (exercise.name.trim().toLowerCase() != target) continue;
+      if (!_exerciseInSeries(exercise, key, index)) continue;
       if (sessionPoint(day.dateKey, exercise) == null) continue;
       if (latest == null || day.dateKey.compareTo(latestKey) >= 0) {
         latest = exercise;
@@ -554,6 +616,8 @@ List<String> _trainedDateKeys(List<JournalDay> days) {
   return keys;
 }
 
+bool dayHasLoggedWork(JournalDay day) => _dayHasWork(day);
+
 bool _dayHasWork(JournalDay day) {
   for (final exercise in day.exercises) {
     if (exercise.isCardio && !exercise.isCircuit) {
@@ -788,6 +852,234 @@ bool _hasVarietyWeek(List<JournalDay> days) {
     if (names.length >= 8) return true;
   }
   return false;
+}
+
+/// The run of trained days ending today or yesterday. A missed day ends it.
+int currentTrainingStreak(List<String> dates, {DateTime? today}) {
+  if (dates.isEmpty) return 0;
+  final unique = dates.toSet().toList()..sort();
+  final now = today ?? DateTime.now();
+  final todayKeyValue = toDateKey(DateTime(now.year, now.month, now.day));
+  final yesterday = toDateKey(
+    DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)),
+  );
+  final last = unique.last;
+  if (last != todayKeyValue && last != yesterday) return 0;
+  var run = 1;
+  for (var i = unique.length - 1; i > 0; i--) {
+    final gap = parseDateKey(unique[i])
+        .difference(parseDateKey(unique[i - 1]))
+        .inDays;
+    if (gap == 1) {
+      run++;
+    } else if (gap > 1) {
+      break;
+    }
+  }
+  return run;
+}
+
+class HeaviestSet {
+  const HeaviestSet({required this.name, required this.weightLb});
+
+  final String name;
+  final double weightLb;
+}
+
+class GoalProgress {
+  const GoalProgress({
+    required this.achievement,
+    required this.current,
+    required this.target,
+  });
+
+  final Achievement achievement;
+  final double current;
+  final double target;
+
+  double get ratio {
+    if (target <= 0) return 0;
+    return (current / target).clamp(0.0, 1.0).toDouble();
+  }
+}
+
+class TrainingSnapshot {
+  const TrainingSnapshot({
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.nextStreakGoal,
+    required this.weekTrained,
+    required this.weekSessions,
+    required this.weekSets,
+    required this.weekVolumeLb,
+    required this.previousWeekVolumeLb,
+    required this.trainedDays,
+    required this.totalVolumeLb,
+    required this.heaviest,
+    required this.benchLb,
+    required this.squatLb,
+    required this.deadliftLb,
+    required this.nextGoal,
+  });
+
+  final int currentStreak;
+  final int longestStreak;
+  final int? nextStreakGoal;
+  final List<bool> weekTrained;
+  final int weekSessions;
+  final int weekSets;
+  final double weekVolumeLb;
+  final double? previousWeekVolumeLb;
+  final int trainedDays;
+  final double totalVolumeLb;
+  final HeaviestSet? heaviest;
+  final double benchLb;
+  final double squatLb;
+  final double deadliftLb;
+  final GoalProgress? nextGoal;
+}
+
+const _streakMarks = [3, 7, 14, 30, 84];
+
+TrainingSnapshot trainingSnapshot(List<JournalDay> days, {DateTime? today}) {
+  final now = today ?? DateTime.now();
+  final trained = _trainedDateKeys(days);
+  final current = currentTrainingStreak(trained, today: now);
+  final longest = trained.isEmpty ? 0 : _longestStreak(trained);
+  int? nextMark;
+  for (final mark in _streakMarks) {
+    if (current < mark) {
+      nextMark = mark;
+      break;
+    }
+  }
+  final monday = DateTime(now.year, now.month, now.day)
+      .subtract(Duration(days: now.weekday - DateTime.monday));
+  final weekTrained = <bool>[];
+  var weekSessions = 0;
+  for (var i = 0; i < 7; i++) {
+    final key = toDateKey(monday.add(Duration(days: i)));
+    final trainedDay = trained.contains(key);
+    weekTrained.add(trainedDay);
+    if (trainedDay) weekSessions++;
+  }
+  final weekStart = toDateKey(monday);
+  final weekEnd = toDateKey(monday.add(const Duration(days: 6)));
+  final previousStart = toDateKey(monday.subtract(const Duration(days: 7)));
+  final previousEnd = toDateKey(monday.subtract(const Duration(days: 1)));
+  final previousHadWork = trained.any(
+    (key) => key.compareTo(previousStart) >= 0 && key.compareTo(previousEnd) <= 0,
+  );
+  final earned = unlockedAchievements(days);
+  return TrainingSnapshot(
+    currentStreak: current,
+    longestStreak: longest,
+    nextStreakGoal: nextMark,
+    weekTrained: weekTrained,
+    weekSessions: weekSessions,
+    weekSets: _setsBetween(days, weekStart, weekEnd),
+    weekVolumeLb: _tonnageBetween(days, weekStart, weekEnd),
+    previousWeekVolumeLb: previousHadWork
+        ? _tonnageBetween(days, previousStart, previousEnd)
+        : null,
+    trainedDays: trained.length,
+    totalVolumeLb: _totalTonnage(days),
+    heaviest: _heaviestSet(days),
+    benchLb: _maxPlateLbs(days, 'bench-press'),
+    squatLb: _maxPlateLbs(days, 'squat'),
+    deadliftLb: _maxPlateLbs(days, 'deadlift'),
+    nextGoal: _nextGoal(days, earned, current),
+  );
+}
+
+int _setsBetween(List<JournalDay> days, String start, String end) {
+  return _totalSets([
+    for (final day in days)
+      if (day.dateKey.compareTo(start) >= 0 && day.dateKey.compareTo(end) <= 0) day,
+  ]);
+}
+
+double _tonnageBetween(List<JournalDay> days, String start, String end) {
+  return _totalTonnage([
+    for (final day in days)
+      if (day.dateKey.compareTo(start) >= 0 && day.dateKey.compareTo(end) <= 0) day,
+  ]);
+}
+
+HeaviestSet? _heaviestSet(List<JournalDay> days) {
+  String? name;
+  var best = 0.0;
+  for (final day in days) {
+    for (final exercise in day.exercises) {
+      if (exercise.isCardio && !exercise.isCircuit) continue;
+      for (final set in exercise.sets) {
+        if (!setCountsTowardProgress(set)) continue;
+        final weight = double.tryParse(set.weight.trim());
+        if (weight == null || weight <= best) continue;
+        if (set.reps.trim().isEmpty) continue;
+        best = weight;
+        name = exercise.name.trim();
+      }
+    }
+  }
+  if (name == null || name.isEmpty || best <= 0) return null;
+  return HeaviestSet(name: name, weightLb: best);
+}
+
+GoalProgress? _nextGoal(List<JournalDay> days, Set<String> earned, int currentStreak) {
+  final byId = {for (final item in achievements) item.id: item};
+  final candidates = <GoalProgress>[];
+  void add(String id, double current, double target) {
+    if (earned.contains(id) || target <= 0) return;
+    final item = byId[id];
+    if (item == null) return;
+    candidates.add(GoalProgress(achievement: item, current: current, target: target));
+  }
+
+  final sessions = _trainedDateKeys(days).length.toDouble();
+  final tonnage = _totalTonnage(days);
+  final sets = _totalSets(days).toDouble();
+  final reps = _totalReps(days).toDouble();
+  add('first-workout', sessions, 1);
+  add('streak-3', currentStreak.toDouble(), 3);
+  add('streak-7', currentStreak.toDouble(), 7);
+  add('streak-14', currentStreak.toDouble(), 14);
+  add('streak-30', currentStreak.toDouble(), 30);
+  add('streak-12-weeks', currentStreak.toDouble(), 84);
+  add('tonnage-10k', tonnage, 10000);
+  add('tonnage-100k', tonnage, 100000);
+  add('tonnage-500k', tonnage, 500000);
+  add('tonnage-1m', tonnage, 1000000);
+  add('sessions-50', sessions, 50);
+  add('sessions-100', sessions, 100);
+  add('sessions-200', sessions, 200);
+  add('sessions-500', sessions, 500);
+  add('sets-1k', sets, 1000);
+  add('sets-5k', sets, 5000);
+  add('sets-10k', sets, 10000);
+  add('reps-10k', reps, 10000);
+  add('reps-100k', reps, 100000);
+  add('bench-2-plates', _maxPlateLbs(days, 'bench-press'), 225);
+  add('bench-3-plates', _maxPlateLbs(days, 'bench-press'), 315);
+  add('bench-4-plates', _maxPlateLbs(days, 'bench-press'), 405);
+  add('squat-2-plates', _maxPlateLbs(days, 'squat'), 225);
+  add('squat-3-plates', _maxPlateLbs(days, 'squat'), 315);
+  add('squat-4-plates', _maxPlateLbs(days, 'squat'), 405);
+  add('deadlift-2-plates', _maxPlateLbs(days, 'deadlift'), 225);
+  add('deadlift-3-plates', _maxPlateLbs(days, 'deadlift'), 315);
+  add('deadlift-4-plates', _maxPlateLbs(days, 'deadlift'), 405);
+  add('ohp-plate', _maxPlateLbs(days, 'overhead-press'), 135);
+  add('ohp-2-plates', _maxPlateLbs(days, 'overhead-press'), 225);
+  add('row-2-plates', _maxPlateLbs(days, 'barbell-row'), 225);
+  add('hip-thrust-2-plates', _maxPlateLbs(days, 'hip-thrust'), 225);
+  add('hip-thrust-3-plates', _maxPlateLbs(days, 'hip-thrust'), 315);
+  if (candidates.isEmpty) return null;
+  candidates.sort((a, b) {
+    final ratio = b.ratio.compareTo(a.ratio);
+    if (ratio != 0) return ratio;
+    return (a.target - a.current).compareTo(b.target - b.current);
+  });
+  return candidates.first;
 }
 
 /// Sunday that starts the calendar week containing [dateKey].

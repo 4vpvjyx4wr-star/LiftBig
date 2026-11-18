@@ -5,6 +5,9 @@ import '../journal/journal_repository.dart';
 /// Temporary tester password. Not a promo-code system.
 const testerUnlockCode = 'coffee';
 
+const proMonthlyProductId = 'liftbig.pro.monthly';
+const proYearlyProductId = 'liftbig.pro.yearly';
+
 /// StoreKit / Play Billing status, or the local tester unlock.
 class ProStatus {
   ProStatus({MethodChannel? channel, TesterUnlockStore? unlockStore})
@@ -45,17 +48,76 @@ class ProStatus {
     );
   }
 
+  /// StoreKit / Play Billing purchase. A missing plugin does not throw.
+  Future<ProPurchaseResult> purchase(String productId) async {
+    final result = await _invoke('purchase', {'productId': productId});
+    if (result == null) {
+      return const ProPurchaseResult(
+        active: false,
+        message: 'Purchases are not available in this build.',
+      );
+    }
+    if (result['active'] == true) _storeActive = true;
+    final message = result['message'];
+    return ProPurchaseResult(
+      active: isPro,
+      message: message is String && message.isNotEmpty ? message : null,
+    );
+  }
+
+  Future<List<ProProduct>> loadProducts() async {
+    final result = await _invoke('loadProducts');
+    final raw = result?['products'];
+    if (raw is! List) return const [];
+    final products = <ProProduct>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final id = item['id'];
+      if (id is! String || id.isEmpty) continue;
+      final price = item['displayPrice'];
+      products.add(
+        ProProduct(
+          id: id,
+          displayPrice: price is String ? price : '',
+        ),
+      );
+    }
+    return products;
+  }
+
   Future<bool> _read(String method) async {
+    final result = await _invoke(method);
+    return result?['active'] == true;
+  }
+
+  Future<Map<Object?, Object?>?> _invoke(
+    String method, [
+    Object? arguments,
+  ]) async {
     try {
-      final result = await _channel.invokeMethod<Object?>(method);
-      if (result is Map) return result['active'] == true;
-      return false;
+      final result = await _channel.invokeMethod<Object?>(method, arguments);
+      if (result is Map) return Map<Object?, Object?>.from(result);
+      return null;
     } on MissingPluginException {
-      return false;
+      return null;
     } on PlatformException {
-      return false;
+      return null;
     }
   }
+}
+
+class ProProduct {
+  const ProProduct({required this.id, required this.displayPrice});
+
+  final String id;
+  final String displayPrice;
+}
+
+class ProPurchaseResult {
+  const ProPurchaseResult({required this.active, this.message});
+
+  final bool active;
+  final String? message;
 }
 
 class ProRestoreResult {

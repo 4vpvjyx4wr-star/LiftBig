@@ -142,6 +142,7 @@ class _LibraryBody extends StatelessWidget {
                       ? null
                       :  Icon(Icons.smart_display_outlined, color: context.liftBig.primary),
                   onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => LiftDetailPage(lift: lift),

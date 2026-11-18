@@ -215,14 +215,24 @@ const defaultBuiltReps = '8-12';
 /// One exercise in a user-built plan, with the sets and target reps to write.
 class BuiltPlanExercise {
   const BuiltPlanExercise({
-    required this.lift,
+    this.lift,
+    this.customName,
     this.setCount = defaultBuiltSetCount,
     this.targetReps = defaultBuiltReps,
+    this.targetWeight = '',
   });
 
-  final LibraryLift lift;
+  final LibraryLift? lift;
+  final String? customName;
   final int setCount;
   final String targetReps;
+  final String targetWeight;
+
+  String get name {
+    final written = customName?.trim() ?? '';
+    if (lift == null) return written.isEmpty ? 'Lift' : written;
+    return lift!.name;
+  }
 }
 
 class BuiltPlanWorkout {
@@ -302,16 +312,16 @@ String? appendBuiltPlanToTemplatesJson({
       'exercises': [
         for (final exercise in session.exercises)
           {
-            'name': exercise.lift.name,
-            'libraryId': exercise.lift.id,
-            'isCardio': exercise.lift.isCardio,
-            'isCore': exercise.lift.isCore,
+            'name': exercise.name,
+            'libraryId': exercise.lift?.id,
+            'isCardio': exercise.lift?.isCardio ?? false,
+            'isCore': exercise.lift?.isCore ?? false,
             'isCircuit': false,
             'sets': [
               for (var set = 0; set < _builtSetCount(exercise.setCount); set++)
                 {
                   'targetReps': _builtTargetReps(exercise.targetReps),
-                  'targetWeight': '',
+                  'targetWeight': exercise.targetWeight.trim(),
                 },
             ],
           },

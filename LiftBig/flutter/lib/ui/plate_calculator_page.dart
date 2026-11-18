@@ -29,7 +29,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
   PlateCalculationResult? _result = calculatePlates(
     plateCalculatorDefaultTargetLb,
     defaultBarLb,
-    plateSizesLb,
+    plateSizesForUnit(WeightUnit.lb),
   );
   var _unit = WeightUnit.lb;
   var _loadingUnit = true;
@@ -78,7 +78,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
       _result = null;
       return;
     }
-    _result = calculatePlates(target, _barLb, plateSizesLb);
+    _result = calculatePlates(target, _barLb, plateSizesForUnit(_unit));
   }
 
   void _onTargetChanged(String raw) {
@@ -197,6 +197,7 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
                 _QuickReference(
                   unit: _unit,
                   unitLabel: unitLabel,
+                  barLb: _barLb,
                   onSelect: _setQuick,
                 ),
               ],
@@ -460,8 +461,7 @@ class _PlateSummary extends StatelessWidget {
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          for (final size in plateSizesLb)
-            if (counts[size] != null)
+          for (final size in (counts.keys.toList()..sort((a, b) => b.compareTo(a))))
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
@@ -526,15 +526,18 @@ class _QuickReference extends StatelessWidget {
   const _QuickReference({
     required this.unit,
     required this.unitLabel,
+    required this.barLb,
     required this.onSelect,
   });
 
   final WeightUnit unit;
   final String unitLabel;
+  final double barLb;
   final ValueChanged<double> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final rows = quickPlateRows(barLb: barLb, unit: unit);
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -552,13 +555,13 @@ class _QuickReference extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            for (var i = 0; i < plateQuickPresetsLb.length; i++)
+            for (var i = 0; i < rows.length; i++)
               InkWell(
-                onTap: () => onSelect(plateQuickPresetsLb[i].weightLb),
+                onTap: () => onSelect(rows[i].weightLb),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    border: i == plateQuickPresetsLb.length - 1
+                    border: i == rows.length - 1
                         ? null
                         : Border(
                             bottom: BorderSide(color: context.liftBig.border),
@@ -568,12 +571,12 @@ class _QuickReference extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          plateQuickPresetsLb[i].label,
+                          rows[i].label,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                       Text(
-                        '${lbsToDisplayWeightString(plateQuickPresetsLb[i].weightLb, unit)} $unitLabel',
+                        '${lbsToDisplayWeightString(rows[i].weightLb, unit)} $unitLabel',
                         style: TextStyle(color: context.liftBig.muted),
                       ),
                       const SizedBox(width: 4),

@@ -48,7 +48,6 @@ export const EXERCISE_TUTORIAL_URLS: Partial<Record<string, string>> = {
   'dance-cardio': 'https://www.youtube.com/shorts/H2uUKeieQ8M',
   'dead-bug': 'https://www.youtube.com/watch?v=uCODuWrAQxE',
   'dead-hang': 'https://www.youtube.com/watch?v=fq9gDvNZQ2c',
-  deadbug: 'https://www.youtube.com/watch?v=uCODuWrAQxE',
   deadlift: 'https://www.youtube.com/watch?v=cclUh49qOww',
   'decline-bench-press': 'https://www.youtube.com/watch?v=IqXtJnai1ik',
   'decline-reverse-crunch': 'https://www.youtube.com/watch?v=CmUaQfZUqfo',

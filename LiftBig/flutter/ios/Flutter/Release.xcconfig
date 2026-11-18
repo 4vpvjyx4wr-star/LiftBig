@@ -1,5 +1,5 @@
 // xcconfig keeps the first value, so the local file must come first.
+// GoogleSignIn.local.xcconfig may set GOOGLE_CLIENT_ID,
+// GOOGLE_REVERSED_CLIENT_ID, and GOOGLE_SERVER_CLIENT_ID.
 #include? "GoogleSignIn.local.xcconfig"
 #include "Generated.xcconfig"
-GOOGLE_CLIENT_ID=
-GOOGLE_REVERSED_CLIENT_ID=

@@ -4,6 +4,41 @@ import path from 'node:path'
 import { createServer } from 'vite'
 
 const root = new URL('../../', import.meta.url).pathname
+
+function foldKey(name) {
+  const key = String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+  return key.length > 3 && key.endsWith('s') ? key.slice(0, -1) : key
+}
+
+function matchLift(name, lifts) {
+  const exactKey = String(name ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+  if (!exactKey) return null
+  const exact = lifts.filter(
+    (lift) => lift.name.toLowerCase().replace(/[^a-z0-9]+/g, '') === exactKey,
+  )
+  if (exact.length === 1) return exact[0]
+  if (exact.length > 1) return null
+  const folded = lifts.filter((lift) => foldKey(lift.name) === foldKey(name))
+  return folded.length === 1 ? folded[0] : null
+}
+
+function canonicalLibraryId(name, libraryId, lifts) {
+  const id = libraryId === 'deadbug' ? 'dead-bug' : libraryId
+  const linked = lifts.find((lift) => lift.id === id)
+  const folded = matchLift(name, lifts)
+  if (linked && foldKey(name) === foldKey(linked.name)) return linked.id
+  if (!id && folded) return folded.id
+  return id ?? null
+}
+
+function canonicalExerciseName(name, libraryId, lifts) {
+  const id = libraryId === 'deadbug' ? 'dead-bug' : libraryId
+  const linked = lifts.find((lift) => lift.id === id)
+  const folded = matchLift(name, lifts)
+  if (linked && foldKey(name) === foldKey(linked.name)) return linked.name
+  if (!id && folded) return folded.name
+  return name
+}
 const fill = spawnSync(
   process.execPath,
   ['--experimental-strip-types', path.join(root, 'scripts/fill-exercise-tutorials.mjs')],
@@ -62,8 +97,8 @@ try {
     folderId: workout.folderId ?? null,
     notes: workout.notes ?? '',
     exercises: (workout.exercises ?? []).map((exercise) => ({
-      name: exercise.name,
-      libraryId: exercise.libraryId ?? null,
+      name: canonicalExerciseName(exercise.name, exercise.libraryId, lifts),
+      libraryId: canonicalLibraryId(exercise.name, exercise.libraryId, lifts),
       isCardio: exercise.isCardio === true,
       isCore: exercise.isCore === true,
       isCircuit: exercise.isCircuit === true,

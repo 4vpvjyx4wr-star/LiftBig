@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liftbig/catalog/liftbig_catalog.dart';
+import 'package:liftbig/journal/lift_name_convergence.dart';
 import 'package:liftbig/model/journal_day.dart';
 import 'package:liftbig/progress/lift_progress.dart';
 
@@ -92,5 +94,72 @@ void main() {
     ];
 
     expect(unlockedAchievements(days), contains('bench-4-plates'));
+  });
+
+  test('a library id groups plural names onto one lift', () {
+    final deadBug = LibraryLift(
+      id: 'dead-bug',
+      name: 'Dead Bug',
+      muscleGroups: const ['core'],
+      tags: const [],
+      equipment: 'Bodyweight',
+      summary: '',
+      instructions: const [],
+      tips: const [],
+      cues: const [],
+      tutorialUrl: '',
+      isCardio: false,
+      repBasedCore: true,
+    );
+    final days = [
+      day('2026-03-01', [
+        lift('Dead Bugs', [working('10', '5')], libraryId: 'dead-bug'),
+      ]),
+      day('2026-03-02', [
+        lift('Dead Bug', [working('12', '5')], libraryId: 'dead-bug'),
+      ]),
+    ];
+
+    final series = strengthSeries(days, lifts: [deadBug]);
+    expect(series, hasLength(1));
+    expect(series.single.name, 'Dead Bug');
+    expect(series.single.sessions, hasLength(2));
+    expect(LibraryNameIndex([deadBug]).matchName('Deadbugs')?.id, 'dead-bug');
+    expect(
+      LibraryNameIndex([
+        deadBug,
+        LibraryLift(
+          id: 'deadlift',
+          name: 'Deadlift',
+          muscleGroups: const ['back'],
+          tags: const [],
+          equipment: 'Barbell',
+          summary: '',
+          instructions: const [],
+          tips: const [],
+          cues: const [],
+          tutorialUrl: '',
+          isCardio: false,
+          repBasedCore: false,
+        ),
+      ]).matchName('Romanian Deadlift'),
+      isNull,
+    );
+  });
+
+  test('current streak counts through yesterday and the next mark is 3', () {
+    final today = DateTime(2026, 3, 10);
+    expect(
+      currentTrainingStreak(['2026-03-08', '2026-03-09'], today: today),
+      2,
+    );
+    expect(currentTrainingStreak(['2026-03-07'], today: today), 0);
+    final snapshot = trainingSnapshot([
+      day('2026-03-08', [lift('Squat', [working('5', '225')])]),
+      day('2026-03-09', [lift('Squat', [working('5', '230')])]),
+    ], today: today);
+    expect(snapshot.currentStreak, 2);
+    expect(snapshot.nextStreakGoal, 3);
+    expect(snapshot.weekTrained, hasLength(7));
   });
 }

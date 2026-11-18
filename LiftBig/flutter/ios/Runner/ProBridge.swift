@@ -29,10 +29,53 @@ final class ProBridge: NSObject {
                     let active = await self.isActive()
                     DispatchQueue.main.async { result(["active": active]) }
                 }
+            case "purchase":
+                let productId = (call.arguments as? [String: Any])?["productId"] as? String
+                Task {
+                    let payload = await self.purchase(productId)
+                    DispatchQueue.main.async { result(payload) }
+                }
+            case "loadProducts":
+                Task {
+                    let products = await self.loadProducts()
+                    DispatchQueue.main.async { result(["products": products]) }
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
         }
+    }
+
+    private func purchase(_ productId: String?) async -> [String: Any] {
+        guard let productId, !productId.isEmpty else {
+            return ["active": false, "message": "Missing product."]
+        }
+        do {
+            let products = try await Product.products(for: [productId])
+            guard let product = products.first else {
+                return ["active": false, "message": "That Pro product is not available yet."]
+            }
+            let purchaseResult = try await product.purchase()
+            switch purchaseResult {
+            case .success(let verification):
+                let transaction = try checkVerified(verification)
+                await transaction.finish()
+                return ["active": true]
+            case .userCancelled:
+                return ["active": false, "message": "Purchase cancelled."]
+            case .pending:
+                return ["active": false, "message": "Purchase is pending."]
+            @unknown default:
+                return ["active": false, "message": "Purchase could not be completed."]
+            }
+        } catch {
+            return ["active": false, "message": "Purchase could not be completed."]
+        }
+    }
+
+    private func loadProducts() async -> [[String: String]] {
+        let products = (try? await Product.products(for: productIds)) ?? []
+        return products.map { ["id": $0.id, "displayPrice": $0.displayPrice] }
     }
 
     private func isActive() async -> Bool {

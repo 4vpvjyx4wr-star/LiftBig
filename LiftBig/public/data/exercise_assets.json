@@ -1448,18 +1448,6 @@
     "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
   },
   {
-    "id": "deadbug",
-    "name": "Deadbug",
-    "thumbnail": "/assets/exercises/deadbug.png",
-    "animation": "/assets/exercises/gifs/deadbug.gif",
-    "primaryMuscles": [
-      "Core"
-    ],
-    "secondaryMuscles": [],
-    "source": "exercisedb-oss",
-    "licenseNote": "Non-commercial; attribute AscendAPI / ExerciseDB OSS"
-  },
-  {
     "id": "jump-squat",
     "name": "Jump Squat",
     "thumbnail": "/assets/exercises/jump-squat.png",
