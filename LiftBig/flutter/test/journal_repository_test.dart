@@ -1412,29 +1412,64 @@ void main() {
     final bench = (await journal.getDay('2026-07-02'))!.exercises.single;
     expect(bench.sets.where((set) => set.isWarmup), hasLength(1));
 
-    await journal.addExercise(
-      dateKey: '2026-07-03',
-      name: 'Deadlift',
-      prescribeWarmup: true,
-      sets: const [
-        JournalSet(id: 'd1', sortOrder: 0, reps: '5', weight: '315'),
-      ],
-    );
-    final dead = (await journal.getDay('2026-07-03'))!.exercises.single;
-    expect(dead.sets, hasLength(2));
-    expect(dead.sets.first.isWarmup, isTrue);
-    expect(dead.sets.last.isWarmup, isFalse);
+      await journal.addExercise(
+        dateKey: '2026-07-03',
+        name: 'Deadlift',
+        prescribeWarmup: true,
+        sets: const [
+          JournalSet(id: 'd1', sortOrder: 0, reps: '5', weight: '315'),
+        ],
+      );
+      final dead = (await journal.getDay('2026-07-03'))!.exercises.single;
+      expect(dead.sets, hasLength(2));
+      expect(dead.sets.first.isWarmup, isTrue);
+      expect(dead.sets.last.isWarmup, isFalse);
 
-    await journal.addExercise(
-      dateKey: '2026-07-04',
-      name: 'Lat Pulldown',
-      prescribeWarmup: true,
-      sets: const [
-        JournalSet(id: 'l1', sortOrder: 0, reps: '10', weight: '100'),
-      ],
+      await journal.addExercise(
+        dateKey: '2026-07-04',
+        name: 'Lat Pulldown',
+        prescribeWarmup: true,
+        sets: const [
+          JournalSet(id: 'l1', sortOrder: 0, reps: '10', weight: '100'),
+        ],
+      );
+      final pulldown = (await journal.getDay('2026-07-04'))!.exercises.single;
+      expect(pulldown.sets, hasLength(1));
+      expect(pulldown.sets.single.isWarmup, isFalse);
+    },
+  );
+
+  test('body weight history stays local and keeps a saved day', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(journal.db.close);
+    await journal.setBodyWeightLbs(180);
+    final history = await journal.bodyWeightHistory();
+    expect(history, hasLength(1));
+    expect(history.single.lbs, 180);
+    expect(history.single.dateKey, todayKey());
+    final merged = await journal.mergeImportedBodyWeights([
+      const BodyWeightPoint(dateKey: '2026-01-01', lbs: 175),
+      BodyWeightPoint(dateKey: history.single.dateKey, lbs: 190),
+    ]);
+    expect(merged.first.lbs, 175);
+    expect(merged.last.lbs, 180);
+    final cloud = await journal.localCloudSettings();
+    expect(
+      cloud!.preferences.containsKey(SettingKeys.bodyWeightHistory),
+      isFalse,
     );
-    final pulldown = (await journal.getDay('2026-07-04'))!.exercises.single;
-    expect(pulldown.sets, hasLength(1));
-    expect(pulldown.sets.single.isWarmup, isFalse);
+  });
+
+  test('logged Dead Bug names and the old id read as dead-bug', () async {
+    final journal = JournalRepository(AppDatabase(NativeDatabase.memory()));
+    addTearDown(journal.db.close);
+    await journal.addExercise(
+      dateKey: '2026-08-01',
+      name: 'Dead Bugs',
+      libraryId: 'deadbug',
+      sets: const [JournalSet(id: 's', sortOrder: 0, reps: '8', weight: '')],
+    );
+    final day = await journal.getDay('2026-08-01');
+    expect(day!.exercises.single.libraryId, 'dead-bug');
   });
 }

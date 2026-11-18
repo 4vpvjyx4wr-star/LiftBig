@@ -99,6 +99,28 @@ class BodyWeightSettingsService {
   Future<bool> setAppleHealthEnabled(bool enabled) async {
     await journal.setAppleHealthSyncEnabled(enabled);
     if (!enabled) return true;
-    return _health.requestAccess();
+    final granted = await _health.requestAccess();
+    await _health.requestStepReadAccess();
+    return granted;
+  }
+
+  /// Pulls Health weight samples into the local history when Health is on.
+  Future<List<BodyWeightPoint>> importWeightHistory() async {
+    await journal.seedBodyWeightHistoryIfEmpty();
+    if (!await journal.appleHealthSyncEnabled()) {
+      return journal.bodyWeightHistory();
+    }
+    final samples = await _health.readBodyWeightHistory();
+    return journal.mergeImportedBodyWeights([
+      for (final sample in samples)
+        BodyWeightPoint(dateKey: sample.dateKey, lbs: sample.lbs),
+    ]);
+  }
+
+  /// Asks for step read permission and returns the recent daily counts.
+  Future<List<StepDay>> loadRecentSteps() async {
+    if (!await journal.appleHealthSyncEnabled()) return const [];
+    await _health.requestStepReadAccess();
+    return _health.readRecentSteps();
   }
 }

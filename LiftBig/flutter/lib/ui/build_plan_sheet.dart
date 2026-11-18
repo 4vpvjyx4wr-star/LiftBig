@@ -38,10 +38,7 @@ Future<bool> showPastePlanSheet(
 }) async {
   final text = await showLiftBigSheet<String>(
     context,
-    builder: (context) => const SizedBox(
-      height: 420,
-      child: _PastePlanSheet(),
-    ),
+    builder: (context) => const _PastePlanSheet(),
   );
   if (text == null || !context.mounted) return false;
   final parsed = parsePastedPlan(text, catalog.lifts);
@@ -212,7 +209,9 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
           ),
         );
       }
-      built.add(BuiltPlanWorkout(name: workout.name.text, exercises: exercises));
+      built.add(
+        BuiltPlanWorkout(name: workout.name.text, exercises: exercises),
+      );
     }
     final payload = appendBuiltPlanToTemplatesJson(
       existing: await widget.journal.templatesJson(),
@@ -222,10 +221,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
     );
     if (!mounted) return;
     if (payload == null) {
-      showLiftBigNotice(
-        context,
-        'Add a plan name and at least one exercise.',
-      );
+      showLiftBigNotice(context, 'Add a plan name and at least one exercise.');
       return;
     }
     setState(() => _saving = true);
@@ -289,14 +285,17 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                   const SizedBox(height: 12),
                 ],
                 OutlinedButton.icon(
-                  onPressed: () => setState(() => _workouts.add(_DraftWorkout())),
+                  onPressed: () =>
+                      setState(() => _workouts.add(_DraftWorkout())),
                   icon: const Icon(Icons.add),
                   label: const Text('Add a workout'),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _saving ? null : _save,
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
                   child: Text(_saving ? 'Saving…' : 'Save Plan'),
                 ),
               ],
@@ -412,7 +411,10 @@ class _ExerciseFields extends StatelessWidget {
                 ),
               ),
               if (exercise.lift == null)
-                TextButton(onPressed: onMatch, child: const Text('Choose lift')),
+                TextButton(
+                  onPressed: onMatch,
+                  child: const Text('Choose lift'),
+                ),
               IconButton(
                 tooltip: 'Remove exercise',
                 visualDensity: VisualDensity.compact,
@@ -455,7 +457,9 @@ class _ExerciseFields extends StatelessWidget {
                 width: 88,
                 child: TextField(
                   controller: exercise.weight,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'Weight',
@@ -493,44 +497,61 @@ class _PastePlanSheetState extends State<_PastePlanSheet> {
   Widget build(BuildContext context) {
     return KeyboardDismiss(
       fill: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Paste a plan',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bounded =
+              constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
+          final fieldHeight = bounded
+              ? (constraints.maxHeight - 196).clamp(72.0, 140.0)
+              : 120.0;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Paste a plan',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Paste the days and exercises. A line like Bench Press 3x5 @ 185 is enough.',
+                  style: TextStyle(color: context.liftBig.muted, height: 1.35),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: fieldHeight,
+                  child: TextField(
+                    controller: _text,
+                    autofocus: true,
+                    expands: true,
+                    maxLines: null,
+                    textAlignVertical: TextAlignVertical.top,
+                    textCapitalization: TextCapitalization.sentences,
+                    keyboardType: TextInputType.multiline,
+                    decoration: const InputDecoration(
+                      hintText: 'Push\nBench Press 3x5 @ 185\n\nPull\nBarbell Row 4x6 @ 135',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () {
+                    final text = _text.text.trim();
+                    if (text.isEmpty) return;
+                    Navigator.pop(context, text);
+                  },
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: const Text('Read plan'),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Paste the days and exercises. A line like Bench Press 3x5 @ 185 is enough.',
-              style: TextStyle(color: context.liftBig.muted, height: 1.35),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _text,
-              autofocus: true,
-              minLines: 6,
-              maxLines: 8,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'Push\nBench Press 3x5 @ 185\n\nPull\nBarbell Row 4x6 @ 135',
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () {
-                final text = _text.text.trim();
-                if (text.isEmpty) return;
-                Navigator.pop(context, text);
-              },
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              child: const Text('Read plan'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

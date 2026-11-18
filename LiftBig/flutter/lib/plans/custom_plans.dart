@@ -37,6 +37,24 @@ Future<List<PremadePlan>> loadCustomPlans({
   return merged;
 }
 
+/// Premade and custom plans already in [favoriteIds], in that order.
+///
+/// The same plan objects are returned. Workouts are not copied.
+List<PremadePlan> favoritePlans({
+  required List<PremadePlan> premade,
+  required List<PremadePlan> custom,
+  required Set<String> favoriteIds,
+}) {
+  if (favoriteIds.isEmpty) return const [];
+  final seen = <String>{};
+  final out = <PremadePlan>[];
+  for (final plan in [...premade, ...custom]) {
+    if (!favoriteIds.contains(plan.id) || !seen.add(plan.id)) continue;
+    out.add(plan);
+  }
+  return out;
+}
+
 /// Favorites keep their relative order and sit above every other plan.
 List<PremadePlan> plansWithFavoritesFirst(
   List<PremadePlan> plans,

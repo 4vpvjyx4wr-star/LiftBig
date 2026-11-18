@@ -71,6 +71,8 @@ class _LiftBigAppState extends State<LiftBigApp>
   late final AnimationController _backdropMotion;
   final _navigatorKey = GlobalKey<NavigatorState>();
 
+  var _preferenceToken = 0;
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +82,15 @@ class _LiftBigAppState extends State<LiftBigApp>
     );
     _themes = LiftBigThemeController();
     _themes.addListener(_onTheme);
+    _preferenceToken = widget.sync.preferenceReloadToken;
+    widget.sync.addListener(_onSync);
+    _loadTheme();
+  }
+
+  void _onSync() {
+    final token = widget.sync.preferenceReloadToken;
+    if (token == _preferenceToken) return;
+    _preferenceToken = token;
     _loadTheme();
   }
 
@@ -110,6 +121,7 @@ class _LiftBigAppState extends State<LiftBigApp>
 
   @override
   void dispose() {
+    widget.sync.removeListener(_onSync);
     _themes.removeListener(_onTheme);
     _themes.dispose();
     _backdropMotion.dispose();

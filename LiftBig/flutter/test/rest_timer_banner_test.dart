@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liftbig/theme.dart';
 import 'package:liftbig/ui/rest_timer_banner.dart';
+import 'package:liftbig/ui/rest_timer_tile.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,5 +75,19 @@ void main() {
 
     await pumpAt(const Size(390, 844));
     await pumpAt(const Size(320, 568));
+  });
+
+  test('a new rest card is centered above the tab bar', () {
+    final offset = defaultRestTimerOffset(
+      const BoxConstraints(maxWidth: 390, maxHeight: 700),
+    );
+    expect(offset.dx, (390 - restTimerTileWidth) / 2);
+    expect(
+      offset.dy,
+      (700 - restTimerTabBarClearance - restTimerTileHeight) / 2,
+    );
+    expect(restTimerOffsetIsLegacyTopDefault(const Offset(100, 8)), isTrue);
+    expect(restTimerOffsetIsLegacyTopDefault(const Offset(12, 8.4)), isTrue);
+    expect(restTimerOffsetIsLegacyTopDefault(const Offset(40, 180)), isFalse);
   });
 }

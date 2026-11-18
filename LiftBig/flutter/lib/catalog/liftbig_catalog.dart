@@ -210,10 +210,10 @@ class LiftBigCatalog {
       throw FormatException('liftbig_catalog.json must be a JSON object.');
     }
     final json = Map<String, Object?>.from(decoded);
-    final lifts = [
+    final lifts = _keepOneDeadBug([
       for (final item in json['lifts'] as List)
         _lift(Map<String, Object?>.from(item as Map)),
-    ];
+    ]);
     final workouts = [
       for (final item in json['workouts'] as List)
         _workout(Map<String, Object?>.from(item as Map), lifts),
@@ -255,6 +255,49 @@ class LiftBigCatalog {
       quiz: quiz,
     );
   }
+}
+
+/// Names that fold to Dead Bug stay on the `dead-bug` card. The retired
+/// `deadbug` row is not a second library entry.
+List<LibraryLift> _keepOneDeadBug(List<LibraryLift> lifts) {
+  final out = <LibraryLift>[];
+  LibraryLift? canonical;
+  var slot = -1;
+  for (final lift in lifts) {
+    final dead =
+        lift.id == 'dead-bug' ||
+        lift.id == 'deadbug' ||
+        _catalogFoldKey(lift.name) == 'deadbug';
+    if (!dead) {
+      out.add(lift);
+      continue;
+    }
+    if (slot < 0) slot = out.length;
+    if (lift.id == 'dead-bug') {
+      canonical = lift;
+    } else {
+      canonical ??= lift;
+    }
+  }
+  if (canonical == null) return out;
+  if (canonical.id != 'dead-bug') {
+    canonical = LibraryLift(
+      id: 'dead-bug',
+      name: 'Dead Bug',
+      muscleGroups: canonical.muscleGroups,
+      tags: canonical.tags,
+      equipment: canonical.equipment,
+      summary: canonical.summary,
+      instructions: canonical.instructions,
+      tips: canonical.tips,
+      cues: canonical.cues,
+      tutorialUrl: canonical.tutorialUrl,
+      isCardio: canonical.isCardio,
+      repBasedCore: canonical.repBasedCore,
+    );
+  }
+  out.insert(slot < 0 ? out.length : slot, canonical);
+  return out;
 }
 
 LibraryLift _lift(Map<String, Object?> json) {
@@ -326,17 +369,29 @@ CatalogLift _catalogLift(Map<String, Object?> json, List<LibraryLift> lifts) {
     }
   }
   final folded = _singleFoldMatch(written, lifts);
-  final String name;
-  final String? libraryId;
-  if (linked != null && _catalogFoldKey(written) == _catalogFoldKey(linked.name)) {
+  var name = written;
+  String? libraryId;
+  if (linked != null &&
+      _catalogFoldKey(written) == _catalogFoldKey(linked.name)) {
     name = linked.name;
     libraryId = linked.id;
   } else if (linked == null && folded != null && (rawId is! String || rawId.isEmpty)) {
     name = folded.name;
     libraryId = folded.id;
   } else {
-    name = written;
-    libraryId = linked?.id ?? (rawId is String && rawId.isNotEmpty ? rawId : null);
+    libraryId =
+        linked?.id ?? (rawId is String && rawId.isNotEmpty ? rawId : null);
+  }
+  if (libraryId == 'deadbug' || _catalogFoldKey(name) == 'deadbug') {
+    LibraryLift? canonical;
+    for (final lift in lifts) {
+      if (lift.id == 'dead-bug') {
+        canonical = lift;
+        break;
+      }
+    }
+    name = canonical?.name ?? 'Dead Bug';
+    libraryId = 'dead-bug';
   }
   return CatalogLift(
     name: name,

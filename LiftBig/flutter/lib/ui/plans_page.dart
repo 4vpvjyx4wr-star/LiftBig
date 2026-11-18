@@ -612,6 +612,20 @@ class _PlansBody extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(
+          title: 'Favorites',
+          catalog: catalog,
+          plans: favoritePlans(
+            premade: _premadePlans,
+            custom: customPlans,
+            favoriteIds: favoritePlanIds,
+          ),
+          onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
+          emptyMessage: 'Star a premade or custom plan to keep it here.',
+        ),
+        const SizedBox(height: 8),
+        _SearchablePlanSection(
           title: 'Premade Plans',
           catalog: catalog,
           plans: _premadePlans,

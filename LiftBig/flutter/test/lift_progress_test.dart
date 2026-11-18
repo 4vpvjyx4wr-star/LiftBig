@@ -125,6 +125,19 @@ void main() {
     expect(series.single.name, 'Dead Bug');
     expect(series.single.sessions, hasLength(2));
     expect(LibraryNameIndex([deadBug]).matchName('Deadbugs')?.id, 'dead-bug');
+    final aliased = strengthSeries(
+      [
+        day('2026-04-01', [
+          lift('Deadbug', [working('8', '5')], libraryId: 'deadbug'),
+        ]),
+        day('2026-04-02', [
+          lift('Dead Bugs', [working('10', '5')]),
+        ]),
+      ],
+      lifts: [deadBug],
+    );
+    expect(aliased, hasLength(1));
+    expect(aliased.single.name, 'Dead Bug');
     expect(
       LibraryNameIndex([
         deadBug,
@@ -161,5 +174,34 @@ void main() {
     expect(snapshot.currentStreak, 2);
     expect(snapshot.nextStreakGoal, 3);
     expect(snapshot.weekTrained, hasLength(7));
+  });
+
+  test('journal milestones unlock the extra badges', () {
+    final days = [
+      day('2026-03-02', [
+        lift('Squat', [working('5', '200')]),
+        lift('Bench', [working('5', '150')]),
+        lift('Row', [working('8', '100')]),
+        lift('Press', [working('8', '80')]),
+        lift('Curl', [working('10', '40')]),
+      ]),
+      day('2026-03-03', [
+        lift('Squat', [working('5', '210')]),
+      ]),
+      day('2026-03-04', [
+        lift('Squat', [working('5', '215')]),
+      ]),
+      day('2026-03-05', [
+        lift('Squat', [working('5', '220')]),
+      ]),
+      day('2026-03-20', [
+        lift('Squat', [working('5', '225')]),
+      ]),
+    ];
+    final earned = unlockedAchievements(days);
+    expect(earned, contains('five-lifts'));
+    expect(earned, contains('personal-record'));
+    expect(earned, contains('week-4'));
+    expect(earned, contains('comeback'));
   });
 }
