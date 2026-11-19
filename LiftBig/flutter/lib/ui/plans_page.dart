@@ -552,7 +552,7 @@ class _PlansBody extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: const Text('Get a recommendation'),
+                    child: const Text('Get a Recommendation'),
                   )
                 else
                   _Quiz(
@@ -608,7 +608,7 @@ class _PlansBody extends StatelessWidget {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           icon: const Icon(Icons.content_paste),
-          label: const Text('Paste a plan'),
+          label: const Text('Paste a Plan'),
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(
