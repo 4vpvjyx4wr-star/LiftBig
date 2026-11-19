@@ -55,6 +55,16 @@ void main() {
     expect(formatWeightFromLbs(35.04, WeightUnit.lb), '35');
   });
 
+  test('stored journal weight follows the settings unit', () {
+    expect(formatStoredWeightWithUnit('135', WeightUnit.lb), '135 lb');
+    expect(formatStoredWeightWithUnit('135', WeightUnit.kg), '61.2 kg');
+    expect(
+      formatStoredWeightWithUnit('bodyweight', WeightUnit.kg),
+      'bodyweight',
+    );
+    expect(formatStoredWeightWithUnit('  ', WeightUnit.lb), '');
+  });
+
   test('numeric calendar date is zero-padded MM-DD-YYYY', () {
     expect(formatNumericDate('2026-10-06'), '10-06-2026');
     expect(formatNumericDate('2026-1-6'), '01-06-2026');
