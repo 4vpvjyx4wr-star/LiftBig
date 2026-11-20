@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (!mounted) return;
     if (finished == true) {
-      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow.');
+      showLiftBigNotice(context, 'Congrats on lifting big. See you tomorrow.');
     }
     await _reload();
   }
@@ -482,7 +482,7 @@ class _DayPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        workoutName ?? (resting ? 'Rest day' : 'No workout yet'),
+                        workoutName ?? (resting ? 'Rest Day' : 'No Workout Yet'),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

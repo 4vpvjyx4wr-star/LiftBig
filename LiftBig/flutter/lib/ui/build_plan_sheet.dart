@@ -349,7 +349,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                 TextField(
                   controller: _planName,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Plan name'),
+                  decoration: const InputDecoration(labelText: 'Plan Name'),
                 ),
                 const SizedBox(height: 16),
                 for (var i = 0; i < _workouts.length; i++) ...[
@@ -373,7 +373,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                 OutlinedButton.icon(
                   onPressed: () => setState(() => _workouts.add(_DraftWorkout())),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add a workout'),
+                  label: const Text('Add a Workout'),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -464,7 +464,7 @@ class _WorkoutEditor extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onAddExercise,
                 icon: const Icon(Icons.add),
-                label: const Text('Add an exercise'),
+                label: const Text('Add an Exercise'),
               ),
             ),
             if (canRemove)
@@ -472,7 +472,7 @@ class _WorkoutEditor extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: onRemove,
-                  child: const Text('Remove workout'),
+                  child: const Text('Remove Workout'),
                 ),
               ),
           ],
@@ -515,7 +515,7 @@ class _ExerciseFields extends StatelessWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Edit lift',
+                tooltip: 'Edit Lift',
                 icon: const Icon(Icons.edit_outlined),
                 onSelected: (value) {
                   if (value == 'lift') onMatch();
@@ -525,7 +525,7 @@ class _ExerciseFields extends StatelessWidget {
                   PopupMenuItem(
                     value: 'lift',
                     child: Text(
-                      exercise.lift == null ? 'Choose lift' : 'Change lift',
+                      exercise.lift == null ? 'Choose Lift' : 'Change Lift',
                     ),
                   ),
                   if (canLink)
@@ -533,8 +533,8 @@ class _ExerciseFields extends StatelessWidget {
                       value: 'superset',
                       child: Text(
                         linkedWithPrevious
-                            ? 'Remove from superset'
-                            : 'Superset with previous',
+                            ? 'Remove from Superset'
+                            : 'Superset with Previous',
                       ),
                     ),
                 ],
@@ -579,7 +579,7 @@ class _ExerciseFields extends StatelessWidget {
                   controller: exercise.reps,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Target reps',
+                    labelText: 'Target Reps',
                     isDense: true,
                   ),
                 ),
@@ -633,7 +633,7 @@ class _PastePlanSheetState extends State<_PastePlanSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Paste a plan',
+              'Paste a Plan',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
@@ -661,7 +661,7 @@ class _PastePlanSheetState extends State<_PastePlanSheet> {
                 Navigator.pop(context, text);
               },
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              child: const Text('Read plan'),
+              child: const Text('Read Plan'),
             ),
           ],
         ),

@@ -133,4 +133,26 @@ void main() {
     expect(find.text('SLED'), findsNothing);
     expect(find.text('BAR'), findsNothing);
   });
+
+  testWidgets('the bar alone does not say it is a sled', (tester) async {
+    final weight = TextEditingController(text: '45');
+    addTearDown(weight.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildLiftBigTheme(),
+        home: Scaffold(
+          body: BarbellSetPlateHint(
+            weightController: weight,
+            unit: WeightUnit.lb,
+            barLb: defaultBarLb,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('45 lb'), findsOneWidget);
+    expect(find.text('Just the bar — no plates needed.'), findsOneWidget);
+    expect(find.textContaining('sled'), findsNothing);
+  });
 }

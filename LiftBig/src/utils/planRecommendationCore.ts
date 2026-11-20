@@ -17,9 +17,9 @@ const GOAL_LABELS: Record<TrainingGoal, string> = {
 }
 
 const DURATION_LABELS: Record<WorkoutDuration, string> = {
-  quick: 'Quick duration',
-  standard: 'Standard duration',
-  long: 'Long sessions',
+  quick: 'Quick Duration',
+  standard: 'Standard Duration',
+  long: 'Long Sessions',
 }
 
 const EXPERIENCE_LABELS: Record<ExperienceLevel, string> = {

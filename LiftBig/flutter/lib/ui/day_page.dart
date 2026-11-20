@@ -1433,7 +1433,7 @@ class _DayPageState extends State<DayPage> {
 
   Widget _notesButton() {
     return _headerToolButton(
-      tooltip: _notesOpen ? 'Hide notes' : 'Notes',
+      tooltip: _notesOpen ? 'Hide Notes' : 'Notes',
       onPressed: _toggleNotes,
       icon: const Icon(Icons.note_outlined, size: 22),
     );
@@ -1458,7 +1458,7 @@ class _DayPageState extends State<DayPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _headerToolButton(
-                  tooltip: 'Add lift',
+                  tooltip: 'Add Lift',
                   onPressed: _openAddExercise,
                   icon: const Icon(Icons.add, size: 22),
                 ),
@@ -1602,7 +1602,7 @@ class _DayPageState extends State<DayPage> {
                 if (!_assigning) _assignPlan();
               },
               style: planStyle,
-              child: const Text('Add plan'),
+              child: const Text('Add Plan'),
             ),
           ),
         ],
@@ -1802,7 +1802,7 @@ class _DayPageState extends State<DayPage> {
                 value: 'notes',
                 child: ToolMenuLabel(
                   icon: const ForegroundIcon(Icons.note_outlined),
-                  label: _notesOpen ? 'Hide notes' : 'Notes',
+                  label: _notesOpen ? 'Hide Notes' : 'Notes',
                 ),
               ),
               PopupMenuItem(
@@ -1824,7 +1824,7 @@ class _DayPageState extends State<DayPage> {
                 value: 'add',
                 child: ToolMenuLabel(
                   icon: ForegroundIcon(Icons.add),
-                  label: 'Add lift',
+                  label: 'Add Lift',
                 ),
               ),
             ],
@@ -3292,7 +3292,7 @@ class _ExerciseNotesPanelState extends State<_ExerciseNotesPanel> {
                   const SizedBox(height: 8),
                   if (widget.priorNotes.isNotEmpty) ...[
                     const Text(
-                      'Earlier sessions',
+                      'Earlier Sessions',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 12,

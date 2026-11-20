@@ -73,8 +73,8 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
           if (catalog.starterWorkouts.isNotEmpty)
             PremadePlan(
               id: 'starter-workouts',
-              name: 'Starter workouts',
-              purpose: 'Single sessions',
+              name: 'Starter Workouts',
+              purpose: 'Single sessions that are not part of a multi-day plan.',
               workouts: catalog.starterWorkouts,
             ),
           ...custom.where((plan) => plan.workouts.isNotEmpty),
