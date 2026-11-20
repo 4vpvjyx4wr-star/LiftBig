@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';
 
 enum MergeSide { local, remote }
@@ -97,4 +98,52 @@ bool sameDayContent(JournalDay left, JournalDay right) {
 
 bool sameSettingsContent(CloudSettings left, CloudSettings right) {
   return jsonEncode(left.toMap()) == jsonEncode(right.toMap());
+}
+
+/// Keeps a real height or body weight from either side.
+///
+/// A blank value must not replace a number. Theme and the other preferences
+/// still follow [primary].
+CloudSettings preserveBodyMeasurements(
+  CloudSettings primary,
+  CloudSettings? fallback,
+) {
+  final preferences = Map<String, String>.from(primary.preferences);
+  final height = _keptMeasurement(
+    preferences[SettingKeys.heightInches],
+    fallback?.preferences[SettingKeys.heightInches],
+  );
+  final bodyText = _keptMeasurement(
+    preferences[SettingKeys.bodyWeightLbs],
+    fallback?.preferences[SettingKeys.bodyWeightLbs] ??
+        fallback?.bodyWeightLbs?.toString(),
+  );
+  final resolvedBody = bodyText ?? primary.bodyWeightLbs?.toString();
+  if (height == null) {
+    preferences.remove(SettingKeys.heightInches);
+  } else {
+    preferences[SettingKeys.heightInches] = height;
+  }
+  if (resolvedBody == null || resolvedBody.trim().isEmpty) {
+    preferences.remove(SettingKeys.bodyWeightLbs);
+  } else {
+    preferences[SettingKeys.bodyWeightLbs] = resolvedBody;
+  }
+  final parsedBody = double.tryParse(resolvedBody?.trim() ?? '');
+  return CloudSettings(
+    updatedAt: primary.updatedAt,
+    weightUnit: primary.weightUnit,
+    bodyWeightLbs: parsedBody == null || parsedBody <= 0 ? null : parsedBody,
+    templatesJson: primary.templatesJson,
+    settingsJson: primary.settingsJson,
+    preferences: preferences,
+  );
+}
+
+String? _keptMeasurement(String? primary, String? fallback) {
+  final current = primary?.trim() ?? '';
+  if (current.isNotEmpty) return primary;
+  final previous = fallback?.trim() ?? '';
+  if (previous.isNotEmpty) return fallback;
+  return null;
 }

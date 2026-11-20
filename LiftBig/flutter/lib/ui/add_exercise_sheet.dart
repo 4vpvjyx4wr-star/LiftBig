@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../catalog/lift_search.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../theme.dart';
 import 'keyboard_dismiss.dart';

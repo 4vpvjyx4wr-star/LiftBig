@@ -43,7 +43,12 @@ String? plateColorHex(double weightLb) {
 
 const double defaultBarLb = 45;
 
-const List<double> barChoicesLb = [45, 35];
+/// Olympic bars plus the lighter bars a Smith machine or gym often has.
+const List<double> barChoicesLb = [45, 35, 25, 15];
+
+/// Smith bars are often unmarked. 25 lb is the starting guess until the
+/// lifter sets the bar they are using.
+const double defaultSmithBarLb = 25;
 
 class PlateQuickRow {
   const PlateQuickRow({required this.label, required this.weightLb});

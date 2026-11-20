@@ -36,6 +36,7 @@
 		LBHRN0012FE100010072D401 /* horn.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBHRN0112FE100010072D401 /* horn.wav */; };
 		LBPUL0012FE100010072D401 /* pulse.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBPUL0112FE100010072D401 /* pulse.wav */; };
 		LBWHI0012FE100010072D401 /* whistle.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBWHI0112FE100010072D401 /* whistle.wav */; };
+		LBBOI0012FE100010072D401 /* boing.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBOI0112FE100010072D401 /* boing.wav */; };
 		LBPV00112FE100010072D401 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = LBPV01112FE100010072D401 /* PrivacyInfo.xcprivacy */; };
 		LBGS00112FE100010072D401 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = LBGS01112FE100010072D401 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
@@ -142,6 +143,7 @@
 		LBHRN0112FE100010072D401 /* horn.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = horn.wav; sourceTree = "<group>"; };
 		LBPUL0112FE100010072D401 /* pulse.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pulse.wav; sourceTree = "<group>"; };
 		LBWHI0112FE100010072D401 /* whistle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = whistle.wav; sourceTree = "<group>"; };
+		LBBOI0112FE100010072D401 /* boing.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = boing.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -236,6 +238,7 @@
 				LBCHM0112FE100010072D401 /* chime.wav */,
 				LBHRN0112FE100010072D401 /* horn.wav */,
 				LBWHI0112FE100010072D401 /* whistle.wav */,
+				LBBOI0112FE100010072D401 /* boing.wav */,
 				LBPUL0112FE100010072D401 /* pulse.wav */,
 				LBGNG0112FE100010072D401 /* gong.wav */,
 				LBDIG0112FE100010072D401 /* digital.wav */,
@@ -431,6 +434,7 @@
 				LBCHM0012FE100010072D401 /* chime.wav in Resources */,
 				LBHRN0012FE100010072D401 /* horn.wav in Resources */,
 				LBWHI0012FE100010072D401 /* whistle.wav in Resources */,
+				LBBOI0012FE100010072D401 /* boing.wav in Resources */,
 				LBPUL0012FE100010072D401 /* pulse.wav in Resources */,
 				LBGNG0012FE100010072D401 /* gong.wav in Resources */,
 				LBDIG0012FE100010072D401 /* digital.wav in Resources */,

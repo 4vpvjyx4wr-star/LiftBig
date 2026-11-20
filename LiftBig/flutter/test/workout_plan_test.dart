@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health/health.dart';
+import 'package:liftbig/catalog/lift_search.dart';
 import 'package:liftbig/catalog/liftbig_catalog.dart';
 import 'package:liftbig/companion/watch_session.dart';
 import 'package:liftbig/date_key.dart';

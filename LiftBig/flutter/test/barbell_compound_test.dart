@@ -82,7 +82,8 @@ void main() {
     expect(standardBarLbFromStored(null), defaultBarLb);
     expect(standardBarLbFromStored('45'), 45);
     expect(standardBarLbFromStored('35'), 35);
-    expect(standardBarLbFromStored('20'), defaultBarLb);
+    expect(standardBarLbFromStored('20'), 20);
+    expect(standardBarLbFromStored('2'), defaultBarLb);
   });
 
   testWidgets('barbell hint draws the bar and a hidden machine graphic stays text', (

@@ -43,6 +43,9 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
 
   bool syncEnabled = false;
   bool busy = false;
+
+  /// Increases when a sync writes account preferences onto this phone.
+  var settingsRevision = 0;
   String? email;
   String? status;
   AccountReauthMethod reauthMethod = AccountReauthMethod.unsupported;
@@ -336,6 +339,7 @@ class SyncController extends ChangeNotifier with WidgetsBindingObserver {
         status = result.skippedReason == null
             ? summary
             : '$summary ${result.skippedReason}';
+        if (result.settingsChanged) settingsRevision += 1;
       } while (_rerunWhenIdle && passes < 3);
     } catch (error) {
       status = 'Sync failed: $error';

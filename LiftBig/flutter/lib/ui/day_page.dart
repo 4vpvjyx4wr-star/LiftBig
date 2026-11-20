@@ -916,11 +916,17 @@ class _DayPageState extends State<DayPage> {
       await _load(syncHealth: false);
       return;
     }
+    if (message.restSeconds != null) {
+      await widget.journal.setChosenRestSeconds(
+        widget.dateKey,
+        message.restSeconds!,
+      );
+    }
     final completed = await widget.journal.persistCompanionMessage(message);
     if (!mounted) return;
     await _load(syncHealth: true);
     if (!mounted || !completed || !_startTimerOnDone) return;
-    final seconds = _day?.chosenRestSeconds ?? _averageRest;
+    final seconds = message.restSeconds ?? _day?.chosenRestSeconds ?? _averageRest;
     final exercise = _day?.exercises
         .where((item) => item.id == message.exerciseId)
         .firstOrNull;
@@ -1837,6 +1843,7 @@ class _DayPageState extends State<DayPage> {
                   onReset: rest.reset,
                   onFloat: () => rest.setChrome(RestTimerChrome.floating),
                   onCancel: rest.dismiss,
+                  onOpen: () => showRestTimerMenu(context, rest),
                 ),
               ),
             Row(
@@ -1886,6 +1893,10 @@ class _DayPageState extends State<DayPage> {
               child: PlateGraphicConfig(
                 showGraphic: _showPlateGraphic,
                 barLb: _barLb,
+                onBarLb: (lb) {
+                  setState(() => _barLb = lb);
+                  widget.journal.setPlateBarLb(lb);
+                },
                 child: PredictedRepsScope(
                   reps: _predictedReps,
                   child: logBody,
@@ -2226,6 +2237,9 @@ class _ExerciseCard extends StatelessWidget {
       repsHint: _repsGhost(set),
       machineKind: kind,
       machineStarting: starting,
+      onMachineStarting: kind == null
+          ? null
+          : (value) => onMachineStartingChanged(kind, value),
       weightUnit: weightUnit,
       barbellPlates: isBarbellCompoundPlateLift(
         libraryId: exercise.libraryId,
@@ -2780,6 +2794,7 @@ class _SetFields extends StatelessWidget {
     this.duration,
     this.machineKind,
     this.machineStarting,
+    this.onMachineStarting,
     this.weightUnit = WeightUnit.lb,
     this.barbellPlates = false,
   });
@@ -2801,6 +2816,7 @@ class _SetFields extends StatelessWidget {
   final String repsHint;
   final VariableMachineKind? machineKind;
   final TextEditingController? machineStarting;
+  final ValueChanged<String>? onMachineStarting;
   final WeightUnit weightUnit;
   final bool barbellPlates;
 
@@ -2898,13 +2914,28 @@ class _SetFields extends StatelessWidget {
               ),
             ),
           ),
-          if (machineKind != null && machineStarting != null)
+          if (machineKind == VariableMachineKind.smith &&
+              machineStarting != null &&
+              plates.showGraphic)
+            BarbellSetPlateHint(
+              weightController: weight,
+              unit: weightUnit,
+              barController: machineStarting,
+              emptyBarLb: defaultSmithBarLb,
+              onChangeBar: (lb) {
+                final display = lbsToDisplayWeightString(lb, weightUnit);
+                machineStarting!.text = display;
+                onMachineStarting?.call(display);
+              },
+            )
+          else if (machineKind != null && machineStarting != null)
             MachineSetPlateHint(
               kind: machineKind!,
               startingController: machineStarting!,
               weightController: weight,
               unit: weightUnit,
               showGraphic: plates.showGraphic,
+              onStartingChanged: onMachineStarting,
             ),
           if (barbellPlates && machineKind == null && plates.showGraphic)
             BarbellSetPlateHint(

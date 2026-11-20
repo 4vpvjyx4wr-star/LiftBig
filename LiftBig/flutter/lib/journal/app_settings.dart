@@ -86,6 +86,7 @@ class RestTimerAlertSettings {
     'pulse',
     'gong',
     'digital',
+    'boing',
   ];
 
   static const defaults = RestTimerAlertSettings(

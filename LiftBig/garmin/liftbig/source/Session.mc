@@ -98,7 +98,13 @@ class Session {
             weightUnit = data["weightUnit"] as String;
         }
         if (data["restSeconds"] != null) {
-            restPreset = clampRest(asInt(data["restSeconds"]));
+            var incoming = clampRest(asInt(data["restSeconds"]));
+            // A local change stays until the phone echoes that same duration.
+            // An older lineup still carries the previous preset.
+            if (restHold == false || incoming == restPreset) {
+                restPreset = incoming;
+                restHold = false;
+            }
         }
         applyPhoneRest(data);
         var keepId = "";
@@ -380,6 +386,8 @@ class Session {
             return;
         }
         restPreset = next;
+        restHold = true;
+        bumpRestRev();
         if (restRemaining > 0 && restPaused == false && restEndsAt > 0) {
             var ends = restEndsAt + change;
             var now = unixNow();
@@ -526,6 +534,7 @@ class Session {
         restPaused = false;
         restRemaining = restPreset;
         restEndsAt = unixNow() + restPreset;
+        restHold = false;
         timer.stop();
         timer.start(method(:tickRest), 1000, true);
         persistRest();
@@ -875,8 +884,13 @@ class Session {
             return;
         }
         tonesLeft = tonesLeft - 1;
-        if (Attention has :playTone) {
-            Attention.playTone(Attention.TONE_LOUD_BEEP);
+        try {
+            if (Attention has :playTone) {
+                Attention.playTone(Attention.TONE_LOUD_BEEP);
+            }
+        } catch (ex) {
+            tonesLeft = 0;
+            toneTimer.stop();
         }
         if (tonesLeft <= 0) {
             toneTimer.stop();
@@ -1264,24 +1278,31 @@ function cueUndo() as Void {
 
 function cueRestDone() as Void {
     var session = getApp().session;
-    if (Attention has :backlight) {
-        Attention.backlight(true);
+    // A throw here runs inside the rest timer and Connect IQ replaces the
+    // app with the blue IQ screen, which does not take taps.
+    try {
+        if (Attention has :backlight) {
+            Attention.backlight(true);
+        }
+    } catch (ex) {
     }
-    if (Attention has :vibrate) {
-        Attention.vibrate([
-            new Attention.VibeProfile(100, 400),
-            new Attention.VibeProfile(0, 140),
-            new Attention.VibeProfile(100, 400),
-            new Attention.VibeProfile(0, 140),
-            new Attention.VibeProfile(100, 400),
-            new Attention.VibeProfile(0, 140),
-            new Attention.VibeProfile(100, 500),
-            new Attention.VibeProfile(0, 140),
-            new Attention.VibeProfile(100, 500)
-        ]);
+    try {
+        if (Attention has :vibrate) {
+            Attention.vibrate([
+                new Attention.VibeProfile(100, 400),
+                new Attention.VibeProfile(0, 160),
+                new Attention.VibeProfile(100, 400),
+                new Attention.VibeProfile(0, 160),
+                new Attention.VibeProfile(100, 500)
+            ]);
+        }
+    } catch (ex) {
     }
-    if (session.soundEnabled) {
-        session.playRestTones();
+    try {
+        if (session.soundEnabled) {
+            session.playRestTones();
+        }
+    } catch (ex) {
     }
 }
 

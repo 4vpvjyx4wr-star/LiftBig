@@ -44,6 +44,96 @@ class LibraryNameIndex {
   }
 }
 
+/// Short names the log uses for a library id. Lookup only.
+const loggedLibraryAliases = <String, Set<String>>{
+  'bench-press': {'barbell bench press', 'bench press', 'flat bench', 'bench'},
+  'flat-dumbbell-press': {
+    'dumbbell bench press',
+    'flat dumbbell press',
+    'dumbbell bench',
+  },
+  'incline-dumbbell-press': {
+    'incline dumbbell bench press',
+    'incline dumbbell press',
+  },
+  'decline-bench-press': {
+    'decline barbell bench press',
+    'decline bench press',
+    'decline bench',
+  },
+  'squat': {'barbell back squat', 'back squat', 'squat', 'squats'},
+  'front-squat': {'front squat', 'front squats'},
+  'deadlift': {'conventional deadlift', 'deadlift', 'barbell deadlift'},
+  'romanian-deadlift': {
+    'romanian deadlift (rdl)',
+    'romanian deadlift',
+    'rdl',
+  },
+  'sumo-deadlift': {'sumo deadlift'},
+  'overhead-press': {'overhead press', 'ohp', 'military press', 'strict press'},
+  'barbell-row': {'barbell row', 'bent over row', 'bent-over row'},
+  'pendlay-row': {'pendlay row'},
+  'hip-thrust': {'hip thrust', 'hip thrusts'},
+  'good-morning': {'good morning', 'good mornings'},
+};
+
+/// Library lift for a logged name. Id wins, then the exact library name,
+/// then a parenthetical or a known short name such as Bench Press.
+LibraryLift? matchLoggedLibraryLift(
+  Iterable<LibraryLift> lifts, {
+  required String name,
+  String? libraryId,
+}) {
+  final list = lifts is List<LibraryLift> ? lifts : lifts.toList();
+  final id = libraryId?.trim();
+  if (id != null && id.isNotEmpty) {
+    for (final lift in list) {
+      if (lift.id == id) return lift;
+    }
+  }
+  final indexed = LibraryNameIndex(list).matchName(name);
+  if (indexed != null) return indexed;
+  final trimmed = name.trim().toLowerCase();
+  if (trimmed.isEmpty) return null;
+  final withoutParen = [
+    for (final lift in list)
+      if (_nameWithoutParenthetical(lift.name).toLowerCase() == trimmed) lift,
+  ];
+  if (withoutParen.length == 1) return withoutParen.single;
+  final aliasIds = [
+    for (final entry in loggedLibraryAliases.entries)
+      if (entry.value.contains(trimmed)) entry.key,
+  ];
+  if (aliasIds.length == 1) {
+    for (final lift in list) {
+      if (lift.id == aliasIds.single) return lift;
+    }
+  }
+  final key = normalizeForExerciseMatch(name);
+  if (key.isEmpty) return null;
+  final stripped = [
+    for (final lift in list)
+      if (_withoutLeadingEquipment(normalizeForExerciseMatch(lift.name)) == key)
+        lift,
+  ];
+  if (stripped.length == 1) return stripped.single;
+  return null;
+}
+
+String _nameWithoutParenthetical(String name) {
+  return name.replaceAll(RegExp(r'\s*\([^)]*\)\s*'), ' ').trim();
+}
+
+String _withoutLeadingEquipment(String normalized) {
+  const prefixes = ['barbell', 'dumbbell'];
+  for (final prefix in prefixes) {
+    if (normalized.startsWith(prefix) && normalized.length > prefix.length) {
+      return normalized.substring(prefix.length);
+    }
+  }
+  return normalized;
+}
+
 /// Same movement spelling after normalization — not token/suffix near-match.
 bool isExactNormalizedExerciseNameMatch(String a, String b) {
   final left = normalizeForExerciseMatch(a);

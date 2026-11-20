@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../data/app_database.dart';
+import '../debug/agent_log.dart';
 import '../journal/journal_repository.dart';
 import '../rest/rest_timer_controller.dart';
 import '../rest/rest_timer_state.dart';
@@ -64,6 +65,7 @@ class RestTimerOverlay extends StatelessWidget {
         }
         if (!controller.showsFloatingCard) return const SizedBox.shrink();
         return RestTimerTileOverlay(
+          key: ValueKey(controller.snapshot.endAtEpochMs),
           journal: journal,
           remaining: controller.remaining,
           running: controller.isRunning,
@@ -330,6 +332,7 @@ class RestTimerTileOverlay extends StatefulWidget {
 
 class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
   Offset? _offset;
+  var _loggedPlacement = false;
 
   @override
   void initState() {
@@ -376,7 +379,28 @@ class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
       padding: EdgeInsets.only(top: top, bottom: bottom),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final offset = _clamp(_offset ?? _defaultOffset(constraints), constraints);
+          final fallback = _defaultOffset(constraints);
+          final offset = _clamp(_offset ?? fallback, constraints);
+          // #region agent log
+          if (!_loggedPlacement) {
+            _loggedPlacement = true;
+            agentDebugLog(
+              location: 'rest_timer_tile.dart:build',
+              message: 'floating rest card placement',
+              hypothesisId: 'D',
+              data: {
+                'storedDx': _offset?.dx,
+                'storedDy': _offset?.dy,
+                'usedDx': offset.dx,
+                'usedDy': offset.dy,
+                'defaultDy': fallback.dy,
+                'maxWidth': constraints.maxWidth,
+                'maxHeight': constraints.maxHeight,
+                'tileHeight': restTimerTileHeight,
+              },
+            );
+          }
+          // #endregion
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -415,7 +439,13 @@ class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
 
 Offset _defaultOffset(BoxConstraints constraints) {
   final width = constraints.maxWidth.isFinite ? constraints.maxWidth : restTimerTileWidth;
-  return Offset(math.max(0, (width - restTimerTileWidth) / 2), 8);
+  final height = constraints.maxHeight.isFinite
+      ? constraints.maxHeight
+      : restTimerTileHeight;
+  return Offset(
+    math.max(0, (width - restTimerTileWidth) / 2),
+    math.max(0, (height - restTimerTileHeight) / 2),
+  );
 }
 
 Offset _clamp(Offset offset, BoxConstraints constraints) {

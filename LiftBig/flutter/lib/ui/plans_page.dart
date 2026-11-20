@@ -5,6 +5,7 @@ import '../journal/journal_repository.dart';
 import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../plans/custom_plans.dart';
+import '../plans/pasted_plan.dart';
 import '../plans/plan_quiz.dart';
 import '../plans/plan_schedule.dart';
 import '../plans/workout_shuffle.dart';
@@ -279,6 +280,31 @@ class _PlansPageState extends State<PlansPage> {
     showLiftBigNotice(context, 'Plan saved under Custom Plans.');
   }
 
+  Future<void> _editCustomPlan(LiftBigCatalog catalog, PremadePlan plan) async {
+    if (plan.workouts.isEmpty || plan.id.startsWith('journal:')) {
+      showLiftBigNotice(
+        context,
+        'This name is on your calendar, and the workouts were not saved as a plan.',
+      );
+      return;
+    }
+    final saved = await showBuildPlanSheet(
+      context,
+      catalog: catalog,
+      journal: widget.journal,
+      initial: customPlanAsParsed(plan, catalog.lifts),
+      replacePlanId: plan.id,
+    );
+    if (!mounted || saved != true) return;
+    setState(() {
+      _customPlansFuture = loadCustomPlans(
+        journal: widget.journal,
+        catalog: catalog,
+      );
+    });
+    showLiftBigNotice(context, 'Plan updated.');
+  }
+
   void _applyIntent(LiftBigCatalog catalog) {
     if (_appliedIntent || widget.initialIntent == PlansIntent.none) return;
     _appliedIntent = true;
@@ -402,6 +428,7 @@ class _PlansPageState extends State<PlansPage> {
               onOpenShuffle: () => _openShuffleSheet(catalog),
               onBuildPlan: () => _openBuildPlanSheet(catalog),
               onPastePlan: () => _openPastePlanSheet(catalog),
+              onEditCustomPlan: (plan) => _editCustomPlan(catalog, plan),
               favoritePlanIds: _favoritePlanIds,
               onFavoriteChanged: _setFavorite,
               calendarPlanName: _calendarPlanName,
@@ -430,6 +457,7 @@ class _PlansBody extends StatelessWidget {
     required this.onOpenShuffle,
     required this.onBuildPlan,
     required this.onPastePlan,
+    required this.onEditCustomPlan,
     required this.favoritePlanIds,
     required this.onFavoriteChanged,
     required this.calendarPlanName,
@@ -450,6 +478,7 @@ class _PlansBody extends StatelessWidget {
   final VoidCallback onOpenShuffle;
   final VoidCallback onBuildPlan;
   final VoidCallback onPastePlan;
+  final ValueChanged<PremadePlan> onEditCustomPlan;
   final Set<String> favoritePlanIds;
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
   final String? calendarPlanName;
@@ -643,6 +672,7 @@ class _PlansBody extends StatelessWidget {
           onLog: onLogWorkout,
           favoritePlanIds: favoritePlanIds,
           onFavoriteChanged: onFavoriteChanged,
+          onEditPlan: onEditCustomPlan,
           emptyMessage: 'You have not created a plan yet.',
         ),
       ],
@@ -714,12 +744,14 @@ class _PlanTile extends StatelessWidget {
     required this.onLog,
     required this.favorited,
     required this.onFavoriteChanged,
+    this.onEdit,
   });
 
   final PremadePlan plan;
   final Future<void> Function(CatalogWorkout workout, String? planName) onLog;
   final bool favorited;
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -739,7 +771,20 @@ class _PlanTile extends StatelessWidget {
             color: favorited ? context.liftBig.primary : context.liftBig.foreground,
           ),
         ),
-        title: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(plan.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            if (onEdit != null)
+              IconButton(
+                tooltip: 'Edit Plan',
+                visualDensity: VisualDensity.compact,
+                onPressed: onEdit,
+                icon: Icon(Icons.edit_outlined, color: context.liftBig.primary),
+              ),
+          ],
+        ),
         subtitle: Text(
           '${plan.workouts.length} workouts'
           '${plan.purpose.isEmpty ? '' : ' · ${plan.purpose}'}',
@@ -1078,6 +1123,7 @@ class _SearchablePlanSection extends StatefulWidget {
     required this.onFavoriteChanged,
     this.header,
     this.emptyMessage,
+    this.onEditPlan,
   });
 
   final String title;
@@ -1088,6 +1134,7 @@ class _SearchablePlanSection extends StatefulWidget {
   final Future<void> Function(String planId, bool favorited) onFavoriteChanged;
   final Widget? header;
   final String? emptyMessage;
+  final ValueChanged<PremadePlan>? onEditPlan;
 
   @override
   State<_SearchablePlanSection> createState() => _SearchablePlanSectionState();
@@ -1156,6 +1203,9 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
                 onLog: widget.onLog,
                 favorited: widget.favoritePlanIds.contains(plan.id),
                 onFavoriteChanged: widget.onFavoriteChanged,
+                onEdit: widget.onEditPlan == null
+                    ? null
+                    : () => widget.onEditPlan!(plan),
               ),
         ],
       ),

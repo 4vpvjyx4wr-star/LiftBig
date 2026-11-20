@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../debug/agent_log.dart';
 import '../theme.dart';
 
 /// Keyboard overlap in logical pixels, including when a scaffold has already
@@ -56,6 +57,7 @@ class KeyboardDismiss extends StatefulWidget {
 
 class _KeyboardDismissState extends State<KeyboardDismiss> {
   bool _open = false;
+  double _loggedLift = -1;
 
   @override
   void initState() {
@@ -90,6 +92,28 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
     final open = _open;
     final lift = media > 0 ? media : 0.0;
     final bar = open ? KeyboardDismissScaffold.toolbarHeight : 0.0;
+    // #region agent log
+    if (lift != _loggedLift) {
+      _loggedLift = lift;
+      agentDebugLog(
+        location: 'keyboard_dismiss.dart:build',
+        message: 'keyboard inset applied',
+        hypothesisId: 'C',
+        data: {
+          'fill': widget.fill,
+          'mediaInset': media,
+          'lift': lift,
+          'bar': bar,
+          'open': open,
+          'rawViewInset': () {
+            final view = View.maybeOf(context);
+            if (view == null || view.devicePixelRatio == 0) return null;
+            return view.viewInsets.bottom / view.devicePixelRatio;
+          }(),
+        },
+      );
+    }
+    // #endregion
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) => dismissKeyboardIfOutside(event.position),
@@ -98,8 +122,15 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
           final bounded =
               constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
           if (!widget.fill || !bounded) {
+            // A modal sheet already pads by the keyboard inset and still
+            // reports that inset. Subtracting it again throws the sheet
+            // to the top and covers the field.
+            final screen = MediaQuery.sizeOf(context).height;
+            final alreadyLifted =
+                bounded && lift > 0 && constraints.maxHeight + lift <= screen - 8;
+            final extra = alreadyLifted ? 0.0 : lift;
             final limit = bounded
-                ? (constraints.maxHeight - lift - bar).clamp(0.0, constraints.maxHeight)
+                ? (constraints.maxHeight - extra - bar).clamp(0.0, constraints.maxHeight)
                 : double.infinity;
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -109,7 +140,7 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
                   child: widget.child,
                 ),
                 if (open) const KeyboardDoneBar(),
-                if (lift > 0) SizedBox(height: lift),
+                if (extra > 0) SizedBox(height: extra),
               ],
             );
           }

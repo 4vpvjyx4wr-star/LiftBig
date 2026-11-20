@@ -53,4 +53,27 @@ void main() {
     expect(chooseNewerSettings(local, remote)!.side, MergeSide.remote);
     expect(chooseNewerSettings(remote, local)!.settings.weightUnit, 'kg');
   });
+
+  test('a blank height and weight keep the number from the other side', () {
+    const phone = CloudSettings(
+      updatedAt: '2026-11-20T12:00:00.000Z',
+      preferences: {
+        'height_inches': '70',
+        'body_weight_lbs': '180',
+        'color_theme_id': 'default',
+      },
+    );
+    const account = CloudSettings(
+      updatedAt: '2026-11-21T12:00:00.000Z',
+      preferences: {
+        'height_inches': '',
+        'body_weight_lbs': '',
+        'color_theme_id': 'forest',
+      },
+    );
+    final kept = preserveBodyMeasurements(account, phone);
+    expect(kept.preferences['color_theme_id'], 'forest');
+    expect(kept.preferences['height_inches'], '70');
+    expect(kept.preferences['body_weight_lbs'], '180');
+  });
 }

@@ -13,6 +13,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    RestNotificationStopBridge.install()
     let messenger = engineBridge.applicationRegistrar.messenger()
     CompanionBridge.shared.register(messenger: messenger)
     RestAlarmPlayer.register(messenger: messenger)

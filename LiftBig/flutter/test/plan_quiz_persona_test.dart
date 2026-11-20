@@ -163,4 +163,119 @@ void main() {
     expect(lift.sets, hasLength(5));
     expect(lift.sets.map((set) => set.reps), everyElement('5-8'));
   });
+
+  test('editing a built plan replaces that plan and keeps the others', () {
+    const catalog = LiftBigCatalog(
+      lifts: [],
+      plans: [],
+      starterWorkouts: [],
+      quiz: [],
+    );
+    var next = 0;
+    final first = appendBuiltPlanToTemplatesJson(
+      existing: null,
+      planName: 'Hotel Week',
+      workouts: [
+        BuiltPlanWorkout(
+          name: 'Day A',
+          exercises: [
+            BuiltPlanExercise(
+              lift: _lift('goblet-squat', 'Goblet Squat'),
+              setCount: 3,
+              targetReps: '8-12',
+            ),
+          ],
+        ),
+      ],
+      createId: () => 'id-${next++}',
+    );
+    final second = appendBuiltPlanToTemplatesJson(
+      existing: first,
+      planName: 'Beach Week',
+      workouts: [
+        BuiltPlanWorkout(
+          name: 'Push',
+          exercises: [
+            BuiltPlanExercise(lift: _lift('bench-press', 'Bench Press')),
+          ],
+        ),
+      ],
+      createId: () => 'id-${next++}',
+    );
+    final original = parseCustomPlansFromTemplatesJson(second, catalog)
+        .singleWhere((plan) => plan.name == 'Hotel Week');
+    final edited = appendBuiltPlanToTemplatesJson(
+      existing: second,
+      planName: 'Hotel Week Updated',
+      replacePlanId: original.id,
+      workouts: [
+        BuiltPlanWorkout(
+          name: 'Day A',
+          exercises: [
+            BuiltPlanExercise(
+              lift: _lift('goblet-squat', 'Goblet Squat'),
+              setCount: 4,
+              targetReps: '6',
+              targetWeight: '40',
+            ),
+          ],
+        ),
+        BuiltPlanWorkout(
+          name: 'Day B',
+          exercises: [
+            BuiltPlanExercise(lift: _lift('romanian-deadlift', 'Romanian Deadlift')),
+          ],
+        ),
+      ],
+      createId: () => 'id-${next++}',
+    );
+    final plans = parseCustomPlansFromTemplatesJson(edited, catalog);
+    expect(plans.map((plan) => plan.name), containsAll(['Hotel Week Updated', 'Beach Week']));
+    expect(plans.where((plan) => plan.name == 'Hotel Week'), isEmpty);
+    final saved = plans.singleWhere((plan) => plan.id == original.id);
+    expect(saved.workouts, hasLength(2));
+    expect(saved.workouts.first.lifts.single.sets, hasLength(4));
+    expect(saved.workouts.first.lifts.single.sets.first.reps, '6');
+    expect(saved.workouts.first.lifts.single.sets.first.weight, '40');
+    expect(saved.workouts.last.name, 'Day B');
+  });
+
+  test('a built superset is saved and opens again for editing', () {
+    const catalog = LiftBigCatalog(
+      lifts: [],
+      plans: [],
+      starterWorkouts: [],
+      quiz: [],
+    );
+    var next = 0;
+    final raw = appendBuiltPlanToTemplatesJson(
+      existing: null,
+      planName: 'Pairs',
+      workouts: [
+        BuiltPlanWorkout(
+          name: 'Upper',
+          exercises: [
+            BuiltPlanExercise(
+              lift: _lift('bench-press', 'Bench Press'),
+              supersetGroupId: 'pair-a',
+              supersetLabel: 'A',
+              supersetOrder: 0,
+            ),
+            BuiltPlanExercise(
+              lift: _lift('barbell-row', 'Barbell Row'),
+              supersetGroupId: 'pair-a',
+              supersetLabel: 'A',
+              supersetOrder: 1,
+            ),
+          ],
+        ),
+      ],
+      createId: () => 'id-${next++}',
+    );
+    final plans = parseCustomPlansFromTemplatesJson(raw, catalog);
+    final lifts = plans.single.workouts.single.lifts;
+    expect(lifts.map((lift) => lift.supersetGroupId), ['pair-a', 'pair-a']);
+    expect(lifts.map((lift) => lift.supersetOrder), [0, 1]);
+    expect(lifts.first.supersetLabel, 'A');
+  });
 }

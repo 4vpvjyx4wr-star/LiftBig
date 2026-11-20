@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../companion/companion_bridge.dart';
 import '../companion/watch_session.dart';
 import '../journal/app_settings.dart';
+import '../debug/agent_log.dart';
 import '../journal/journal_repository.dart';
 import '../utils/weight_units.dart';
 import 'rest_alarm.dart';
@@ -49,7 +50,7 @@ class RestTimerController extends ChangeNotifier {
   var _watchListening = false;
   var _disposed = false;
   var _restRev = 0;
-  late final Future<void> Function() _stopFromOutside = stopAlarm;
+  late final Future<void> Function() _stopFromOutside = stopFromNotification;
 
   RestTimerSnapshot get snapshot => _snapshot;
 
@@ -96,6 +97,23 @@ class RestTimerController extends ChangeNotifier {
     _playedFinishedFeedback = false;
     _alarmRinging = false;
     final openedFromStop = await _openedFromNotificationStop();
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:load',
+      message: 'rest restored on launch',
+      hypothesisId: 'E',
+      data: {
+        'openedFromStop': openedFromStop,
+        'active': _snapshot.active,
+        'paused': _snapshot.paused,
+        'remaining': _snapshot.remainingSeconds(_now()),
+        'expired': _snapshot.active && _snapshot.isExpired(_now()),
+        'allowFinishedAlarm': _allowFinishedAlarm,
+        'alarmRinging': _alarmRinging,
+        'chrome': _chrome.name,
+      },
+    );
+    // #endregion
     if (openedFromStop) {
       await _clearDragOffset();
       _chrome = RestTimerChrome.anchored;
@@ -136,6 +154,21 @@ class RestTimerController extends ChangeNotifier {
     }
     _publishWatchRest();
     _syncTick();
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:load:end',
+      message: 'rest launch settled',
+      hypothesisId: 'E',
+      data: {
+        'active': _snapshot.active,
+        'remaining': _snapshot.active ? remaining : 0,
+        'allowFinishedAlarm': _allowFinishedAlarm,
+        'playedFinished': _playedFinishedFeedback,
+        'alarmRinging': _alarmRinging,
+        'chrome': _chrome.name,
+      },
+    );
+    // #endregion
     notifyListeners();
   }
 
@@ -244,6 +277,7 @@ class RestTimerController extends ChangeNotifier {
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
     await _persistAndSchedule(endAt);
+    await _clearDragOffset();
     await _syncAlarmSession();
     _publishWatchRest();
     _syncTick();
@@ -433,13 +467,54 @@ class RestTimerController extends ChangeNotifier {
     }
   }
 
+  /// Lock-screen Stop clears the countdown and the tone. The in-app Stop
+  /// button still uses [stopAlarm], which leaves the finished rest on screen.
+  Future<void> stopFromNotification() async {
+    if (_disposed) return;
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:stopFromNotification',
+      message: 'notification stop',
+      hypothesisId: 'E',
+      data: {
+        'alarmRinging': _alarmRinging,
+        'active': _snapshot.active,
+        'remaining': remaining,
+      },
+    );
+    // #endregion
+    _playedFinishedFeedback = true;
+    _allowFinishedAlarm = false;
+    _alarmRinging = false;
+    await dismiss();
+  }
+
   /// Stops a looping in-app tone and parks the finished rest at the top of
   /// the lift page. Cancel uses [dismiss], which stops the tone and clears
   /// the timer.
   Future<void> stopAlarm() async {
     if (_disposed) return;
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:stopAlarm',
+      message: 'stop alarm requested',
+      hypothesisId: 'E',
+      data: {
+        'alarmRinging': _alarmRinging,
+        'playedFinished': _playedFinishedFeedback,
+        'allowFinishedAlarm': _allowFinishedAlarm,
+        'active': _snapshot.active,
+        'remaining': remaining,
+        'paused': _snapshot.paused,
+      },
+    );
+    // #endregion
+    _playedFinishedFeedback = true;
+    _allowFinishedAlarm = false;
     _claimRev();
     await _silenceAlarm();
+    if (_disposed) return;
+    await _notifications.cancelRestFinished();
     if (_disposed) return;
     await _clearDragOffset();
     if (_disposed) return;
@@ -468,6 +543,22 @@ class RestTimerController extends ChangeNotifier {
   }
 
   void _maybePlayFinishedFeedback(DateTime now) {
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:_maybePlayFinishedFeedback',
+      message: 'finished rest check',
+      hypothesisId: 'E',
+      data: {
+        'playedFinished': _playedFinishedFeedback,
+        'allowFinishedAlarm': _allowFinishedAlarm,
+        'active': _snapshot.active,
+        'expired': _snapshot.active && _snapshot.isExpired(now),
+        'alarmRinging': _alarmRinging,
+        'sound': _alerts.soundEnabled,
+        'ringUntilStopped': _alerts.ringUntilStopped,
+      },
+    );
+    // #endregion
     if (_playedFinishedFeedback) return;
     if (!_snapshot.active || !_snapshot.isExpired(now)) return;
     // Saved, already delivered, or already at 0: the countdown never ran here.

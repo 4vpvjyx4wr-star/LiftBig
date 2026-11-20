@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../catalog/liftbig_catalog.dart';
 import '../date_key.dart';
+import '../debug/agent_log.dart';
 import '../journal/journal_repository.dart';
 import '../journal/lift_name_convergence.dart';
 import '../progress/exercise_forecast.dart';
@@ -22,17 +23,11 @@ LibraryLift? catalogLiftForLoggedExercise(
   required String name,
   String? libraryId,
 }) {
-  final id = libraryId?.trim();
-  if (id != null && id.isNotEmpty) {
-    final byId = catalog.liftById(id);
-    if (byId != null) return byId;
-  }
-  final key = normalizeForExerciseMatch(name);
-  if (key.isEmpty) return null;
-  for (final lift in catalog.lifts) {
-    if (normalizeForExerciseMatch(lift.name) == key) return lift;
-  }
-  return null;
+  return matchLoggedLibraryLift(
+    catalog.lifts,
+    name: name,
+    libraryId: libraryId,
+  );
 }
 
 Future<void> showExerciseInfoSheet(
@@ -120,6 +115,32 @@ class _ExerciseInfoSheetState extends State<ExerciseInfoSheet> {
         name: widget.exerciseName,
         libraryId: widget.libraryId,
       );
+      // #region agent log
+      final nameKey = normalizeForExerciseMatch(widget.exerciseName);
+      final candidates = <String>[
+        for (final item in catalog.lifts)
+          if (item.id == widget.libraryId?.trim() ||
+              normalizeForExerciseMatch(item.name) == nameKey ||
+              (nameKey.length > 4 &&
+                  normalizeForExerciseMatch(item.name).contains(nameKey)))
+            '${item.id}|${item.name}',
+      ];
+      agentDebugLog(
+        location: 'exercise_info_sheet.dart:_load',
+        message: 'catalog lookup for logged lift',
+        hypothesisId: 'A',
+        data: {
+          'name': widget.exerciseName,
+          'libraryId': widget.libraryId,
+          'matchedId': lift?.id,
+          'matchedName': lift?.name,
+          'instructionCount': lift?.instructions.length ?? 0,
+          'nameKey': nameKey,
+          'candidates': candidates.take(6).toList(),
+          'catalogSize': catalog.lifts.length,
+        },
+      );
+      // #endregion
       if (lift == null) {
         libraryNote = 'Instructions are not in the library.';
       }

@@ -10,6 +10,18 @@ class RestAlarm {
   static const channelName = 'liftbig/rest_alarm';
   static const _channel = MethodChannel(channelName);
 
+  /// Wraps the iOS notification delegate so Stop clears the tone.
+  static Future<void> installStopBridge() async {
+    if (kIsWeb) return;
+    try {
+      await _channel.invokeMethod<bool>('installStopBridge');
+    } on MissingPluginException {
+      return;
+    } on PlatformException {
+      return;
+    }
+  }
+
   static Future<String?> deviceTimeZone() async {
     if (kIsWeb) return null;
     try {
@@ -71,7 +83,7 @@ class RestAlarm {
   /// True when that tone started. [loop] repeats it until [stopKeepAlive].
   /// [soundId] is one of [RestTimerAlertSettings.soundIds]
   /// (`rest_alarm`, `bell`, `chime`, `horn`, `whistle`, `pulse`, `gong`,
-  /// `digital`).
+  /// `digital`, `boing`).
   /// The killed-app notification does not use this path and stays one play.
   static Future<bool> play({
     bool loop = false,

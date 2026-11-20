@@ -2230,12 +2230,54 @@ class JournalRepository {
     );
   }
 
+  /// Copies account preferences that this phone has never stored.
+  /// A newer local stamp, such as the rest-timer position, must not wipe
+  /// height, body weight, or the theme that already live on the account.
+  /// Returns true when at least one key was written. Does not move the stamp.
+  Future<bool> fillUnsetCloudPreferences(CloudSettings remote) async {
+    final incoming = Map<String, String>.from(remote.preferences);
+    if (remote.weightUnit != null &&
+        !incoming.containsKey(SettingKeys.weightUnit)) {
+      incoming[SettingKeys.weightUnit] = remote.weightUnit!;
+    }
+    if (remote.bodyWeightLbs != null &&
+        !incoming.containsKey(SettingKeys.bodyWeightLbs)) {
+      incoming[SettingKeys.bodyWeightLbs] = remote.bodyWeightLbs.toString();
+    }
+    if (remote.templatesJson != null &&
+        remote.templatesJson!.isNotEmpty &&
+        !incoming.containsKey(SettingKeys.templatesJson)) {
+      incoming[SettingKeys.templatesJson] = remote.templatesJson!;
+    }
+    var wrote = false;
+    for (final entry in incoming.entries) {
+      if (!cloudSyncedPreferenceKeys.contains(entry.key)) continue;
+      if (entry.value.isEmpty) continue;
+      if (await _get(entry.key) != null) continue;
+      await _put(entry.key, entry.value);
+      wrote = true;
+    }
+    final settingsJson = remote.settingsJson;
+    if (settingsJson != null &&
+        settingsJson.isNotEmpty &&
+        await _get(SettingKeys.settingsJson) == null) {
+      await _put(SettingKeys.settingsJson, settingsJson);
+      wrote = true;
+    }
+    return wrote;
+  }
+
   Future<void> applyCloudSettings(CloudSettings settings) async {
     await _put(SettingKeys.settingsUpdatedAt, settings.updatedAt);
     final keys = settings.preferences.keys.toList()..sort();
     for (final key in keys) {
       if (!cloudSyncedPreferenceKeys.contains(key)) continue;
-      await _put(key, settings.preferences[key]!);
+      final incoming = settings.preferences[key]!;
+      if (_isBodyMeasurement(key) && incoming.trim().isEmpty) {
+        final existing = await _get(key);
+        if (existing != null && existing.trim().isNotEmpty) continue;
+      }
+      await _put(key, incoming);
     }
     if (settings.weightUnit != null &&
         !settings.preferences.containsKey(SettingKeys.weightUnit)) {
@@ -2255,6 +2297,24 @@ class JournalRepository {
     if (settings.settingsJson != null) {
       await _put(SettingKeys.settingsJson, settings.settingsJson!);
     }
+  }
+
+  /// Writes height or body weight from [settings] when this phone's copy is blank.
+  Future<bool> keepStoredBodyMeasurements(CloudSettings settings) async {
+    var wrote = false;
+    for (final key in [SettingKeys.heightInches, SettingKeys.bodyWeightLbs]) {
+      final incoming = settings.preferences[key];
+      if (incoming == null || incoming.trim().isEmpty) continue;
+      final existing = await _get(key);
+      if (existing != null && existing.trim().isNotEmpty) continue;
+      await _put(key, incoming);
+      wrote = true;
+    }
+    return wrote;
+  }
+
+  bool _isBodyMeasurement(String key) {
+    return key == SettingKeys.heightInches || key == SettingKeys.bodyWeightLbs;
   }
 
   Future<JournalDay> _hydrate(Day row) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../catalog/lift_search.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../ids.dart';
 import '../journal/journal_repository.dart';
@@ -16,6 +17,7 @@ Future<bool> showBuildPlanSheet(
   required LiftBigCatalog catalog,
   required JournalRepository journal,
   ParsedPlan? initial,
+  String? replacePlanId,
 }) async {
   final saved = await showLiftBigSheet<bool>(
     context,
@@ -25,6 +27,7 @@ Future<bool> showBuildPlanSheet(
         catalog: catalog,
         journal: journal,
         initial: initial,
+        replacePlanId: replacePlanId,
       ),
     ),
   );
@@ -64,12 +67,18 @@ class _DraftExercise {
     String? sets,
     String? reps,
     String? weight,
+    this.supersetGroupId,
+    this.supersetLabel,
+    this.supersetOrder,
   }) : sets = TextEditingController(text: sets ?? '$defaultBuiltSetCount'),
        reps = TextEditingController(text: reps ?? defaultBuiltReps),
        weight = TextEditingController(text: weight ?? '');
 
   LibraryLift? lift;
   String customName;
+  String? supersetGroupId;
+  String? supersetLabel;
+  int? supersetOrder;
   final TextEditingController sets;
   final TextEditingController reps;
   final TextEditingController weight;
@@ -108,11 +117,13 @@ class _BuildPlanSheet extends StatefulWidget {
     required this.catalog,
     required this.journal,
     this.initial,
+    this.replacePlanId,
   });
 
   final LiftBigCatalog catalog;
   final JournalRepository journal;
   final ParsedPlan? initial;
+  final String? replacePlanId;
 
   @override
   State<_BuildPlanSheet> createState() => _BuildPlanSheetState();
@@ -143,6 +154,9 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                   sets: '${exercise.setCount}',
                   reps: exercise.targetReps,
                   weight: exercise.targetWeight,
+                  supersetGroupId: exercise.supersetGroupId,
+                  supersetLabel: exercise.supersetLabel,
+                  supersetOrder: exercise.supersetOrder,
                 ),
             ],
           ),
@@ -169,6 +183,66 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
     );
     if (lift == null || !mounted) return;
     setState(() => workout.exercises.add(_DraftExercise(lift: lift)));
+  }
+
+  void _toggleSuperset(_DraftWorkout workout, int index) {
+    if (index <= 0 || index >= workout.exercises.length) return;
+    final current = workout.exercises[index];
+    final previous = workout.exercises[index - 1];
+    final joined =
+        current.supersetGroupId != null &&
+        current.supersetGroupId == previous.supersetGroupId;
+    setState(() {
+      if (joined) {
+        final group = current.supersetGroupId;
+        current.supersetGroupId = null;
+        current.supersetLabel = null;
+        current.supersetOrder = null;
+        if (group != null) {
+          final remaining = [
+            for (final item in workout.exercises)
+              if (item.supersetGroupId == group) item,
+          ];
+          if (remaining.length < 2) {
+            for (final item in remaining) {
+              item.supersetGroupId = null;
+              item.supersetLabel = null;
+              item.supersetOrder = null;
+            }
+          }
+        }
+        return;
+      }
+      final group = previous.supersetGroupId ?? newId();
+      if (previous.supersetGroupId == null) {
+        previous.supersetGroupId = group;
+        previous.supersetLabel = _nextSupersetLabel(workout);
+        previous.supersetOrder = 0;
+      }
+      var nextOrder = 0;
+      for (final item in workout.exercises) {
+        final order = item.supersetOrder;
+        if (item.supersetGroupId == group && order != null && order >= nextOrder) {
+          nextOrder = order + 1;
+        }
+      }
+      current.supersetGroupId = group;
+      current.supersetLabel = previous.supersetLabel;
+      current.supersetOrder = nextOrder;
+    });
+  }
+
+  String _nextSupersetLabel(_DraftWorkout workout) {
+    final used = {
+      for (final item in workout.exercises)
+        if (item.supersetLabel != null && item.supersetLabel!.isNotEmpty)
+          item.supersetLabel!,
+    };
+    for (var i = 0; i < 26; i++) {
+      final label = String.fromCharCode(65 + i);
+      if (!used.contains(label)) return label;
+    }
+    return 'Superset';
   }
 
   Future<void> _matchExercise(_DraftExercise exercise) async {
@@ -209,6 +283,9 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
             setCount: count,
             targetReps: exercise.reps.text,
             targetWeight: exercise.weight.text,
+            supersetGroupId: exercise.supersetGroupId,
+            supersetLabel: exercise.supersetLabel,
+            supersetOrder: exercise.supersetOrder,
           ),
         );
       }
@@ -219,6 +296,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
       planName: _planName.text,
       workouts: built,
       createId: newId,
+      replacePlanId: widget.replacePlanId,
     );
     if (!mounted) return;
     if (payload == null) {
@@ -243,10 +321,12 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Build Your Own Plan',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    widget.replacePlanId == null
+                        ? 'Build Your Own Plan'
+                        : 'Edit Plan',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                   ),
                 ),
                 IconButton(
@@ -280,6 +360,8 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                     onChanged: () => setState(() {}),
                     onAddExercise: () => _addExercise(_workouts[i]),
                     onMatch: _matchExercise,
+                    onToggleSuperset: (index) =>
+                        _toggleSuperset(_workouts[i], index),
                     onRemove: () {
                       final removed = _workouts.removeAt(i);
                       removed.dispose();
@@ -297,7 +379,13 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                 FilledButton(
                   onPressed: _saving ? null : _save,
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                  child: Text(_saving ? 'Saving…' : 'Save Plan'),
+                  child: Text(
+                    _saving
+                        ? 'Saving…'
+                        : widget.replacePlanId == null
+                        ? 'Save Plan'
+                        : 'Save Changes',
+                  ),
                 ),
               ],
             ),
@@ -316,6 +404,7 @@ class _WorkoutEditor extends StatelessWidget {
     required this.onChanged,
     required this.onAddExercise,
     required this.onMatch,
+    required this.onToggleSuperset,
     required this.onRemove,
   });
 
@@ -325,6 +414,7 @@ class _WorkoutEditor extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onAddExercise;
   final ValueChanged<_DraftExercise> onMatch;
+  final ValueChanged<int> onToggleSuperset;
   final VoidCallback onRemove;
 
   @override
@@ -355,6 +445,13 @@ class _WorkoutEditor extends StatelessWidget {
               for (var i = 0; i < workout.exercises.length; i++)
                 _ExerciseFields(
                   exercise: workout.exercises[i],
+                  canLink: i > 0,
+                  linkedWithPrevious:
+                      i > 0 &&
+                      workout.exercises[i].supersetGroupId != null &&
+                      workout.exercises[i].supersetGroupId ==
+                          workout.exercises[i - 1].supersetGroupId,
+                  onToggleSuperset: () => onToggleSuperset(i),
                   onMatch: () => onMatch(workout.exercises[i]),
                   onRemove: () {
                     final removed = workout.exercises.removeAt(i);
@@ -388,11 +485,17 @@ class _WorkoutEditor extends StatelessWidget {
 class _ExerciseFields extends StatelessWidget {
   const _ExerciseFields({
     required this.exercise,
+    required this.canLink,
+    required this.linkedWithPrevious,
+    required this.onToggleSuperset,
     required this.onMatch,
     required this.onRemove,
   });
 
   final _DraftExercise exercise;
+  final bool canLink;
+  final bool linkedWithPrevious;
+  final VoidCallback onToggleSuperset;
   final VoidCallback onMatch;
   final VoidCallback onRemove;
 
@@ -411,8 +514,31 @@ class _ExerciseFields extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-              if (exercise.lift == null)
-                TextButton(onPressed: onMatch, child: const Text('Choose lift')),
+              PopupMenuButton<String>(
+                tooltip: 'Edit lift',
+                icon: const Icon(Icons.edit_outlined),
+                onSelected: (value) {
+                  if (value == 'lift') onMatch();
+                  if (value == 'superset') onToggleSuperset();
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'lift',
+                    child: Text(
+                      exercise.lift == null ? 'Choose lift' : 'Change lift',
+                    ),
+                  ),
+                  if (canLink)
+                    PopupMenuItem(
+                      value: 'superset',
+                      child: Text(
+                        linkedWithPrevious
+                            ? 'Remove from superset'
+                            : 'Superset with previous',
+                      ),
+                    ),
+                ],
+              ),
               IconButton(
                 tooltip: 'Remove exercise',
                 visualDensity: VisualDensity.compact,
@@ -421,6 +547,14 @@ class _ExerciseFields extends StatelessWidget {
               ),
             ],
           ),
+          if (exercise.supersetLabel != null)
+            Text(
+              'Superset ${exercise.supersetLabel}',
+              style: TextStyle(
+                color: context.liftBig.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -559,7 +693,7 @@ class _LiftPickerState extends State<_LiftPicker> {
     final query = _search.text.trim().toLowerCase();
     final matches = [
       for (final lift in widget.lifts)
-        if (query.isEmpty || lift.name.toLowerCase().contains(query)) lift,
+        if (query.isEmpty || libraryLiftMatchesQuery(lift, query)) lift,
     ];
     return Column(
       children: [

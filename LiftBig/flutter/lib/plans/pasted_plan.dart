@@ -41,6 +41,55 @@ ParsedPlan? parsePastedPlan(String raw, List<LibraryLift> lifts) {
   return ParsedPlan(name: name, workouts: sessions);
 }
 
+/// Turns a saved custom plan back into the builder's draft.
+/// A lift stays linked when its library id or exact name is still in [lifts].
+ParsedPlan customPlanAsParsed(PremadePlan plan, List<LibraryLift> lifts) {
+  return ParsedPlan(
+    name: plan.name,
+    workouts: [
+      for (final workout in plan.workouts)
+        BuiltPlanWorkout(
+          name: workout.name,
+          exercises: [
+            for (final exercise in workout.lifts)
+              _parsedExercise(exercise, lifts),
+          ],
+        ),
+    ],
+  );
+}
+
+BuiltPlanExercise _parsedExercise(CatalogLift exercise, List<LibraryLift> lifts) {
+  final linked = _libraryLiftForTemplate(exercise, lifts);
+  final reps = exercise.sets.isEmpty ? defaultBuiltReps : exercise.sets.first.reps;
+  final weight = exercise.sets.isEmpty ? '' : exercise.sets.first.weight;
+  return BuiltPlanExercise(
+    lift: linked,
+    customName: linked == null ? exercise.name : null,
+    setCount: exercise.sets.isEmpty ? defaultBuiltSetCount : exercise.sets.length,
+    targetReps: reps.trim().isEmpty ? defaultBuiltReps : reps,
+    targetWeight: weight,
+    supersetGroupId: exercise.supersetGroupId,
+    supersetLabel: exercise.supersetLabel,
+    supersetOrder: exercise.supersetOrder,
+  );
+}
+
+LibraryLift? _libraryLiftForTemplate(CatalogLift exercise, List<LibraryLift> lifts) {
+  final id = exercise.libraryId?.trim();
+  if (id != null && id.isNotEmpty) {
+    for (final lift in lifts) {
+      if (lift.id == id) return lift;
+    }
+  }
+  final key = exercise.name.trim().toLowerCase();
+  if (key.isEmpty) return null;
+  for (final lift in lifts) {
+    if (lift.name.trim().toLowerCase() == key) return lift;
+  }
+  return null;
+}
+
 class _Draft {
   _Draft(this.name);
   final String name;

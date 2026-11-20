@@ -1,3 +1,4 @@
+import '../journal/lift_name_convergence.dart';
 import 'liftbig_catalog.dart';
 
 /// Same ranking idea as Vue `getComparableLibraryExercises`.
@@ -14,7 +15,12 @@ List<LibraryLift> comparableLibraryLifts({
     libraryId: libraryId,
     name: name,
   );
-  if (base == null) return const [];
+  if (base == null) {
+    final all = [...library]..sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return all;
+  }
 
   final preferredIds = <String>[
     for (final id in preferredSwapLibraryIds)
@@ -70,17 +76,11 @@ LibraryLift? _baseLift({
   required String? libraryId,
   required String name,
 }) {
-  final id = libraryId?.trim();
-  if (id != null && id.isNotEmpty) {
-    final byId = _byId(library, id);
-    if (byId != null) return byId;
-  }
-  final key = name.trim().toLowerCase();
-  if (key.isEmpty) return null;
-  for (final lift in library) {
-    if (lift.name.trim().toLowerCase() == key) return lift;
-  }
-  return null;
+  return matchLoggedLibraryLift(
+    library,
+    name: name,
+    libraryId: libraryId,
+  );
 }
 
 LibraryLift? _byId(List<LibraryLift> library, String id) {

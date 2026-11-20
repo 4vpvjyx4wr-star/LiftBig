@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../catalog/comparable_lifts.dart';
+import '../catalog/lift_search.dart';
 import '../catalog/liftbig_catalog.dart';
+import '../debug/agent_log.dart';
 import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
@@ -53,6 +55,7 @@ class _SwapExerciseSheet extends StatefulWidget {
 class _SwapExerciseSheetState extends State<_SwapExerciseSheet> {
   final _search = TextEditingController();
   late final List<LibraryLift> _ranked;
+  var _loggedLayout = false;
 
   @override
   void initState() {
@@ -64,6 +67,20 @@ class _SwapExerciseSheetState extends State<_SwapExerciseSheet> {
       isCardio: widget.exercise.isCardio,
       preferredSwapLibraryIds: widget.exercise.preferredSwapLibraryIds,
     );
+    // #region agent log
+    agentDebugLog(
+      location: 'swap_exercise_sheet.dart:initState',
+      message: 'swap list ranked',
+      hypothesisId: 'B',
+      data: {
+        'name': widget.exercise.name,
+        'libraryId': widget.exercise.libraryId,
+        'catalogSize': widget.catalog.lifts.length,
+        'ranked': _ranked.length,
+        'firstIds': [for (final lift in _ranked.take(5)) lift.id],
+      },
+    );
+    // #endregion
     _search.addListener(() => setState(() {}));
   }
 
@@ -78,13 +95,32 @@ class _SwapExerciseSheetState extends State<_SwapExerciseSheet> {
     if (query.isEmpty) return _ranked;
     return [
       for (final lift in _ranked)
-        if (lift.name.toLowerCase().contains(query)) lift,
+        if (libraryLiftMatchesQuery(lift, query)) lift,
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     final lifts = _visible;
+    final media = MediaQuery.of(context);
+    // #region agent log
+    if (!_loggedLayout) {
+      _loggedLayout = true;
+      agentDebugLog(
+        location: 'swap_exercise_sheet.dart:build',
+        message: 'swap sheet layout',
+        hypothesisId: 'C',
+        data: {
+          'visible': lifts.length,
+          'query': _search.text,
+          'viewInsetBottom': media.viewInsets.bottom,
+          'paddingTop': media.padding.top,
+          'sizeHeight': media.size.height,
+          'viewHeight': media.size.height - media.viewInsets.bottom,
+        },
+      );
+    }
+    // #endregion
     return KeyboardDismiss(
       fill: false,
       child: SizedBox(

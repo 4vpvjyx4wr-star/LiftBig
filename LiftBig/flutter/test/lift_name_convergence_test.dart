@@ -35,6 +35,27 @@ void main() {
       expect(liftNamesConverge('Bench Press', 'Barbell Bench Press'), isTrue);
     });
 
+    test('bench press and romanian deadlift resolve to the library names', () {
+      final lifts = [
+        _lift('bench-press', 'Barbell Bench Press'),
+        _lift('incline-dumbbell-press', 'Incline Dumbbell Press'),
+        _lift('romanian-deadlift', 'Romanian Deadlift (RDL)'),
+        _lift('dumbbell-romanian-deadlift', 'Dumbbell Romanian Deadlift'),
+      ];
+      expect(
+        matchLoggedLibraryLift(lifts, name: 'Bench Press')?.id,
+        'bench-press',
+      );
+      expect(
+        matchLoggedLibraryLift(lifts, name: 'Romanian Deadlift')?.id,
+        'romanian-deadlift',
+      );
+      expect(
+        matchLoggedLibraryLift(lifts, name: 'Lat Pulldown'),
+        isNull,
+      );
+    });
+
     test('unrelated names do not converge', () {
       expect(liftNamesConverge('Bench Press', 'Squat'), isFalse);
       expect(liftNamesConverge('Romanian Deadlift', 'Deadlift'), isFalse);

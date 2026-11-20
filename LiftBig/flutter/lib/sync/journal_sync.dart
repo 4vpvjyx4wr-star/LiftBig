@@ -9,11 +9,15 @@ class SyncResult {
     this.uploaded = 0,
     this.downloaded = 0,
     this.skippedReason,
+    this.settingsChanged = false,
   });
 
   final int uploaded;
   final int downloaded;
   final String? skippedReason;
+
+  /// Height, theme, and the other account preferences were written locally.
+  final bool settingsChanged;
 
   bool get skipped => skippedReason != null;
 }
@@ -120,21 +124,36 @@ class JournalSync {
     }
 
     final premadeIds = premadeTemplateIds;
-    final localSettings = await journal.localCloudSettings();
     final remoteSettings = cloudSettingsFromDocuments(
       await remote.fetchSettingsDocuments(),
     );
+    var settingsChanged = false;
+    if (remoteSettings != null) {
+      settingsChanged = await journal.fillUnsetCloudPreferences(remoteSettings);
+    }
+    final localSettings = await journal.localCloudSettings();
     final chosenSettings = chooseNewerSettings(localSettings, remoteSettings);
     var skippedSettings = false;
     if (chosenSettings != null) {
+      final other = chosenSettings.side == MergeSide.remote
+          ? localSettings
+          : remoteSettings;
+      final settings = preserveBodyMeasurements(
+        chosenSettings.settings,
+        other,
+      );
       if (chosenSettings.side == MergeSide.remote) {
         await journal.runWithoutLocalWriteNotice(
-          () => journal.applyCloudSettings(chosenSettings.settings),
+          () => journal.applyCloudSettings(settings),
         );
+        settingsChanged = true;
         downloaded += 1;
       } else {
+        if (await journal.keepStoredBodyMeasurements(settings)) {
+          settingsChanged = true;
+        }
         final localComparable = cloudComparableSettings(
-          chosenSettings.settings,
+          settings,
           premadeIds,
         );
         final remoteComparable = remoteSettings == null
@@ -166,6 +185,7 @@ class JournalSync {
         skippedExercises: skippedExercises,
         skippedSettings: skippedSettings,
       ),
+      settingsChanged: settingsChanged,
     );
   }
 

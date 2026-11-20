@@ -80,6 +80,16 @@ class _LiftBigAppState extends State<LiftBigApp>
     );
     _themes = LiftBigThemeController();
     _themes.addListener(_onTheme);
+    widget.sync.addListener(_onAccountSync);
+    _loadTheme();
+  }
+
+  var _sawSettingsRevision = 0;
+
+  void _onAccountSync() {
+    final revision = widget.sync.settingsRevision;
+    if (revision == _sawSettingsRevision || revision == 0) return;
+    _sawSettingsRevision = revision;
     _loadTheme();
   }
 
@@ -110,6 +120,7 @@ class _LiftBigAppState extends State<LiftBigApp>
 
   @override
   void dispose() {
+    widget.sync.removeListener(_onAccountSync);
     _themes.removeListener(_onTheme);
     _themes.dispose();
     _backdropMotion.dispose();

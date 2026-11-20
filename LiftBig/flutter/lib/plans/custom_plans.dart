@@ -230,6 +230,9 @@ class BuiltPlanExercise {
     this.setCount = defaultBuiltSetCount,
     this.targetReps = defaultBuiltReps,
     this.targetWeight = '',
+    this.supersetGroupId,
+    this.supersetLabel,
+    this.supersetOrder,
   });
 
   final LibraryLift? lift;
@@ -237,6 +240,9 @@ class BuiltPlanExercise {
   final int setCount;
   final String targetReps;
   final String targetWeight;
+  final String? supersetGroupId;
+  final String? supersetLabel;
+  final int? supersetOrder;
 
   String get name {
     final written = customName?.trim() ?? '';
@@ -281,12 +287,14 @@ String _builtTargetReps(String reps) {
 }
 
 /// Appends a user-built plan to the `templates_json` payload Custom Plans reads.
+/// When [replacePlanId] is set, that saved plan is rewritten in place.
 /// Returns null when [existing] is not empty and is not a JSON list or object.
 String? appendBuiltPlanToTemplatesJson({
   required String? existing,
   required String planName,
   required List<BuiltPlanWorkout> workouts,
   required String Function() createId,
+  String? replacePlanId,
 }) {
   final name = planName.trim();
   if (name.isEmpty) return null;
@@ -306,7 +314,12 @@ String? appendBuiltPlanToTemplatesJson({
   if (decoded == null) return null;
   final templates = decoded.templates;
   final folders = decoded.folders;
-  final planId = createId();
+  final replacing = replacePlanId?.trim();
+  if (replacing != null && replacing.isNotEmpty) {
+    templates.removeWhere((item) => _templateBelongsToPlan(item, replacing));
+    folders.removeWhere((item) => _folderIsPlan(item, replacing));
+  }
+  final planId = (replacing == null || replacing.isEmpty) ? createId() : replacing;
   folders.add({
     'id': planId,
     'name': name,
@@ -320,25 +333,44 @@ String? appendBuiltPlanToTemplatesJson({
       'folderId': planId,
       'notes': '',
       'exercises': [
-        for (final exercise in session.exercises)
-          {
-            'name': exercise.name,
-            'libraryId': exercise.lift?.id,
-            'isCardio': exercise.lift?.isCardio ?? false,
-            'isCore': exercise.lift?.isCore ?? false,
-            'isCircuit': false,
-            'sets': [
-              for (var set = 0; set < _builtSetCount(exercise.setCount); set++)
-                {
-                  'targetReps': _builtTargetReps(exercise.targetReps),
-                  'targetWeight': exercise.targetWeight.trim(),
-                },
-            ],
-          },
+        for (final exercise in session.exercises) _builtExerciseJson(exercise),
       ],
     });
   }
   return jsonEncode({'templates': templates, 'folders': folders});
+}
+
+Map<String, Object?> _builtExerciseJson(BuiltPlanExercise exercise) {
+  final group = exercise.supersetGroupId?.trim();
+  return {
+    'name': exercise.name,
+    'libraryId': exercise.lift?.id,
+    'isCardio': exercise.lift?.isCardio ?? false,
+    'isCore': exercise.lift?.isCore ?? false,
+    'isCircuit': false,
+    if (group != null && group.isNotEmpty) 'supersetGroupId': group,
+    if (exercise.supersetLabel?.trim().isNotEmpty == true)
+      'supersetLabel': exercise.supersetLabel!.trim(),
+    if (exercise.supersetOrder != null) 'supersetOrder': exercise.supersetOrder,
+    'sets': [
+      for (var set = 0; set < _builtSetCount(exercise.setCount); set++)
+        {
+          'targetReps': _builtTargetReps(exercise.targetReps),
+          'targetWeight': exercise.targetWeight.trim(),
+        },
+    ],
+  };
+}
+
+bool _templateBelongsToPlan(Object? item, String planId) {
+  if (item is! Map) return false;
+  final map = Map<String, Object?>.from(item);
+  return map['id'] == planId || map['folderId'] == planId;
+}
+
+bool _folderIsPlan(Object? item, String planId) {
+  if (item is! Map) return false;
+  return Map<String, Object?>.from(item)['id'] == planId;
 }
 
 ({List<Object?> templates, List<Object?> folders})? _decodeTemplatesPayload(String? existing) {

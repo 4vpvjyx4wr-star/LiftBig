@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../catalog/lift_search.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../theme.dart';
 import '../utils/youtube_video_id.dart';
@@ -74,11 +75,6 @@ class _LibraryBody extends StatelessWidget {
               const Text(
                 'Lift Library',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-               Text(
-                'A lift and an exercise are the same activity. Descriptions, cues, and tutorial links come from the LiftBig catalog.',
-                style: TextStyle(color: context.liftBig.muted),
               ),
               const SizedBox(height: 12),
               TextField(

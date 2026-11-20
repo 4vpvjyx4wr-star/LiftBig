@@ -12,11 +12,15 @@ class PlateGraphicConfig extends InheritedWidget {
     super.key,
     required this.showGraphic,
     required this.barLb,
+    this.onBarLb,
     required super.child,
   });
 
   final bool showGraphic;
   final double barLb;
+
+  /// Saves a new Olympic bar weight for the plate graphics in this workout.
+  final ValueChanged<double>? onBarLb;
 
   static PlateGraphicConfig of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<PlateGraphicConfig>() ??
@@ -31,6 +35,25 @@ class PlateGraphicConfig extends InheritedWidget {
   bool updateShouldNotify(PlateGraphicConfig oldWidget) {
     return showGraphic != oldWidget.showGraphic || barLb != oldWidget.barLb;
   }
+}
+
+/// Picks the bar or sled weight. Returns pounds, or null when dismissed.
+Future<double?> showBarWeightSheet(
+  BuildContext context, {
+  required double currentLb,
+  required WeightUnit unit,
+  String title = 'Bar weight',
+}) {
+  return showModalBottomSheet<double>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) => _BarWeightSheet(
+      currentLb: currentLb,
+      unit: unit,
+      title: title,
+    ),
+  );
 }
 
 /// Compact starting-weight field plus per-set plate hint for variable machines.
@@ -102,6 +125,7 @@ class MachineSetPlateHint extends StatelessWidget {
     required this.weightController,
     required this.unit,
     this.showGraphic = true,
+    this.onStartingChanged,
   });
 
   final VariableMachineKind kind;
@@ -109,6 +133,22 @@ class MachineSetPlateHint extends StatelessWidget {
   final TextEditingController weightController;
   final WeightUnit unit;
   final bool showGraphic;
+  final ValueChanged<String>? onStartingChanged;
+
+  Future<void> _editStarting(BuildContext context, WeightUnit unit) async {
+    final current = displayWeightToLbs(startingController.text, unit) ??
+        (kind == VariableMachineKind.smith ? defaultSmithBarLb : defaultBarLb);
+    final picked = await showBarWeightSheet(
+      context,
+      currentLb: current,
+      unit: unit,
+      title: kind == VariableMachineKind.smith ? 'Bar weight' : 'Sled weight',
+    );
+    if (picked == null) return;
+    final display = lbsToDisplayWeightString(picked, unit);
+    startingController.text = display;
+    onStartingChanged?.call(display);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,14 +173,18 @@ class MachineSetPlateHint extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (showGraphic && result.plates.isNotEmpty) ...[
-                ExcludeSemantics(
-                  child: PlateLoadGraphic(
-                    plates: result.plates,
-                    unit: unit,
-                    centerLabel: kind == VariableMachineKind.smith
-                        ? 'BAR'
-                        : 'SLED',
-                    compact: true,
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _editStarting(context, unit),
+                  child: ExcludeSemantics(
+                    child: PlateLoadGraphic(
+                      plates: result.plates,
+                      unit: unit,
+                      centerLabel: kind == VariableMachineKind.smith
+                          ? 'BAR'
+                          : 'SLED',
+                      compact: true,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -168,43 +212,77 @@ class BarbellSetPlateHint extends StatelessWidget {
     required this.weightController,
     required this.unit,
     this.barLb = defaultBarLb,
+    this.barController,
+    this.emptyBarLb = defaultBarLb,
+    this.onChangeBar,
   });
 
   final TextEditingController weightController;
   final WeightUnit unit;
   final double barLb;
 
+  /// When set, the bar weight is read from this field (a Smith bar).
+  final TextEditingController? barController;
+
+  /// Bar used when [barController] is empty.
+  final double emptyBarLb;
+
+  /// Saves a new bar weight in pounds. Falls back to [PlateGraphicConfig.onBarLb].
+  final ValueChanged<double>? onChangeBar;
+
   @override
   Widget build(BuildContext context) {
+    final listen = barController == null
+        ? weightController
+        : Listenable.merge([weightController, barController!]);
     return ListenableBuilder(
-      listenable: weightController,
+      listenable: listen,
       builder: (context, _) {
+        final bar = _resolvedBarLb();
+        final change = onChangeBar ?? PlateGraphicConfig.of(context).onBarLb;
         final goalLb = displayWeightToLbs(weightController.text, unit);
-        if (goalLb == null || goalLb + 0.001 < barLb) {
-          return const SizedBox.shrink();
+        final loaded = goalLb != null && goalLb + 0.001 >= bar;
+        var plates = const <double>[];
+        String? summary;
+        if (loaded) {
+          final result = calculatePlates(goalLb, bar, plateSizesLb);
+          plates = result.plates;
+          if (plates.isNotEmpty) {
+            summary = eachSidePlateSummary(
+              plates,
+              label: (weightLb) => lbsToDisplayWeightString(weightLb, unit),
+            );
+          }
         }
-        final result = calculatePlates(goalLb, barLb, plateSizesLb);
-        final summary = result.plates.isEmpty
-            ? null
-            : eachSidePlateSummary(
-                result.plates,
-                label: (weightLb) => lbsToDisplayWeightString(weightLb, unit),
-              );
         return Padding(
           padding: const EdgeInsets.only(left: 64, right: 8, bottom: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ExcludeSemantics(
-                child: PlateLoadGraphic(
-                  plates: result.plates,
-                  unit: unit,
-                  centerLabel: 'BAR',
-                  compact: true,
+              if (loaded)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: change == null
+                      ? null
+                      : () async {
+                          final picked = await showBarWeightSheet(
+                            context,
+                            currentLb: bar,
+                            unit: unit,
+                          );
+                          if (picked == null) return;
+                          change(picked);
+                        },
+                  child: ExcludeSemantics(
+                    child: PlateLoadGraphic(
+                      plates: plates,
+                      unit: unit,
+                      centerLabel: 'BAR',
+                      compact: true,
+                    ),
+                  ),
                 ),
-              ),
-              if (summary != null) ...[
-                const SizedBox(height: 2),
+              if (summary != null)
                 Text(
                   'Each Side: $summary',
                   style: TextStyle(
@@ -213,11 +291,122 @@ class BarbellSetPlateHint extends StatelessWidget {
                     height: 1.3,
                   ),
                 ),
-              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  double _resolvedBarLb() {
+    final controller = barController;
+    if (controller == null) return barLb;
+    return displayWeightToLbs(controller.text, unit) ?? emptyBarLb;
+  }
+}
+
+class _BarWeightSheet extends StatefulWidget {
+  const _BarWeightSheet({
+    required this.currentLb,
+    required this.unit,
+    required this.title,
+  });
+
+  final double currentLb;
+  final WeightUnit unit;
+  final String title;
+
+  @override
+  State<_BarWeightSheet> createState() => _BarWeightSheetState();
+}
+
+class _BarWeightSheetState extends State<_BarWeightSheet> {
+  late final TextEditingController _custom = TextEditingController();
+
+  @override
+  void dispose() {
+    _custom.dispose();
+    super.dispose();
+  }
+
+  void _choose(double lb) {
+    if (!mounted) return;
+    Navigator.of(context).pop(lb);
+  }
+
+  var _applied = false;
+
+  void _applyCustom() {
+    if (_applied) return;
+    final lb = displayWeightToLbs(_custom.text, widget.unit);
+    if (lb == null || lb < 5 || lb > 75) return;
+    _applied = true;
+    _choose(lb);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    final safe = inset > 0 ? 0.0 : MediaQuery.paddingOf(context).bottom;
+    final unitLabel = widget.unit == WeightUnit.lb ? 'lb' : 'kg';
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 16 + safe + inset),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            widget.title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Set the bar you have on the rack. The plates update for this workout.',
+            style: TextStyle(color: context.liftBig.muted, height: 1.3),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final lb in barChoicesLb)
+                ChoiceChip(
+                  label: Text(
+                    '${lbsToDisplayWeightString(lb, widget.unit)} $unitLabel',
+                  ),
+                  selected: (widget.currentLb - lb).abs() < 0.05,
+                  onSelected: (_) => _choose(lb),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _custom,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    labelText: 'Other weight',
+                    suffixText: unitLabel,
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _applyCustom(),
+                  onEditingComplete: _applyCustom,
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _applyCustom,
+                child: const Text('Use'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

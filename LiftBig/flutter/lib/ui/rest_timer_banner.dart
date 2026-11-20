@@ -144,6 +144,7 @@ class AnchoredRestTimer extends StatelessWidget {
     required this.onReset,
     required this.onFloat,
     required this.onCancel,
+    this.onOpen,
   });
 
   final int remaining;
@@ -152,6 +153,7 @@ class AnchoredRestTimer extends StatelessWidget {
   final VoidCallback onReset;
   final VoidCallback onFloat;
   final VoidCallback onCancel;
+  final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -164,17 +166,21 @@ class AnchoredRestTimer extends StatelessWidget {
         child: Row(
           children: [
             Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  formatRestClock(remaining),
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: done
-                        ? context.liftBig.success
-                        : context.liftBig.foreground,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onOpen,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    formatRestClock(remaining),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: done
+                          ? context.liftBig.success
+                          : context.liftBig.foreground,
+                    ),
                   ),
                 ),
               ),

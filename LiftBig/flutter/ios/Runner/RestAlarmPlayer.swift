@@ -3,6 +3,7 @@ import CoreHaptics
 import Flutter
 import Foundation
 import MediaPlayer
+import UserNotifications
 
 /// Playback session that ducks other audio for the rest alarm, then hands the
 /// volume back. A silent loop keeps the process alive while rest is running
@@ -20,7 +21,7 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
     private var channel: FlutterMethodChannel?
     private var remoteStopAdded = false
     private var remoteStopVisible = false
-    private static let toneIds = ["rest_alarm", "bell", "chime", "horn", "whistle", "pulse", "gong", "digital"]
+    private static let toneIds = ["rest_alarm", "bell", "chime", "horn", "whistle", "pulse", "gong", "digital", "boing"]
 
     static func register(messenger: FlutterBinaryMessenger) {
         let channel = FlutterMethodChannel(name: "liftbig/rest_alarm", binaryMessenger: messenger)
@@ -42,6 +43,9 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
                 )
             case "haptic":
                 shared.playHaptic(result: result)
+            case "installStopBridge":
+                RestNotificationStopBridge.install()
+                result(true)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -126,9 +130,25 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
 
     @objc private func handleRemoteStop(_ event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         guard playingAlarm else { return .commandFailed }
-        deactivate()
-        channel?.invokeMethod("alarmStopped", arguments: nil)
+        stopFromOutside()
         return .success
+    }
+
+    /// Stops the tone immediately and tells Dart to clear the rest timer.
+    /// Used by the lock-screen Stop action, which otherwise only opens the app.
+    func stopFromOutside() {
+        let notify = {
+            self.deactivate()
+            let center = UNUserNotificationCenter.current()
+            center.removeDeliveredNotifications(withIdentifiers: ["9001"])
+            center.removePendingNotificationRequests(withIdentifiers: ["9001"])
+            self.channel?.invokeMethod("alarmStopped", arguments: nil)
+        }
+        if Thread.isMainThread {
+            notify()
+        } else {
+            DispatchQueue.main.async(execute: notify)
+        }
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
@@ -329,5 +349,63 @@ final class RestAlarmPlayer: NSObject, AVAudioPlayerDelegate {
     private static func append32(_ data: inout Data, _ value: UInt32) {
         var little = value.littleEndian
         withUnsafeBytes(of: &little) { data.append(contentsOf: $0) }
+    }
+}
+
+/// Sits in front of the plugin's notification delegate so Stop clears the
+/// tone before Flutter finishes opening the app.
+final class RestNotificationStopBridge: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = RestNotificationStopBridge()
+    private var forwarding: UNUserNotificationCenterDelegate?
+
+    static func install() {
+        let center = UNUserNotificationCenter.current()
+        if center.delegate === shared { return }
+        shared.forwarding = center.delegate
+        center.delegate = shared
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        _ = notification
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .list, .sound])
+        } else {
+            completionHandler([.alert, .sound])
+        }
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if Self.isRestStop(response) {
+            let identifier = response.notification.request.identifier
+            center.removeDeliveredNotifications(withIdentifiers: [identifier, "9001"])
+            center.removePendingNotificationRequests(withIdentifiers: [identifier, "9001"])
+            RestAlarmPlayer.shared.stopFromOutside()
+        }
+        if let forwarding {
+            forwarding.userNotificationCenter?(
+                center,
+                didReceive: response,
+                withCompletionHandler: completionHandler
+            )
+            return
+        }
+        completionHandler()
+    }
+
+    private static func isRestStop(_ response: UNNotificationResponse) -> Bool {
+        let request = response.notification.request
+        let isRest = request.identifier == "9001" ||
+            request.content.categoryIdentifier == "liftbig.rest.stop"
+        if !isRest { return false }
+        let action = response.actionIdentifier
+        return action == "stop" || action == UNNotificationDefaultActionIdentifier
     }
 }

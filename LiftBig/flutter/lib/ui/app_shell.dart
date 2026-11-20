@@ -51,7 +51,17 @@ class _AppShellState extends State<AppShell> {
   void initState() {
     super.initState();
     _companion.addListener(_onWatchMessage);
+    widget.sync.addListener(_onAccountSync);
     _loadWelcome();
+  }
+
+  var _sawSettingsRevision = 0;
+
+  void _onAccountSync() {
+    final revision = widget.sync.settingsRevision;
+    if (revision == _sawSettingsRevision || revision == 0) return;
+    _sawSettingsRevision = revision;
+    if (mounted) setState(() => _refresh++);
   }
 
   Future<void> _loadWelcome() async {
@@ -79,6 +89,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void dispose() {
+    widget.sync.removeListener(_onAccountSync);
     _companion.removeListener(_onWatchMessage);
     super.dispose();
   }
@@ -95,6 +106,12 @@ class _AppShellState extends State<AppShell> {
       await _companion.republishSession();
       return;
     }
+    if (message.dateKey.isNotEmpty && message.restSeconds != null) {
+      await widget.journal.setChosenRestSeconds(
+        message.dateKey,
+        message.restSeconds!,
+      );
+    }
     if (message.isFinish) {
       if (message.activeKcal != null) {
         await widget.journal.setHealthEnergyKcal(
@@ -102,11 +119,8 @@ class _AppShellState extends State<AppShell> {
           message.activeKcal,
         );
       }
-    } else if (message.isSetRest && message.restSeconds != null) {
-      await widget.journal.setChosenRestSeconds(
-        message.dateKey,
-        message.restSeconds!,
-      );
+    } else if (message.isSetRest) {
+      // Chosen rest was saved above, including the watch's new duration.
     } else if (!message.isSkipRest) {
       await widget.journal.persistCompanionMessage(message);
     }

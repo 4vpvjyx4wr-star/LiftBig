@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../catalog/lift_search.dart';
 import '../catalog/liftbig_catalog.dart';
 import '../journal/journal_repository.dart';
 import '../model/journal_day.dart';

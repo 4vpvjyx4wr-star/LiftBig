@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -113,6 +115,46 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadPrefs();
     _loadReminder();
     _loadPro();
+    widget.sync.addListener(_onAccountSync);
+  }
+
+  var _sawSettingsRevision = 0;
+
+  Future<void> _syncNow() async {
+    if (_heightFeet.text.trim().isNotEmpty ||
+        _heightInches.text.trim().isNotEmpty ||
+        _heightCm.text.trim().isNotEmpty) {
+      await _saveHeight();
+    }
+    if (_bodyWeight.text.trim().isNotEmpty) await _saveBodyWeight();
+    await widget.sync.syncNow();
+  }
+
+  /// A finished sync that wrote account preferences reloads the fields.
+  void _onAccountSync() {
+    final revision = widget.sync.settingsRevision;
+    if (revision == _sawSettingsRevision) return;
+    _sawSettingsRevision = revision;
+    if (revision == 0) return;
+    unawaited(_reloadFromAccount());
+  }
+
+  Future<void> _reloadFromAccount() async {
+    final themeId = await widget.sync.journal.loadColorThemeId();
+    final pro = await _proStatus.refresh();
+    if (!mounted) return;
+    widget.themes.applyStored(themeId, proActive: pro);
+    setState(() => _proActive = pro);
+    await _loadLogging();
+    await _loadPrefs();
+    await _loadReminder();
+    if (!mounted) return;
+    final scope = context.getInheritedWidgetOfExactType<RestTimerScope>();
+    if (scope != null) {
+      try {
+        await scope.controller.reloadAlertSettings();
+      } catch (_) {}
+    }
   }
 
   Future<void> _loadPrefs() async {
@@ -471,6 +513,7 @@ class _SettingsPageState extends State<SettingsPage> {
       'pulse' => 'Pulse',
       'gong' => 'Gong',
       'digital' => 'Digital',
+      'boing' => 'Boing',
       _ => 'Beep',
     };
   }
@@ -600,6 +643,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    widget.sync.removeListener(_onAccountSync);
     _email.dispose();
     _password.dispose();
     _unlockCode.dispose();
@@ -1001,7 +1045,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
         const SizedBox(height: 12),
         FilledButton(
-          onPressed: sync.busy || !sync.syncEnabled ? null : sync.syncNow,
+          onPressed: sync.busy || !sync.syncEnabled ? null : _syncNow,
           child: Text(sync.busy ? 'Syncing…' : 'Sync Now'),
         ),
         if (sync.passwordAccount) ...[
