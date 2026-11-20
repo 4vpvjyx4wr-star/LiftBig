@@ -58,9 +58,9 @@ const quizGoalLabels = <String, String>{
 };
 
 const quizDurationLabels = <String, String>{
-  'quick': 'Quick duration',
-  'standard': 'Standard duration',
-  'long': 'Long sessions',
+  'quick': 'Quick Duration',
+  'standard': 'Standard Duration',
+  'long': 'Long Sessions',
 };
 
 const quizExperienceLabels = <String, String>{

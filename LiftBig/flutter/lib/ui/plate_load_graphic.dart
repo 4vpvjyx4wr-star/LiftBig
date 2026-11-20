@@ -15,14 +15,18 @@ class PlateLoadGraphic extends StatelessWidget {
     required this.plates,
     required this.unit,
     this.centerLabel = 'BAR',
+    this.sled = false,
     this.compact = false,
   });
 
   final List<double> plates;
   final WeightUnit unit;
 
-  /// Short name on the sleeve, such as `BAR` or `SLED`.
+  /// Weight or short name drawn on the sleeve, such as `45 lb` or `BAR`.
   final String centerLabel;
+
+  /// Leg press and hack squat use sled copy. A Smith bar and a barbell do not.
+  final bool sled;
   final bool compact;
 
   static const _full = _PlateGraphicScale(
@@ -64,9 +68,10 @@ class PlateLoadGraphic extends StatelessWidget {
     final overflow = plates.length - shown.length;
     final left = shown.reversed.toList();
     final empty = shown.isEmpty;
+    final sledCarrier = sled || centerLabel == 'SLED';
     final semantic = empty
-        ? (centerLabel == 'BAR' ? 'Bar only' : 'Sled only')
-        : 'Plates per Side: ${shown.map((plate) => plateFaceLabel(plate, unit)).join(', ')}';
+        ? (sledCarrier ? 'Sled only' : 'Bar only')
+        : 'Each Side: ${shown.map((plate) => plateFaceLabel(plate, unit)).join(', ')}';
 
     return Semantics(
       label: semantic,
@@ -119,9 +124,9 @@ class PlateLoadGraphic extends StatelessWidget {
             ] else if (empty) ...[
               const SizedBox(height: 8),
               Text(
-                centerLabel == 'BAR'
-                    ? 'Just the bar — no plates needed.'
-                    : 'Just the sled — no plates needed.',
+                sledCarrier
+                    ? 'Just the sled — no plates needed.'
+                    : 'Just the bar — no plates needed.',
                 style: TextStyle(
                   color: context.liftBig.muted,
                   fontSize: compact ? 12 : 13,

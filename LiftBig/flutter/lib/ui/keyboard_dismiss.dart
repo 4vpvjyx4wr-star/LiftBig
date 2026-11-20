@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../debug/agent_log.dart';
 import '../theme.dart';
 
 /// Keyboard overlap in logical pixels, including when a scaffold has already
@@ -57,7 +56,6 @@ class KeyboardDismiss extends StatefulWidget {
 
 class _KeyboardDismissState extends State<KeyboardDismiss> {
   bool _open = false;
-  double _loggedLift = -1;
 
   @override
   void initState() {
@@ -92,28 +90,6 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
     final open = _open;
     final lift = media > 0 ? media : 0.0;
     final bar = open ? KeyboardDismissScaffold.toolbarHeight : 0.0;
-    // #region agent log
-    if (lift != _loggedLift) {
-      _loggedLift = lift;
-      agentDebugLog(
-        location: 'keyboard_dismiss.dart:build',
-        message: 'keyboard inset applied',
-        hypothesisId: 'C',
-        data: {
-          'fill': widget.fill,
-          'mediaInset': media,
-          'lift': lift,
-          'bar': bar,
-          'open': open,
-          'rawViewInset': () {
-            final view = View.maybeOf(context);
-            if (view == null || view.devicePixelRatio == 0) return null;
-            return view.viewInsets.bottom / view.devicePixelRatio;
-          }(),
-        },
-      );
-    }
-    // #endregion
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) => dismissKeyboardIfOutside(event.position),

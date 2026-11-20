@@ -44,6 +44,27 @@ void main() {
     );
   });
 
+  test('a displayed stored weight converts back to the same pounds', () {
+    expect(
+      bodyWeightFieldAfterUnitChange(
+        raw: '81.6',
+        from: WeightUnit.kg,
+        to: WeightUnit.lb,
+        storedLbs: 180,
+      ),
+      '180',
+    );
+    expect(
+      bodyWeightFieldAfterUnitChange(
+        raw: '180',
+        from: WeightUnit.lb,
+        to: WeightUnit.kg,
+        storedLbs: 180,
+      ),
+      '81.6',
+    );
+  });
+
   test('unreadable body weight is left alone', () {
     expect(
       bodyWeightFieldAfterUnitChange(

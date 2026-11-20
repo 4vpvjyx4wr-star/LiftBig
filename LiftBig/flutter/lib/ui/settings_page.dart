@@ -9,7 +9,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../companion/companion_bridge.dart';
-import '../debug/agent_log.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
@@ -22,6 +21,7 @@ import '../sync/sync_controller.dart';
 import '../theme.dart';
 import '../utils/barbell_compound.dart';
 import '../utils/distance_units.dart';
+import '../utils/height_entry.dart';
 import '../utils/weight_units.dart';
 import 'basic_calculator_page.dart';
 import 'import_sheet.dart';
@@ -190,25 +190,18 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _applyHeightFields(double? inches, DistanceUnit unit) {
-    if (inches == null) {
+    final entry = heightEntryFromInches(inches, unit);
+    if (unit == DistanceUnit.km) {
+      _heightMeters.text = entry.primary;
+      _heightCm.text = entry.secondary;
       _heightFeet.text = '';
       _heightInches.text = '';
-      _heightMeters.text = '';
-      _heightCm.text = '';
       return;
     }
-    if (unit == DistanceUnit.km) {
-      final totalCm = inches * 2.54;
-      final meters = totalCm ~/ 100;
-      final cm = totalCm - meters * 100;
-      _heightMeters.text = '$meters';
-      _heightCm.text = formatRoundedNumber(cm, 1);
-      return;
-    }
-    final feet = inches ~/ 12;
-    final inchPart = inches - feet * 12;
-    _heightFeet.text = '$feet';
-    _heightInches.text = formatRoundedNumber(inchPart, 1);
+    _heightFeet.text = entry.primary;
+    _heightInches.text = entry.secondary;
+    _heightMeters.text = '';
+    _heightCm.text = '';
   }
 
   Future<void> _loadLogging() async {
@@ -405,65 +398,50 @@ class _SettingsPageState extends State<SettingsPage> {
     if (unit == _weightUnit) return;
     final from = _weightUnit;
     final raw = _bodyWeight.text;
-    final typed = displayWeightToLbs(raw, from);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle before convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'from': from.name,
-        'to': unit.name,
-        'hadTyped': raw.trim().isNotEmpty,
-        'parsedTyped': typed != null,
-      },
-    );
-    // #endregion
-    if (typed != null) await _saveBodyWeight();
-    if (!mounted) return;
     final stored = await widget.sync.journal.storedBodyWeightLbs();
-    final next = bodyWeightFieldAfterUnitChange(
-      raw: raw,
-      from: from,
-      to: unit,
-      storedLbs: stored,
-    );
+    if (!mounted) return;
+    final trimmed = raw.trim().replaceAll(',', '.');
+    final typed = displayWeightToLbs(raw, from);
+    final showsStored = stored != null &&
+        stored > 0 &&
+        trimmed.isNotEmpty &&
+        lbsToDisplayWeightString(stored, from) == trimmed;
+    if (trimmed.isEmpty || (typed != null && !showsStored)) {
+      await _saveBodyWeight();
+    }
+    if (!mounted) return;
+    final basis = showsStored
+        ? stored
+        : await widget.sync.journal.storedBodyWeightLbs();
+    final next = trimmed.isEmpty
+        ? null
+        : bodyWeightFieldAfterUnitChange(
+            raw: raw,
+            from: from,
+            to: unit,
+            storedLbs: basis,
+          );
     setState(() {
       _weightUnit = unit;
-      if (next != null) _bodyWeight.text = next;
+      if (trimmed.isEmpty) {
+        _bodyWeight.text = '';
+      } else if (next != null) {
+        _bodyWeight.text = next;
+      }
     });
     await widget.sync.journal.setWeightUnit(unit);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle after convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'converted': next != null,
-        'usedStored': typed == null && stored != null,
-      },
-    );
-    // #endregion
   }
 
   Future<void> _saveHeight() async {
-    final double? inches;
-    if (_distanceUnit == DistanceUnit.km) {
-      final meters =
-          double.tryParse(_heightMeters.text.trim().replaceAll(',', '.')) ?? 0;
-      final cm =
-          double.tryParse(_heightCm.text.trim().replaceAll(',', '.')) ?? 0;
-      final totalCm = meters * 100 + cm;
-      inches = totalCm <= 0 ? null : totalCm / 2.54;
-    } else {
-      final feet = double.tryParse(_heightFeet.text.trim()) ?? 0;
-      final inch =
-          double.tryParse(_heightInches.text.trim().replaceAll(',', '.')) ?? 0;
-      final total = feet * 12 + inch;
-      inches = total <= 0 ? null : total;
-    }
+    final inches = inchesFromHeightFields(
+      unit: _distanceUnit,
+      primary: _distanceUnit == DistanceUnit.km
+          ? _heightMeters.text
+          : _heightFeet.text,
+      secondary: _distanceUnit == DistanceUnit.km
+          ? _heightCm.text
+          : _heightInches.text,
+    );
     final wrote = await _bodyWeightService.saveHeightInches(
       inches,
       tryHealthWrite: _appleHealth,
@@ -480,12 +458,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _setDistanceUnit(DistanceUnit unit) async {
     if (unit == _distanceUnit) return;
-    final hasHeight = _distanceUnit == DistanceUnit.km
-        ? _heightMeters.text.trim().isNotEmpty ||
-            _heightCm.text.trim().isNotEmpty
-        : _heightFeet.text.trim().isNotEmpty ||
-            _heightInches.text.trim().isNotEmpty;
-    if (hasHeight) await _saveHeight();
+    await _saveHeight();
     if (!mounted) return;
     setState(() => _distanceUnit = unit);
     await widget.sync.journal.setDistanceUnit(unit);
@@ -955,7 +928,7 @@ class _SettingsPageState extends State<SettingsPage> {
         textInputAction: TextInputAction.done,
         enabled: !_proBusy,
         decoration: const InputDecoration(
-          labelText: 'Unlock code',
+          labelText: 'Unlock Code',
           isDense: true,
         ),
         onSubmitted: (_) => _submitUnlockCode(),
@@ -1022,7 +995,7 @@ class _SettingsPageState extends State<SettingsPage> {
         contentPadding: EdgeInsets.zero,
         title: const Text('Samsung'),
         subtitle: Text(
-          'To be added in future update.',
+          'Coming in a future update.',
           style: TextStyle(color: context.liftBig.muted),
         ),
         value: _watches.samsung,
@@ -1108,7 +1081,7 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 8),
         TextButton(
           onPressed: _authLocked ? null : _sendPasswordReset,
-          child: const Text('Email Password Reset'),
+          child: const Text('Reset Password'),
         ),
       ],
       if (sync.signedIn) ...[
@@ -1126,7 +1099,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: _authLocked ? null : _sendPasswordReset,
-            child: const Text('Email Password Reset'),
+            child: const Text('Reset Password'),
           ),
         ],
         const SizedBox(height: 8),
@@ -1187,7 +1160,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             controller: _freeThemeScroll,
                           ),
                           Text(
-                            'Pro themes',
+                            'Pro Themes',
                             style: TextStyle(
                               color: context.liftBig.foreground,
                               fontWeight: FontWeight.w700,
@@ -1386,7 +1359,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    title: const Text('Include Warmup Sets on Heavy Compounds'),
                     subtitle: Text(
                       'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
                       style: TextStyle(color: context.liftBig.muted),
@@ -1464,7 +1437,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Play tone',
+                            tooltip: 'Play Tone',
                             onPressed: _previewAlarmTone,
                             icon: Icon(
                               Icons.play_arrow,

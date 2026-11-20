@@ -488,7 +488,7 @@ class _PlansBody extends StatelessWidget {
         if (catalog.starterWorkouts.isNotEmpty)
           PremadePlan(
             id: 'starter-workouts',
-            name: 'Starter workouts',
+            name: 'Starter Workouts',
             purpose: 'Single sessions that are not part of a multi-day plan.',
             workouts: catalog.starterWorkouts,
           ),
@@ -615,7 +615,7 @@ class _PlansBody extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: const Text('Get a recommendation'),
+                    child: const Text('Get a Recommendation'),
                   )
                 else
                   _Quiz(
@@ -671,7 +671,7 @@ class _PlansBody extends StatelessWidget {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           icon: const Icon(Icons.content_paste),
-          label: const Text('Paste a plan'),
+          label: const Text('Paste a Plan'),
         ),
       ],
     );
@@ -968,9 +968,9 @@ const _choices = <List<_QuizChoice>>[
     _QuizChoice(7, '7 Days', 'Every day. Only if you already train this much.'),
   ],
   [
-    _QuizChoice('quick', 'About 30 minutes', 'In and out. Short sessions.'),
-    _QuizChoice('standard', 'About an hour', 'A normal gym visit.'),
-    _QuizChoice('long', 'More than an hour', 'Extra exercises after the main lifts.'),
+    _QuizChoice('quick', 'Quick Duration', 'In and out. Short sessions.'),
+    _QuizChoice('standard', 'Standard Duration', 'A normal gym visit.'),
+    _QuizChoice('long', 'Long Sessions', 'Extra exercises after the main lifts.'),
   ],
   [
     _QuizChoice(
@@ -988,7 +988,7 @@ const _choices = <List<_QuizChoice>>[
     _QuizChoice('minimalEquipment', 'Minimal Equipment', 'Bodyweight, and maybe a band.'),
   ],
   [
-    _QuizChoice('balanced', 'Not sure — pick for me', 'We will choose a balanced mix.'),
+    _QuizChoice('balanced', 'Not Sure — Pick for Me', 'We will choose a balanced mix.'),
     _QuizChoice('balanced', 'Balanced', 'A mix of big lifts and smaller exercises.'),
     _QuizChoice('compound', 'Big Lifts', 'Mostly squat, bench, deadlift, and similar lifts.'),
     _QuizChoice('bodybuilding', 'Bodybuilding', 'More exercises for each muscle.'),
@@ -1066,7 +1066,7 @@ class _QuizResultCard extends StatelessWidget {
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: EdgeInsets.zero,
                   title: const Text(
-                    'See the workouts',
+                    'See the Workouts',
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   children: [
@@ -1183,7 +1183,7 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
           TextField(
             controller: _search,
             decoration: const InputDecoration(
-              hintText: 'Search plans.',
+              hintText: 'Search Plans',
               prefixIcon: Icon(Icons.search),
             ),
             onChanged: (_) => setState(() {}),
