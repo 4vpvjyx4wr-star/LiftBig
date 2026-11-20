@@ -46,6 +46,16 @@ String formatWeightWithUnit(double lbs, WeightUnit unit, {int maxDecimals = 1}) 
   return unit == WeightUnit.lb ? '$n lb' : '$n kg';
 }
 
+/// Stored pounds text from the journal, shown in the Settings unit.
+/// Non-numeric text (for example a bodyweight note) is left unchanged.
+String formatStoredWeightWithUnit(String raw, WeightUnit unit) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  final lbs = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (lbs == null) return trimmed;
+  return formatWeightWithUnit(lbs, unit);
+}
+
 /// Parses user input in display [unit] to pounds for internal math.
 double? displayWeightToLbs(String raw, WeightUnit unit) {
   final normalized = raw.trim().replaceAll(',', '.');

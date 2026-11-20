@@ -390,8 +390,9 @@ class CloudSettings {
   final String? settingsJson;
 
   /// Synced journal preferences keyed by the local settings key.
-  /// The sync switch, live rest countdown, floating-card position, and
-  /// Health write ids are never entries here. The tester Pro flag is.
+  /// The sync switch, live rest countdown, floating-card drag position, and
+  /// Health write ids are never entries here. The tester Pro flag and the
+  /// anchored or floating rest choice are.
   final Map<String, String> preferences;
 
   Map<String, Object?> toMap() {

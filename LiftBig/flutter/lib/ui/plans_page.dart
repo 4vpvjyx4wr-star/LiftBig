@@ -552,7 +552,7 @@ class _PlansBody extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: const Text('Get a recommendation'),
+                    child: const Text('Get a Recommendation'),
                   )
                 else
                   _Quiz(
@@ -608,7 +608,7 @@ class _PlansBody extends StatelessWidget {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           icon: const Icon(Icons.content_paste),
-          label: const Text('Paste a plan'),
+          label: const Text('Paste a Plan'),
         ),
         const SizedBox(height: 24),
         _SearchablePlanSection(
@@ -900,7 +900,7 @@ const _helpers = [
   'We look for a plan close to the days you can show up.',
   'We look for sessions that fit the time you have.',
   'We only suggest plans you can actually do with this setup.',
-  'Pick what sounds good. Not sure is fine.',
+  'Pick what sounds good. It\'s fine if you\'re not sure.',
 ];
 
 const _choices = <List<_QuizChoice>>[
@@ -1023,7 +1023,7 @@ class _QuizResultCard extends StatelessWidget {
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: EdgeInsets.zero,
                   title: const Text(
-                    'See the workouts',
+                    'See the Workouts',
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   children: [

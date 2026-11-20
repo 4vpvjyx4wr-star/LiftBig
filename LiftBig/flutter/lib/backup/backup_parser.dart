@@ -69,6 +69,7 @@ const List<String> liftBigPreferenceBackupKeys = [
   'apple_health_enabled',
   'health_workout_writes',
   'pro_tester_unlock',
+  'rest_timer_chrome',
 ];
 
 const _jsonPreferenceKeys = {

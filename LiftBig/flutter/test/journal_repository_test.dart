@@ -1224,6 +1224,7 @@ void main() {
         'daily_lift_reminder_message': 'Lift',
         'apple_health_enabled': true,
         'pro_tester_unlock': true,
+        'rest_timer_chrome': 'anchored',
         'rest_timer_state': {'active': true, 'exerciseName': 'LIVE'},
         'password': 'secret',
         'sync_enabled': 'true',
@@ -1249,6 +1250,7 @@ void main() {
     expect(await journal.favoritePlanIds(), {'plan-a', 'plan-b'});
     expect(await journal.loadColorThemeId(), 'forest');
     expect(await journal.proTesterUnlockEnabled(), isTrue);
+    expect(await journal.loadRestTimerAnchored(), isTrue);
     expect(await journal.appleHealthSyncEnabled(), isTrue);
     expect(await journal.storedAverageRestSeconds(), 90);
     expect(await journal.storedAverageLiftSeconds(), 45);
@@ -1284,6 +1286,7 @@ void main() {
     expect(exported, isNot(contains('secret')));
     final roundTrip = parseLiftBigBackup(exported);
     expect(roundTrip.preferences?['pro_tester_unlock'], 'true');
+    expect(roundTrip.preferences?['rest_timer_chrome'], 'anchored');
     expect(roundTrip.preferences?['rest_timer_ring_until_stopped'], 'true');
     expect(roundTrip.preferences?['color_theme_id'], 'forest');
     expect(roundTrip.preferences?['weight_unit'], 'kg');
@@ -1352,6 +1355,7 @@ void main() {
     expect(prefs['daily_lift_reminder_message'], '');
     expect(prefs['apple_health_enabled'], 'false');
     expect(prefs['pro_tester_unlock'], 'false');
+    expect(prefs['rest_timer_chrome'], 'floating');
     expect(prefs['favorite_plan_ids'], '[]');
     expect(prefs.containsKey('rest_timer_state'), isFalse);
     expect(prefs.containsKey('templates_json'), isFalse);
