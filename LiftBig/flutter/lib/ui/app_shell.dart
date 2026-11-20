@@ -235,7 +235,7 @@ class _AppShellState extends State<AppShell> {
           _select(ShellTab.home.index);
           showLiftBigNotice(
             context,
-            'Congrats on lifting big - see you tomorrow.',
+            'Congrats on lifting big. See you tomorrow.',
           );
         },
       ),

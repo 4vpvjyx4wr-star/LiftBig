@@ -6,6 +6,8 @@ import '../journal/logged_day.dart';
 import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import '../utils/distance_units.dart';
+import '../utils/weight_units.dart';
 import 'assign_plan_sheet.dart';
 import 'clear_day.dart';
 import 'day_page.dart';
@@ -41,6 +43,8 @@ class _HomePageState extends State<HomePage> {
   late String _selectedKey;
   Map<String, DaySummary> _summaries = {};
   JournalDay? _day;
+  var _weightUnit = WeightUnit.lb;
+  var _distanceUnit = DistanceUnit.mi;
 
   @override
   void initState() {
@@ -69,10 +73,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _reload() async {
     final summaries = await widget.journal.summariesForMonth(_month);
     final day = await widget.journal.getDay(_selectedKey);
+    final weightUnit = await widget.journal.storedWeightUnit();
+    final distanceUnit = await widget.journal.storedDistanceUnit();
     if (!mounted) return;
     setState(() {
       _summaries = {for (final summary in summaries) summary.dateKey: summary};
       _day = day;
+      _weightUnit = weightUnit;
+      _distanceUnit = distanceUnit;
     });
   }
 
@@ -347,6 +355,8 @@ class _HomePageState extends State<HomePage> {
             dateKey: _selectedKey,
             isToday: _selectedKey == today,
             day: _day,
+            weightUnit: _weightUnit,
+            distanceUnit: _distanceUnit,
             onLog: _openLog,
             onRest: _toggleRest,
             onCopy: _copyDay,
@@ -432,6 +442,8 @@ class _DayPanel extends StatelessWidget {
     required this.dateKey,
     required this.isToday,
     required this.day,
+    required this.weightUnit,
+    required this.distanceUnit,
     required this.onLog,
     required this.onRest,
     required this.onCopy,
@@ -446,6 +458,8 @@ class _DayPanel extends StatelessWidget {
   final String dateKey;
   final bool isToday;
   final JournalDay? day;
+  final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
   final void Function([String? exerciseId]) onLog;
   final ValueChanged<bool> onRest;
   final VoidCallback onCopy;
@@ -482,7 +496,7 @@ class _DayPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        workoutName ?? (resting ? 'Rest day' : 'No workout yet'),
+                        workoutName ?? (resting ? 'Rest Day' : 'No workout yet'),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -635,6 +649,8 @@ class _DayPanel extends StatelessWidget {
                 if (i > 0) const SizedBox(height: 8),
                 _ExerciseCard(
                   exercise: exercises[i],
+                  weightUnit: weightUnit,
+                  distanceUnit: distanceUnit,
                   onOpen: () => onLog(exercises[i].id),
                   onEdit: () => onEditExercise(exercises[i]),
                   onDelete: () => onDeleteExercise(exercises[i]),
@@ -731,6 +747,8 @@ class _SecondaryAction extends StatelessWidget {
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
     required this.exercise,
+    required this.weightUnit,
+    required this.distanceUnit,
     required this.onOpen,
     required this.onEdit,
     required this.onDelete,
@@ -738,6 +756,8 @@ class _ExerciseCard extends StatelessWidget {
   });
 
   final JournalExercise exercise;
+  final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -746,6 +766,7 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = supersetBadge(exercise);
+    final goalHint = _cardioGoalHint(exercise);
     final targetReps = (exercise.targetReps ?? '').trim();
     final repsLabel = targetReps.isEmpty
         ? null
@@ -824,6 +845,17 @@ class _ExerciseCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (goalHint != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 4),
+                  child: Text(
+                    goalHint,
+                    style: TextStyle(
+                      color: context.liftBig.muted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               if (repsLabel != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8, bottom: 4),
@@ -847,7 +879,7 @@ class _ExerciseCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2, right: 8),
                   child: Text(
-                    _setLine(exercise, set),
+                    _setLine(exercise, set, weightUnit, distanceUnit),
                     style: const TextStyle(fontSize: 13),
                   ),
                 ),
@@ -859,23 +891,45 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
-String _setLine(JournalExercise exercise, JournalSet set) {
+String? _cardioGoalHint(JournalExercise exercise) {
+  if (!exercise.isCardio || exercise.isCircuit) return null;
+  final duration = (exercise.targetDuration ?? '').trim();
+  final distance = (exercise.targetDistance ?? '').trim();
+  final parts = <String>[];
+  if (duration.isNotEmpty) parts.add('$duration min');
+  if (distance.isNotEmpty) parts.add(distance);
+  if (parts.isEmpty) return null;
+  return 'Goal: ${parts.join(' · ')}';
+}
+
+String _setLine(
+  JournalExercise exercise,
+  JournalSet set,
+  WeightUnit weightUnit,
+  DistanceUnit distanceUnit,
+) {
   if (exercise.isCardio && !exercise.isCircuit) {
     final minutes = set.reps.trim().isEmpty ? '—' : '${set.reps.trim()} min';
     final distance = set.weight.trim();
     if (distance.isEmpty) return minutes;
-    return '$minutes · $distance';
+    return '$minutes · ${formatStoredDistanceWithUnit(distance, distanceUnit)}';
   }
   if (exercise.isCircuit) {
     final done = set.checked ? 'Done · ' : '';
     final reps = set.reps.trim().isEmpty ? 'AMRAP' : set.reps.trim();
-    return '$done Set ${set.sortOrder + 1}  $reps';
+    final weight = set.weight.trim();
+    final load = weight.isEmpty
+        ? ''
+        : ' @ ${formatStoredWeightWithUnit(weight, weightUnit)}';
+    return '$done Set ${set.sortOrder + 1}  $reps$load';
   }
   final done = set.checked ? 'Done · ' : '';
   final warmup = set.isWarmup ? 'Warmup · ' : '';
   final loggedReps = loggedRepsField(set.reps);
   final reps = loggedReps.isEmpty ? '—' : loggedReps;
-  final weight = set.weight.isEmpty ? '—' : '${set.weight} lb';
+  final weight = set.weight.isEmpty
+      ? '—'
+      : formatStoredWeightWithUnit(set.weight, weightUnit);
   final time = set.durationSeconds?.trim();
   final timeLabel = exercise.isCore && time != null && time.isNotEmpty
       ? ' · $time sec'

@@ -534,7 +534,6 @@ class Session {
         restPaused = false;
         restRemaining = restPreset;
         restEndsAt = unixNow() + restPreset;
-        restHold = false;
         timer.stop();
         timer.start(method(:tickRest), 1000, true);
         persistRest();

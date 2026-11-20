@@ -166,18 +166,37 @@ List<String> _namePhrases(String prepared) {
 
 bool _namePrefixMatch(String name, String query) {
   if (query.isEmpty) return false;
-  if (name.startsWith(query)) return true;
+  if (name.startsWith(query) && _prefixBoundary(name, query)) return true;
   final words = name.split(RegExp(r'[^a-z0-9]+'));
-  return words.any((word) => word.isNotEmpty && word.startsWith(query));
+  return words.any((word) {
+    if (word.isEmpty) return false;
+    if (query.length < 3) return word == query;
+    return word.startsWith(query);
+  });
+}
+
+/// Two-letter queries such as "ab" match a whole word, not the start of
+/// "barbell" or "cable".
+bool _prefixBoundary(String name, String query) {
+  if (query.length >= 3 || name.length == query.length) return true;
+  return !RegExp(r'[a-z0-9]').hasMatch(name[query.length]);
 }
 
 bool _tokenMatches(LibraryLift lift, String haystack, String token) {
   if (token.isEmpty) return true;
-  if (haystack.contains(token)) return true;
+  final reserved =
+      token.length <= 3 &&
+      (_muscleWords.containsKey(token) || _abbreviations.containsKey(token));
+  if (!reserved && haystack.contains(token)) return true;
+  if (reserved && _haystackHasWord(haystack, token)) return true;
   if (_abbreviationMatches(haystack, token)) return true;
   final groups = _muscleWords[token];
   if (groups != null && _trainsAny(lift, groups)) return true;
   return false;
+}
+
+bool _haystackHasWord(String haystack, String token) {
+  return RegExp('\\b${RegExp.escape(token)}\\b').hasMatch(haystack);
 }
 
 bool _abbreviationMatches(String haystack, String token) {

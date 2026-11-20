@@ -6,7 +6,7 @@ import 'progressive_overload.dart';
 const double defaultAssumedBodyWeightLbs = 180;
 
 const String defaultAssumedBodyWeightLabel =
-    '180 lb default (set body weight in Settings for your numbers)';
+    'Default is 180 lb. Set body weight in Settings for your numbers.';
 
 /// 50th-percentile working weights use Strength Level "Intermediate" one-rep
 /// max standards (https://strengthlevel.com/strength-standards) as a ratio of

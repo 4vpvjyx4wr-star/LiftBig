@@ -12,6 +12,7 @@ import '../companion/companion_bridge.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
+import '../journal/strength_standards.dart';
 import '../pro/pro_status.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
@@ -1145,7 +1146,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    title: const Text('Include Warmups on Heavy Compounds'),
                     subtitle: Text(
                       'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
                       style: TextStyle(color: context.liftBig.muted),
@@ -1169,7 +1170,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Rate Set Difficulty'),
                     subtitle: Text(
-                      'Set difficulty can be tracked with easy, moderate, or difficult, which factors into your strength predictions. Unrated sets carry default weight.',
+                      'Set difficulty can be tracked with Easy, Moderate, or Difficult, which factors into your strength predictions. Unrated sets carry default weight.',
                       style: TextStyle(color: context.liftBig.muted),
                     ),
                     value: _logDifficulty,
@@ -1321,7 +1322,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       labelText:
                           'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
                       hintText: 'Optional',
-                      helperText: 'Default = 180',
+                      helperText:
+                          'Default is ${formatWeightWithUnit(defaultAssumedBodyWeightLbs, _weightUnit)}.',
                     ),
                     onSubmitted: (_) => _saveBodyWeight(),
                     onEditingComplete: _saveBodyWeight,
@@ -1372,7 +1374,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Play tone',
+                            tooltip: 'Play Tone',
                             onPressed: _previewAlarmTone,
                             icon: Icon(
                               Icons.play_arrow,

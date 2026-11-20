@@ -370,12 +370,25 @@ final class RestNotificationStopBridge: NSObject, UNUserNotificationCenterDelega
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        _ = notification
-        if #available(iOS 14.0, *) {
-            completionHandler([.banner, .list, .sound])
-        } else {
-            completionHandler([.alert, .sound])
+        if let forwarding,
+           forwarding.responds(to: #selector(UNUserNotificationCenterDelegate.userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+            forwarding.userNotificationCenter?(
+                center,
+                willPresent: notification,
+                withCompletionHandler: completionHandler
+            )
+            return
         }
+        var options: UNNotificationPresentationOptions
+        if #available(iOS 14.0, *) {
+            options = [.banner, .list]
+        } else {
+            options = [.alert]
+        }
+        if notification.request.content.sound != nil {
+            options.insert(.sound)
+        }
+        completionHandler(options)
     }
 
     func userNotificationCenter(

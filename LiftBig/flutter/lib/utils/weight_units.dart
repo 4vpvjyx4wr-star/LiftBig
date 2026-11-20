@@ -46,6 +46,16 @@ String formatWeightWithUnit(double lbs, WeightUnit unit, {int maxDecimals = 1}) 
   return unit == WeightUnit.lb ? '$n lb' : '$n kg';
 }
 
+/// A stored pound value, such as a logged set, shown in [unit].
+/// Text that is not a number is returned unchanged.
+String formatStoredWeightWithUnit(String raw, WeightUnit unit, {int maxDecimals = 1}) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final lbs = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (lbs == null) return trimmed;
+  return formatWeightWithUnit(lbs, unit, maxDecimals: maxDecimals);
+}
+
 /// Parses user input in display [unit] to pounds for internal math.
 double? displayWeightToLbs(String raw, WeightUnit unit) {
   final normalized = raw.trim().replaceAll(',', '.');
