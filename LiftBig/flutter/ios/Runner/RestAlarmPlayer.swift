@@ -371,10 +371,12 @@ final class RestNotificationStopBridge: NSObject, UNUserNotificationCenterDelega
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         _ = notification
+        // Banner and Notification Center, including the lock screen.
+        // The in-app tone is already looping, so this presentation stays quiet.
         if #available(iOS 14.0, *) {
-            completionHandler([.banner, .list, .sound])
+            completionHandler([.banner, .list])
         } else {
-            completionHandler([.alert, .sound])
+            completionHandler([.alert])
         }
     }
 

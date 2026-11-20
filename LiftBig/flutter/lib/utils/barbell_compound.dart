@@ -105,9 +105,11 @@ bool _plateGraphicName(String key) {
 /// On unless the stored value is the word `false`.
 bool showPlateGraphicFromStored(String? raw) => raw != 'false';
 
-/// Stored bar weight. Presets and a custom bar from 5 to 75 lb are kept.
+/// Stored bar weight. Presets and a custom bar from 5 to 300 lb are kept.
 double standardBarLbFromStored(String? raw) {
   final parsed = double.tryParse((raw ?? '').trim());
-  if (parsed == null || parsed < 5 || parsed > 75) return defaultBarLb;
+  if (parsed == null || parsed < minCustomBarLb || parsed > maxCustomBarLb) {
+    return defaultBarLb;
+  }
   return parsed;
 }

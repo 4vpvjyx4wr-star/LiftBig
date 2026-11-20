@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../companion/companion_bridge.dart';
 import '../companion/watch_session.dart';
@@ -20,7 +20,7 @@ const String restTimerTileOffsetKey = 'rest_timer_tile_offset';
 enum RestTimerChrome { floating, anchored }
 
 /// App-wide rest countdown. Survives tab changes and app restarts.
-class RestTimerController extends ChangeNotifier {
+class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
   RestTimerController({
     required this.journal,
     RestNotificationScheduler? notifications,
@@ -48,8 +48,12 @@ class RestTimerController extends ChangeNotifier {
   var _allowFinishedAlarm = false;
   var _alarmEpoch = 0;
   var _watchListening = false;
+  var _observingLifecycle = false;
   var _disposed = false;
   var _restRev = 0;
+  var _lastFullSeconds = 0;
+  String? _lastExerciseId;
+  String? _lastExerciseName;
   late final Future<void> Function() _stopFromOutside = stopFromNotification;
 
   RestTimerSnapshot get snapshot => _snapshot;
@@ -82,6 +86,7 @@ class RestTimerController extends ChangeNotifier {
       _snapshot.endAtEpochMs != null;
 
   Future<void> load() async {
+    _observeLifecycle();
     _tick?.cancel();
     _tick = null;
     // Disarm before any await. A restored rest must not loop until this
@@ -276,6 +281,7 @@ class RestTimerController extends ChangeNotifier {
       paused: false,
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
+    _rememberRest();
     await _persistAndSchedule(endAt);
     await _clearDragOffset();
     await _syncAlarmSession();
@@ -349,6 +355,7 @@ class RestTimerController extends ChangeNotifier {
         paused: true,
         pausedRemainingSeconds: seconds,
       );
+      if (seconds > 0) _lastFullSeconds = seconds;
       await _persist();
       _publishWatchRest();
       _syncTick();
@@ -385,11 +392,19 @@ class RestTimerController extends ChangeNotifier {
       paused: false,
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
+    _lastFullSeconds = seconds;
     await _persistAndSchedule(endAt);
     await _syncAlarmSession();
     _publishWatchRest();
     _syncTick();
     notifyListeners();
+  }
+
+  void _rememberRest() {
+    if (_snapshot.fullSeconds <= 0) return;
+    _lastFullSeconds = _snapshot.fullSeconds;
+    _lastExerciseId = _snapshot.exerciseId;
+    _lastExerciseName = _snapshot.exerciseName;
   }
 
   /// Restarts the current rest from its full duration and keeps counting.
@@ -398,8 +413,35 @@ class RestTimerController extends ChangeNotifier {
     String? exerciseName,
     int? fullSeconds,
   }) async {
-    final seconds = fullSeconds ?? _snapshot.fullSeconds;
-    if (!_snapshot.active || seconds <= 0) return;
+    final remembered = _lastFullSeconds > 0
+        ? _lastFullSeconds
+        : _snapshot.fullSeconds;
+    final seconds = fullSeconds ?? remembered;
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_timer_controller.dart:reset',
+      message: 'reset rest',
+      hypothesisId: 'G',
+      runId: 'post-fix',
+      data: {
+        'active': _snapshot.active,
+        'fullSeconds': _snapshot.fullSeconds,
+        'requested': fullSeconds,
+        'seconds': seconds,
+        'remaining': remaining,
+      },
+    );
+    // #endregion
+    if (seconds <= 0) return;
+    if (!_snapshot.active) {
+      await start(
+        exerciseId: exerciseId ?? _lastExerciseId ?? _snapshot.exerciseId ?? '',
+        exerciseName:
+            exerciseName ?? _lastExerciseName ?? _snapshot.exerciseName ?? 'Rest',
+        fullSeconds: seconds,
+      );
+      return;
+    }
     await _notifications.cancelRestFinished();
     _playedFinishedFeedback = false;
     _alarmEpoch += 1;
@@ -417,6 +459,7 @@ class RestTimerController extends ChangeNotifier {
       paused: false,
       endAtEpochMs: endAt.millisecondsSinceEpoch,
     );
+    _rememberRest();
     await _persistAndSchedule(endAt);
     await _syncAlarmSession();
     _publishWatchRest();
@@ -457,7 +500,7 @@ class RestTimerController extends ChangeNotifier {
   Future<void> togglePause() async {
     if (!_snapshot.active) return;
     if (remaining <= 0) {
-      await stopAlarm();
+      await dismiss();
       return;
     }
     if (_snapshot.paused) {
@@ -577,7 +620,8 @@ class RestTimerController extends ChangeNotifier {
   Future<void> _playFinished(int epoch) async {
     final looping = await playRestTimerFinishedAlerts(
       _alerts,
-      onAlarmPlayed: _notifications.cancelRestFinished,
+      onAlarmPlayed: () =>
+          _notifications.keepLockScreenRest(_notificationOptions()),
     );
     if (epoch != _alarmEpoch) {
       if (isRunning && _alerts.soundEnabled) {
@@ -670,9 +714,30 @@ class RestTimerController extends ChangeNotifier {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final leaving = state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused;
+    if (!leaving || _disposed || !_alerts.notificationEnabled) return;
+    final finished = _alarmRinging || (_snapshot.active && remaining <= 0);
+    if (!finished) return;
+    unawaited(_notifications.keepLockScreenRest(_notificationOptions()));
+  }
+
+  void _observeLifecycle() {
+    if (_observingLifecycle) return;
+    WidgetsBinding.instance.addObserver(this);
+    _observingLifecycle = true;
+  }
+
+  @override
   void dispose() {
     _disposed = true;
     _tick?.cancel();
+    if (_observingLifecycle) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observingLifecycle = false;
+    }
     if (_watchListening) {
       _companion.removeListener(_onWatchMessage);
       _watchListening = false;

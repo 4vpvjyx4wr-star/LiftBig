@@ -161,6 +161,14 @@ function ensureProgramSeeds(state: TemplatesState): TemplatesState {
       )
     : [...folders, ...cloneFolders([JOEY_C4_FOLDER])]
 
+  const legacyJoeyC5FolderId = 'folder-joey-c5'
+  templates = templates.filter(
+    (template) =>
+      template.folderId !== legacyJoeyC5FolderId &&
+      !template.id.startsWith('plan-joey-c5'),
+  )
+  folders = folders.filter((folder) => folder.id !== legacyJoeyC5FolderId)
+
   const hasJoeyC5Folder = folders.some((folder) => folder.id === JOEY_C5_FOLDER.id)
   folders = hasJoeyC5Folder
     ? folders.map((folder) =>

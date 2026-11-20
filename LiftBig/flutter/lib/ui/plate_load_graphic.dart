@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -26,9 +28,9 @@ class PlateLoadGraphic extends StatelessWidget {
   static const _full = _PlateGraphicScale(
     collarWidth: 12,
     collarHeight: 46,
-    sleeveWidth: 72,
-    sleeveHeight: 16,
-    sleeveFont: 9,
+    sleeveWidth: 84,
+    sleeveHeight: 28,
+    sleeveFont: 16,
     plateWidth: 30,
     plateBase: 32,
     plateSpan: 70,
@@ -38,25 +40,26 @@ class PlateLoadGraphic extends StatelessWidget {
   );
 
   static const _compact = _PlateGraphicScale(
-    collarWidth: 6,
-    collarHeight: 22,
-    sleeveWidth: 36,
-    sleeveHeight: 10,
-    sleeveFont: 7,
-    plateWidth: 16,
-    plateBase: 16,
-    plateSpan: 30,
-    plateFont: 8,
-    gap: 1,
+    collarWidth: 8,
+    collarHeight: 28,
+    sleeveWidth: 72,
+    sleeveHeight: 20,
+    sleeveFont: 11,
+    plateWidth: 22,
+    plateBase: 20,
+    plateSpan: 44,
+    plateFont: 10,
+    gap: 2,
     maxShown: 6,
   );
 
   @override
   Widget build(BuildContext context) {
     final scale = compact ? _compact : _full;
-    final sleeveWidth = centerLabel == 'BAR'
-        ? scale.sleeveWidth
-        : scale.sleeveWidth + (compact ? 8 : 12);
+    final sleeveWidth = math.max(
+      scale.sleeveWidth,
+      centerLabel.length * (compact ? 8.0 : 9.0),
+    );
     final shown = plates.take(scale.maxShown).toList();
     final overflow = plates.length - shown.length;
     final left = shown.reversed.toList();
@@ -81,13 +84,11 @@ class PlateLoadGraphic extends StatelessWidget {
                 border: Border.all(color: context.liftBig.border),
               ),
         child: Column(
-          crossAxisAlignment: compact
-              ? CrossAxisAlignment.start
-              : CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             FittedBox(
               fit: BoxFit.scaleDown,
-              alignment: compact ? Alignment.centerLeft : Alignment.center,
+              alignment: Alignment.center,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -221,7 +222,7 @@ class _CarrierSleeve extends StatelessWidget {
           color: const Color(0xFFD1D5DB),
           fontSize: scale.sleeveFont,
           fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
+          letterSpacing: label.contains(RegExp(r'\d')) ? 0 : 0.6,
         ),
       ),
     );

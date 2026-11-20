@@ -8,7 +8,7 @@ import 'rest_alarm.dart';
 /// Foreground feedback when the in-app rest countdown hits zero.
 ///
 /// [onAlarmPlayed] runs only after the in-process tone has started, so the
-/// pending notification can be cancelled and a living app does not double-ring.
+/// lock-screen notification can stay up without playing a second tone.
 /// Returns true when that tone is looping until the lifter stops it.
 /// The killed-app notification is scheduled separately and plays once.
 Future<bool> playRestTimerFinishedAlerts(

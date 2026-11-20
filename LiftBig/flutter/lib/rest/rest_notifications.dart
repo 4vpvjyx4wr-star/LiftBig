@@ -169,6 +169,10 @@ abstract class RestNotificationScheduler {
   });
   Future<void> cancelRestFinished();
 
+  /// Puts the finished-rest alert back on the lock screen without a second tone.
+  /// The in-app loop is already playing, so this copy stays silent.
+  Future<void> keepLockScreenRest(RestFinishedNotificationOptions options);
+
   /// True when the rest-finished alert is already on screen.
   /// A cold start must cancel that alert instead of looping the in-app tone.
   Future<bool> restFinishedIsDelivered();
@@ -177,6 +181,9 @@ abstract class RestNotificationScheduler {
 class NoOpRestNotificationScheduler implements RestNotificationScheduler {
   @override
   Future<void> cancelRestFinished() async {}
+
+  @override
+  Future<void> keepLockScreenRest(RestFinishedNotificationOptions options) async {}
 
   @override
   Future<bool> restFinishedIsDelivered() async => false;
@@ -286,6 +293,40 @@ class FlutterRestNotificationScheduler implements RestNotificationScheduler {
   Future<void> cancelRestFinished() async {
     if (kIsWeb) return;
     await _plugin.cancel(restFinishedNotificationId);
+  }
+
+  @override
+  Future<void> keepLockScreenRest(
+    RestFinishedNotificationOptions options,
+  ) async {
+    // #region agent log
+    agentDebugLog(
+      location: 'rest_notifications.dart:keepLockScreenRest',
+      message: 'lock screen rest notification kept',
+      hypothesisId: 'F',
+      runId: 'post-fix',
+      data: {
+        'enabled': options.enabled,
+        'inAppSound': options.sound,
+      },
+    );
+    // #endregion
+    if (kIsWeb || !options.enabled) return;
+    await initialize();
+    final details = restFinishedNotificationDetails(
+      RestFinishedNotificationOptions(
+        enabled: true,
+        sound: false,
+        vibration: options.vibration,
+        soundId: options.soundId,
+      ),
+    );
+    await _plugin.show(
+      restFinishedNotificationId,
+      'Rest is done',
+      'LiftBig',
+      details,
+    );
   }
 
   @override

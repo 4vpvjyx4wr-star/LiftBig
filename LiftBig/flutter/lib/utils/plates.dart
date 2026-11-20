@@ -46,6 +46,10 @@ const double defaultBarLb = 45;
 /// Olympic bars plus the lighter bars a Smith machine or gym often has.
 const List<double> barChoicesLb = [45, 35, 25, 15];
 
+/// Custom bar weights heavier than a 45 lb bar, through a heavy specialty bar.
+const double minCustomBarLb = 5;
+const double maxCustomBarLb = 300;
+
 /// Smith bars are often unmarked. 25 lb is the starting guess until the
 /// lifter sets the bar they are using.
 const double defaultSmithBarLb = 25;

@@ -83,6 +83,8 @@ void main() {
     expect(standardBarLbFromStored('45'), 45);
     expect(standardBarLbFromStored('35'), 35);
     expect(standardBarLbFromStored('20'), 20);
+    expect(standardBarLbFromStored('100'), 100);
+    expect(standardBarLbFromStored('400'), defaultBarLb);
     expect(standardBarLbFromStored('2'), defaultBarLb);
   });
 
@@ -107,7 +109,7 @@ void main() {
       ),
     );
 
-    expect(find.text('BAR'), findsOneWidget);
+    expect(find.text('45 lb'), findsOneWidget);
     expect(find.text('Each Side: 2×45'), findsOneWidget);
     expect(find.text('SLED'), findsNothing);
 

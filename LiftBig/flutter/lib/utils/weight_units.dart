@@ -60,6 +60,23 @@ String lbsToDisplayWeightString(double lbs, WeightUnit unit, {int maxDecimals = 
   return formatWeightFromLbs(lbs, unit, maxDecimals: maxDecimals);
 }
 
+/// Body-weight field text after a lb/kg toggle.
+///
+/// [raw] is interpreted in [from]. A readable value wins over [storedLbs].
+/// An empty field uses [storedLbs]. An unreadable value returns null so the
+/// caller can leave the typed text unchanged.
+String? bodyWeightFieldAfterUnitChange({
+  required String raw,
+  required WeightUnit from,
+  required WeightUnit to,
+  double? storedLbs,
+}) {
+  final typed = displayWeightToLbs(raw, from);
+  final lbs = typed ?? (raw.trim().isEmpty ? storedLbs : null);
+  if (lbs == null || lbs <= 0) return null;
+  return lbsToDisplayWeightString(lbs, to);
+}
+
 const int weightPickerMaxLbs = 500;
 const int weightPickerStepLbs = 5;
 const double weightPickerStepKg = 2.5;

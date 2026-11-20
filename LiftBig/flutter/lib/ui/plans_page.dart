@@ -550,6 +550,40 @@ class _PlansBody extends StatelessWidget {
           onChange: () => _changeCalendarPlan(context),
         ),
         const SizedBox(height: 20),
+        _SearchablePlanSection(
+          title: 'Premade Plans',
+          catalog: catalog,
+          plans: _premadePlans,
+          onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
+        ),
+        _SearchablePlanSection(
+          title: 'Community Plans',
+          catalog: catalog,
+          plans: const [],
+          onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
+          header: Padding(
+            padding: EdgeInsets.fromLTRB(0, 0, 0, 12),
+            child: Text(
+              'Sharing plans with other people is not available yet. There is no upload, account, or feed.',
+              style: TextStyle(color: context.liftBig.muted),
+            ),
+          ),
+        ),
+        _SearchablePlanSection(
+          title: 'Custom Plans',
+          catalog: catalog,
+          plans: customPlans,
+          onLog: onLogWorkout,
+          favoritePlanIds: favoritePlanIds,
+          onFavoriteChanged: onFavoriteChanged,
+          onEditPlan: onEditCustomPlan,
+          emptyMessage: 'You have not created a plan yet.',
+        ),
+        const SizedBox(height: 8),
         Material(
           color: context.liftBig.card,
           shape: RoundedRectangleBorder(
@@ -638,42 +672,6 @@ class _PlansBody extends StatelessWidget {
           ),
           icon: const Icon(Icons.content_paste),
           label: const Text('Paste a plan'),
-        ),
-        const SizedBox(height: 24),
-        _SearchablePlanSection(
-          title: 'Premade Plans',
-          catalog: catalog,
-          plans: _premadePlans,
-          onLog: onLogWorkout,
-          favoritePlanIds: favoritePlanIds,
-          onFavoriteChanged: onFavoriteChanged,
-        ),
-        const SizedBox(height: 8),
-        _SearchablePlanSection(
-          title: 'Community Plans',
-          catalog: catalog,
-          plans: const [],
-          onLog: onLogWorkout,
-          favoritePlanIds: favoritePlanIds,
-          onFavoriteChanged: onFavoriteChanged,
-          header:  Padding(
-            padding: EdgeInsets.fromLTRB(0, 0, 0, 12),
-            child: Text(
-              'Sharing plans with other people is not available yet. There is no upload, account, or feed.',
-              style: TextStyle(color: context.liftBig.muted),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _SearchablePlanSection(
-          title: 'Custom Plans',
-          catalog: catalog,
-          plans: customPlans,
-          onLog: onLogWorkout,
-          favoritePlanIds: favoritePlanIds,
-          onFavoriteChanged: onFavoriteChanged,
-          onEditPlan: onEditCustomPlan,
-          emptyMessage: 'You have not created a plan yet.',
         ),
       ],
     );
@@ -1157,18 +1155,30 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
         if (planMatchesSearch(plan, widget.catalog, query)) plan,
     ], widget.favoritePlanIds);
 
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        initiallyExpanded: false,
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        iconColor: context.liftBig.muted,
-        collapsedIconColor: context.liftBig.muted,
-        title: Text(
-          widget.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: context.liftBig.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: context.liftBig.primary, width: 1.5),
         ),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            initiallyExpanded: false,
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            iconColor: context.liftBig.primary,
+            collapsedIconColor: context.liftBig.primary,
+            title: Text(
+              widget.title,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: context.liftBig.primary,
+              ),
+            ),
         children: [
           TextField(
             controller: _search,
@@ -1207,7 +1217,9 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
                     ? null
                     : () => widget.onEditPlan!(plan),
               ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

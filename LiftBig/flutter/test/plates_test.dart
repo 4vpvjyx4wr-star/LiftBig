@@ -117,7 +117,7 @@ void main() {
     );
 
     expect(find.text('Each Side: 3×45, 1×25'), findsOneWidget);
-    expect(find.text('SLED'), findsOneWidget);
+    expect(find.text('100 lb'), findsOneWidget);
     expect(find.textContaining('45, 45, 45, 25'), findsNothing);
 
     weight.text = '135';
@@ -137,6 +137,6 @@ void main() {
     );
 
     expect(find.text('Each Side: 1×45, 1×10'), findsOneWidget);
-    expect(find.text('BAR'), findsOneWidget);
+    expect(find.text('25 lb'), findsOneWidget);
   });
 }

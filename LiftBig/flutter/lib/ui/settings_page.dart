@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../companion/companion_bridge.dart';
+import '../debug/agent_log.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
@@ -68,8 +69,8 @@ class _SettingsPageState extends State<SettingsPage> {
   late final ProStatus _proStatus;
   final _heightFeet = TextEditingController();
   final _heightInches = TextEditingController();
+  final _heightMeters = TextEditingController();
   final _heightCm = TextEditingController();
-  double? _heightStored;
   var _weightUnit = WeightUnit.lb;
   var _distanceUnit = DistanceUnit.mi;
   final _bodyWeight = TextEditingController();
@@ -123,6 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _syncNow() async {
     if (_heightFeet.text.trim().isNotEmpty ||
         _heightInches.text.trim().isNotEmpty ||
+        _heightMeters.text.trim().isNotEmpty ||
         _heightCm.text.trim().isNotEmpty) {
       await _saveHeight();
     }
@@ -171,7 +173,7 @@ class _SettingsPageState extends State<SettingsPage> {
     var height = await _bodyWeightService.importHeightIfEmpty();
     height ??= await journal.storedHeightInches();
     if (!mounted) return;
-    _applyHeightFields(height, weightUnit);
+    _applyHeightFields(height, distanceUnit);
     _bodyWeight.text = bodyLbs == null
         ? ''
         : lbsToDisplayWeightString(bodyLbs, weightUnit);
@@ -183,21 +185,24 @@ class _SettingsPageState extends State<SettingsPage> {
       _restAlerts = alerts;
       _watches = watches;
       _appleHealth = appleHealth;
-      _heightStored = height;
       _loadingPrefs = false;
     });
   }
 
-  void _applyHeightFields(double? inches, WeightUnit unit) {
-    _heightStored = inches;
+  void _applyHeightFields(double? inches, DistanceUnit unit) {
     if (inches == null) {
       _heightFeet.text = '';
       _heightInches.text = '';
+      _heightMeters.text = '';
       _heightCm.text = '';
       return;
     }
-    if (unit == WeightUnit.kg) {
-      _heightCm.text = formatRoundedNumber(inches * 2.54, 1);
+    if (unit == DistanceUnit.km) {
+      final totalCm = inches * 2.54;
+      final meters = totalCm ~/ 100;
+      final cm = totalCm - meters * 100;
+      _heightMeters.text = '$meters';
+      _heightCm.text = formatRoundedNumber(cm, 1);
       return;
     }
     final feet = inches ~/ 12;
@@ -397,20 +402,61 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _setWeightUnit(WeightUnit unit) async {
-    setState(() => _weightUnit = unit);
+    if (unit == _weightUnit) return;
+    final from = _weightUnit;
+    final raw = _bodyWeight.text;
+    final typed = displayWeightToLbs(raw, from);
+    // #region agent log
+    agentDebugLog(
+      location: 'settings_page.dart:_setWeightUnit',
+      message: 'weight toggle before convert',
+      hypothesisId: 'H',
+      runId: 'post-fix',
+      data: {
+        'from': from.name,
+        'to': unit.name,
+        'hadTyped': raw.trim().isNotEmpty,
+        'parsedTyped': typed != null,
+      },
+    );
+    // #endregion
+    if (typed != null) await _saveBodyWeight();
+    if (!mounted) return;
+    final stored = await widget.sync.journal.storedBodyWeightLbs();
+    final next = bodyWeightFieldAfterUnitChange(
+      raw: raw,
+      from: from,
+      to: unit,
+      storedLbs: stored,
+    );
+    setState(() {
+      _weightUnit = unit;
+      if (next != null) _bodyWeight.text = next;
+    });
     await widget.sync.journal.setWeightUnit(unit);
-    final lbs = await widget.sync.journal.storedBodyWeightLbs();
-    if (lbs != null && mounted) {
-      _bodyWeight.text = lbsToDisplayWeightString(lbs, unit);
-    }
-    if (mounted) _applyHeightFields(_heightStored, unit);
+    // #region agent log
+    agentDebugLog(
+      location: 'settings_page.dart:_setWeightUnit',
+      message: 'weight toggle after convert',
+      hypothesisId: 'H',
+      runId: 'post-fix',
+      data: {
+        'converted': next != null,
+        'usedStored': typed == null && stored != null,
+      },
+    );
+    // #endregion
   }
 
   Future<void> _saveHeight() async {
     final double? inches;
-    if (_weightUnit == WeightUnit.kg) {
-      final cm = double.tryParse(_heightCm.text.trim().replaceAll(',', '.'));
-      inches = cm == null ? null : cm / 2.54;
+    if (_distanceUnit == DistanceUnit.km) {
+      final meters =
+          double.tryParse(_heightMeters.text.trim().replaceAll(',', '.')) ?? 0;
+      final cm =
+          double.tryParse(_heightCm.text.trim().replaceAll(',', '.')) ?? 0;
+      final totalCm = meters * 100 + cm;
+      inches = totalCm <= 0 ? null : totalCm / 2.54;
     } else {
       final feet = double.tryParse(_heightFeet.text.trim()) ?? 0;
       final inch =
@@ -424,7 +470,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     final stored = await widget.sync.journal.storedHeightInches();
     if (!mounted) return;
-    _applyHeightFields(stored, _weightUnit);
+    _applyHeightFields(stored, _distanceUnit);
     if (wrote == false) {
       setState(() {
         _healthNote = 'Saved on this device. Apple Health needs permission to sync height.';
@@ -433,8 +479,19 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _setDistanceUnit(DistanceUnit unit) async {
+    if (unit == _distanceUnit) return;
+    final hasHeight = _distanceUnit == DistanceUnit.km
+        ? _heightMeters.text.trim().isNotEmpty ||
+            _heightCm.text.trim().isNotEmpty
+        : _heightFeet.text.trim().isNotEmpty ||
+            _heightInches.text.trim().isNotEmpty;
+    if (hasHeight) await _saveHeight();
+    if (!mounted) return;
     setState(() => _distanceUnit = unit);
     await widget.sync.journal.setDistanceUnit(unit);
+    final stored = await widget.sync.journal.storedHeightInches();
+    if (!mounted) return;
+    setState(() => _applyHeightFields(stored, unit));
   }
 
   Future<void> _saveBodyWeight() async {
@@ -651,6 +708,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _bodyWeight.dispose();
     _heightFeet.dispose();
     _heightInches.dispose();
+    _heightMeters.dispose();
     _heightCm.dispose();
     _averageRest.dispose();
     _averageLift.dispose();
@@ -912,19 +970,35 @@ class _SettingsPageState extends State<SettingsPage> {
     ];
   }
 
-  List<Widget> _sectionHeading(String title, {bool first = false}) {
-    return [
-      if (!first) ...[
-        const SizedBox(height: 24),
-        Divider(height: 1, thickness: 1, color: context.liftBig.border),
-        const SizedBox(height: 24),
-      ],
-      Text(
-        title,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+  Widget _settingsCard(String title, List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.liftBig.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.liftBig.border),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: context.liftBig.primary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ...children,
+            ],
+          ),
+        ),
       ),
-      const SizedBox(height: 8),
-    ];
+    );
   }
 
   List<Widget> _watchSection() {
@@ -1092,13 +1166,180 @@ class _SettingsPageState extends State<SettingsPage> {
                 primary: false,
                 padding: const EdgeInsets.all(20),
                 children: [
-                  ..._sectionHeading('Tools', first: true),
-                  ..._toolSection(sync),
-                  if (_proActive) ...[
-                    ..._sectionHeading('Smart Watch'),
-                    ..._watchSection(),
+                  _settingsCard('Tools', _toolSection(sync)),
+                  _settingsCard('LiftBig Pro', _proActivation()),
+                  ListenableBuilder(
+                    listenable: widget.themes,
+                    builder: (context, _) {
+                      final selectedId = widget.themes.palette.id;
+                      final free = [
+                        for (final palette in liftBigThemePresets)
+                          if (!palette.proOnly) palette,
+                      ];
+                      final pro = [
+                        for (final palette in liftBigThemePresets)
+                          if (palette.proOnly) palette,
+                      ];
+                      return _settingsCard('Appearance', [
+                          _themeStrip(
+                            palettes: free,
+                            selectedId: selectedId,
+                            controller: _freeThemeScroll,
+                          ),
+                          Text(
+                            'Pro themes',
+                            style: TextStyle(
+                              color: context.liftBig.foreground,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (!_proActive)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, bottom: 4),
+                              child: Text(
+                                'LiftBig Pro unlocks these themes.',
+                                style: TextStyle(color: context.liftBig.muted),
+                              ),
+                            ),
+                          _themeStrip(
+                            palettes: pro,
+                            selectedId: selectedId,
+                            controller: _proThemeScroll,
+                          ),
+                        ]);
+                    },
+                  ),
+                  _settingsCard('Units', [
+                  if (_loadingPrefs)
+                    const LinearProgressIndicator()
+                  else ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SegmentedButton<WeightUnit>(
+                            segments: const [
+                              ButtonSegment(
+                                value: WeightUnit.lb,
+                                label: Text('lb'),
+                              ),
+                              ButtonSegment(
+                                value: WeightUnit.kg,
+                                label: Text('kg'),
+                              ),
+                            ],
+                            selected: {_weightUnit},
+                            onSelectionChanged: (value) {
+                              liftBigSelectionHaptic();
+                              _setWeightUnit(value.first);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SegmentedButton<DistanceUnit>(
+                            segments: const [
+                              ButtonSegment(
+                                value: DistanceUnit.mi,
+                                label: Text('mi'),
+                              ),
+                              ButtonSegment(
+                                value: DistanceUnit.km,
+                                label: Text('km'),
+                              ),
+                            ],
+                            selected: {_distanceUnit},
+                            onSelectionChanged: (value) {
+                              liftBigSelectionHaptic();
+                              _setDistanceUnit(value.first);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
-                  ..._sectionHeading('Logging'),
+                  ]),
+                  _settingsCard('Your Metrics', [
+                  if (_distanceUnit == DistanceUnit.mi)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _heightFeet,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Height (ft)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _heightInches,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Height (in)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _heightMeters,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Height (m)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _heightCm,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            decoration: const InputDecoration(
+                              labelText: 'Height (cm)',
+                            ),
+                            onSubmitted: (_) => _saveHeight(),
+                            onEditingComplete: _saveHeight,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _bodyWeight,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                    ],
+                    decoration: InputDecoration(
+                      labelText:
+                          'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
+                      hintText: 'Optional',
+                      helperText: 'Default = 180',
+                    ),
+                    onSubmitted: (_) => _saveBodyWeight(),
+                    onEditingComplete: _saveBodyWeight,
+                  ),
+                  ]),
+                  _settingsCard('Logging', [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Strength Prediction'),
@@ -1176,157 +1417,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     activeThumbColor: context.liftBig.primary,
                     onChanged: _setLogDifficulty,
                   ),
-                  ..._sectionHeading('Themes'),
-                  ListenableBuilder(
-                    listenable: widget.themes,
-                    builder: (context, _) {
-                      final selectedId = widget.themes.palette.id;
-                      final free = [
-                        for (final palette in liftBigThemePresets)
-                          if (!palette.proOnly) palette,
-                      ];
-                      final pro = [
-                        for (final palette in liftBigThemePresets)
-                          if (palette.proOnly) palette,
-                      ];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _themeStrip(
-                            palettes: free,
-                            selectedId: selectedId,
-                            controller: _freeThemeScroll,
-                          ),
-                          ..._sectionHeading('LiftBig Pro'),
-                          ..._proActivation(),
-                          if (!_proActive)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                'LiftBig Pro unlocks these themes.',
-                                style: TextStyle(color: context.liftBig.muted),
-                              ),
-                            ),
-                          _themeStrip(
-                            palettes: pro,
-                            selectedId: selectedId,
-                            controller: _proThemeScroll,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  ..._sectionHeading('Units'),
-                  if (_loadingPrefs)
-                    const LinearProgressIndicator()
-                  else ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SegmentedButton<WeightUnit>(
-                            segments: const [
-                              ButtonSegment(
-                                value: WeightUnit.lb,
-                                label: Text('lb'),
-                              ),
-                              ButtonSegment(
-                                value: WeightUnit.kg,
-                                label: Text('kg'),
-                              ),
-                            ],
-                            selected: {_weightUnit},
-                            onSelectionChanged: (value) {
-                              liftBigSelectionHaptic();
-                              _setWeightUnit(value.first);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SegmentedButton<DistanceUnit>(
-                            segments: const [
-                              ButtonSegment(
-                                value: DistanceUnit.mi,
-                                label: Text('mi'),
-                              ),
-                              ButtonSegment(
-                                value: DistanceUnit.km,
-                                label: Text('km'),
-                              ),
-                            ],
-                            selected: {_distanceUnit},
-                            onSelectionChanged: (value) {
-                              liftBigSelectionHaptic();
-                              _setDistanceUnit(value.first);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  ..._sectionHeading('Your Stats'),
-                  if (_weightUnit == WeightUnit.lb)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _heightFeet,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Height (ft)',
-                            ),
-                            onSubmitted: (_) => _saveHeight(),
-                            onEditingComplete: _saveHeight,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _heightInches,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Height (in)',
-                            ),
-                            onSubmitted: (_) => _saveHeight(),
-                            onEditingComplete: _saveHeight,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    TextField(
-                      controller: _heightCm,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Height (cm)',
-                      ),
-                      onSubmitted: (_) => _saveHeight(),
-                      onEditingComplete: _saveHeight,
-                    ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _bodyWeight,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                    ],
-                    decoration: InputDecoration(
-                      labelText:
-                          'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
-                      hintText: 'Optional',
-                      helperText: 'Default = 180',
-                    ),
-                    onSubmitted: (_) => _saveBodyWeight(),
-                    onEditingComplete: _saveBodyWeight,
-                  ),
-                  ..._sectionHeading('Timer and Reminders'),
+                  ]),
+                  _settingsCard('Rest Timer', [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Alarm Sound'),
@@ -1423,7 +1515,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  ]),
+                  _settingsCard('Daily Reminder', [
                   if (_loadingReminder)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
@@ -1490,7 +1583,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       onEditingComplete: _saveReminderMessage,
                     ),
                   ],
-                  ..._sectionHeading('Apple Health Sync'),
+                  ]),
+                  if (_proActive)
+                    _settingsCard('Smart Watch', _watchSection()),
+                  _settingsCard('Apple Health', [
                   Text(
                     'Reads and writes body weight, height, and workouts. Calories are Apple’s active energy for the workout window.',
                     style: TextStyle(color: context.liftBig.muted),
@@ -1512,9 +1608,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   ],
-                  ..._sectionHeading('Lift Name Overlap'),
+                  ]),
+                  _settingsCard('Lift Name Overlap', [
                   LiftNameConvergenceSection(journal: sync.journal),
-                  ..._sectionHeading('Backup'),
+                  ]),
+                  _settingsCard('Account and Sync', _cloudSection(sync)),
+                  _settingsCard('Backup', [
                   Text(
                     'JSON import is the legacy path for an existing LiftBig backup.',
                     style: TextStyle(color: context.liftBig.muted),
@@ -1529,8 +1628,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onPressed: _export,
                     child: const Text('Export Backup'),
                   ),
-                  ..._sectionHeading('Cloud Sync'),
-                  ..._cloudSection(sync),
+                  ]),
                 ],
               );
             },

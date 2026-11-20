@@ -168,9 +168,9 @@ class MachineSetPlateHint extends StatelessWidget {
         final text = _formatHint(result, kind, unit);
         if (text == null) return const SizedBox.shrink();
         return Padding(
-          padding: const EdgeInsets.only(left: 64, right: 8, bottom: 4),
+          padding: const EdgeInsets.fromLTRB(8, 2, 8, 4),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (showGraphic && result.plates.isNotEmpty) ...[
                 GestureDetector(
@@ -180,9 +180,10 @@ class MachineSetPlateHint extends StatelessWidget {
                     child: PlateLoadGraphic(
                       plates: result.plates,
                       unit: unit,
-                      centerLabel: kind == VariableMachineKind.smith
-                          ? 'BAR'
-                          : 'SLED',
+                      centerLabel: BarbellSetPlateHint._barFaceLabel(
+                        startingLb,
+                        unit,
+                      ),
                       compact: true,
                     ),
                   ),
@@ -255,9 +256,9 @@ class BarbellSetPlateHint extends StatelessWidget {
           }
         }
         return Padding(
-          padding: const EdgeInsets.only(left: 64, right: 8, bottom: 4),
+          padding: const EdgeInsets.fromLTRB(8, 2, 8, 4),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (loaded)
                 GestureDetector(
@@ -277,7 +278,7 @@ class BarbellSetPlateHint extends StatelessWidget {
                     child: PlateLoadGraphic(
                       plates: plates,
                       unit: unit,
-                      centerLabel: 'BAR',
+                      centerLabel: _barFaceLabel(bar, unit),
                       compact: true,
                     ),
                   ),
@@ -296,6 +297,12 @@ class BarbellSetPlateHint extends StatelessWidget {
         );
       },
     );
+  }
+
+  static String _barFaceLabel(double barLb, WeightUnit unit) {
+    final number = lbsToDisplayWeightString(barLb, unit);
+    final suffix = unit == WeightUnit.lb ? 'lb' : 'kg';
+    return '$number $suffix';
   }
 
   double _resolvedBarLb() {
@@ -339,7 +346,7 @@ class _BarWeightSheetState extends State<_BarWeightSheet> {
   void _applyCustom() {
     if (_applied) return;
     final lb = displayWeightToLbs(_custom.text, widget.unit);
-    if (lb == null || lb < 5 || lb > 75) return;
+    if (lb == null || lb < minCustomBarLb || lb > maxCustomBarLb) return;
     _applied = true;
     _choose(lb);
   }

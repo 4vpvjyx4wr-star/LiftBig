@@ -1652,6 +1652,7 @@ class _DayPageState extends State<DayPage> {
                 ),
               ],
               if (exercises.isEmpty) _emptyDayActions(restDay),
+              if (exercises.isNotEmpty) const SizedBox(height: 32),
               for (var index = 0; index < blocks.length; index++)
                 _ExerciseBlock(
                   exercises: blocks[index],

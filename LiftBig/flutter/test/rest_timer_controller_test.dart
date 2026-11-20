@@ -24,6 +24,11 @@ class _RecordingRestNotifications implements RestNotificationScheduler {
   }
 
   @override
+  Future<void> keepLockScreenRest(RestFinishedNotificationOptions options) async {
+    if (options.enabled) delivered = true;
+  }
+
+  @override
   Future<bool> restFinishedIsDelivered() async => delivered;
 
   @override

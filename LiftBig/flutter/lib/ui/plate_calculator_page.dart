@@ -137,7 +137,6 @@ class _PlateCalculatorPageState extends State<PlateCalculatorPage> {
                                 weightLb: barChoicesLb[i],
                                 unit: _unit,
                                 unitLabel: unitLabel,
-                                subtitle: i == 0 ? 'Standard' : "Women's",
                                 selected:
                                     !_usingCustomBar &&
                                     _presetBarLb == barChoicesLb[i],
@@ -244,7 +243,6 @@ class _BarPresetButton extends StatelessWidget {
     required this.weightLb,
     required this.unit,
     required this.unitLabel,
-    required this.subtitle,
     required this.selected,
     required this.onPressed,
   });
@@ -252,7 +250,6 @@ class _BarPresetButton extends StatelessWidget {
   final double weightLb;
   final WeightUnit unit;
   final String unitLabel;
-  final String subtitle;
   final bool selected;
   final VoidCallback onPressed;
 
@@ -281,11 +278,6 @@ class _BarPresetButton extends StatelessWidget {
             '$label $unitLabel',
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ],
       ),

@@ -140,7 +140,14 @@ class RestTimerMenu extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: done ? controller.stopAlarm : controller.togglePause,
+                      onPressed: () async {
+                        if (done) {
+                          await controller.dismiss();
+                          if (context.mounted) Navigator.of(context).pop();
+                          return;
+                        }
+                        await controller.togglePause();
+                      },
                       icon: Icon(
                         done
                             ? Icons.stop
