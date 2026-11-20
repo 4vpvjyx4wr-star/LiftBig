@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../debug/agent_log.dart';
 import '../journal/app_settings.dart';
 import 'rest_alarm.dart';
 import 'rest_timer_state.dart';
@@ -272,8 +271,8 @@ class FlutterRestNotificationScheduler implements RestNotificationScheduler {
     final canExact = await android?.canScheduleExactNotifications() ?? false;
     await _plugin.zonedSchedule(
       restFinishedNotificationId,
-      'Rest is done',
       'LiftBig',
+      'Rest is done',
       when,
       restFinishedNotificationDetails(options),
       androidScheduleMode: restAlarmAndroidScheduleMode(
@@ -325,21 +324,6 @@ class FlutterRestNotificationScheduler implements RestNotificationScheduler {
   }
 
   void _onNotificationResponse(NotificationResponse response) {
-    // #region agent log
-    agentDebugLog(
-      location: 'rest_notifications.dart:_onNotificationResponse',
-      message: 'notification response',
-      hypothesisId: 'E',
-      data: {
-        'actionId': response.actionId,
-        'notificationId': response.id,
-        'type': response.notificationResponseType.name,
-        'stopsAlarm': restNotificationResponseStopsAlarm(response),
-        'handlerBound': _onStop != null,
-        'pendingBefore': _pendingStop,
-      },
-    );
-    // #endregion
     if (!restNotificationResponseStopsAlarm(response)) return;
     final stop = _onStop;
     if (stop == null) {

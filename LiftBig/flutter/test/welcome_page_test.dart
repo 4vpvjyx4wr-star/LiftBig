@@ -25,10 +25,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Start with a plan'), findsOneWidget);
-    expect(find.text('Take the quiz'), findsOneWidget);
-    expect(find.text('Shuffle a workout'), findsOneWidget);
-    expect(find.text('Paste a plan'), findsOneWidget);
+    expect(find.text('Start with a Plan'), findsOneWidget);
+    expect(find.text('Take the Quiz'), findsOneWidget);
+    expect(find.text('Shuffle a Workout'), findsOneWidget);
+    expect(find.text('Paste a Plan'), findsOneWidget);
     await tester.tap(find.text('Continue'));
     expect(continued, 1);
   });

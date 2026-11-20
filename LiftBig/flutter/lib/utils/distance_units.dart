@@ -25,6 +25,16 @@ String formatDistanceWithUnit(double miles, DistanceUnit unit, {int maxDecimals 
   return '$n ${distanceUnitLabel(unit)}';
 }
 
+/// A stored mile value, such as a logged cardio distance, shown in [unit].
+/// Text that is not a number is returned unchanged.
+String formatStoredDistanceWithUnit(String raw, DistanceUnit unit, {int maxDecimals = 2}) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final miles = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (miles == null) return trimmed;
+  return formatDistanceWithUnit(miles, unit, maxDecimals: maxDecimals);
+}
+
 /// Parses user input in display [unit] to miles for storage.
 double? displayDistanceToMiles(String raw, DistanceUnit unit) {
   final normalized = raw.trim().replaceAll(',', '.');

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../debug/agent_log.dart';
 import '../theme.dart';
 
 /// Keyboard overlap in logical pixels, including when a scaffold has already
@@ -56,14 +55,12 @@ class KeyboardDismiss extends StatefulWidget {
 }
 
 class _KeyboardDismissState extends State<KeyboardDismiss> {
-  bool _open = false;
-  double _loggedLift = -1;
+  Offset? _pointerDown;
 
   @override
   void initState() {
     super.initState();
     FocusManager.instance.addListener(_onFocus);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
   }
 
   @override
@@ -73,13 +70,8 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
   }
 
   void _onFocus() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sync());
-  }
-
-  void _sync() {
     if (!mounted) return;
-    final open = textInputHasPrimaryFocus();
-    if (open != _open) setState(() => _open = open);
+    setState(() {});
   }
 
   @override
@@ -89,34 +81,20 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
 
   Widget _buildDismiss(BuildContext context) {
     final media = MediaQuery.viewInsetsOf(context).bottom;
-    final open = _open;
+    final open = textInputHasPrimaryFocus();
     final lift = media > 0 ? media : 0.0;
     final bar = open ? KeyboardDismissScaffold.toolbarHeight : 0.0;
-    // #region agent log
-    if (lift != _loggedLift) {
-      _loggedLift = lift;
-      agentDebugLog(
-        location: 'keyboard_dismiss.dart:build',
-        message: 'keyboard inset applied',
-        hypothesisId: 'C',
-        data: {
-          'fill': widget.fill,
-          'mediaInset': media,
-          'lift': lift,
-          'bar': bar,
-          'open': open,
-          'rawViewInset': () {
-            final view = View.maybeOf(context);
-            if (view == null || view.devicePixelRatio == 0) return null;
-            return view.viewInsets.bottom / view.devicePixelRatio;
-          }(),
-        },
-      );
-    }
-    // #endregion
     return Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: (event) => dismissKeyboardIfOutside(event.position),
+      onPointerDown: (event) => _pointerDown = event.position,
+      onPointerUp: (event) {
+        final down = _pointerDown;
+        _pointerDown = null;
+        if (down == null) return;
+        if ((event.position - down).distance > 8) return;
+        dismissKeyboardIfOutside(event.position);
+      },
+      onPointerCancel: (_) => _pointerDown = null,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bounded =
@@ -139,7 +117,11 @@ class _KeyboardDismissState extends State<KeyboardDismiss> {
                   constraints: BoxConstraints(maxHeight: limit),
                   child: widget.child,
                 ),
-                if (open) const KeyboardDoneBar(),
+                if (open)
+                  const SizedBox(
+                    height: KeyboardDismissScaffold.toolbarHeight,
+                    child: KeyboardDoneBar(),
+                  ),
                 if (extra > 0) SizedBox(height: extra),
               ],
             );
@@ -181,6 +163,12 @@ class KeyboardDoneBar extends StatelessWidget {
         child: Align(
           alignment: Alignment.centerRight,
           child: TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: const Size(64, KeyboardDismissScaffold.toolbarHeight),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              visualDensity: VisualDensity.standard,
+            ),
             onPressed: () => FocusManager.instance.primaryFocus?.unfocus(),
             child: const Text('Done'),
           ),

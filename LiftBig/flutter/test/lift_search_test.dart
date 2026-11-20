@@ -58,6 +58,12 @@ void main() {
       groups: ['chest', 'triceps', 'shoulders'],
       equipment: 'Dumbbell',
     ),
+    _lift(
+      id: 'ab-wheel',
+      name: 'Ab Wheel Rollout',
+      groups: ['core'],
+      equipment: 'Other',
+    ),
   ];
 
   test('rdl finds every romanian deadlift and leaves bench out', () {
@@ -73,6 +79,18 @@ void main() {
       expect(names, contains('good-morning'), reason: query);
       expect(names, isNot(contains('bench-press')), reason: query);
     }
+  });
+
+  test('short muscle words stay out of unrelated names', () {
+    final abs = searchLifts(lifts, 'ab').map((lift) => lift.id).toSet();
+    expect(abs, contains('ab-wheel'));
+    expect(abs, isNot(contains('bench-press')));
+    expect(abs, isNot(contains('barbell-row')));
+
+    final lats = searchLifts(lifts, 'lat').map((lift) => lift.id).toSet();
+    expect(lats, contains('barbell-row'));
+    expect(lats, isNot(contains('flat-dumbbell-press')));
+    expect(lats, isNot(contains('bench-press')));
   });
 
   test('lower back keeps hinges and leaves a row for upper back', () {
