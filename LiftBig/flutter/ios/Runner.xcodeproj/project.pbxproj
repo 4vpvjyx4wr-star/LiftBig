@@ -28,17 +28,17 @@
 		LBALM0012FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0112FE100010072D401 /* rest_alarm.wav */; };
 		LBALM0022FE100010072D401 /* rest_alarm.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBALM0122FE100010072D401 /* rest_alarm.wav */; };
 		LBBEL0012FE100010072D401 /* bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBEL0112FE100010072D401 /* bell.wav */; };
+		LBBOI0012FE100010072D401 /* boing.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBOI0112FE100010072D401 /* boing.wav */; };
 		LBCHM0012FE100010072D401 /* chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBCHM0112FE100010072D401 /* chime.wav */; };
 		LBCIQ0012FE100010072D401 /* ConnectIQ.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; };
 		LBCIQ0022FE100010072D401 /* ConnectIQ.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		LBDIG0012FE100010072D401 /* digital.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBDIG0112FE100010072D401 /* digital.wav */; };
 		LBGNG0012FE100010072D401 /* gong.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBGNG0112FE100010072D401 /* gong.wav */; };
+		LBGS00112FE100010072D401 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = LBGS01112FE100010072D401 /* GoogleService-Info.plist */; };
 		LBHRN0012FE100010072D401 /* horn.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBHRN0112FE100010072D401 /* horn.wav */; };
 		LBPUL0012FE100010072D401 /* pulse.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBPUL0112FE100010072D401 /* pulse.wav */; };
-		LBWHI0012FE100010072D401 /* whistle.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBWHI0112FE100010072D401 /* whistle.wav */; };
-		LBBOI0012FE100010072D401 /* boing.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBBOI0112FE100010072D401 /* boing.wav */; };
 		LBPV00112FE100010072D401 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = LBPV01112FE100010072D401 /* PrivacyInfo.xcprivacy */; };
-		LBGS00112FE100010072D401 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = LBGS01112FE100010072D401 /* GoogleService-Info.plist */; };
+		LBWHI0012FE100010072D401 /* whistle.wav in Resources */ = {isa = PBXBuildFile; fileRef = LBWHI0112FE100010072D401 /* whistle.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -119,8 +119,6 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		LBPV01112FE100010072D401 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		LBGS01112FE100010072D401 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		LB2F10112FE100010072D401 /* CompanionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionBridge.swift; sourceTree = "<group>"; };
 		LB2F10122FE100010072D401 /* ProBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProBridge.swift; sourceTree = "<group>"; };
 		LB2F10132FE100010072D401 /* LiftBigWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiftBigWatchApp.swift; sourceTree = "<group>"; };
@@ -136,14 +134,16 @@
 		LBALM0112FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
 		LBALM0122FE100010072D401 /* rest_alarm.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = rest_alarm.wav; sourceTree = "<group>"; };
 		LBBEL0112FE100010072D401 /* bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bell.wav; sourceTree = "<group>"; };
+		LBBOI0112FE100010072D401 /* boing.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = boing.wav; sourceTree = "<group>"; };
 		LBCHM0112FE100010072D401 /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
 		LBCIQ0112FE100010072D401 /* ConnectIQ.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = ConnectIQ.xcframework; sourceTree = "<group>"; };
 		LBDIG0112FE100010072D401 /* digital.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = digital.wav; sourceTree = "<group>"; };
 		LBGNG0112FE100010072D401 /* gong.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = gong.wav; sourceTree = "<group>"; };
+		LBGS01112FE100010072D401 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		LBHRN0112FE100010072D401 /* horn.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = horn.wav; sourceTree = "<group>"; };
 		LBPUL0112FE100010072D401 /* pulse.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pulse.wav; sourceTree = "<group>"; };
+		LBPV01112FE100010072D401 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		LBWHI0112FE100010072D401 /* whistle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = whistle.wav; sourceTree = "<group>"; };
-		LBBOI0112FE100010072D401 /* boing.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = boing.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
