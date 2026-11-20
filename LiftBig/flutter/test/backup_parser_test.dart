@@ -404,6 +404,7 @@ void main() {
         'daily_lift_reminder_days': '[1,3,5]',
         'apple_health_enabled': 'true',
         'pro_tester_unlock': 'true',
+        'rest_timer_chrome': 'anchored',
         'rest_timer_state': 'live-countdown',
         'password': 'secret',
       },
@@ -425,6 +426,7 @@ void main() {
     expect(preferences['machine_start_lb_smith'], '15');
     expect(preferences['rest_timer_ring_until_stopped'], 'true');
     expect(preferences['pro_tester_unlock'], 'true');
+    expect(preferences['rest_timer_chrome'], 'anchored');
     expect(preferences['daily_lift_reminder_time'], '06:30');
     expect(preferences.containsKey('rest_timer_state'), isFalse);
     expect(preferences.containsKey('password'), isFalse);

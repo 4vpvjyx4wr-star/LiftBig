@@ -79,9 +79,10 @@ abstract final class SettingKeys {
 /// Preferences copied to `users/{uid}/settings/app`.
 ///
 /// Left on the phone: the sync switch, the in-progress rest countdown, the
-/// floating-card position, and Health write ids. StoreKit still decides a
-/// paid Pro subscription on each device. [SettingKeys.proTesterUnlock] is
-/// the stored tester flag and rides along so a reinstall can restore it.
+/// floating card's drag position, and Health write ids. The anchored or
+/// floating choice ([SettingKeys.restTimerChrome]) is included. StoreKit
+/// still decides a paid Pro subscription on each device.
+/// [SettingKeys.proTesterUnlock] rides along so a reinstall can restore it.
 const Set<String> cloudSyncedPreferenceKeys = {
   SettingKeys.weightUnit,
   SettingKeys.distanceUnit,
