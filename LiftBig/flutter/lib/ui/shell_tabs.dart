@@ -22,6 +22,6 @@ extension ShellTabCopy on ShellTab {
     ShellTab.progress => 'Progress',
     ShellTab.lift => 'Today',
     ShellTab.plans => 'Plans',
-    ShellTab.library => 'Lift library',
+    ShellTab.library => 'Lift Library',
   };
 }

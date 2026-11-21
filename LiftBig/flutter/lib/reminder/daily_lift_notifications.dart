@@ -88,7 +88,7 @@ class FlutterDailyLiftReminderScheduler implements DailyLiftReminderScheduler {
       var scheduled = _nextInstance(entry.weekday, entry.hour, entry.minute, now);
       await _plugin.zonedSchedule(
         entry.notificationId,
-        'Lift Big',
+        dailyLiftReminderTitle,
         entry.body,
         scheduled,
         _notificationDetails,

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+const String dailyLiftReminderTitle = 'LiftBig';
+
 const String dailyLiftReminderDefaultBody = "It's time to Lift Big.";
 
 const String dailyLiftReminderDefaultTime = '17:00';

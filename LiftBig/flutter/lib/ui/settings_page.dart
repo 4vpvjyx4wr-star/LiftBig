@@ -9,10 +9,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../companion/companion_bridge.dart';
-import '../debug/agent_log.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
+import '../journal/strength_standards.dart';
 import '../pro/pro_status.dart';
 import '../reminder/daily_lift_reminder.dart';
 import '../reminder/daily_lift_notifications.dart';
@@ -406,20 +406,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final from = _weightUnit;
     final raw = _bodyWeight.text;
     final typed = displayWeightToLbs(raw, from);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle before convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'from': from.name,
-        'to': unit.name,
-        'hadTyped': raw.trim().isNotEmpty,
-        'parsedTyped': typed != null,
-      },
-    );
-    // #endregion
     if (typed != null) await _saveBodyWeight();
     if (!mounted) return;
     final stored = await widget.sync.journal.storedBodyWeightLbs();
@@ -434,18 +420,6 @@ class _SettingsPageState extends State<SettingsPage> {
       if (next != null) _bodyWeight.text = next;
     });
     await widget.sync.journal.setWeightUnit(unit);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle after convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'converted': next != null,
-        'usedStored': typed == null && stored != null,
-      },
-    );
-    // #endregion
   }
 
   Future<void> _saveHeight() async {
@@ -1333,7 +1307,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       labelText:
                           'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
                       hintText: 'Optional',
-                      helperText: 'Default = 180',
+                      helperText:
+                          'Default is ${formatWeightWithUnit(defaultAssumedBodyWeightLbs, _weightUnit)}.',
                     ),
                     onSubmitted: (_) => _saveBodyWeight(),
                     onEditingComplete: _saveBodyWeight,
@@ -1386,7 +1361,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    title: const Text('Include Warmups on Heavy Compounds'),
                     subtitle: Text(
                       'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
                       style: TextStyle(color: context.liftBig.muted),
@@ -1410,7 +1385,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Rate Set Difficulty'),
                     subtitle: Text(
-                      'Set difficulty can be tracked with easy, moderate, or difficult, which factors into your strength predictions. Unrated sets carry default weight.',
+                      'Rate each set Easy, Moderate, or Difficult. Those ratings change the next strength prediction. Unrated sets use the default progression.',
                       style: TextStyle(color: context.liftBig.muted),
                     ),
                     value: _logDifficulty,
@@ -1464,7 +1439,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            tooltip: 'Play tone',
+                            tooltip: 'Play Tone',
                             onPressed: _previewAlarmTone,
                             icon: Icon(
                               Icons.play_arrow,

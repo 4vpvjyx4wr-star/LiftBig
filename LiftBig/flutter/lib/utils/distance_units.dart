@@ -25,6 +25,20 @@ String formatDistanceWithUnit(double miles, DistanceUnit unit, {int maxDecimals 
   return '$n ${distanceUnitLabel(unit)}';
 }
 
+/// Stored miles, or a goal that already names a unit. A bare number is miles.
+String formatStoredDistanceWithUnit(
+  String raw,
+  DistanceUnit unit, {
+  int maxDecimals = 2,
+}) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  if (RegExp(r'[A-Za-z]').hasMatch(trimmed)) return trimmed;
+  final miles = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (miles == null) return trimmed;
+  return formatDistanceWithUnit(miles, unit, maxDecimals: maxDecimals);
+}
+
 /// Parses user input in display [unit] to miles for storage.
 double? displayDistanceToMiles(String raw, DistanceUnit unit) {
   final normalized = raw.trim().replaceAll(',', '.');

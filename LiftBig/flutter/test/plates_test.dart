@@ -73,10 +73,20 @@ void main() {
                 PlateLoadGraphic(plates: [45, 45], unit: WeightUnit.lb),
                 PlateLoadGraphic(plates: [], unit: WeightUnit.lb),
                 PlateLoadGraphic(
+                  plates: [],
+                  unit: WeightUnit.lb,
+                  centerLabel: '45 lb',
+                ),
+                PlateLoadGraphic(
                   plates: [45, 45, 45, 25],
                   unit: WeightUnit.lb,
                   centerLabel: 'SLED',
                   compact: true,
+                ),
+                PlateLoadGraphic(
+                  plates: [],
+                  unit: WeightUnit.lb,
+                  centerLabel: 'SLED',
                 ),
               ],
             ),
@@ -85,10 +95,11 @@ void main() {
       );
 
       expect(find.text('BAR'), findsNWidgets(2));
-      expect(find.text('Just the bar — no plates needed.'), findsOneWidget);
-      expect(find.text('SLED'), findsOneWidget);
+      expect(find.text('Just the bar — no plates needed.'), findsNWidgets(2));
+      expect(find.text('Just the sled — no plates needed.'), findsOneWidget);
+      expect(find.text('SLED'), findsNWidgets(2));
       expect(
-        tester.getSize(find.text('SLED')).height,
+        tester.getSize(find.text('SLED').first).height,
         lessThan(tester.getSize(find.text('BAR').first).height),
       );
     },

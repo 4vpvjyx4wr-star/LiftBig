@@ -44,6 +44,13 @@ void main() {
     );
   });
 
+  test('stored pounds keep the selected unit', () {
+    expect(formatStoredWeightWithUnit('180', WeightUnit.lb), '180 lb');
+    expect(formatStoredWeightWithUnit('180', WeightUnit.kg), '81.6 kg');
+    expect(formatStoredWeightWithUnit('', WeightUnit.lb), '');
+    expect(formatStoredWeightWithUnit('bodyweight', WeightUnit.kg), 'bodyweight');
+  });
+
   test('unreadable body weight is left alone', () {
     expect(
       bodyWeightFieldAfterUnitChange(
