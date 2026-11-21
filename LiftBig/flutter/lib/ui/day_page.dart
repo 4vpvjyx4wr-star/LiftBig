@@ -1683,6 +1683,7 @@ class _DayPageState extends State<DayPage> {
                   priorNotesByExerciseId: _priorNotes,
                   onExerciseNotes: _saveExerciseNotes,
                   weightUnit: _weightUnit,
+                  distanceUnit: _distanceUnit,
                   machineStarting: _machineStarting,
                   onMachineStartingChanged: _saveMachineStarting,
                   onEditGoal: _editGoal,
@@ -1963,6 +1964,7 @@ class _ExerciseBlock extends StatelessWidget {
     required this.priorNotesByExerciseId,
     required this.onExerciseNotes,
     required this.weightUnit,
+    required this.distanceUnit,
     required this.machineStarting,
     required this.onMachineStartingChanged,
     required this.onEditGoal,
@@ -2009,6 +2011,7 @@ class _ExerciseBlock extends StatelessWidget {
   final Map<String, List<PriorExerciseNote>> priorNotesByExerciseId;
   final Future<void> Function(String exerciseId, String notes) onExerciseNotes;
   final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
   final Map<VariableMachineKind, TextEditingController> machineStarting;
   final Future<void> Function(VariableMachineKind kind, String display)
   onMachineStartingChanged;
@@ -2103,6 +2106,7 @@ class _ExerciseBlock extends StatelessWidget {
               priorNotes: priorNotesByExerciseId[exercise.id] ?? const [],
               onExerciseNotes: onExerciseNotes,
               weightUnit: weightUnit,
+              distanceUnit: distanceUnit,
               machineStarting: machineStarting,
               onMachineStartingChanged: onMachineStartingChanged,
               onEditGoal: () => onEditGoal(exercise),
@@ -2148,6 +2152,7 @@ class _ExerciseCard extends StatelessWidget {
     required this.priorNotes,
     required this.onExerciseNotes,
     required this.weightUnit,
+    required this.distanceUnit,
     required this.machineStarting,
     required this.onMachineStartingChanged,
     required this.onEditGoal,
@@ -2192,6 +2197,7 @@ class _ExerciseCard extends StatelessWidget {
   final List<PriorExerciseNote> priorNotes;
   final Future<void> Function(String exerciseId, String notes) onExerciseNotes;
   final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
   final Map<VariableMachineKind, TextEditingController> machineStarting;
   final Future<void> Function(VariableMachineKind kind, String display)
   onMachineStartingChanged;
@@ -2262,7 +2268,7 @@ class _ExerciseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = supersetBadge(exercise);
-    final goal = _goalLine(exercise);
+    final goal = _goalLine(exercise, weightUnit, distanceUnit);
     final caloriesController = calories[exercise.id];
     final allDone = exerciseAllSetsChecked(exercise);
     return Container(
@@ -2390,6 +2396,7 @@ class _ExerciseCard extends StatelessWidget {
               onWeight: onWeight,
               onCalories: (value) => onCalories(exercise.id, value),
               onChecked: (set, value) => onChecked(exercise, set, value),
+              distanceUnit: distanceUnit,
             )
           else if (exercise.isCircuit)
             for (var index = 0; index < exercise.sets.length; index++)
@@ -2403,6 +2410,7 @@ class _ExerciseCard extends StatelessWidget {
                 onDifficulty: (value) =>
                     onDifficulty(exercise.sets[index], value),
                 onDelete: () => onDeleteSet(exercise.sets[index].id),
+                weightUnit: weightUnit,
               )
           else ...[
             if (exercise.sets.isEmpty)
@@ -2483,6 +2491,7 @@ class _CardioFields extends StatelessWidget {
     required this.onWeight,
     required this.onCalories,
     required this.onChecked,
+    required this.distanceUnit,
   });
 
   final JournalExercise exercise;
@@ -2493,6 +2502,7 @@ class _CardioFields extends StatelessWidget {
   final Future<void> Function(String setId, String weight) onWeight;
   final ValueChanged<String> onCalories;
   final void Function(JournalSet set, bool checked) onChecked;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -2531,7 +2541,10 @@ class _CardioFields extends StatelessWidget {
             decoration: InputDecoration(
               labelText: 'Distance',
               hintText: exercise.targetDistance?.trim().isNotEmpty == true
-                  ? exercise.targetDistance
+                  ? formatStoredDistanceWithUnit(
+                      exercise.targetDistance!,
+                      distanceUnit,
+                    )
                   : 'Optional',
             ),
             onChanged: (value) => onWeight(set.id, value),
@@ -2574,6 +2587,7 @@ class _CircuitRow extends StatelessWidget {
     required this.showDifficulty,
     required this.onDifficulty,
     required this.onDelete,
+    required this.weightUnit,
   });
 
   final JournalExercise exercise;
@@ -2583,6 +2597,7 @@ class _CircuitRow extends StatelessWidget {
   final bool showDifficulty;
   final ValueChanged<String?> onDifficulty;
   final VoidCallback onDelete;
+  final WeightUnit weightUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -2609,7 +2624,7 @@ class _CircuitRow extends StatelessWidget {
             ),
           Expanded(
             child: Text(
-              'Set ${index + 1}  ${_circuitLine(exercise, set)}',
+              'Set ${index + 1}  ${_circuitLine(exercise, set, weightUnit)}',
               style:  TextStyle(color: context.liftBig.foreground),
             ),
           ),
@@ -3118,13 +3133,19 @@ String watchStartNotice(WatchStartOutcome outcome) {
   return parts.join(' ');
 }
 
-String? _goalLine(JournalExercise exercise) {
+String? _goalLine(
+  JournalExercise exercise,
+  WeightUnit weightUnit,
+  DistanceUnit distanceUnit,
+) {
   if (exercise.isCardio && !exercise.isCircuit) {
     final parts = <String>[];
     final duration = exercise.targetDuration?.trim() ?? '';
     final distance = exercise.targetDistance?.trim() ?? '';
     if (duration.isNotEmpty) parts.add('$duration min');
-    if (distance.isNotEmpty) parts.add(distance);
+    if (distance.isNotEmpty) {
+      parts.add(formatStoredDistanceWithUnit(distance, distanceUnit));
+    }
     if (parts.isEmpty) return 'No duration goal.';
     return 'Goal: ${parts.join(' · ')}';
   }
@@ -3137,12 +3158,18 @@ String? _goalLine(JournalExercise exercise) {
   }
   final count = exercise.sets.length;
   final mid = reps.isNotEmpty ? '$count × $reps' : '$count sets';
-  final tail = weight.isNotEmpty ? ' @ $weight lb' : '';
+  final tail = weight.isNotEmpty
+      ? ' @ ${formatStoredWeightWithUnit(weight, weightUnit)}'
+      : '';
   final timeTail = time.isNotEmpty ? ' · $time sec' : '';
   return 'Goal: $mid$tail$timeTail';
 }
 
-String _circuitLine(JournalExercise exercise, JournalSet set) {
+String _circuitLine(
+  JournalExercise exercise,
+  JournalSet set,
+  WeightUnit weightUnit,
+) {
   final reps = set.reps.trim().isNotEmpty
       ? set.reps.trim()
       : (exercise.targetReps ?? '').trim();
@@ -3163,7 +3190,7 @@ String _circuitLine(JournalExercise exercise, JournalSet set) {
     effort = '$reps reps';
   }
   if (weight.isEmpty) return effort;
-  return '$effort @ $weight lb';
+  return '$effort @ ${formatStoredWeightWithUnit(weight, weightUnit)}';
 }
 
 InputDecoration _setInputDecoration(BuildContext context, String hint) {

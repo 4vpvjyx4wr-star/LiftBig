@@ -6,6 +6,8 @@ import '../journal/logged_day.dart';
 import '../journal/set_prescription.dart';
 import '../model/journal_day.dart';
 import '../theme.dart';
+import '../utils/distance_units.dart';
+import '../utils/weight_units.dart';
 import 'assign_plan_sheet.dart';
 import 'clear_day.dart';
 import 'day_page.dart';
@@ -41,6 +43,8 @@ class _HomePageState extends State<HomePage> {
   late String _selectedKey;
   Map<String, DaySummary> _summaries = {};
   JournalDay? _day;
+  var _weightUnit = WeightUnit.lb;
+  var _distanceUnit = DistanceUnit.mi;
 
   @override
   void initState() {
@@ -69,10 +73,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _reload() async {
     final summaries = await widget.journal.summariesForMonth(_month);
     final day = await widget.journal.getDay(_selectedKey);
+    final weightUnit = await widget.journal.storedWeightUnit();
+    final distanceUnit = await widget.journal.storedDistanceUnit();
     if (!mounted) return;
     setState(() {
       _summaries = {for (final summary in summaries) summary.dateKey: summary};
       _day = day;
+      _weightUnit = weightUnit;
+      _distanceUnit = distanceUnit;
     });
   }
 
@@ -101,7 +109,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (!mounted) return;
     if (finished == true) {
-      showLiftBigNotice(context, 'Congrats on lifting big - see you tomorrow.');
+      showLiftBigNotice(context, 'Congrats on lifting big. See you tomorrow.');
     }
     await _reload();
   }
@@ -356,6 +364,8 @@ class _HomePageState extends State<HomePage> {
             onEditExercise: _editExercise,
             onDeleteExercise: _deleteExercise,
             onExerciseInfo: _openExerciseInfo,
+            weightUnit: _weightUnit,
+            distanceUnit: _distanceUnit,
           ),
         ],
       ),
@@ -441,6 +451,8 @@ class _DayPanel extends StatelessWidget {
     required this.onEditExercise,
     required this.onDeleteExercise,
     required this.onExerciseInfo,
+    required this.weightUnit,
+    required this.distanceUnit,
   });
 
   final String dateKey;
@@ -455,6 +467,8 @@ class _DayPanel extends StatelessWidget {
   final ValueChanged<JournalExercise> onEditExercise;
   final ValueChanged<JournalExercise> onDeleteExercise;
   final ValueChanged<JournalExercise> onExerciseInfo;
+  final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -639,6 +653,8 @@ class _DayPanel extends StatelessWidget {
                   onEdit: () => onEditExercise(exercises[i]),
                   onDelete: () => onDeleteExercise(exercises[i]),
                   onInfo: () => onExerciseInfo(exercises[i]),
+                  weightUnit: weightUnit,
+                  distanceUnit: distanceUnit,
                 ),
               ],
             ],
@@ -735,6 +751,8 @@ class _ExerciseCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onInfo,
+    required this.weightUnit,
+    required this.distanceUnit,
   });
 
   final JournalExercise exercise;
@@ -742,6 +760,8 @@ class _ExerciseCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onInfo;
+  final WeightUnit weightUnit;
+  final DistanceUnit distanceUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -847,7 +867,12 @@ class _ExerciseCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2, right: 8),
                   child: Text(
-                    _setLine(exercise, set),
+                    _setLine(
+                      exercise,
+                      set,
+                      weightUnit: weightUnit,
+                      distanceUnit: distanceUnit,
+                    ),
                     style: const TextStyle(fontSize: 13),
                   ),
                 ),
@@ -859,23 +884,34 @@ class _ExerciseCard extends StatelessWidget {
   }
 }
 
-String _setLine(JournalExercise exercise, JournalSet set) {
+String _setLine(
+  JournalExercise exercise,
+  JournalSet set, {
+  required WeightUnit weightUnit,
+  required DistanceUnit distanceUnit,
+}) {
   if (exercise.isCardio && !exercise.isCircuit) {
     final minutes = set.reps.trim().isEmpty ? '—' : '${set.reps.trim()} min';
     final distance = set.weight.trim();
     if (distance.isEmpty) return minutes;
-    return '$minutes · $distance';
+    return '$minutes · ${formatStoredDistanceWithUnit(distance, distanceUnit)}';
   }
   if (exercise.isCircuit) {
     final done = set.checked ? 'Done · ' : '';
     final reps = set.reps.trim().isEmpty ? 'AMRAP' : set.reps.trim();
-    return '$done Set ${set.sortOrder + 1}  $reps';
+    final weight = set.weight.trim();
+    final load = weight.isEmpty
+        ? ''
+        : ' @ ${formatStoredWeightWithUnit(weight, weightUnit)}';
+    return '$done Set ${set.sortOrder + 1}  $reps$load';
   }
   final done = set.checked ? 'Done · ' : '';
   final warmup = set.isWarmup ? 'Warmup · ' : '';
   final loggedReps = loggedRepsField(set.reps);
   final reps = loggedReps.isEmpty ? '—' : loggedReps;
-  final weight = set.weight.isEmpty ? '—' : '${set.weight} lb';
+  final weight = set.weight.isEmpty
+      ? '—'
+      : formatStoredWeightWithUnit(set.weight, weightUnit);
   final time = set.durationSeconds?.trim();
   final timeLabel = exercise.isCore && time != null && time.isNotEmpty
       ? ' · $time sec'

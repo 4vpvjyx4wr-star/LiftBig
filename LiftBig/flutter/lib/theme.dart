@@ -355,7 +355,7 @@ const List<LiftBigPalette> liftBigThemePresets = [
   ),
   LiftBigPalette(
     id: 'ocean',
-    label: 'Ocean depths',
+    label: 'Ocean Depths',
     background: Color(0xFF020C18),
     card: Color(0xFF0A2848),
     cardInner: Color(0xFF061830),

@@ -39,7 +39,7 @@ void main() {
     ]);
     expect(ShellTab.lift.opens, 'Today');
     expect(ShellTab.home.opens, 'Calendar');
-    expect(ShellTab.library.opens, 'Lift library');
+    expect(ShellTab.library.opens, 'Lift Library');
   });
 
   test('quiz prefers the plan that matches experience, days, and goal', () {

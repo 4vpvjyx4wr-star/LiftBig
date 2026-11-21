@@ -3,6 +3,7 @@ import 'package:liftbig/reminder/daily_lift_reminder.dart';
 
 void main() {
   test('message falls back to default when custom is blank', () {
+    expect(dailyLiftReminderTitle, 'LiftBig');
     expect(dailyLiftReminderBody(customMessage: null), dailyLiftReminderDefaultBody);
     expect(dailyLiftReminderBody(customMessage: ''), dailyLiftReminderDefaultBody);
     expect(dailyLiftReminderBody(customMessage: '   '), dailyLiftReminderDefaultBody);

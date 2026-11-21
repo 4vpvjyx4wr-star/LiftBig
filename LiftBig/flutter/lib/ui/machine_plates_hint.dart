@@ -42,7 +42,7 @@ Future<double?> showBarWeightSheet(
   BuildContext context, {
   required double currentLb,
   required WeightUnit unit,
-  String title = 'Bar weight',
+  String title = 'Bar Weight',
 }) {
   return showModalBottomSheet<double>(
     context: context,
@@ -142,7 +142,7 @@ class MachineSetPlateHint extends StatelessWidget {
       context,
       currentLb: current,
       unit: unit,
-      title: kind == VariableMachineKind.smith ? 'Bar weight' : 'Sled weight',
+      title: kind == VariableMachineKind.smith ? 'Bar Weight' : 'Sled Weight',
     );
     if (picked == null) return;
     final display = lbsToDisplayWeightString(picked, unit);
@@ -368,7 +368,9 @@ class _BarWeightSheetState extends State<_BarWeightSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Set the bar you have on the rack. The plates update for this workout.',
+            widget.title == 'Sled Weight'
+                ? 'Set the sled on this machine. The plates update for this workout.'
+                : 'Set the bar you have on the rack. The plates update for this workout.',
             style: TextStyle(color: context.liftBig.muted, height: 1.3),
           ),
           const SizedBox(height: 12),
@@ -397,7 +399,7 @@ class _BarWeightSheetState extends State<_BarWeightSheet> {
                   ),
                   textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
-                    labelText: 'Other weight',
+                    labelText: 'Other Weight',
                     suffixText: unitLabel,
                     isDense: true,
                   ),
