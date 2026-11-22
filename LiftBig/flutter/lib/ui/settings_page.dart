@@ -9,7 +9,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../companion/companion_bridge.dart';
-import '../debug/agent_log.dart';
 import '../journal/app_settings.dart';
 import '../journal/body_weight_settings.dart';
 import '../journal/logged_day.dart';
@@ -405,24 +404,17 @@ class _SettingsPageState extends State<SettingsPage> {
     if (unit == _weightUnit) return;
     final from = _weightUnit;
     final raw = _bodyWeight.text;
-    final typed = displayWeightToLbs(raw, from);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle before convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'from': from.name,
-        'to': unit.name,
-        'hadTyped': raw.trim().isNotEmpty,
-        'parsedTyped': typed != null,
-      },
-    );
-    // #endregion
-    if (typed != null) await _saveBodyWeight();
+    final storedBefore = await widget.sync.journal.storedBodyWeightLbs();
+    final showsStored = storedBefore != null &&
+        storedBefore > 0 &&
+        raw.trim() == lbsToDisplayWeightString(storedBefore, from);
+    if (!showsStored && displayWeightToLbs(raw, from) != null) {
+      await _saveBodyWeight();
+    }
     if (!mounted) return;
-    final stored = await widget.sync.journal.storedBodyWeightLbs();
+    final stored = showsStored
+        ? storedBefore
+        : await widget.sync.journal.storedBodyWeightLbs();
     final next = bodyWeightFieldAfterUnitChange(
       raw: raw,
       from: from,
@@ -434,18 +426,6 @@ class _SettingsPageState extends State<SettingsPage> {
       if (next != null) _bodyWeight.text = next;
     });
     await widget.sync.journal.setWeightUnit(unit);
-    // #region agent log
-    agentDebugLog(
-      location: 'settings_page.dart:_setWeightUnit',
-      message: 'weight toggle after convert',
-      hypothesisId: 'H',
-      runId: 'post-fix',
-      data: {
-        'converted': next != null,
-        'usedStored': typed == null && stored != null,
-      },
-    );
-    // #endregion
   }
 
   Future<void> _saveHeight() async {
@@ -1108,7 +1088,7 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 8),
         TextButton(
           onPressed: _authLocked ? null : _sendPasswordReset,
-          child: const Text('Email Password Reset'),
+          child: const Text('Reset Password'),
         ),
       ],
       if (sync.signedIn) ...[
@@ -1126,7 +1106,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: _authLocked ? null : _sendPasswordReset,
-            child: const Text('Email Password Reset'),
+            child: const Text('Reset Password'),
           ),
         ],
         const SizedBox(height: 8),
@@ -1333,7 +1313,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       labelText:
                           'Body Weight (${_weightUnit == WeightUnit.lb ? 'lb' : 'kg'})',
                       hintText: 'Optional',
-                      helperText: 'Default = 180',
+                      helperText: defaultBodyWeightHelper(_weightUnit),
                     ),
                     onSubmitted: (_) => _saveBodyWeight(),
                     onEditingComplete: _saveBodyWeight,
@@ -1386,7 +1366,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Include Warm Ups on Heavy Compounds'),
+                    title: const Text('Include Warmups on Heavy Compounds'),
                     subtitle: Text(
                       'Squat, bench, deadlift, overhead press, barbell row, Pendlay row, power clean, clean and jerk, and snatch.',
                       style: TextStyle(color: context.liftBig.muted),
@@ -1410,7 +1390,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Rate Set Difficulty'),
                     subtitle: Text(
-                      'Set difficulty can be tracked with easy, moderate, or difficult, which factors into your strength predictions. Unrated sets carry default weight.',
+                      'Set difficulty can be tracked with Easy, Moderate, or Difficult, which factors into your strength predictions. Unrated sets carry default weight.',
                       style: TextStyle(color: context.liftBig.muted),
                     ),
                     value: _logDifficulty,

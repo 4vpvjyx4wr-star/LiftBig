@@ -373,7 +373,7 @@ class _BuildPlanSheetState extends State<_BuildPlanSheet> {
                 OutlinedButton.icon(
                   onPressed: () => setState(() => _workouts.add(_DraftWorkout())),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add a workout'),
+                  label: const Text('Add a Workout'),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -464,7 +464,7 @@ class _WorkoutEditor extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onAddExercise,
                 icon: const Icon(Icons.add),
-                label: const Text('Add an exercise'),
+                label: const Text('Add an Exercise'),
               ),
             ),
             if (canRemove)
@@ -472,7 +472,7 @@ class _WorkoutEditor extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: TextButton(
                   onPressed: onRemove,
-                  child: const Text('Remove workout'),
+                  child: const Text('Remove Workout'),
                 ),
               ),
           ],
@@ -633,7 +633,7 @@ class _PastePlanSheetState extends State<_PastePlanSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Paste a plan',
+              'Paste a Plan',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
@@ -661,7 +661,7 @@ class _PastePlanSheetState extends State<_PastePlanSheet> {
                 Navigator.pop(context, text);
               },
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              child: const Text('Read plan'),
+              child: const Text('Read Plan'),
             ),
           ],
         ),

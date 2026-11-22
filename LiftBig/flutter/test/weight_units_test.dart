@@ -55,4 +55,19 @@ void main() {
       isNull,
     );
   });
+
+  test('stored pounds survive a kilogram round trip of the same field', () {
+    expect(
+      bodyWeightFieldAfterUnitChange(
+        raw: '81.6',
+        from: WeightUnit.kg,
+        to: WeightUnit.lb,
+        storedLbs: 180,
+      ),
+      '180',
+    );
+    expect(formatStoredWeightWithUnit('135', WeightUnit.kg), '61.2 kg');
+    expect(defaultBodyWeightHelper(WeightUnit.lb), 'Default is 180 lb.');
+    expect(defaultBodyWeightHelper(WeightUnit.kg), 'Default is 81.6 kg.');
+  });
 }

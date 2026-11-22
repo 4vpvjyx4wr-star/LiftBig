@@ -62,19 +62,43 @@ String lbsToDisplayWeightString(double lbs, WeightUnit unit, {int maxDecimals = 
 
 /// Body-weight field text after a lb/kg toggle.
 ///
-/// [raw] is interpreted in [from]. A readable value wins over [storedLbs].
-/// An empty field uses [storedLbs]. An unreadable value returns null so the
-/// caller can leave the typed text unchanged.
+/// [raw] is interpreted in [from]. When it still shows [storedLbs], the stored
+/// pounds are kept so 180 lb comes back as 180 lb after a kilogram round trip.
+/// A different readable value wins. An empty field uses [storedLbs]. An
+/// unreadable value returns null so the caller can leave the typed text.
 String? bodyWeightFieldAfterUnitChange({
   required String raw,
   required WeightUnit from,
   required WeightUnit to,
   double? storedLbs,
 }) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    if (storedLbs == null || storedLbs <= 0) return null;
+    return lbsToDisplayWeightString(storedLbs, to);
+  }
+  if (storedLbs != null &&
+      storedLbs > 0 &&
+      trimmed == lbsToDisplayWeightString(storedLbs, from)) {
+    return lbsToDisplayWeightString(storedLbs, to);
+  }
   final typed = displayWeightToLbs(raw, from);
-  final lbs = typed ?? (raw.trim().isEmpty ? storedLbs : null);
-  if (lbs == null || lbs <= 0) return null;
-  return lbsToDisplayWeightString(lbs, to);
+  if (typed == null || typed <= 0) return null;
+  return lbsToDisplayWeightString(typed, to);
+}
+
+/// Settings helper for the 180 lb suggestion, in the selected unit.
+String defaultBodyWeightHelper(WeightUnit unit) {
+  return 'Default is ${formatWeightWithUnit(180, unit)}.';
+}
+
+/// Stored pounds, or the original text when it is not a number.
+String formatStoredWeightWithUnit(String raw, WeightUnit unit) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final lbs = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (lbs == null) return trimmed;
+  return formatWeightWithUnit(lbs, unit);
 }
 
 const int weightPickerMaxLbs = 500;

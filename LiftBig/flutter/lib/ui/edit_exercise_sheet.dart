@@ -161,7 +161,7 @@ class _EditExerciseSheetState extends State<EditExerciseSheet> {
                 controller: _search,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
-                  hintText: 'Search to swap lifts.',
+                  hintText: 'Search to swap lifts',
                   isDense: true,
                   prefixIcon: Icon(Icons.search, size: 20),
                 ),

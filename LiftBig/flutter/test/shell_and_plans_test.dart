@@ -238,6 +238,11 @@ void main() {
     expect(catalog.quiz.length, 59);
     expect(catalog.plans, isNotEmpty);
     expect(catalog.quiz, isNotEmpty);
+    expect(quizDaysBullet(const [1]), '1 day a week');
+    expect(quizDaysBullet(const [4]), '4 days a week');
+    expect(quizDurationLabels['quick'], 'Quick Duration');
+    expect(quizDurationLabels['standard'], 'Standard Duration');
+    expect(quizDurationLabels['long'], 'Long Sessions');
     expect(
       catalog.lifts.where((lift) => lift.tutorialUrl.contains('youtube.com')),
       isNotEmpty,

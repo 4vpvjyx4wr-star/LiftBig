@@ -615,7 +615,7 @@ class _PlansBody extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    child: const Text('Get a recommendation'),
+                    child: const Text('Get a Recommendation'),
                   )
                 else
                   _Quiz(
@@ -671,7 +671,7 @@ class _PlansBody extends StatelessWidget {
             textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           icon: const Icon(Icons.content_paste),
-          label: const Text('Paste a plan'),
+          label: const Text('Paste a Plan'),
         ),
       ],
     );
@@ -1066,7 +1066,7 @@ class _QuizResultCard extends StatelessWidget {
                   tilePadding: EdgeInsets.zero,
                   childrenPadding: EdgeInsets.zero,
                   title: const Text(
-                    'See the workouts',
+                    'See the Workouts',
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   children: [
@@ -1183,7 +1183,7 @@ class _SearchablePlanSectionState extends State<_SearchablePlanSection> {
           TextField(
             controller: _search,
             decoration: const InputDecoration(
-              hintText: 'Search plans.',
+              hintText: 'Search plans',
               prefixIcon: Icon(Icons.search),
             ),
             onChanged: (_) => setState(() {}),
