@@ -154,7 +154,7 @@ class _AssignPlanSheetState extends State<AssignPlanSheet> {
                 controller: _search,
                 onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
-                  hintText: 'Search plans or exercises.',
+                  hintText: 'Search plans or exercises',
                   isDense: true,
                   prefixIcon: Icon(Icons.search, size: 20),
                 ),

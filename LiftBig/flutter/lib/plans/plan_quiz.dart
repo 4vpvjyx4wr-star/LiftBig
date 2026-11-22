@@ -58,9 +58,9 @@ const quizGoalLabels = <String, String>{
 };
 
 const quizDurationLabels = <String, String>{
-  'quick': 'Quick duration',
-  'standard': 'Standard duration',
-  'long': 'Long sessions',
+  'quick': 'Quick Duration',
+  'standard': 'Standard Duration',
+  'long': 'Long Sessions',
 };
 
 const quizExperienceLabels = <String, String>{
@@ -279,7 +279,10 @@ String quizFitSentence(QuizEntry entry, QuizAnswers answers) {
 String quizDaysBullet(List<int> days) {
   if (days.isEmpty) return 'Flexible weekly schedule';
   final sorted = [...days]..sort();
-  if (sorted.length == 1) return '${sorted.first} days a week';
+  if (sorted.length == 1) {
+    final count = sorted.first;
+    return count == 1 ? '1 day a week' : '$count days a week';
+  }
   return '${sorted.first}–${sorted.last} days a week';
 }
 

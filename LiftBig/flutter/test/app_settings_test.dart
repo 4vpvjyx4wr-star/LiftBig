@@ -26,6 +26,8 @@ void main() {
       final miles = displayDistanceToMiles('5', DistanceUnit.km);
       expect(miles, isNotNull);
       expect(milesToDisplayDistanceString(miles!, DistanceUnit.km), '5');
+      expect(formatStoredDistanceWithUnit('3.1', DistanceUnit.km), '4.99 km');
+      expect(formatStoredDistanceWithUnit('5k', DistanceUnit.mi), '5k');
     });
   });
 

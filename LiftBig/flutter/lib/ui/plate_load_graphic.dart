@@ -64,8 +64,9 @@ class PlateLoadGraphic extends StatelessWidget {
     final overflow = plates.length - shown.length;
     final left = shown.reversed.toList();
     final empty = shown.isEmpty;
+    final sled = centerLabel == 'SLED';
     final semantic = empty
-        ? (centerLabel == 'BAR' ? 'Bar only' : 'Sled only')
+        ? (sled ? 'Sled only' : 'Bar only')
         : 'Plates per Side: ${shown.map((plate) => plateFaceLabel(plate, unit)).join(', ')}';
 
     return Semantics(
@@ -119,9 +120,9 @@ class PlateLoadGraphic extends StatelessWidget {
             ] else if (empty) ...[
               const SizedBox(height: 8),
               Text(
-                centerLabel == 'BAR'
-                    ? 'Just the bar — no plates needed.'
-                    : 'Just the sled — no plates needed.',
+                sled
+                    ? 'Just the sled — no plates needed.'
+                    : 'Just the bar — no plates needed.',
                 style: TextStyle(
                   color: context.liftBig.muted,
                   fontSize: compact ? 12 : 13,

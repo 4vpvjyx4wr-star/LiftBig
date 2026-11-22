@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../data/app_database.dart';
-import '../debug/agent_log.dart';
 import '../journal/journal_repository.dart';
 import '../rest/rest_timer_controller.dart';
 import '../rest/rest_timer_state.dart';
@@ -339,7 +338,6 @@ class RestTimerTileOverlay extends StatefulWidget {
 
 class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
   Offset? _offset;
-  var _loggedPlacement = false;
 
   @override
   void initState() {
@@ -386,28 +384,7 @@ class _RestTimerTileOverlayState extends State<RestTimerTileOverlay> {
       padding: EdgeInsets.only(top: top, bottom: bottom),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final fallback = _defaultOffset(constraints);
-          final offset = _clamp(_offset ?? fallback, constraints);
-          // #region agent log
-          if (!_loggedPlacement) {
-            _loggedPlacement = true;
-            agentDebugLog(
-              location: 'rest_timer_tile.dart:build',
-              message: 'floating rest card placement',
-              hypothesisId: 'D',
-              data: {
-                'storedDx': _offset?.dx,
-                'storedDy': _offset?.dy,
-                'usedDx': offset.dx,
-                'usedDy': offset.dy,
-                'defaultDy': fallback.dy,
-                'maxWidth': constraints.maxWidth,
-                'maxHeight': constraints.maxHeight,
-                'tileHeight': restTimerTileHeight,
-              },
-            );
-          }
-          // #endregion
+          final offset = _clamp(_offset ?? _defaultOffset(constraints), constraints);
           return Stack(
             fit: StackFit.expand,
             children: [

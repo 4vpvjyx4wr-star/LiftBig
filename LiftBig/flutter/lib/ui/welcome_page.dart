@@ -27,7 +27,7 @@ class WelcomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Start with a plan',
+                'Start with a Plan',
                 style: TextStyle(
                   color: context.liftBig.foreground,
                   fontSize: 32,
@@ -51,7 +51,7 @@ class WelcomePage extends StatelessWidget {
                   minimumSize: const Size.fromHeight(52),
                   textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                 ),
-                child: const Text('Take the quiz'),
+                child: const Text('Take the Quiz'),
               ),
               const SizedBox(height: 10),
               OutlinedButton(
@@ -62,7 +62,7 @@ class WelcomePage extends StatelessWidget {
                   side: BorderSide(color: context.liftBig.border),
                   textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                 ),
-                child: const Text('Shuffle a workout'),
+                child: const Text('Shuffle a Workout'),
               ),
               const SizedBox(height: 10),
               OutlinedButton(
@@ -73,7 +73,7 @@ class WelcomePage extends StatelessWidget {
                   side: BorderSide(color: context.liftBig.border),
                   textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                 ),
-                child: const Text('Paste a plan'),
+                child: const Text('Paste a Plan'),
               ),
               const SizedBox(height: 8),
               TextButton(

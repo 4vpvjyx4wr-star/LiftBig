@@ -42,6 +42,15 @@ String milesToDisplayDistanceString(double miles, DistanceUnit unit, {int maxDec
   return formatDistanceFromMiles(miles, unit, maxDecimals: maxDecimals);
 }
 
+/// Stored miles, or the original text when it is not a number.
+String formatStoredDistanceWithUnit(String raw, DistanceUnit unit) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final miles = double.tryParse(trimmed.replaceAll(',', '.'));
+  if (miles == null) return trimmed;
+  return formatDistanceWithUnit(miles, unit);
+}
+
 String _trimDecimals(double value, int maxDecimals) {
   final factor = _pow10(maxDecimals);
   final rounded = (value * factor).round() / factor;
